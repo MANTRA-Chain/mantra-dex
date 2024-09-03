@@ -13,7 +13,7 @@ use crate::state::{ADMIN, CONFIG, EPOCHS};
 use crate::{commands, queries};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "white-whale_epoch-manager";
+const CONTRACT_NAME: &str = "mantra_epoch-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
@@ -86,7 +86,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     check_contract_name(deps.storage, CONTRACT_NAME.to_string())?;

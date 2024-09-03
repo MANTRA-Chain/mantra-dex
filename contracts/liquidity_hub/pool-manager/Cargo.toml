@@ -23,16 +23,8 @@ exclude = [
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
-injective = ["white-whale-std/injective"]
-token_factory = ["white-whale-std/token_factory"]
-osmosis = ["osmosis_token_factory"]
-osmosis_token_factory = ["white-whale-std/osmosis_token_factory"]
-tarpaulin_include = []
-# use library feature to disable all instantiate/execute/query exports
-library = []
 
 [dependencies]
 cosmwasm-schema.workspace = true
@@ -54,11 +46,9 @@ cw-migrate-error-derive.workspace = true
 cw-multi-test.workspace = true
 anyhow.workspace = true
 test-case.workspace = true
-whale-lair.workspace = true
 incentive-manager.workspace = true
 epoch-manager.workspace = true
-white-whale-testing.workspace = true
-bonding-manager.workspace = true
+common-testing.workspace = true
 proptest = "1.0.0"
 rand = "0.8.4"
 stable-swap-sim = { path = "./sim", version = "^0.1" }

@@ -11,7 +11,7 @@
 
 <!--
 
-    Add the list of issues related to this PR from the [issue tracker](https://github.com/White-Whale-Defi-Platform/migaloo-core/issues).
+    Add the list of issues related to this PR from the [issue tracker](https://github.com/MANTRA-Finance/amm/issues).
     Indicate, which of these issues are resolved or fixed by this PR, like #XXXX, where XXXX is the issue number.
 
 -->
@@ -22,7 +22,7 @@
 
 <!--
 
-    Thanks for contributing to White Whale Migaloo!
+    Thanks for contributing to MANTRA!
 
     Before you file this pull request, please follow the items on this checklist and put an x in each of the boxes,
     like this: [x].
@@ -31,7 +31,7 @@
 
 -->
 
-- [ ] I have read [Migaloo's contribution guidelines](https://github.com/White-Whale-Defi-Platform/migaloo-core/blob/main/docs/CONTRIBUTING.md).
+- [ ] I have read [MANTRA's contribution guidelines](https://github.com/MANTRA-Finance/amm/blob/main/docs/CONTRIBUTING.md).
 - [ ] My pull request has a sound title and description (not something vague like `Update index.md`)
 - [ ] All existing and new tests are passing.
 - [ ] I updated/added relevant documentation.

@@ -1,5 +1,4 @@
 use cosmwasm_std::{Coin, Decimal, DepsMut, Uint128, Uint256};
-
 use white_whale_std::pool_manager::PoolInfo;
 use white_whale_std::pool_network::swap::assert_max_spread;
 
@@ -20,9 +19,6 @@ pub struct SwapResult {
     pub protocol_fee_asset: Coin,
     /// The swap fee of `return_asset` associated with this swap transaction.
     pub swap_fee_asset: Coin,
-    /// The osmosis fee of `return_asset` associated with this swap transaction.
-    #[cfg(feature = "osmosis")]
-    pub osmosis_fee_asset: Coin,
     /// The pool that was traded.
     pub pool_info: PoolInfo,
     /// The amount of spread that occurred during the swap from the original exchange rate.
@@ -116,33 +112,12 @@ pub fn perform_swap(
         amount: swap_computation.swap_fee_amount,
     };
 
-    #[cfg(not(feature = "osmosis"))]
-    {
-        Ok(SwapResult {
-            return_asset,
-            swap_fee_asset,
-            burn_fee_asset,
-            protocol_fee_asset,
-            pool_info,
-            spread_amount: swap_computation.spread_amount,
-        })
-    }
-
-    #[cfg(feature = "osmosis")]
-    {
-        let osmosis_fee_asset = Coin {
-            denom: ask_asset_in_pool.denom,
-            amount: swap_computation.swap_fee_amount,
-        };
-
-        Ok(SwapResult {
-            return_asset,
-            swap_fee_asset,
-            burn_fee_asset,
-            protocol_fee_asset,
-            osmosis_fee_asset,
-            pool_info,
-            spread_amount: swap_computation.spread_amount,
-        })
-    }
+    Ok(SwapResult {
+        return_asset,
+        swap_fee_asset,
+        burn_fee_asset,
+        protocol_fee_asset,
+        pool_info,
+        spread_amount: swap_computation.spread_amount,
+    })
 }

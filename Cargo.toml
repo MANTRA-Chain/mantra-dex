@@ -2,17 +2,9 @@
 resolver = "2"
 
 members = [
-  "integration-tests",
   "packages/*",
-  "contracts/liquidity_hub/pool-network/*",
-  "contracts/liquidity_hub/fee_collector",
-  "contracts/liquidity_hub/fee_distributor",
-  "contracts/liquidity_hub/whale_lair",
-  "contracts/liquidity_hub/vault-network/*",
   "contracts/liquidity_hub/pool-manager",
   "contracts/liquidity_hub/epoch-manager",
-  "contracts/liquidity_hub/vault-manager",
-  "contracts/liquidity_hub/bonding-manager",
   "contracts/liquidity_hub/incentive-manager",
   "xtask",
 ]
@@ -44,8 +36,8 @@ serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.43" }
 osmosis-std-derive = { version = "0.15.3" }
 prost-types = { version = "0.11.9", default-features = false }
-white-whale-std = { path = "packages/white-whale-std" }
-white-whale-testing = { path = "./packages/white-whale-testing" }
+white-whale-std = { version = "2.0.0-alpha.1" }
+common-testing = { path = "packages/common-testing" }
 cw-multi-test = { version = "0.20.0", features = ["cosmwasm_1_2"] }
 uint = { version = "0.9.5" }
 integer-sqrt = { version = "0.1.5" }
@@ -63,18 +55,9 @@ test-case = { version = "3.3.1" }
 cw-migrate-error-derive = { version = "0.1.0" }
 
 # contracts
-whale-lair = { path = "./contracts/liquidity_hub/whale_lair" }
 epoch-manager = { path = "./contracts/liquidity_hub/epoch-manager" }
 pool-manager = { path = "./contracts/liquidity_hub/pool-manager" }
-fee_collector = { path = "./contracts/liquidity_hub/fee_collector" }
-fee_distributor = { path = "./contracts/liquidity_hub/fee_distributor" }
-fee-distributor-mock = { path = "./contracts/liquidity_hub/fee-distributor-mock" }
-incentive-factory = { path = "./contracts/liquidity_hub/pool-network/incentive_factory" }
-terraswap-token = { path = "./contracts/liquidity_hub/pool-network/terraswap_token" }
-terraswap-pair = { path = "./contracts/liquidity_hub/pool-network/terraswap_pair" }
 incentive-manager = { path = "./contracts/liquidity_hub/incentive-manager" }
-bonding-manager = { path = "./contracts/liquidity_hub/bonding-manager" }
-vault-manager = { path = "./contracts/liquidity_hub/vault-manager" }
 
 [workspace.metadata.dylint]
 libraries = [{ git = "https://github.com/0xFable/cw-lint" }]
