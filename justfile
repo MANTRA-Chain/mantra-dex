@@ -2,28 +2,17 @@
 default:
     @just --list
 
-# Builds the whole project with the a feature flag if provided.
-build FEATURE='':
-  #!/usr/bin/env sh
-  echo "-- Building {{FEATURE}} -- \n"
-  if [ -z "{{FEATURE}}" ]; then
-    cargo build
-  else
-    cargo build --features {{FEATURE}}
-  fi
+# Builds the whole project.
+build:
+  cargo build
 
 # Build all schemas
 schemas:
   scripts/build_schemas.sh
 
-# Tests the whole project with the a feature flag if provided.
-test FEATURE='':
-  #!/usr/bin/env sh
-  if [ -z "{{FEATURE}}" ]; then
-    cargo test
-  else
-    cargo test --features {{FEATURE}}
-  fi
+# Tests the whole project.
+test:
+  cargo test
 
 # Alias to the format recipe.
 fmt:
@@ -37,13 +26,8 @@ format:
   scripts/utils/format_md.sh
 
 # Runs clippy with the a feature flag if provided.
-lint FEATURE='':
-  #!/usr/bin/env sh
-  if [ -z "{{FEATURE}}" ]; then
-    cargo clippy --all -- -D warnings
-  else
-    cargo clippy --features {{FEATURE}} --all -- -D warnings
-  fi
+lint:
+  cargo clippy --all -- -D warnings
 
 # Tries to fix clippy issues automatically.
 lintfix:
@@ -68,16 +52,11 @@ watch:
 
 # Watches tests with the a feature flag if provided.
 watch-test FEATURE='':
-  #!/usr/bin/env sh
-  if [ -z "{{FEATURE}}" ]; then
-    cargo watch -x "nextest run"
-  else
-    cargo watch -x "nextest run --features {{FEATURE}}"
-  fi
+  cargo watch -x "nextest run"
 
-# Compiles and optimizes the contracts for the specified chain.
-optimize CHAIN:
-  scripts/build_release.sh -c {{CHAIN}}
+# Compiles and optimizes the contracts.
+optimize:
+  scripts/build_release.sh
 
 # Prints the artifacts versions on the current commit.
 get-artifacts-versions:
@@ -87,33 +66,6 @@ get-artifacts-versions:
 get-artifacts-size:
   scripts/check_artifacts_size.sh
 
-# Extracts the pools from the given chain.
-get-pools CHAIN:
-  scripts/deployment/extract_pools.sh -c {{CHAIN}}
-
 # Installs the env loader locally.
 install-env-loader:
     scripts/deployment/deploy_env/add_load_chain_env_alias.sh
-
-# Deploys the contracts to the specified chain.
-deploy CHAIN ARTIFACT='all':
-  scripts/deployment/deploy_liquidity_hub.sh -c {{CHAIN}} -d {{ARTIFACT}}
-
-# Stores the contracts to the specified chain.
-store CHAIN ARTIFACT='all':
-  scripts/deployment/deploy_liquidity_hub.sh -c {{CHAIN}} -s {{ARTIFACT}}
-
-# Migrates the contracts to the specified chain.
-migrate CHAIN ARTIFACT='all':
-  scripts/deployment/migrate_liquidity_hub.sh -c {{CHAIN}} -m {{ARTIFACT}}
-
-# Alias to the rename-a64-artifacts recipe.
-rename-artifacts:
-  @just rename-a64-artifacts
-
-# Renames the artifacts from *-aarch64.wasm to *.wasm.
-rename-a64-artifacts:
-  #!/usr/bin/env sh
-  for file in artifacts/*-aarch64*.wasm; do
-    mv "$file" "${file/-aarch64/}"
-  done
