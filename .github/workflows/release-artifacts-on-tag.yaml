@@ -15,8 +15,8 @@ jobs:
           submodules: recursive
       - name: Build Artifacts
         run: |
-          $GITHUB_WORKSPACE/scripts/build_release.sh -c vanilla
-          tar -zcvf cosmwasm-artifacts_no-token-factory.tar.gz artifacts
+          $GITHUB_WORKSPACE/scripts/build_release.sh
+          tar -zcvf cosmwasm-artifacts.tar.gz artifacts
       - name: Get Artifacts Versions
         run: $GITHUB_WORKSPACE/scripts/get_artifacts_versions.sh > artifact_versions.txt
       - name: Create Release
@@ -26,5 +26,5 @@ jobs:
           append_body: true
           generate_release_notes: true
           files: |
-            cosmwasm-artifacts_no-token-factory.tar.gz
+            cosmwasm-artifacts.tar.gz
             artifact_versions.txt
