@@ -16,9 +16,6 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-injective = ["white-whale-std/injective"]
-token_factory = ["white-whale-std/token_factory"]
-osmosis_token_factory = ["white-whale-std/osmosis_token_factory"]
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
 
@@ -40,9 +37,7 @@ cw-migrate-error-derive.workspace = true
 
 [dev-dependencies]
 cw-multi-test.workspace = true
-white-whale-testing.workspace = true
+common-testing.workspace = true
 epoch-manager.workspace = true
-whale-lair.workspace = true
 anyhow.workspace = true
-bonding-manager.workspace = true
 pool-manager.workspace = true

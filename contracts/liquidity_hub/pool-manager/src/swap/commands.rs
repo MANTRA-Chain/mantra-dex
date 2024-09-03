@@ -102,11 +102,6 @@ pub fn swap(
             "burn_fee_amount",
             swap_result.burn_fee_asset.amount.to_string(),
         ),
-        #[cfg(feature = "osmosis")]
-        (
-            "osmosis_fee_amount",
-            swap_result.osmosis_fee_asset.amount.to_string(),
-        ),
         (
             "swap_type",
             swap_result.pool_info.pool_type.get_label().to_string(),

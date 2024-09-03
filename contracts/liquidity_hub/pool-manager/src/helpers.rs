@@ -5,7 +5,6 @@ use cosmwasm_std::{
     coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, StdError, StdResult,
     Storage, Uint128, Uint256,
 };
-
 use white_whale_std::fee::PoolFee;
 use white_whale_std::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 use white_whale_std::pool_network::asset::{Asset, AssetInfo};
@@ -242,28 +241,12 @@ fn compute_fees(pool_fees: PoolFee, amount: Uint256) -> Result<FeesComputation, 
         Uint256::zero()
     };
 
-    #[cfg(not(feature = "osmosis"))]
-    {
-        Ok(FeesComputation {
-            swap_fee_amount,
-            protocol_fee_amount,
-            burn_fee_amount,
-            extra_fees_amount,
-        })
-    }
-
-    #[cfg(feature = "osmosis")]
-    {
-        let osmosis_fee_amount: Uint256 = pool_fees.osmosis_fee.compute(amount);
-
-        Ok(FeesComputation {
-            swap_fee_amount,
-            protocol_fee_amount,
-            burn_fee_amount,
-            extra_fees_amount,
-            osmosis_fee_amount,
-        })
-    }
+    Ok(FeesComputation {
+        swap_fee_amount,
+        protocol_fee_amount,
+        burn_fee_amount,
+        extra_fees_amount,
+    })
 }
 
 /// Builds the swap computation struct, subtracting the fees from the return amount.
@@ -272,78 +255,36 @@ fn get_swap_computation(
     spread_amount: Uint256,
     fees_computation: FeesComputation,
 ) -> Result<SwapComputation, ContractError> {
-    #[cfg(not(feature = "osmosis"))]
-    {
-        let return_amount = return_amount
-            .checked_sub(fees_computation.swap_fee_amount)?
-            .checked_sub(fees_computation.protocol_fee_amount)?
-            .checked_sub(fees_computation.burn_fee_amount)?
-            .checked_sub(fees_computation.extra_fees_amount)?;
+    let return_amount = return_amount
+        .checked_sub(fees_computation.swap_fee_amount)?
+        .checked_sub(fees_computation.protocol_fee_amount)?
+        .checked_sub(fees_computation.burn_fee_amount)?
+        .checked_sub(fees_computation.extra_fees_amount)?;
 
-        Ok(SwapComputation {
-            return_amount: return_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            spread_amount: spread_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            swap_fee_amount: fees_computation
-                .swap_fee_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            protocol_fee_amount: fees_computation
-                .protocol_fee_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            burn_fee_amount: fees_computation
-                .burn_fee_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            extra_fees_amount: fees_computation
-                .extra_fees_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-        })
-    }
-
-    #[cfg(feature = "osmosis")]
-    {
-        let return_amount = return_amount
-            .checked_sub(fees_computation.swap_fee_amount)?
-            .checked_sub(fees_computation.protocol_fee_amount)?
-            .checked_sub(fees_computation.burn_fee_amount)?
-            .checked_sub(fees_computation.extra_fees_amount)?
-            .checked_sub(fees_computation.osmosis_fee_amount)?;
-
-        Ok(SwapComputation {
-            return_amount: return_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            spread_amount: spread_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            swap_fee_amount: fees_computation
-                .swap_fee_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            protocol_fee_amount: fees_computation
-                .protocol_fee_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            burn_fee_amount: fees_computation
-                .burn_fee_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            extra_fees_amount: fees_computation
-                .extra_fees_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-            osmosis_fee_amount: fees_computation
-                .osmosis_fee_amount
-                .try_into()
-                .map_err(|_| ContractError::SwapOverflowError)?,
-        })
-    }
+    Ok(SwapComputation {
+        return_amount: return_amount
+            .try_into()
+            .map_err(|_| ContractError::SwapOverflowError)?,
+        spread_amount: spread_amount
+            .try_into()
+            .map_err(|_| ContractError::SwapOverflowError)?,
+        swap_fee_amount: fees_computation
+            .swap_fee_amount
+            .try_into()
+            .map_err(|_| ContractError::SwapOverflowError)?,
+        protocol_fee_amount: fees_computation
+            .protocol_fee_amount
+            .try_into()
+            .map_err(|_| ContractError::SwapOverflowError)?,
+        burn_fee_amount: fees_computation
+            .burn_fee_amount
+            .try_into()
+            .map_err(|_| ContractError::SwapOverflowError)?,
+        extra_fees_amount: fees_computation
+            .extra_fees_amount
+            .try_into()
+            .map_err(|_| ContractError::SwapOverflowError)?,
+    })
 }
 
 /// Represents the swap computation values
@@ -353,8 +294,6 @@ pub struct FeesComputation {
     pub protocol_fee_amount: Uint256,
     pub burn_fee_amount: Uint256,
     pub extra_fees_amount: Uint256,
-    #[cfg(feature = "osmosis")]
-    pub osmosis_fee_amount: Uint256,
 }
 
 /// Represents the swap computation values
@@ -366,36 +305,18 @@ pub struct SwapComputation {
     pub protocol_fee_amount: Uint128,
     pub burn_fee_amount: Uint128,
     pub extra_fees_amount: Uint128,
-    #[cfg(feature = "osmosis")]
-    pub osmosis_fee_amount: Uint128,
 }
 
 impl SwapComputation {
     /// Converts the SwapComputation struct to a SimulationResponse struct
     pub fn to_simulation_response(&self) -> SimulationResponse {
-        #[cfg(not(feature = "osmosis"))]
-        {
-            SimulationResponse {
-                return_amount: self.return_amount,
-                spread_amount: self.spread_amount,
-                swap_fee_amount: self.swap_fee_amount,
-                protocol_fee_amount: self.protocol_fee_amount,
-                burn_fee_amount: self.burn_fee_amount,
-                extra_fees_amount: self.extra_fees_amount,
-            }
-        }
-
-        #[cfg(feature = "osmosis")]
-        {
-            SimulationResponse {
-                return_amount: self.return_amount,
-                spread_amount: self.spread_amount,
-                swap_fee_amount: self.swap_fee_amount,
-                protocol_fee_amount: self.protocol_fee_amount,
-                burn_fee_amount: self.burn_fee_amount,
-                osmosis_fee_amount: self.osmosis_fee_amount,
-                extra_fees_amount: self.extra_fees_amount,
-            }
+        SimulationResponse {
+            return_amount: self.return_amount,
+            spread_amount: self.spread_amount,
+            swap_fee_amount: self.swap_fee_amount,
+            protocol_fee_amount: self.protocol_fee_amount,
+            burn_fee_amount: self.burn_fee_amount,
+            extra_fees_amount: self.extra_fees_amount,
         }
     }
 }
@@ -412,23 +333,11 @@ pub fn compute_offer_amount(
 
     // ask => offer
     // offer_amount = cp / (ask_pool - ask_amount / (1 - fees)) - offer_pool
-    let fees = {
-        let base_fees = pool_fees
-            .swap_fee
-            .to_decimal_256()
-            .checked_add(pool_fees.protocol_fee.to_decimal_256())?
-            .checked_add(pool_fees.burn_fee.to_decimal_256())?;
-
-        #[cfg(feature = "osmosis")]
-        {
-            base_fees.checked_add(pool_fees.osmosis_fee.to_decimal_256())?
-        }
-
-        #[cfg(not(feature = "osmosis"))]
-        {
-            base_fees
-        }
-    };
+    let fees = pool_fees
+        .swap_fee
+        .to_decimal_256()
+        .checked_add(pool_fees.protocol_fee.to_decimal_256())?
+        .checked_add(pool_fees.burn_fee.to_decimal_256())?;
 
     let one_minus_commission = Decimal256::one() - fees;
     let inv_one_minus_commission = Decimal256::one() / one_minus_commission;
@@ -451,31 +360,13 @@ pub fn compute_offer_amount(
     let protocol_fee_amount: Uint256 = pool_fees.protocol_fee.compute(before_commission_deduction);
     let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(before_commission_deduction);
 
-    #[cfg(not(feature = "osmosis"))]
-    {
-        Ok(OfferAmountComputation {
-            offer_amount: offer_amount.try_into()?,
-            spread_amount: spread_amount.try_into()?,
-            swap_fee_amount: swap_fee_amount.try_into()?,
-            protocol_fee_amount: protocol_fee_amount.try_into()?,
-            burn_fee_amount: burn_fee_amount.try_into()?,
-        })
-    }
-
-    #[cfg(feature = "osmosis")]
-    {
-        let osmosis_fee_amount: Uint256 =
-            pool_fees.osmosis_fee.compute(before_commission_deduction);
-
-        Ok(OfferAmountComputation {
-            offer_amount: offer_amount.try_into()?,
-            spread_amount: spread_amount.try_into()?,
-            swap_fee_amount: swap_fee_amount.try_into()?,
-            protocol_fee_amount: protocol_fee_amount.try_into()?,
-            burn_fee_amount: burn_fee_amount.try_into()?,
-            osmosis_fee_amount: osmosis_fee_amount.try_into()?,
-        })
-    }
+    Ok(OfferAmountComputation {
+        offer_amount: offer_amount.try_into()?,
+        spread_amount: spread_amount.try_into()?,
+        swap_fee_amount: swap_fee_amount.try_into()?,
+        protocol_fee_amount: protocol_fee_amount.try_into()?,
+        burn_fee_amount: burn_fee_amount.try_into()?,
+    })
 }
 
 /// Represents the offer amount computation values
@@ -486,8 +377,6 @@ pub struct OfferAmountComputation {
     pub swap_fee_amount: Uint128,
     pub protocol_fee_amount: Uint128,
     pub burn_fee_amount: Uint128,
-    #[cfg(feature = "osmosis")]
-    pub osmosis_fee_amount: Uint128,
 }
 
 // TODO: make this work with n_coins being dynamic
@@ -636,22 +525,9 @@ pub fn validate_asset_balance(
 pub fn aggregate_outgoing_fees(
     simulation_response: &SimulationResponse,
 ) -> Result<Uint128, ContractError> {
-    let fees = {
-        #[cfg(not(feature = "osmosis"))]
-        {
-            simulation_response
-                .protocol_fee_amount
-                .checked_add(simulation_response.burn_fee_amount)?
-        }
-
-        #[cfg(feature = "osmosis")]
-        {
-            simulation_response
-                .protocol_fee_amount
-                .checked_add(simulation_response.burn_fee_amount)?
-                .checked_add(simulation_response.osmosis_fee_amount)?
-        }
-    };
+    let fees = simulation_response
+        .protocol_fee_amount
+        .checked_add(simulation_response.burn_fee_amount)?;
 
     Ok(fees)
 }
@@ -950,6 +826,7 @@ mod tests {
     use cosmwasm_std::coin;
     use proptest::prelude::*;
     use rand::Rng;
+
     use sim::Model;
 
     use super::*;

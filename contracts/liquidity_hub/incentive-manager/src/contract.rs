@@ -14,7 +14,7 @@ use crate::helpers::validate_emergency_unlock_penalty;
 use crate::state::{CONFIG, INCENTIVE_COUNTER};
 use crate::{incentive, manager, position, queries};
 
-const CONTRACT_NAME: &str = "white-whale_incentive-manager";
+const CONTRACT_NAME: &str = "mantra_incentive-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
@@ -197,7 +197,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     use white_whale_std::migrate_guards::check_contract_name;

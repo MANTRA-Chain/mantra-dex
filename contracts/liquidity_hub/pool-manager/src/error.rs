@@ -10,9 +10,6 @@ use cw_utils::PaymentError;
 use thiserror::Error;
 use white_whale_std::pool_manager::SwapRoute;
 
-#[cfg(feature = "osmosis")]
-use cosmwasm_std::Decimal;
-
 #[cw_migrate_invalid_version_error]
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -163,10 +160,6 @@ pub enum ContractError {
 
     #[error("The pool has no assets")]
     PoolHasNoAssets,
-
-    #[cfg(feature = "osmosis")]
-    #[error("Invalid osmosis fee, expected: {expected} got: {got}")]
-    InvalidOsmosisFee { expected: Decimal, got: Decimal },
 }
 
 impl From<semver::Error> for ContractError {

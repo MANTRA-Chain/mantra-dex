@@ -31,7 +31,6 @@ fn deposit_and_withdraw_sanity_check() {
     // Asset denoms with uwhale and uluna
     let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
 
-    #[cfg(not(feature = "osmosis"))]
     let pool_fees = PoolFee {
         protocol_fee: Fee {
             share: Decimal::zero(),
@@ -41,23 +40,6 @@ fn deposit_and_withdraw_sanity_check() {
         },
         burn_fee: Fee {
             share: Decimal::zero(),
-        },
-        extra_fees: vec![],
-    };
-
-    #[cfg(feature = "osmosis")]
-    let pool_fees = PoolFee {
-        protocol_fee: Fee {
-            share: Decimal::zero(),
-        },
-        swap_fee: Fee {
-            share: Decimal::zero(),
-        },
-        burn_fee: Fee {
-            share: Decimal::zero(),
-        },
-        osmosis_fee: Fee {
-            share: Decimal::permille(1),
         },
         extra_fees: vec![],
     };
@@ -193,7 +175,6 @@ mod pool_creation_failures {
 
         let asset_infos = vec!["uwhale".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -207,22 +188,6 @@ mod pool_creation_failures {
             extra_fees: vec![],
         };
 
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::zero(),
-            },
-            swap_fee: Fee {
-                share: Decimal::zero(),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
         // Create a pool
         suite
             .instantiate_default()
@@ -265,7 +230,6 @@ mod pool_creation_failures {
 
         let asset_infos = vec!["uwhale".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -279,22 +243,6 @@ mod pool_creation_failures {
             extra_fees: vec![],
         };
 
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::zero(),
-            },
-            swap_fee: Fee {
-                share: Decimal::zero(),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
-            },
-            extra_fees: vec![],
-        };
         // Create a pool
         suite
             .instantiate_default()
@@ -311,19 +259,7 @@ mod pool_creation_failures {
                 None,
                 vec![coin(1000, "uusd")],
                 |result| {
-                    #[cfg(feature = "osmosis")]
-                    {
-                        let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                        match err {
-                            ContractError::InvalidPoolCreationFee { .. } => {}
-                            _ => panic!(
-                                "Wrong error type, should return ContractError::InvalidPoolCreationFee"
-                            ),
-                        }
-                    }
-                    #[cfg(not(feature = "osmosis"))]
                     result.unwrap();
-
                 },
             );
     }
@@ -342,7 +278,6 @@ mod pool_creation_failures {
 
         let asset_infos = vec!["uwhale".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -352,23 +287,6 @@ mod pool_creation_failures {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::zero(),
-            },
-            swap_fee: Fee {
-                share: Decimal::zero(),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -433,7 +351,6 @@ mod router {
         let first_pool = vec!["uwhale".to_string(), "uluna".to_string()];
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
@@ -443,22 +360,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
-            },
-            extra_fees: vec![],
-        };
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            swap_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            burn_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -630,7 +531,6 @@ mod router {
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
         // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 100_000u128),
@@ -640,23 +540,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -778,7 +661,6 @@ mod router {
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
         // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 100_000u128),
@@ -788,23 +670,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -942,7 +807,6 @@ mod router {
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
         // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 100_000u128),
@@ -952,23 +816,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -1176,7 +1023,6 @@ mod router {
         let first_pool = vec!["uwhale".to_string(), "uluna".to_string()];
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
@@ -1186,22 +1032,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
-            },
-            extra_fees: vec![],
-        };
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            swap_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            burn_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -1347,7 +1177,6 @@ mod router {
         let first_pool = vec!["uwhale".to_string(), "uluna".to_string()];
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
@@ -1357,22 +1186,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
-            },
-            extra_fees: vec![],
-        };
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            swap_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            burn_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -1517,7 +1330,6 @@ mod router {
         let first_pool = vec!["uwhale".to_string(), "uluna".to_string()];
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
@@ -1527,22 +1339,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
-            },
-            extra_fees: vec![],
-        };
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            swap_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            burn_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -1719,7 +1515,6 @@ mod router {
         let first_pool = vec!["uwhale".to_string(), "uluna".to_string()];
         let second_pool = vec!["uluna".to_string(), "uusd".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
@@ -1729,22 +1524,6 @@ mod router {
             },
             burn_fee: Fee {
                 share: Decimal::bps(50), // 0.5%
-            },
-            extra_fees: vec![],
-        };
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            swap_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            burn_fee: Fee {
-                share: Decimal::bps(50),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -1944,7 +1723,6 @@ mod swapping {
         let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
 
         // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 100_000u128),
@@ -1954,23 +1732,6 @@ mod swapping {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -2174,7 +1935,6 @@ mod swapping {
         let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
 
         // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 1000u128),
@@ -2184,23 +1944,6 @@ mod swapping {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 1000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_00u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::from_ratio(1u128, 1000u128),
             },
             extra_fees: vec![],
         };
@@ -2374,7 +2117,6 @@ mod swapping {
         let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
 
         // Protocol fee is 0.001% and swap fee is 0.002% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 100_000u128),
@@ -2384,23 +2126,6 @@ mod swapping {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(2u128, 100_000u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -2670,7 +2395,6 @@ mod locking_lp {
         // Asset denoms with uwhale and uluna
         let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -2680,23 +2404,6 @@ mod locking_lp {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::zero(),
-            },
-            swap_fee: Fee {
-                share: Decimal::zero(),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -2866,7 +2573,6 @@ mod locking_lp {
         // Asset denoms with uwhale and uluna
         let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -2876,23 +2582,6 @@ mod locking_lp {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::zero(),
-            },
-            swap_fee: Fee {
-                share: Decimal::zero(),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -3069,7 +2758,6 @@ mod provide_liquidity {
         // Asset denoms with uwhale and uluna
         let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::percent(1),
@@ -3079,23 +2767,6 @@ mod provide_liquidity {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(1),
-            },
-            swap_fee: Fee {
-                share: Decimal::percent(1),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -3524,7 +3195,6 @@ mod provide_liquidity {
         // Asset denoms with uwhale and uluna
         let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
 
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::percent(15),
@@ -3534,23 +3204,6 @@ mod provide_liquidity {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(15),
-            },
-            swap_fee: Fee {
-                share: Decimal::percent(5),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::permille(1),
             },
             extra_fees: vec![],
         };
@@ -3681,7 +3334,6 @@ mod provide_liquidity {
         ];
 
         // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 1000u128),
@@ -3691,23 +3343,6 @@ mod provide_liquidity {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 1000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_00u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::from_ratio(1u128, 1000u128),
             },
             extra_fees: vec![],
         };
@@ -3984,7 +3619,6 @@ mod provide_liquidity {
         ];
 
         // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
-        #[cfg(not(feature = "osmosis"))]
         let pool_fees = PoolFee {
             protocol_fee: Fee {
                 share: Decimal::from_ratio(1u128, 1000u128),
@@ -3994,23 +3628,6 @@ mod provide_liquidity {
             },
             burn_fee: Fee {
                 share: Decimal::zero(),
-            },
-            extra_fees: vec![],
-        };
-
-        #[cfg(feature = "osmosis")]
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::from_ratio(1u128, 1000u128),
-            },
-            swap_fee: Fee {
-                share: Decimal::from_ratio(1u128, 100_00u128),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-            osmosis_fee: Fee {
-                share: Decimal::from_ratio(1u128, 1000u128),
             },
             extra_fees: vec![],
         };

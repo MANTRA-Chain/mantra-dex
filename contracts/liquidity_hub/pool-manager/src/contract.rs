@@ -5,7 +5,6 @@ use crate::state::{
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
 use crate::{liquidity, manager, queries, router, swap};
-#[cfg(not(feature = "library"))]
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 };
@@ -17,11 +16,11 @@ use white_whale_std::pool_manager::{
 };
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:ww-pool-manager";
+const CONTRACT_NAME: &str = "mantra_pool-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID: u64 = 1;
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -48,7 +47,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[entry_point]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id {
         SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID => {
@@ -83,7 +82,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
     }
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -188,7 +187,7 @@ pub fn execute(
     }
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::Config => Ok(to_json_binary(&queries::query_config(deps)?)?),
@@ -265,7 +264,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     use cw2::get_contract_version;
