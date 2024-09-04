@@ -2,7 +2,7 @@ use cosmwasm_std::{
     attr, Attribute, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
 };
 
-use white_whale_std::fee::PoolFee;
+use amm::fee::PoolFee;
 
 use crate::state::{get_pool_by_identifier, POOL_COUNTER};
 use crate::{
@@ -10,8 +10,8 @@ use crate::{
     ContractError,
 };
 
-use white_whale_std::lp_common::LP_SYMBOL;
-use white_whale_std::pool_manager::{PoolInfo, PoolType};
+use amm::constants::LP_SYMBOL;
+use amm::pool_manager::{PoolInfo, PoolType};
 
 pub const MAX_ASSETS_PER_POOL: usize = 4;
 
@@ -23,13 +23,13 @@ pub const MAX_ASSETS_PER_POOL: usize = 4;
 ///
 /// ```rust
 /// # use cosmwasm_std::{DepsMut, Decimal, Env, MessageInfo, Response, CosmosMsg, WasmMsg, to_json_binary};
-/// # use white_whale_std::fee::PoolFee;
-/// # use white_whale_std::fee::Fee;
+/// # use amm::fee::PoolFee;
+/// # use amm::fee::Fee;
 /// # use pool_manager::error::ContractError;
 /// # use pool_manager::manager::commands::MAX_ASSETS_PER_POOL;
 /// # use pool_manager::manager::commands::create_pool;
 /// # use std::convert::TryInto;
-/// # use white_whale_std::pool_manager::PoolType;
+/// # use amm::pool_manager::PoolType;
 /// #
 /// # fn example(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
 /// let asset_infos = vec![
@@ -92,10 +92,11 @@ pub fn create_pool(
         let creation_fee = vec![config.pool_creation_fee];
 
         // send pool creation fee to the bonding manager
-        messages.push(white_whale_std::bonding_manager::fill_rewards_msg(
-            config.bonding_manager_addr.into_string(),
-            creation_fee,
-        )?);
+        //todo revise this, sent fees to fee collector
+        // messages.push(amm::bonding_manager::fill_rewards_msg(
+        //     config.bonding_manager_addr.into_string(),
+        //     creation_fee,
+        // )?);
     }
 
     // Check if the asset infos are the same
@@ -160,7 +161,7 @@ pub fn create_pool(
 
     attributes.push(attr("lp_asset", lp_asset));
 
-    messages.push(white_whale_std::tokenfactory::create_denom::create_denom(
+    messages.push(amm::tokenfactory::create_denom::create_denom(
         env.contract.address,
         lp_symbol,
     ));

@@ -3,10 +3,10 @@ use cosmwasm_std::{from_json, Addr, Uint64};
 
 use epoch_manager::contract::{instantiate, query};
 use epoch_manager::ContractError;
-use white_whale_std::epoch_manager::epoch_manager::{
+use amm::epoch_manager::{
     ConfigResponse, Epoch, EpochConfig, InstantiateMsg, QueryMsg,
 };
-use white_whale_std::pool_network::mock_querier::mock_dependencies;
+use amm::pool_network::mock_querier::mock_dependencies;
 
 mod common;
 

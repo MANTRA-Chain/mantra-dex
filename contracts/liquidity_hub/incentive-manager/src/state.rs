@@ -4,7 +4,7 @@ use std::string::ToString;
 use cosmwasm_std::{Addr, Order, StdResult, Storage, Uint128};
 use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 
-use white_whale_std::incentive_manager::{Config, EpochId, Incentive, Position};
+use amm::incentive_manager::{Config, EpochId, Incentive, Position};
 
 use crate::ContractError;
 

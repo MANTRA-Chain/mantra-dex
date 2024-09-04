@@ -11,9 +11,10 @@ use cosmwasm_std::{
 use cosmwasm_std::{wasm_execute, Reply, StdError};
 use cw2::set_contract_version;
 use semver::Version;
-use white_whale_std::pool_manager::{
+use amm::pool_manager::{
     ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg,
 };
+use mantra_utils::validate_contract;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "mantra_pool-manager";
@@ -266,21 +267,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    use cw2::get_contract_version;
-    use white_whale_std::migrate_guards::check_contract_name;
-
-    check_contract_name(deps.storage, CONTRACT_NAME.to_string())?;
-
-    let version: Version = CONTRACT_VERSION.parse()?;
-    let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
-
-    if storage_version >= version {
-        return Err(ContractError::MigrateInvalidVersion {
-            current_version: storage_version,
-            new_version: version,
-        });
-    }
-
+    validate_contract!(deps, CONTRACT_NAME, CONTRACT_VERSION);
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }

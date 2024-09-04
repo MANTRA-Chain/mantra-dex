@@ -4,13 +4,11 @@ use cosmwasm_std::{
 };
 use cosmwasm_std::{Decimal, OverflowError, Uint128};
 
-use white_whale_std::coin::aggregate_coins;
-use white_whale_std::common::validate_addr_or_default;
-use white_whale_std::pool_manager::{ExecuteMsg, PoolType};
-use white_whale_std::pool_network::{
-    asset::{get_total_share, MINIMUM_LIQUIDITY_AMOUNT},
-    U256,
-};
+use amm::coin::aggregate_coins;
+use amm::common::validate_addr_or_default;
+use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
+use amm::pool_manager::{ExecuteMsg, PoolType, get_total_share};
+use amm::U256;
 
 use crate::{
     helpers::{self},
@@ -230,7 +228,7 @@ pub fn provide_liquidity(
                         ));
                     }
 
-                    messages.push(white_whale_std::lp_common::mint_lp_token_msg(
+                    messages.push(amm::lp_common::mint_lp_token_msg(
                         liquidity_token.clone(),
                         &env.contract.address,
                         &env.contract.address,
@@ -276,7 +274,7 @@ pub fn provide_liquidity(
                     }
 
                     // mint the lp tokens to the contract
-                    messages.push(white_whale_std::lp_common::mint_lp_token_msg(
+                    messages.push(amm::lp_common::mint_lp_token_msg(
                         liquidity_token.clone(),
                         &env.contract.address,
                         &env.contract.address,
@@ -308,7 +306,7 @@ pub fn provide_liquidity(
         // if the unlocking duration is set, lock the LP tokens in the incentive manager
         if let Some(unlocking_duration) = unlocking_duration {
             // mint the lp tokens to the contract
-            messages.push(white_whale_std::lp_common::mint_lp_token_msg(
+            messages.push(amm::lp_common::mint_lp_token_msg(
                 liquidity_token.clone(),
                 &env.contract.address,
                 &env.contract.address,
@@ -319,8 +317,8 @@ pub fn provide_liquidity(
             messages.push(
                 wasm_execute(
                     config.incentive_manager_addr,
-                    &white_whale_std::incentive_manager::ExecuteMsg::ManagePosition {
-                        action: white_whale_std::incentive_manager::PositionAction::Fill {
+                    &amm::incentive_manager::ExecuteMsg::ManagePosition {
+                        action: amm::incentive_manager::PositionAction::Fill {
                             identifier: lock_position_identifier,
                             unlocking_duration,
                             receiver: Some(receiver.clone()),
@@ -332,7 +330,7 @@ pub fn provide_liquidity(
             );
         } else {
             // if not, just mint the LP tokens to the receiver
-            messages.push(white_whale_std::lp_common::mint_lp_token_msg(
+            messages.push(amm::lp_common::mint_lp_token_msg(
                 liquidity_token,
                 &deps.api.addr_validate(&receiver)?,
                 &env.contract.address,
@@ -420,7 +418,7 @@ pub fn withdraw_liquidity(
     POOLS.save(deps.storage, &pool_identifier, &pool)?;
 
     // Burn the LP tokens
-    messages.push(white_whale_std::lp_common::burn_lp_asset_msg(
+    messages.push(amm::lp_common::burn_lp_asset_msg(
         liquidity_token,
         env.contract.address,
         amount,

@@ -7,7 +7,7 @@ use cw_ownable::OwnershipError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-use white_whale_std::incentive_manager::EpochId;
+use amm::incentive_manager::EpochId;
 
 #[cw_migrate_invalid_version_error]
 #[derive(Error, Debug)]

@@ -5,8 +5,8 @@ use cw_controllers::{AdminError, HookError, HooksResponse};
 use crate::common::{mock_add_hook, mock_instantiation};
 use epoch_manager::contract::{execute, query};
 use epoch_manager::ContractError;
-use white_whale_std::epoch_manager::epoch_manager::{ExecuteMsg, QueryMsg};
-use white_whale_std::pool_network::mock_querier::mock_dependencies;
+use amm::epoch_manager::{ExecuteMsg, QueryMsg};
+use amm::pool_network::mock_querier::mock_dependencies;
 
 mod common;
 #[test]

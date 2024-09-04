@@ -3,11 +3,11 @@ use cosmwasm_std::{
     Storage, Uint128, Uint64,
 };
 
-use white_whale_std::coin::{get_factory_token_subdenom, is_factory_token};
-use white_whale_std::epoch_manager::hooks::EpochChangedHookMsg;
-use white_whale_std::incentive_manager::MIN_INCENTIVE_AMOUNT;
-use white_whale_std::incentive_manager::{Curve, Incentive, IncentiveParams};
-use white_whale_std::lp_common::LP_SYMBOL;
+use amm::coin::{get_factory_token_subdenom, is_factory_token};
+use amm::epoch_manager::EpochChangedHookMsg;
+use amm::incentive_manager::MIN_INCENTIVE_AMOUNT;
+use amm::incentive_manager::{Curve, Incentive, IncentiveParams};
+use amm::constants::LP_SYMBOL;
 
 use crate::helpers::{
     assert_incentive_asset, process_incentive_creation_fee, validate_emergency_unlock_penalty,
@@ -55,7 +55,7 @@ fn create_incentive(
         Some(config.max_concurrent_incentives),
     )?;
 
-    let current_epoch = white_whale_std::epoch_manager::common::get_current_epoch(
+    let current_epoch = amm::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.clone().into_string(),
     )?;
@@ -232,7 +232,7 @@ fn expand_incentive(
     ensure!(incentive.owner == info.sender, ContractError::Unauthorized);
 
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = white_whale_std::epoch_manager::common::get_current_epoch(
+    let current_epoch = amm::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.into_string(),
     )?;

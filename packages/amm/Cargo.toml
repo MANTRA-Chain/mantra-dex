@@ -1,0 +1,22 @@
+[package]
+name = "amm"
+version = "0.1.0"
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+authors.workspace = true
+
+[dependencies]
+cosmwasm-std.workspace = true
+cosmwasm-schema.workspace = true
+cw-ownable.workspace = true
+cw-controllers.workspace = true
+cw-storage-plus.workspace = true
+uint.workspace = true
+anybuf.workspace = true
+
+[dev-dependencies]
+test-case.workspace = true

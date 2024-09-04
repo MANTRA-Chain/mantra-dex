@@ -6,15 +6,14 @@ use cw_multi_test::{
     GovFailingModule, IbcFailingModule, StakeKeeper, WasmKeeper,
 };
 
-use white_whale_std::epoch_manager::epoch_manager::{Epoch, EpochConfig, EpochResponse};
-use white_whale_std::epoch_manager::hooks::EpochChangedHookMsg;
-use white_whale_std::fee::PoolFee;
-use white_whale_std::incentive_manager::{
+use amm::epoch_manager::{Epoch, EpochConfig, EpochResponse, EpochChangedHookMsg};
+use amm::fee::PoolFee;
+use amm::incentive_manager::{
     Config, IncentiveAction, IncentivesBy, IncentivesResponse, InstantiateMsg, LpWeightResponse,
     PositionAction, PositionsResponse, RewardsResponse,
 };
-use white_whale_std::pool_manager::PoolType;
-use white_whale_std::pool_network::asset::AssetInfo;
+use amm::pool_manager::PoolType;
+use amm::pool_network::asset::AssetInfo;
 use white_whale_testing::integration::contracts::whale_lair_contract;
 use white_whale_testing::multi_test::stargate_mock::StargateMock;
 
@@ -187,7 +186,7 @@ impl TestingSuite {
         let whale_lair_id = self.app.store_code(whale_lair_contract());
 
         // create whale lair
-        let msg = white_whale_std::whale_lair::InstantiateMsg {
+        let msg = amm::whale_lair::InstantiateMsg {
             unbonding_period: Uint64::new(86400u64),
             growth_rate: Decimal::one(),
             bonding_assets: vec![
@@ -199,7 +198,7 @@ impl TestingSuite {
                 },
             ],
         };
-        // let msg = white_whale_std::bonding_manager::InstantiateMsg {
+        // let msg = amm::bonding_manager::InstantiateMsg {
         //     unbonding_period: Uint64::new(86400u64).u64(),
         //     growth_rate: Decimal::one(),
         //     bonding_assets: vec![
@@ -231,7 +230,7 @@ impl TestingSuite {
         let epoch_manager_contract = self.app.store_code(epoch_manager_contract());
 
         // create epoch manager
-        let msg = white_whale_std::epoch_manager::epoch_manager::InstantiateMsg {
+        let msg = amm::epoch_manager::InstantiateMsg {
             start_epoch: Epoch {
                 id: 10,
                 start_time: Timestamp::from_nanos(1712242800_000000000u64),
@@ -262,7 +261,7 @@ impl TestingSuite {
         let pool_manager_contract = self.app.store_code(_pool_manager_contract());
 
         // create epoch manager
-        let msg = white_whale_std::pool_manager::InstantiateMsg {
+        let msg = amm::pool_manager::InstantiateMsg {
             bonding_manager_addr: self.bonding_manager_addr.to_string(),
             incentive_manager_addr: self.incentive_manager_addr.to_string(),
             pool_creation_fee: Coin {
@@ -381,7 +380,7 @@ impl TestingSuite {
         action: cw_ownable::Action,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::incentive_manager::ExecuteMsg::UpdateOwnership(action);
+        let msg = amm::incentive_manager::ExecuteMsg::UpdateOwnership(action);
 
         result(
             self.app
@@ -407,7 +406,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::incentive_manager::ExecuteMsg::UpdateConfig {
+        let msg = amm::incentive_manager::ExecuteMsg::UpdateConfig {
             bonding_manager_addr,
             epoch_manager_addr,
             create_incentive_fee,
@@ -436,7 +435,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::incentive_manager::ExecuteMsg::ManageIncentive { action };
+        let msg = amm::incentive_manager::ExecuteMsg::ManageIncentive { action };
 
         result(self.app.execute_contract(
             sender,
@@ -456,7 +455,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::incentive_manager::ExecuteMsg::ManagePosition { action };
+        let msg = amm::incentive_manager::ExecuteMsg::ManagePosition { action };
 
         result(self.app.execute_contract(
             sender,
@@ -475,7 +474,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::incentive_manager::ExecuteMsg::Claim;
+        let msg = amm::incentive_manager::ExecuteMsg::Claim;
 
         result(self.app.execute_contract(
             sender,
@@ -495,7 +494,7 @@ impl TestingSuite {
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
         let msg =
-            white_whale_std::incentive_manager::ExecuteMsg::EpochChangedHook(EpochChangedHookMsg {
+            amm::incentive_manager::ExecuteMsg::EpochChangedHook(EpochChangedHookMsg {
                 current_epoch: Epoch {
                     id: 0,
                     start_time: Default::default(),
@@ -522,7 +521,7 @@ impl TestingSuite {
         let ownership_response: StdResult<cw_ownable::Ownership<String>> =
             self.app.wrap().query_wasm_smart(
                 &self.incentive_manager_addr,
-                &white_whale_std::incentive_manager::QueryMsg::Ownership {},
+                &amm::incentive_manager::QueryMsg::Ownership {},
             );
 
         result(ownership_response);
@@ -534,7 +533,7 @@ impl TestingSuite {
     pub(crate) fn query_config(&mut self, result: impl Fn(StdResult<Config>)) -> &mut Self {
         let response: StdResult<Config> = self.app.wrap().query_wasm_smart(
             &self.incentive_manager_addr,
-            &white_whale_std::incentive_manager::QueryMsg::Config {},
+            &amm::incentive_manager::QueryMsg::Config {},
         );
 
         result(response);
@@ -552,7 +551,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let incentives_response: StdResult<IncentivesResponse> = self.app.wrap().query_wasm_smart(
             &self.incentive_manager_addr,
-            &white_whale_std::incentive_manager::QueryMsg::Incentives {
+            &amm::incentive_manager::QueryMsg::Incentives {
                 filter_by,
                 start_after,
                 limit,
@@ -573,7 +572,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let positions_response: StdResult<PositionsResponse> = self.app.wrap().query_wasm_smart(
             &self.incentive_manager_addr,
-            &white_whale_std::incentive_manager::QueryMsg::Positions {
+            &amm::incentive_manager::QueryMsg::Positions {
                 address: address.to_string(),
                 open_state,
             },
@@ -591,7 +590,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let rewards_response: StdResult<RewardsResponse> = self.app.wrap().query_wasm_smart(
             &self.incentive_manager_addr,
-            &white_whale_std::incentive_manager::QueryMsg::Rewards {
+            &amm::incentive_manager::QueryMsg::Rewards {
                 address: address.to_string(),
             },
         );
@@ -610,7 +609,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let rewards_response: StdResult<LpWeightResponse> = self.app.wrap().query_wasm_smart(
             &self.incentive_manager_addr,
-            &white_whale_std::incentive_manager::QueryMsg::LPWeight {
+            &amm::incentive_manager::QueryMsg::LPWeight {
                 address: self.incentive_manager_addr.to_string(),
                 denom: denom.to_string(),
                 epoch_id,
@@ -644,7 +643,7 @@ impl TestingSuite {
         sender: Addr,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::epoch_manager::epoch_manager::ExecuteMsg::CreateEpoch {};
+        let msg = amm::epoch_manager::ExecuteMsg::CreateEpoch {};
 
         result(
             self.app
@@ -662,7 +661,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::epoch_manager::epoch_manager::ExecuteMsg::AddHook {
+        let msg = amm::epoch_manager::ExecuteMsg::AddHook {
             contract_addr: contract_addr.to_string(),
         };
 
@@ -681,7 +680,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let current_epoch_response: StdResult<EpochResponse> = self.app.wrap().query_wasm_smart(
             &self.epoch_manager_addr,
-            &white_whale_std::epoch_manager::epoch_manager::QueryMsg::CurrentEpoch {},
+            &amm::epoch_manager::QueryMsg::CurrentEpoch {},
         );
 
         result(current_epoch_response);
@@ -699,7 +698,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::ProvideLiquidity {
+        let msg = amm::pool_manager::ExecuteMsg::ProvideLiquidity {
             pool_identifier,
             slippage_tolerance: None,
             receiver: None,
@@ -729,7 +728,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::Swap {
+        let msg = amm::pool_manager::ExecuteMsg::Swap {
             ask_asset_denom,
             belief_price,
             max_spread,
@@ -749,10 +748,10 @@ impl TestingSuite {
     pub(crate) fn _add_swap_routes(
         &mut self,
         sender: Addr,
-        swap_routes: Vec<white_whale_std::pool_manager::SwapRoute>,
+        swap_routes: Vec<amm::pool_manager::SwapRoute>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::AddSwapRoutes { swap_routes };
+        let msg = amm::pool_manager::ExecuteMsg::AddSwapRoutes { swap_routes };
 
         result(
             self.app
@@ -772,7 +771,7 @@ impl TestingSuite {
         pair_creation_fee_funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::CreatePool {
+        let msg = amm::pool_manager::ExecuteMsg::CreatePool {
             asset_denoms,
             pool_fees,
             pool_type,

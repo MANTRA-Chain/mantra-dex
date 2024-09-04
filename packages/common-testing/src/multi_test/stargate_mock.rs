@@ -9,11 +9,11 @@ use cosmwasm_std::{
 };
 use cw_multi_test::{AppResponse, BankSudo, CosmosRouter, Stargate};
 
-use white_whale_std::tokenfactory::burn::MsgBurn;
-use white_whale_std::tokenfactory::common::EncodeMessage;
-use white_whale_std::tokenfactory::create_denom::{MsgCreateDenom, MsgCreateDenomResponse};
-use white_whale_std::tokenfactory::mint::MsgMint;
-use white_whale_std::tokenfactory::responses::{Params, QueryParamsResponse};
+use amm::tokenfactory::burn::MsgBurn;
+use amm::tokenfactory::common::EncodeMessage;
+use amm::tokenfactory::create_denom::{MsgCreateDenom, MsgCreateDenomResponse};
+use amm::tokenfactory::mint::MsgMint;
+use amm::tokenfactory::responses::{Params, QueryParamsResponse};
 
 pub struct StargateMock {}
 

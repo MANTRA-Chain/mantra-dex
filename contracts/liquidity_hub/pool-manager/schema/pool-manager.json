@@ -667,7 +667,7 @@
         "description": "The type of swap operation to perform.",
         "oneOf": [
           {
-            "description": "A swap operation that uses the WhaleSwap router.",
+            "description": "A swap operation that uses the MantraSwap router.",
             "type": "object",
             "required": [
               "whale_swap"
@@ -1066,7 +1066,7 @@
         "description": "The type of swap operation to perform.",
         "oneOf": [
           {
-            "description": "A swap operation that uses the WhaleSwap router.",
+            "description": "A swap operation that uses the MantraSwap router.",
             "type": "object",
             "required": [
               "whale_swap"
@@ -1781,7 +1781,7 @@
           "description": "The type of swap operation to perform.",
           "oneOf": [
             {
-              "description": "A swap operation that uses the WhaleSwap router.",
+              "description": "A swap operation that uses the MantraSwap router.",
               "type": "object",
               "required": [
                 "whale_swap"
@@ -1883,7 +1883,7 @@
           "description": "The type of swap operation to perform.",
           "oneOf": [
             {
-              "description": "A swap operation that uses the WhaleSwap router.",
+              "description": "A swap operation that uses the MantraSwap router.",
               "type": "object",
               "required": [
                 "whale_swap"

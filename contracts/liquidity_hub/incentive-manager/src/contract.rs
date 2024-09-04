@@ -4,10 +4,8 @@ use cosmwasm_std::{
 use cw2::{get_contract_version, set_contract_version};
 use semver::Version;
 
-use white_whale_std::incentive_manager::{
-    Config, ExecuteMsg, IncentiveAction, InstantiateMsg, PositionAction, QueryMsg,
-};
-use white_whale_std::vault_manager::MigrateMsg;
+use amm::incentive_manager::{Config, ExecuteMsg, IncentiveAction, InstantiateMsg, MigrateMsg, PositionAction, QueryMsg};
+use mantra_utils::validate_contract;
 
 use crate::error::ContractError;
 use crate::helpers::validate_emergency_unlock_penalty;
@@ -106,7 +104,7 @@ pub fn execute(
         },
         ExecuteMsg::UpdateOwnership(action) => {
             cw_utils::nonpayable(&info)?;
-            white_whale_std::common::update_ownership(deps, env, info, action).map_err(Into::into)
+            amm::common::update_ownership(deps, env, info, action).map_err(Into::into)
         }
         ExecuteMsg::EpochChangedHook(msg) => {
             manager::commands::on_epoch_changed(deps, env, info, msg)
@@ -199,20 +197,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
 
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    use white_whale_std::migrate_guards::check_contract_name;
-
-    check_contract_name(deps.storage, CONTRACT_NAME.to_string())?;
-
-    let version: Version = CONTRACT_VERSION.parse()?;
-    let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
-
-    if storage_version >= version {
-        return Err(ContractError::MigrateInvalidVersion {
-            current_version: storage_version,
-            new_version: version,
-        });
-    }
-
+    validate_contract!(deps, CONTRACT_NAME, CONTRACT_VERSION);
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }

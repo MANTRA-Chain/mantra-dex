@@ -3,10 +3,10 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult}
 use cw2::{get_contract_version, set_contract_version};
 use semver::Version;
 
-use white_whale_std::epoch_manager::epoch_manager::{
+use amm::epoch_manager::{
     Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
-use white_whale_std::migrate_guards::check_contract_name;
+use mantra_utils::validate_contract;
 
 use crate::error::ContractError;
 use crate::state::{ADMIN, CONFIG, EPOCHS};
@@ -88,18 +88,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    check_contract_name(deps.storage, CONTRACT_NAME.to_string())?;
-    let version: Version = CONTRACT_VERSION.parse()?;
-    let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
-
-    if storage_version >= version {
-        return Err(ContractError::MigrateInvalidVersion {
-            current_version: storage_version,
-            new_version: version,
-        });
-    }
-
+    validate_contract!(deps, CONTRACT_NAME, CONTRACT_VERSION);
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
     Ok(Response::default())
 }

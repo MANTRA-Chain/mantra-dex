@@ -3,7 +3,7 @@ use cosmwasm_std::{DepsMut, MessageInfo, Response, Uint64};
 
 use epoch_manager::contract::{execute, instantiate};
 use epoch_manager::ContractError;
-use white_whale_std::epoch_manager::epoch_manager::{
+use amm::epoch_manager::{
     Epoch, EpochConfig, ExecuteMsg, InstantiateMsg,
 };
 

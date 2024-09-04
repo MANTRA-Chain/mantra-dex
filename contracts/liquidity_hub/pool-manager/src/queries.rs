@@ -4,7 +4,7 @@ use cosmwasm_std::{
     coin, ensure, Coin, Decimal256, Deps, Fraction, Order, StdResult, Uint128, Uint256,
 };
 use cw_storage_plus::Bound;
-use white_whale_std::pool_manager::{
+use amm::pool_manager::{
     AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
     ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
     SwapRoute, SwapRouteCreatorResponse, SwapRouteResponse, SwapRoutesResponse,
@@ -299,7 +299,7 @@ pub fn simulate_swap_operations(
 
     for operation in operations.into_iter() {
         match operation {
-            SwapOperation::WhaleSwap {
+            SwapOperation::MantraSwap {
                 token_in_denom,
                 token_out_denom,
                 pool_identifier,
@@ -334,7 +334,7 @@ pub fn reverse_simulate_swap_operations(
 
     for operation in operations.into_iter().rev() {
         match operation {
-            SwapOperation::WhaleSwap {
+            SwapOperation::MantraSwap {
                 token_in_denom,
                 token_out_denom,
                 pool_identifier,

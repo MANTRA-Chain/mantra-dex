@@ -3,7 +3,7 @@ extern crate core;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 
 use incentive_manager::ContractError;
-use white_whale_std::incentive_manager::{
+use amm::incentive_manager::{
     Config, Curve, Incentive, IncentiveAction, IncentiveParams, IncentivesBy, LpWeightResponse,
     Position, PositionAction, RewardsResponse,
 };

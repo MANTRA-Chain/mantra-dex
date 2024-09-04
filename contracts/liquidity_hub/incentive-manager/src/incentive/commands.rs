@@ -5,8 +5,8 @@ use cosmwasm_std::{
     Uint128,
 };
 
-use white_whale_std::coin::aggregate_coins;
-use white_whale_std::incentive_manager::{EpochId, Incentive, Position, RewardsResponse};
+use amm::coin::aggregate_coins;
+use amm::incentive_manager::{EpochId, Incentive, Position, RewardsResponse};
 
 use crate::state::{
     get_earliest_address_lp_weight, get_incentives_by_lp_denom, get_latest_address_lp_weight,
@@ -24,7 +24,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
     ensure!(!open_positions.is_empty(), ContractError::NoOpenPositions);
 
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = white_whale_std::epoch_manager::common::get_current_epoch(
+    let current_epoch = amm::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.into_string(),
     )?;

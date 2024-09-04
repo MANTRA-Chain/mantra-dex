@@ -5,7 +5,7 @@ use cosmwasm_std::{
     Uint128,
 };
 
-use white_whale_std::incentive_manager::{Config, IncentiveParams, DEFAULT_INCENTIVE_DURATION};
+use amm::incentive_manager::{Config, IncentiveParams, DEFAULT_INCENTIVE_DURATION};
 
 use crate::ContractError;
 
@@ -70,11 +70,13 @@ pub(crate) fn process_incentive_creation_fee(
         }
     }
 
-    // send incentive creation fee to whale lair for distribution
-    messages.push(white_whale_std::bonding_manager::fill_rewards_msg(
-        config.bonding_manager_addr.clone().into_string(),
-        vec![incentive_creation_fee.to_owned()],
-    )?);
+    //todo revise, remove this stuff, rewards to be sent to a fee collector
+
+    // // send incentive creation fee to whale lair for distribution
+    // messages.push(amm::bonding_manager::fill_rewards_msg(
+    //     config.bonding_manager_addr.clone().into_string(),
+    //     vec![incentive_creation_fee.to_owned()],
+    // )?);
 
     Ok(messages)
 }

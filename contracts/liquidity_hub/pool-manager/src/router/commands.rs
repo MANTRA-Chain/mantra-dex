@@ -2,9 +2,9 @@ use cosmwasm_std::{
     attr, coin, ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, MessageInfo, Response,
     Uint128,
 };
-use white_whale_std::coin::burn_coin_msg;
-use white_whale_std::common::validate_addr_or_default;
-use white_whale_std::pool_manager::{SwapOperation, SwapRoute};
+use amm::coin::burn_coin_msg;
+use amm::common::validate_addr_or_default;
+use amm::pool_manager::{SwapOperation, SwapRoute};
 
 use crate::queries::simulate_swap_operations;
 use crate::{
@@ -85,7 +85,7 @@ pub fn execute_swap_operations(
 
     for operation in operations {
         match operation {
-            SwapOperation::WhaleSwap {
+            SwapOperation::MantraSwap {
                 token_out_denom,
                 pool_identifier,
                 ..
@@ -121,10 +121,11 @@ pub fn execute_swap_operations(
                     fee_messages.push(burn_coin_msg(swap_result.burn_fee_asset));
                 }
                 if !swap_result.protocol_fee_asset.amount.is_zero() {
-                    fee_messages.push(white_whale_std::bonding_manager::fill_rewards_msg(
-                        config.bonding_manager_addr.to_string(),
-                        vec![swap_result.protocol_fee_asset.clone()],
-                    )?);
+                    //todo revise this, sent fees to fee collector
+                    // fee_messages.push(amm::bonding_manager::fill_rewards_msg(
+                    //     config.bonding_manager_addr.to_string(),
+                    //     vec![swap_result.protocol_fee_asset.clone()],
+                    // )?);
                 }
             }
         }

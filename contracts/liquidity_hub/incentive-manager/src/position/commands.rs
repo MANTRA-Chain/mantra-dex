@@ -2,7 +2,7 @@ use cosmwasm_std::{
     ensure, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
 };
 
-use white_whale_std::incentive_manager::{Position, RewardsResponse};
+use amm::incentive_manager::{Position, RewardsResponse};
 
 use crate::position::helpers::validate_unlocking_duration;
 use crate::position::helpers::{calculate_weight, get_latest_address_weight};
@@ -245,10 +245,11 @@ pub(crate) fn withdraw_position(
         let bonding_manager_addr = CONFIG.load(deps.storage)?.bonding_manager_addr;
 
         // send penalty to bonding manager for distribution
-        messages.push(white_whale_std::bonding_manager::fill_rewards_msg(
-            bonding_manager_addr.into_string(),
-            vec![penalty],
-        )?);
+        //todo revise, remove this stuff, rewards to be sent to a fee collector
+        // messages.push(amm::bonding_manager::fill_rewards_msg(
+        //     bonding_manager_addr.into_string(),
+        //     vec![penalty],
+        // )?);
 
         // if the position is open, update the weights when doing the emergency withdrawal
         // otherwise not, as the weights have already being updated when the position was closed
@@ -309,7 +310,7 @@ fn update_weights(
     fill: bool,
 ) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = white_whale_std::epoch_manager::common::get_current_epoch(
+    let current_epoch = amm::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.into_string(),
     )?;

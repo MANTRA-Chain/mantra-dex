@@ -5,8 +5,8 @@ pub const MAX_ASSETS_PER_POOL: usize = 4;
 
 use crate::state::get_pool_by_identifier;
 use cosmwasm_std::Decimal;
-use white_whale_std::coin::burn_coin_msg;
-use white_whale_std::common::validate_addr_or_default;
+use amm::coin::burn_coin_msg;
+use amm::common::validate_addr_or_default;
 
 use super::perform_swap::perform_swap;
 
@@ -75,10 +75,11 @@ pub fn swap(
     }
 
     if !swap_result.protocol_fee_asset.amount.is_zero() {
-        messages.push(white_whale_std::bonding_manager::fill_rewards_msg(
-            config.bonding_manager_addr.to_string(),
-            vec![swap_result.protocol_fee_asset.clone()],
-        )?);
+        //todo revise this, sent fees to fee collector
+        // messages.push(amm::bonding_manager::fill_rewards_msg(
+        //     config.bonding_manager_addr.to_string(),
+        //     vec![swap_result.protocol_fee_asset.clone()],
+        // )?);
     }
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![

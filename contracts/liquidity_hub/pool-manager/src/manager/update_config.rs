@@ -1,5 +1,5 @@
 use cosmwasm_std::{Coin, DepsMut, MessageInfo, Response};
-use white_whale_std::pool_manager::{Config, FeatureToggle};
+use amm::pool_manager::{Config, FeatureToggle};
 
 use crate::{state::CONFIG, ContractError};
 

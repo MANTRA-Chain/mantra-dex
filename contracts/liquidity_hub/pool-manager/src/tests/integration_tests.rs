@@ -1,9 +1,9 @@
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 
-use white_whale_std::fee::Fee;
-use white_whale_std::fee::PoolFee;
-use white_whale_std::pool_manager::PoolType;
-use white_whale_std::pool_network::asset::MINIMUM_LIQUIDITY_AMOUNT;
+use amm::fee::Fee;
+use amm::fee::PoolFee;
+use amm::pool_manager::PoolType;
+use amm::pool_network::asset::MINIMUM_LIQUIDITY_AMOUNT;
 
 use crate::ContractError;
 
@@ -332,7 +332,7 @@ mod pool_creation_failures {
 mod router {
     use cosmwasm_std::{assert_approx_eq, Event, StdError};
 
-    use white_whale_std::pool_manager::{SwapRoute, SwapRouteCreatorResponse};
+    use amm::pool_manager::{SwapRoute, SwapRouteCreatorResponse};
 
     use super::*;
 
@@ -450,12 +450,12 @@ mod router {
         // We will use the uluna-uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "whale-uluna".to_string(),
             },
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "uluna-uusd".to_string(),
@@ -760,12 +760,12 @@ mod router {
         // We will use the uluna-uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "whale-uluna".to_string(),
             },
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "whale-uluna".to_string(),
@@ -907,12 +907,12 @@ mod router {
         // We will use the uluna-uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "whale-uluna".to_string(),
             },
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "uluna-uusd".to_string(),
@@ -1122,12 +1122,12 @@ mod router {
         // We will use the uluna-uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "whale-uluna".to_string(),
             },
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "uluna-uusd".to_string(),
@@ -1269,12 +1269,12 @@ mod router {
             offer_asset_denom: "uwhale".to_string(),
             ask_asset_denom: "uusd".to_string(),
             swap_operations: vec![
-                white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+                amm::pool_manager::SwapOperation::MantraSwap {
                     token_in_denom: "uwhale".to_string(),
                     token_out_denom: "uluna".to_string(),
                     pool_identifier: "whale-uluna".to_string(),
                 },
-                white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+                amm::pool_manager::SwapOperation::MantraSwap {
                     token_in_denom: "uluna".to_string(),
                     token_out_denom: "uusd".to_string(),
                     pool_identifier: "uluna-uusd".to_string(),
@@ -1422,12 +1422,12 @@ mod router {
             offer_asset_denom: "uwhale".to_string(),
             ask_asset_denom: "uusd".to_string(),
             swap_operations: vec![
-                white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+                amm::pool_manager::SwapOperation::MantraSwap {
                     token_in_denom: "uwhale".to_string(),
                     token_out_denom: "uluna".to_string(),
                     pool_identifier: "whale-uluna".to_string(),
                 },
-                white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+                amm::pool_manager::SwapOperation::MantraSwap {
                     token_in_denom: "uluna".to_string(),
                     token_out_denom: "uusd".to_string(),
                     pool_identifier: "uluna-uusd".to_string(),
@@ -1614,12 +1614,12 @@ mod router {
         // We will use the uluna-uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "whale-uluna".to_string(),
             },
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "uluna-uusd".to_string(),
@@ -1704,7 +1704,7 @@ mod swapping {
 
     use cosmwasm_std::assert_approx_eq;
 
-    use white_whale_std::pool_manager::PoolType;
+    use amm::pool_manager::PoolType;
 
     use super::*;
 
@@ -2239,7 +2239,7 @@ mod swapping {
 }
 
 mod ownership {
-    use white_whale_std::pool_manager::FeatureToggle;
+    use amm::pool_manager::FeatureToggle;
 
     use super::*;
 
@@ -2374,10 +2374,10 @@ mod ownership {
 mod locking_lp {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 
-    use white_whale_std::fee::{Fee, PoolFee};
-    use white_whale_std::incentive_manager::Position;
-    use white_whale_std::pool_manager::PoolType;
-    use white_whale_std::pool_network::asset::MINIMUM_LIQUIDITY_AMOUNT;
+    use amm::fee::{Fee, PoolFee};
+    use amm::incentive_manager::Position;
+    use amm::pool_manager::PoolType;
+    use amm::pool_network::asset::MINIMUM_LIQUIDITY_AMOUNT;
 
     use crate::tests::suite::TestingSuite;
 
@@ -2736,9 +2736,9 @@ mod provide_liquidity {
 
     use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, StdError, Uint128};
 
-    use white_whale_std::fee::{Fee, PoolFee};
-    use white_whale_std::pool_manager::PoolType;
-    use white_whale_std::pool_network::asset::MINIMUM_LIQUIDITY_AMOUNT;
+    use amm::fee::{Fee, PoolFee};
+    use amm::pool_manager::PoolType;
+    use amm::pool_network::asset::MINIMUM_LIQUIDITY_AMOUNT;
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
@@ -3783,8 +3783,8 @@ mod provide_liquidity {
 mod multiple_pools {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 
-    use white_whale_std::fee::{Fee, PoolFee};
-    use white_whale_std::pool_manager::{PoolInfo, PoolType};
+    use amm::fee::{Fee, PoolFee};
+    use amm::pool_manager::{PoolInfo, PoolType};
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
@@ -4332,12 +4332,12 @@ mod multiple_pools {
 
         // swap via the router now
         let swap_operations = vec![
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "whale-uluna-pool-2".to_string(),
             },
-            white_whale_std::pool_manager::SwapOperation::WhaleSwap {
+            amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "uluna-uusd-pool-1".to_string(),

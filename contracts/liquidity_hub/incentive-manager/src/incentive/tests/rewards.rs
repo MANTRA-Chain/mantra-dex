@@ -1,8 +1,8 @@
 use crate::incentive::commands::{compute_start_from_epoch_for_user, compute_user_weights};
 use crate::state::LP_WEIGHT_HISTORY;
 use cosmwasm_std::{Addr, Coin, Uint128};
-use white_whale_std::incentive_manager::{Curve, Incentive, Position};
-use white_whale_std::pool_network::mock_querier::mock_dependencies;
+use amm::incentive_manager::{Curve, Incentive, Position};
+use amm::pool_network::mock_querier::mock_dependencies;
 
 #[test]
 fn compute_start_from_epoch_for_user_successfully() {

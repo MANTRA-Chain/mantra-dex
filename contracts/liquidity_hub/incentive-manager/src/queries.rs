@@ -1,7 +1,7 @@
 use cosmwasm_std::{Deps, Env};
 
-use white_whale_std::coin::aggregate_coins;
-use white_whale_std::incentive_manager::{
+use amm::coin::aggregate_coins;
+use amm::incentive_manager::{
     Config, EpochId, IncentivesBy, IncentivesResponse, LpWeightResponse, PositionsResponse,
     RewardsResponse,
 };
@@ -77,7 +77,7 @@ pub(crate) fn query_rewards(
     }
 
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = white_whale_std::epoch_manager::common::get_current_epoch(
+    let current_epoch = amm::epoch_manager::get_current_epoch(
         deps,
         config.epoch_manager_addr.into_string(),
     )?;

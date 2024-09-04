@@ -17,11 +17,7 @@ pub mod tasks {
     use cosmwasm_schema::{generate_api, remove_schemas};
 
     use serde::Deserialize;
-    use white_whale_std::{
-        pool_network::{frontend_helper, incentive, incentive_factory},
-        vault_network::{vault, vault_factory, vault_router},
-        *,
-    };
+    use amm::{*};
 
     fn project_root() -> PathBuf {
         Path::new(&env!("CARGO_MANIFEST_DIR"))
@@ -59,24 +55,9 @@ pub mod tasks {
         }
 
         let mut schemas = HashMap::from([
-            generate_schema!("bonding-manager", bonding_manager),
-            generate_schema!("epoch-manager", epoch_manager::epoch_manager),
-            generate_schema!("fee_collector", fee_collector),
-            generate_schema!("fee_distributor", fee_distributor),
+            generate_schema!("epoch-manager", epoch_manager),
             generate_schema!("pool-manager", pool_manager),
             generate_schema!("incentive-manager", incentive_manager),
-            generate_schema!("frontend-helper", frontend_helper),
-            generate_schema!("incentive", incentive),
-            generate_schema!("incentive-factory", incentive_factory),
-            generate_schema!("terraswap-factory", pool_network::factory),
-            generate_schema!("terraswap-pair", pool_network::pair),
-            generate_schema!("terraswap-router", pool_network::router),
-            generate_schema!("terraswap-token", pool_network::token),
-            generate_schema!("vault-manager", vault_manager),
-            generate_schema!("vault", vault),
-            generate_schema!("vault_factory", vault_factory),
-            generate_schema!("vault_router", vault_router),
-            generate_schema!("whale-lair", whale_lair),
         ]);
 
         let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());

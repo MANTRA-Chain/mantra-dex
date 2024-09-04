@@ -8,7 +8,7 @@ use cw_migrate_error_derive::cw_migrate_invalid_version_error;
 use cw_ownable::OwnershipError;
 use cw_utils::PaymentError;
 use thiserror::Error;
-use white_whale_std::pool_manager::SwapRoute;
+use amm::pool_manager::SwapRoute;
 
 #[cw_migrate_invalid_version_error]
 #[derive(Error, Debug, PartialEq)]

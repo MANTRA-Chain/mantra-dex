@@ -5,9 +5,8 @@ use cosmwasm_std::{
     coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, StdError, StdResult,
     Storage, Uint128, Uint256,
 };
-use white_whale_std::fee::PoolFee;
-use white_whale_std::pool_manager::{PoolInfo, PoolType, SimulationResponse};
-use white_whale_std::pool_network::asset::{Asset, AssetInfo};
+use amm::fee::PoolFee;
+use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 
 use crate::error::ContractError;
 use crate::math::Decimal256Helper;
@@ -440,48 +439,6 @@ pub fn assert_slippage_tolerance(
     }
 
     Ok(())
-}
-
-/// Gets the protocol fee amount for the given asset_id
-pub fn get_protocol_fee_for_asset(
-    collected_protocol_fees: Vec<Asset>,
-    asset_id: String,
-) -> Uint128 {
-    let protocol_fee_asset = collected_protocol_fees
-        .iter()
-        .find(|&protocol_fee_asset| protocol_fee_asset.clone().get_id() == asset_id.clone())
-        .cloned();
-
-    // get the protocol fee for the given pool_asset
-    if let Some(protocol_fee_asset) = protocol_fee_asset {
-        protocol_fee_asset.amount
-    } else {
-        Uint128::zero()
-    }
-}
-
-/// Instantiates fees for a given fee_storage_item
-pub fn instantiate_fees(
-    storage: &mut dyn Storage,
-    asset_info_0: AssetInfo,
-    asset_info_1: AssetInfo,
-    pool_key: &Vec<u8>,
-    fee_storage_item: cw_storage_plus::Map<'static, &'static [u8], Vec<Asset>>,
-) -> StdResult<()> {
-    fee_storage_item.save(
-        storage,
-        pool_key,
-        &vec![
-            Asset {
-                info: asset_info_0,
-                amount: Uint128::zero(),
-            },
-            Asset {
-                info: asset_info_1,
-                amount: Uint128::zero(),
-            },
-        ],
-    )
 }
 
 /// This function compares the address of the message sender with the contract admin

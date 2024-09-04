@@ -1,9 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Coin, Decimal, Deps};
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, UniqueIndex};
-
-pub use white_whale_std::pool_manager::Config;
-use white_whale_std::pool_manager::{PoolInfo, SwapOperation};
+pub use amm::pool_manager::Config;
+use amm::pool_manager::{PoolInfo, SwapOperation};
 
 use crate::ContractError;
 

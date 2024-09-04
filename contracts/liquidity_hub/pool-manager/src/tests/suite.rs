@@ -1,11 +1,11 @@
 use cosmwasm_std::testing::MockStorage;
 use std::cell::RefCell;
-use white_whale_std::pool_manager::{
+use amm::pool_manager::{
     Config, FeatureToggle, PoolsResponse, ReverseSimulateSwapOperationsResponse,
     ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
     SwapRoute, SwapRouteCreatorResponse, SwapRouteResponse, SwapRoutesResponse,
 };
-use white_whale_std::pool_manager::{InstantiateMsg, PoolType};
+use amm::pool_manager::{InstantiateMsg, PoolType};
 
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
 use cw_multi_test::addons::{MockAddressGenerator, MockApiBech32};
@@ -14,10 +14,10 @@ use cw_multi_test::{
     Executor, FailingModule, GovFailingModule, IbcFailingModule, StakeKeeper, WasmKeeper,
 };
 
-use white_whale_std::epoch_manager::epoch_manager::{Epoch, EpochConfig};
-use white_whale_std::fee::PoolFee;
-use white_whale_std::incentive_manager::PositionsResponse;
-use white_whale_std::lp_common::LP_SYMBOL;
+use amm::epoch_manager::{Epoch, EpochConfig};
+use amm::fee::PoolFee;
+use amm::incentive_manager::PositionsResponse;
+use amm::lp_common::LP_SYMBOL;
 use white_whale_testing::multi_test::stargate_mock::StargateMock;
 
 fn contract_pool_manager() -> Box<dyn Contract<Empty>> {
@@ -191,7 +191,7 @@ impl TestingSuite {
             let pool_manager_addr = self.pool_manager_addr.clone();
             let epoch_manager_addr = self.epoch_manager_addr.clone();
 
-            let msg = white_whale_std::bonding_manager::ExecuteMsg::UpdateConfig {
+            let msg = amm::bonding_manager::ExecuteMsg::UpdateConfig {
                 epoch_manager_addr: Some(epoch_manager_addr.into_string()),
                 pool_manager_addr: Some(pool_manager_addr.into_string()),
                 unbonding_period: None,
@@ -233,7 +233,7 @@ impl TestingSuite {
         let bonding_manager_id = self.app.store_code(bonding_manager_contract());
         let epoch_manager_addr = self.epoch_manager_addr.to_string();
 
-        let msg = white_whale_std::bonding_manager::InstantiateMsg {
+        let msg = amm::bonding_manager::InstantiateMsg {
             distribution_denom: "uwhale".to_string(),
             unbonding_period: 86_400u64,
             growth_rate: Decimal::one(),
@@ -259,7 +259,7 @@ impl TestingSuite {
     fn create_epoch_manager(&mut self) {
         let epoch_manager_id = self.app.store_code(epoch_manager_contract());
 
-        let msg = white_whale_std::epoch_manager::epoch_manager::InstantiateMsg {
+        let msg = amm::epoch_manager::InstantiateMsg {
             start_epoch: Epoch {
                 id: 0,
                 start_time: Timestamp::from_seconds(1714057200),
@@ -286,7 +286,7 @@ impl TestingSuite {
     }
 
     fn add_hook(&mut self, contract: Addr) {
-        let msg = white_whale_std::epoch_manager::epoch_manager::ExecuteMsg::AddHook {
+        let msg = amm::epoch_manager::ExecuteMsg::AddHook {
             contract_addr: contract.to_string(),
         };
 
@@ -304,7 +304,7 @@ impl TestingSuite {
         let epoch_manager_addr = self.epoch_manager_addr.to_string();
         let bonding_manager_addr = self.bonding_manager_addr.to_string();
 
-        let msg = white_whale_std::incentive_manager::InstantiateMsg {
+        let msg = amm::incentive_manager::InstantiateMsg {
             owner: creator.clone().to_string(),
             epoch_manager_addr,
             bonding_manager_addr,
@@ -342,7 +342,7 @@ impl TestingSuite {
         action: cw_ownable::Action,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::UpdateOwnership(action);
+        let msg = amm::pool_manager::ExecuteMsg::UpdateOwnership(action);
 
         result(
             self.app
@@ -364,7 +364,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::ProvideLiquidity {
+        let msg = amm::pool_manager::ExecuteMsg::ProvideLiquidity {
             pool_identifier,
             slippage_tolerance: None,
             max_spread,
@@ -394,7 +394,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::Swap {
+        let msg = amm::pool_manager::ExecuteMsg::Swap {
             ask_asset_denom,
             belief_price,
             max_spread,
@@ -422,7 +422,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::ExecuteSwapOperations {
+        let msg = amm::pool_manager::ExecuteMsg::ExecuteSwapOperations {
             operations,
             minimum_receive,
             receiver,
@@ -450,7 +450,7 @@ impl TestingSuite {
         pool_creation_fee_funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::CreatePool {
+        let msg = amm::pool_manager::ExecuteMsg::CreatePool {
             asset_denoms,
             asset_decimals,
             pool_fees,
@@ -476,7 +476,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = white_whale_std::pool_manager::ExecuteMsg::WithdrawLiquidity { pool_identifier };
+        let msg = amm::pool_manager::ExecuteMsg::WithdrawLiquidity { pool_identifier };
 
         result(
             self.app
@@ -502,7 +502,7 @@ impl TestingSuite {
         result(self.app.execute_contract(
             sender,
             self.pool_manager_addr.clone(),
-            &white_whale_std::pool_manager::ExecuteMsg::UpdateConfig {
+            &amm::pool_manager::ExecuteMsg::UpdateConfig {
                 bonding_manager_addr: new_bonding_manager_addr.map(|addr| addr.to_string()),
                 pool_creation_fee: new_pool_creation_fee,
                 feature_toggle: new_feature_toggle,
@@ -524,7 +524,7 @@ impl TestingSuite {
         result(self.app.execute_contract(
             sender,
             self.pool_manager_addr.clone(),
-            &white_whale_std::pool_manager::ExecuteMsg::AddSwapRoutes { swap_routes },
+            &amm::pool_manager::ExecuteMsg::AddSwapRoutes { swap_routes },
             &[],
         ));
 
@@ -542,7 +542,7 @@ impl TestingSuite {
         result(self.app.execute_contract(
             sender,
             self.pool_manager_addr.clone(),
-            &white_whale_std::pool_manager::ExecuteMsg::RemoveSwapRoutes { swap_routes },
+            &amm::pool_manager::ExecuteMsg::RemoveSwapRoutes { swap_routes },
             &[],
         ));
 
@@ -560,7 +560,7 @@ impl TestingSuite {
         result(self.app.execute_contract(
             user,
             self.epoch_manager_addr.clone(),
-            &white_whale_std::epoch_manager::epoch_manager::ExecuteMsg::CreateEpoch,
+            &amm::epoch_manager::ExecuteMsg::CreateEpoch,
             &[],
         ));
 
@@ -577,7 +577,7 @@ impl TestingSuite {
         let ownership_response: StdResult<cw_ownable::Ownership<String>> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &white_whale_std::pool_manager::QueryMsg::Ownership {},
+                &amm::pool_manager::QueryMsg::Ownership {},
             );
 
         result(ownership_response);
@@ -619,7 +619,7 @@ impl TestingSuite {
     ) -> &Self {
         let pools_response: StdResult<PoolsResponse> = self.app.wrap().query_wasm_smart(
             &self.pool_manager_addr,
-            &white_whale_std::pool_manager::QueryMsg::Pools {
+            &amm::pool_manager::QueryMsg::Pools {
                 pool_identifier,
                 start_after,
                 limit,
@@ -640,7 +640,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let pool_info_response: StdResult<SimulationResponse> = self.app.wrap().query_wasm_smart(
             &self.pool_manager_addr,
-            &white_whale_std::pool_manager::QueryMsg::Simulation {
+            &amm::pool_manager::QueryMsg::Simulation {
                 offer_asset,
                 ask_asset_denom,
                 pool_identifier,
@@ -662,7 +662,7 @@ impl TestingSuite {
         let pool_info_response: StdResult<ReverseSimulationResponse> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &white_whale_std::pool_manager::QueryMsg::ReverseSimulation {
+                &amm::pool_manager::QueryMsg::ReverseSimulation {
                     ask_asset,
                     offer_asset_denom,
                     pool_identifier,
@@ -683,7 +683,7 @@ impl TestingSuite {
         let pool_info_response: StdResult<SimulateSwapOperationsResponse> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &white_whale_std::pool_manager::QueryMsg::SimulateSwapOperations {
+                &amm::pool_manager::QueryMsg::SimulateSwapOperations {
                     offer_amount,
                     operations,
                 },
@@ -703,7 +703,7 @@ impl TestingSuite {
         let pool_info_response: StdResult<ReverseSimulateSwapOperationsResponse> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &white_whale_std::pool_manager::QueryMsg::ReverseSimulateSwapOperations {
+                &amm::pool_manager::QueryMsg::ReverseSimulateSwapOperations {
                     ask_amount,
                     operations,
                 },
@@ -726,7 +726,7 @@ impl TestingSuite {
             .wrap()
             .query_wasm_smart(
                 &self.pool_manager_addr,
-                &white_whale_std::pool_manager::QueryMsg::Pools {
+                &amm::pool_manager::QueryMsg::Pools {
                     pool_identifier: Some(identifier),
                     start_after: None,
                     limit: None,
@@ -753,7 +753,7 @@ impl TestingSuite {
             .wrap()
             .query_wasm_smart(
                 &self.pool_manager_addr,
-                &white_whale_std::pool_manager::QueryMsg::Config,
+                &amm::pool_manager::QueryMsg::Config,
             )
             .unwrap()
     }
@@ -767,7 +767,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let swap_route_response: StdResult<SwapRouteResponse> = self.app.wrap().query_wasm_smart(
             &self.pool_manager_addr,
-            &white_whale_std::pool_manager::QueryMsg::SwapRoute {
+            &amm::pool_manager::QueryMsg::SwapRoute {
                 offer_asset_denom,
                 ask_asset_denom,
             },
@@ -785,7 +785,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let swap_routes_response: StdResult<SwapRoutesResponse> = self.app.wrap().query_wasm_smart(
             &self.pool_manager_addr,
-            &white_whale_std::pool_manager::QueryMsg::SwapRoutes,
+            &amm::pool_manager::QueryMsg::SwapRoutes,
         );
 
         result(swap_routes_response);
@@ -803,7 +803,7 @@ impl TestingSuite {
         let swap_route_creator_response: StdResult<SwapRouteCreatorResponse> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &white_whale_std::pool_manager::QueryMsg::SwapRouteCreator {
+                &amm::pool_manager::QueryMsg::SwapRouteCreator {
                     offer_asset_denom,
                     ask_asset_denom,
                 },
@@ -823,7 +823,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let positions_response: StdResult<PositionsResponse> = self.app.wrap().query_wasm_smart(
             &self.incentive_manager_addr,
-            &white_whale_std::incentive_manager::QueryMsg::Positions {
+            &amm::incentive_manager::QueryMsg::Positions {
                 address: address.to_string(),
                 open_state,
             },
