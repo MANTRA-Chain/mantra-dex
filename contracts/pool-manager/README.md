@@ -1,6 +1,6 @@
 # Pool Manager
 
-The Pool Manager is a contract that handles pools in the Migaloo DEX.
+The Pool Manager is a contract that handles AMM pools.
 
 Pools can contain two or three assets and are used to provide liquidity to the DEX. The Pool Manager is responsible for
 creating pools and handling swaps, whether they are single or multi-hop operations.
@@ -15,7 +15,7 @@ functionality, so a regular user can understand how to interact with it.
 
 Creating pools is a simple and permissionless process. A user can call the `CreatePool` message, with the desired pool
 parameters such as asset denoms, fees, and pool type among others, together with the pool creation fee. The pool creation
-fee is a protocol fee that is sent to the Bonding Manager via the `FillRewards` message. There can be multiple pools
+fee is a protocol fee that is sent to the Fee Collector. There can be multiple pools
 for the same asset pair, though each pool must have a unique identifier. Pools cannot be removed or updated once
 created, so it is important to get the parameters right from the start.
 
@@ -50,8 +50,5 @@ If the swap is a single-hop operation, the Pool Manager will perform the swap di
 the `ExecuteSwapOperations` message should be used instead, providing the route to follow for the swap to be executed
 successfully.
 
-After a swap takes place, the pool's balances are updated, and the fees are collected. The Bonding Manager receives the
-protocol fee via the `FillRewards` message, while the swap fee remains in the pool to benefit the LP token holders,
-increasing the pool's liquidity and thus the LP token value.
-
-On Osmosis, there's an additional fee that is sent to the Osmosis community pool.
+After a swap takes place, the pool's balances are updated, and the fees are collected and sent to the Fee Collector, while
+the swap fee remains in the pool to benefit the LP token holders, increasing the pool's liquidity and thus the LP token value.

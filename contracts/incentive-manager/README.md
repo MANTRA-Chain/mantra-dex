@@ -1,7 +1,6 @@
 # Incentive Manager
 
-The Incentive Manager is the V2 iteration of the original incentives system; this is a monolithic contract that handles all
-the incentives-related logic.
+The Incentive Manager is a monolithic contract that handles all the incentives-related logic for the pools.
 
 ## How it works
 
@@ -16,7 +15,7 @@ the Incentive Manager until they are unlocked.
 
 Creating incentives is permissionless, and incentives can be perpetual. This means they can be expanded forever. Anyone
 can create an incentive by calling the `ManageIncentive` message with the `IncentiveAction::Fill` action and paying the
-incentive creation fee, which is sent to the Bonding Manager.
+incentive creation fee, which is sent to the Fee Collector.
 
 Users can decide to provide an identifier, which they can later use to top up or close the incentive. If no identifier is
 provided, the contract will generate one.
@@ -73,8 +72,7 @@ identifier of the position to be closed. Once this action is triggered, the `Pos
 Once the unlocking duration is complete, the user can withdraw the LP tokens from the contract by calling the `ManagePosition`
 with the `PositionAction::Withdraw` action. Alternatively, if the user doesn't want to wait for the unlocking duration to
 complete, it is possible to do an emergency withdrawal by passing `true` on the `emergency_unlock` parameter. This will
-unlock and withdraw the position immediately, but the user will pay a penalty fee that will go the Bonding Manager and
-distributed to the bonders.
+unlock and withdraw the position immediately, but the user will pay a penalty fee that will go the Fee Collector.
 
 Once the user closes and withdraws the position, they receive their LP tokens back.
 

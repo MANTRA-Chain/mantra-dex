@@ -1,6 +1,6 @@
 # Epoch Manager
 
-The Epoch Manager is a contract which sole purpose is to create epochs on the Migaloo ecosystem, acting like a clock for
+The Epoch Manager is a contract which sole purpose is to create epochs on MANTRA, acting like a clock for
 the other contracts.
 
 An `Epoch` is a period of time that is defined by the `duration` parameter on `EpochConfig`, and they are used by other
