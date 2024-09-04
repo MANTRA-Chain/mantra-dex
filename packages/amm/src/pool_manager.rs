@@ -1,10 +1,11 @@
 use std::fmt;
 
-use crate::fee::PoolFee;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Decimal, Deps, StdError, StdResult, Uint128};
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
+
 use crate::coin::is_factory_token;
+use crate::fee::PoolFee;
 
 /// The type of swap operation to perform.
 #[cw_serde]
@@ -56,36 +57,7 @@ impl fmt::Display for SwapOperation {
                 f,
                 "MantraSwap {{ token_in_info: {token_in_denom}, token_out_info: {token_out_denom}, pool_identifier: {pool_identifier} }}"
             ),
-
         }
-    }
-}
-
-/// The swap route structure
-#[cw_serde]
-pub struct SwapRoute {
-    /// The offer asset denom, i.e. the asset that is being swapped.
-    pub offer_asset_denom: String,
-    /// The ask asset denom, i.e. the asset that is being received.
-    pub ask_asset_denom: String,
-    /// The swap operations to perform to get from offer asset to ask asset.
-    pub swap_operations: Vec<SwapOperation>,
-}
-
-/// The response for the `SwapRoute` query.
-#[cw_serde]
-pub struct SwapRouteResponse {
-    /// The swap route taken for the queried swap.
-    pub swap_route: SwapRoute,
-}
-
-impl fmt::Display for SwapRoute {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "SwapRoute {{ offer_asset_info: {}, ask_asset_info: {}, swap_operations: {:?} }}",
-            self.offer_asset_denom, self.ask_asset_denom, self.swap_operations
-        )
     }
 }
 
@@ -159,8 +131,8 @@ impl PoolType {
 /// The contract configuration.
 #[cw_serde]
 pub struct Config {
-    /// The address of the bonding manager contract.
-    pub bonding_manager_addr: Addr,
+    /// The address where the collected fees go to.
+    pub fee_collector_addr: Addr,
     /// The address of the incentive manager contract.
     pub incentive_manager_addr: Addr,
     /// How much it costs to create a pool. It helps prevent spamming of new pools.
@@ -171,8 +143,8 @@ pub struct Config {
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// The address of the bonding manager contract.
-    pub bonding_manager_addr: String,
+    /// The address where the collected fees go to.
+    pub fee_collector_addr: String,
     /// The address of the incentive manager contract.
     pub incentive_manager_addr: String,
     /// How much it costs to create a pool. It helps prevent spamming of new pools.
@@ -254,15 +226,11 @@ pub enum ExecuteMsg {
         /// If left unspecified, there is no limit to what spread the transaction can incur.
         max_spread: Option<Decimal>,
     },
-    /// Adds swap routes to the router.
-    AddSwapRoutes { swap_routes: Vec<SwapRoute> },
-    /// Removes swap routes from the router.
-    RemoveSwapRoutes { swap_routes: Vec<SwapRoute> },
     /// Updates the configuration of the contract.
     /// If a field is not specified (i.e., set to `None`), it will not be modified.
     UpdateConfig {
-        /// The new bonding-manager contract address.
-        bonding_manager_addr: Option<String>,
+        /// The new fee collector contract address.
+        fee_collector_addr: Option<String>,
         /// The new fee that must be paid when a pool is created.
         pool_creation_fee: Option<Coin>,
         /// The new feature toggles of the contract, allowing fine-tuned
@@ -307,17 +275,6 @@ pub enum QueryMsg {
         /// The pool identifier to swap in.
         pool_identifier: String,
     },
-    /// Gets the swap route for the given offer and ask assets.
-    #[returns(SwapRouteResponse)]
-    SwapRoute {
-        /// The offer asset denom, i.e. the asset that is being swapped.
-        offer_asset_denom: String,
-        /// The ask asset denom, i.e. the asset that is being received.
-        ask_asset_denom: String,
-    },
-    /// Gets all swap routes registered
-    #[returns(SwapRoutesResponse)]
-    SwapRoutes,
     /// Simulates swap operations.
     #[returns(SimulateSwapOperationsResponse)]
     SimulateSwapOperations {
@@ -347,15 +304,6 @@ pub enum QueryMsg {
         /// the contract.
         limit: Option<u32>,
     },
-    /// Retrieves the creator of the swap route to get from offer to ask asset. The creator of
-    /// the swap route can remove it.
-    #[returns(SwapRouteCreatorResponse)]
-    SwapRouteCreator {
-        /// The offer asset denom, i.e. the asset that is being swapped.
-        offer_asset_denom: String,
-        /// The ask asset denom, i.e. the asset that is being received.
-        ask_asset_denom: String,
-    },
 }
 
 /// The response for the `Config` query.
@@ -363,13 +311,6 @@ pub enum QueryMsg {
 pub struct ConfigResponse {
     /// The contract configuration.
     pub config: Config,
-}
-
-/// The response for the `SwapRoutes` query.
-#[cw_serde]
-pub struct SwapRoutesResponse {
-    /// The swap routes registered in the contract.
-    pub swap_routes: Vec<SwapRoute>,
 }
 
 /// The response for the `Pools` query.
@@ -413,9 +354,6 @@ pub struct SimulationResponse {
     pub burn_fee_amount: Uint128,
     /// The extra fees amount of the swap.
     pub extra_fees_amount: Uint128,
-    /// The fee amount of the swap going to the osmosis community pool.
-    #[cfg(feature = "osmosis")]
-    pub osmosis_fee_amount: Uint128,
 }
 
 /// ReverseSimulationResponse returns reverse swap simulation response
@@ -431,9 +369,6 @@ pub struct ReverseSimulationResponse {
     pub protocol_fee_amount: Uint128,
     /// The burn fee amount of the swap.
     pub burn_fee_amount: Uint128,
-    /// The fee amount of the swap going to the osmosis community pool.
-    #[cfg(feature = "osmosis")]
-    pub osmosis_fee_amount: Uint128,
 }
 
 /// Pool feature toggle, can control whether swaps, deposits, and withdrawals are enabled.
@@ -459,13 +394,6 @@ pub struct SimulateSwapOperationsResponse {
 pub struct ReverseSimulateSwapOperationsResponse {
     /// The amount of the initial token needed to get the final token after the swap operations.
     pub amount: Uint128,
-}
-
-/// The response for the `SwapRouteCreator` query.
-#[cw_serde]
-pub struct SwapRouteCreatorResponse {
-    /// The creator of the swap route.
-    pub creator: String,
 }
 
 /// Gets the total supply of the given liquidity asset

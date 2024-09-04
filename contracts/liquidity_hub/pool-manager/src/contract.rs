@@ -5,15 +5,12 @@ use crate::state::{
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
 use crate::{liquidity, manager, queries, router, swap};
+use amm::pool_manager::{ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg};
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 };
 use cosmwasm_std::{wasm_execute, Reply, StdError};
 use cw2::set_contract_version;
-use semver::Version;
-use amm::pool_manager::{
-    ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg,
-};
 use mantra_utils::validate_contract;
 
 // version info for migration info
@@ -30,9 +27,8 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let config: Config = Config {
-        bonding_manager_addr: deps.api.addr_validate(&msg.bonding_manager_addr)?,
+        fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
         incentive_manager_addr: deps.api.addr_validate(&msg.incentive_manager_addr)?,
-        // We must set a creation fee on instantiation to prevent spamming of pools
         pool_creation_fee: msg.pool_creation_fee,
         feature_toggle: FeatureToggle {
             withdrawals_enabled: true,
@@ -41,7 +37,7 @@ pub fn instantiate(
         },
     };
     CONFIG.save(deps.storage, &config)?;
-    // initialize vault counter
+    // initialize pool counter
     POOL_COUNTER.save(deps.storage, &0u64)?;
     cw_ownable::initialize_owner(deps.storage, deps.api, Some(info.sender.as_str()))?;
 
@@ -168,20 +164,14 @@ pub fn execute(
             receiver,
             max_spread,
         ),
-        ExecuteMsg::AddSwapRoutes { swap_routes } => {
-            router::commands::add_swap_routes(deps, info.sender, swap_routes)
-        }
-        ExecuteMsg::RemoveSwapRoutes { swap_routes } => {
-            router::commands::remove_swap_routes(deps, info.sender, swap_routes)
-        }
         ExecuteMsg::UpdateConfig {
-            bonding_manager_addr,
+            fee_collector_addr,
             pool_creation_fee,
             feature_toggle,
         } => manager::update_config(
             deps,
             info,
-            bonding_manager_addr,
+            fee_collector_addr,
             pool_creation_fee,
             feature_toggle,
         ),
@@ -234,15 +224,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         } => Ok(to_json_binary(&queries::reverse_simulate_swap_operations(
             deps, ask_amount, operations,
         )?)?),
-        QueryMsg::SwapRoute {
-            offer_asset_denom,
-            ask_asset_denom,
-        } => Ok(to_json_binary(&queries::get_swap_route(
-            deps,
-            offer_asset_denom,
-            ask_asset_denom,
-        )?)?),
-        QueryMsg::SwapRoutes => Ok(to_json_binary(&queries::get_swap_routes(deps)?)?),
         QueryMsg::Ownership {} => Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?),
         QueryMsg::Pools {
             pool_identifier,
@@ -253,14 +234,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             pool_identifier,
             start_after,
             limit,
-        )?)?),
-        QueryMsg::SwapRouteCreator {
-            offer_asset_denom,
-            ask_asset_denom,
-        } => Ok(to_json_binary(&queries::get_swap_route_creator(
-            deps,
-            offer_asset_denom,
-            ask_asset_denom,
         )?)?),
     }
 }

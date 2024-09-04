@@ -1,6 +1,6 @@
 use cosmwasm_std::{ensure, Api, DepsMut, Env, MessageInfo, Response, SubMsg};
 
-use amm::epoch_manager::{EpochConfig, EpochChangedHookMsg};
+use amm::epoch_manager::{EpochChangedHookMsg, EpochConfig};
 
 use crate::queries::query_current_epoch;
 use crate::state::{ADMIN, CONFIG, EPOCHS, HOOKS};

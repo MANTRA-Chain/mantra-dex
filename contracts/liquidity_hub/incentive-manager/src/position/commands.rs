@@ -245,11 +245,13 @@ pub(crate) fn withdraw_position(
         let bonding_manager_addr = CONFIG.load(deps.storage)?.bonding_manager_addr;
 
         // send penalty to bonding manager for distribution
-        //todo revise, remove this stuff, rewards to be sent to a fee collector
-        // messages.push(amm::bonding_manager::fill_rewards_msg(
-        //     bonding_manager_addr.into_string(),
-        //     vec![penalty],
-        // )?);
+        messages.push(
+            BankMsg::Send {
+                to_address: bonding_manager_addr.to_string(),
+                amount: vec![penalty],
+            }
+            .into(),
+        );
 
         // if the position is open, update the weights when doing the emergency withdrawal
         // otherwise not, as the weights have already being updated when the position was closed

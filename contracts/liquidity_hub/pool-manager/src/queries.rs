@@ -1,23 +1,22 @@
 use std::cmp::Ordering;
 
+use amm::pool_manager::{
+    AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
+    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
+};
 use cosmwasm_std::{
     coin, ensure, Coin, Decimal256, Deps, Fraction, Order, StdResult, Uint128, Uint256,
 };
 use cw_storage_plus::Bound;
-use amm::pool_manager::{
-    AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
-    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
-    SwapRoute, SwapRouteCreatorResponse, SwapRouteResponse, SwapRoutesResponse,
-};
 
 use crate::helpers::get_asset_indexes_in_pool;
+use crate::math::Decimal256Helper;
 use crate::state::{CONFIG, POOLS};
 use crate::{
     helpers::{self, calculate_stableswap_y, StableSwapDirection},
     state::get_pool_by_identifier,
     ContractError,
 };
-use crate::{math::Decimal256Helper, state::SWAP_ROUTES};
 
 /// Query the config of the contract.
 pub fn query_config(deps: Deps) -> Result<Config, ContractError> {
@@ -172,71 +171,6 @@ pub fn query_reverse_simulation(
             })
         }
     }
-}
-
-// Router related queries, swap routes and SwapOperations
-// get_swap_routes which only takes deps: Deps as input
-// the function will read from SWAP_ROUTES and return all swap routes in a vec
-pub fn get_swap_routes(deps: Deps) -> Result<SwapRoutesResponse, ContractError> {
-    let swap_routes: Vec<SwapRoute> = SWAP_ROUTES
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|item| {
-            let swap_info = item?;
-            // Destructure key into (offer_asset, ask_asset)
-            let (offer_asset_denom, ask_asset_denom) = swap_info.0;
-            // Destructure value into vec of SwapOperation
-            let swap_operations = swap_info.1;
-
-            Ok(SwapRoute {
-                offer_asset_denom,
-                ask_asset_denom,
-                swap_operations: swap_operations.swap_operations,
-            })
-        })
-        .collect::<StdResult<Vec<SwapRoute>>>()?;
-
-    Ok(SwapRoutesResponse { swap_routes })
-}
-
-pub fn get_swap_route(
-    deps: Deps,
-    offer_asset_denom: String,
-    ask_asset_denom: String,
-) -> Result<SwapRouteResponse, ContractError> {
-    let swap_route_key = SWAP_ROUTES.key((&offer_asset_denom, &ask_asset_denom));
-    let swap_operations =
-        swap_route_key
-            .load(deps.storage)
-            .map_err(|_| ContractError::NoSwapRouteForAssets {
-                offer_asset: offer_asset_denom.clone(),
-                ask_asset: ask_asset_denom.clone(),
-            })?;
-    Ok(SwapRouteResponse {
-        swap_route: SwapRoute {
-            offer_asset_denom,
-            ask_asset_denom,
-            swap_operations: swap_operations.swap_operations,
-        },
-    })
-}
-
-pub fn get_swap_route_creator(
-    deps: Deps,
-    offer_asset_denom: String,
-    ask_asset_denom: String,
-) -> Result<SwapRouteCreatorResponse, ContractError> {
-    let swap_route_key = SWAP_ROUTES.key((&offer_asset_denom, &ask_asset_denom));
-
-    let swap_operations =
-        swap_route_key
-            .load(deps.storage)
-            .map_err(|_| ContractError::NoSwapRouteForAssets {
-                offer_asset: offer_asset_denom.clone(),
-                ask_asset: ask_asset_denom.clone(),
-            })?;
-    Ok(SwapRouteCreatorResponse {
-        creator: swap_operations.creator,
-    })
 }
 
 // settings for pagination

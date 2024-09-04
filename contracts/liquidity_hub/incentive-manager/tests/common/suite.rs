@@ -6,7 +6,7 @@ use cw_multi_test::{
     GovFailingModule, IbcFailingModule, StakeKeeper, WasmKeeper,
 };
 
-use amm::epoch_manager::{Epoch, EpochConfig, EpochResponse, EpochChangedHookMsg};
+use amm::epoch_manager::{Epoch, EpochChangedHookMsg, EpochConfig, EpochResponse};
 use amm::fee::PoolFee;
 use amm::incentive_manager::{
     Config, IncentiveAction, IncentivesBy, IncentivesResponse, InstantiateMsg, LpWeightResponse,
@@ -262,7 +262,7 @@ impl TestingSuite {
 
         // create epoch manager
         let msg = amm::pool_manager::InstantiateMsg {
-            bonding_manager_addr: self.bonding_manager_addr.to_string(),
+            fee_collector_addr: self.bonding_manager_addr.to_string(),
             incentive_manager_addr: self.incentive_manager_addr.to_string(),
             pool_creation_fee: Coin {
                 denom: "uwhale".to_string(),
@@ -493,13 +493,12 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg =
-            amm::incentive_manager::ExecuteMsg::EpochChangedHook(EpochChangedHookMsg {
-                current_epoch: Epoch {
-                    id: 0,
-                    start_time: Default::default(),
-                },
-            });
+        let msg = amm::incentive_manager::ExecuteMsg::EpochChangedHook(EpochChangedHookMsg {
+            current_epoch: Epoch {
+                id: 0,
+                start_time: Default::default(),
+            },
+        });
 
         result(self.app.execute_contract(
             sender,

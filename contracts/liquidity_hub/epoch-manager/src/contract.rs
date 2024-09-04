@@ -3,9 +3,7 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult}
 use cw2::{get_contract_version, set_contract_version};
 use semver::Version;
 
-use amm::epoch_manager::{
-    Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-};
+use amm::epoch_manager::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;

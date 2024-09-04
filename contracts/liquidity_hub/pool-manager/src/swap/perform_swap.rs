@@ -1,15 +1,17 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Coin, Decimal, Decimal256, DepsMut, Fraction, StdError, StdResult, Uint128, Uint256};
+use cosmwasm_std::{
+    Coin, Decimal, Decimal256, DepsMut, Fraction, StdError, StdResult, Uint128, Uint256,
+};
 
 use amm::pool_manager::PoolInfo;
 
+use crate::helpers::{aggregate_outgoing_fees, get_asset_indexes_in_pool};
 use crate::{
-    ContractError,
     helpers,
     state::{get_pool_by_identifier, POOLS},
+    ContractError,
 };
-use crate::helpers::{aggregate_outgoing_fees, get_asset_indexes_in_pool};
 
 #[derive(Debug)]
 pub struct SwapResult {
@@ -109,7 +111,7 @@ pub fn perform_swap(
     };
 
     #[allow(clippy::redundant_clone)]
-        let swap_fee_asset = Coin {
+    let swap_fee_asset = Coin {
         denom: ask_asset_in_pool.denom.clone(),
         amount: swap_computation.swap_fee_amount,
     };
@@ -148,8 +150,8 @@ pub fn assert_max_spread(
     if let Some(belief_price) = belief_price {
         let expected_return = offer_amount
             * belief_price
-            .inv()
-            .ok_or_else(|| StdError::generic_err("Belief price can't be zero"))?;
+                .inv()
+                .ok_or_else(|| StdError::generic_err("Belief price can't be zero"))?;
         let spread_amount = expected_return.saturating_sub(return_amount);
 
         if return_amount < expected_return

@@ -1,12 +1,10 @@
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{from_json, Addr, Uint64};
 
+use amm::epoch_manager::{ConfigResponse, Epoch, EpochConfig, InstantiateMsg, QueryMsg};
+use amm::pool_network::mock_querier::mock_dependencies;
 use epoch_manager::contract::{instantiate, query};
 use epoch_manager::ContractError;
-use amm::epoch_manager::{
-    ConfigResponse, Epoch, EpochConfig, InstantiateMsg, QueryMsg,
-};
-use amm::pool_network::mock_querier::mock_dependencies;
 
 mod common;
 

@@ -2362,10 +2362,7 @@ mod ownership {
         );
 
         let config = suite.query_config();
-        assert_ne!(
-            config.bonding_manager_addr,
-            initial_config.bonding_manager_addr
-        );
+        assert_ne!(config.fee_collector_addr, initial_config.fee_collector_addr);
         assert_ne!(config.pool_creation_fee, initial_config.pool_creation_fee);
         assert_ne!(config.feature_toggle, initial_config.feature_toggle);
     }

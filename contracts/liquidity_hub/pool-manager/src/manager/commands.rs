@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, Attribute, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
+    attr, Attribute, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
 };
 
 use amm::fee::PoolFee;
@@ -88,15 +88,14 @@ pub fn create_pool(
     // Prepare the sending of pool creation fee
     let mut messages: Vec<CosmosMsg> = vec![];
     if !config.pool_creation_fee.amount.is_zero() {
-        // send pool creation fee to bonding manager
-        let creation_fee = vec![config.pool_creation_fee];
-
         // send pool creation fee to the bonding manager
-        //todo revise this, sent fees to fee collector
-        // messages.push(amm::bonding_manager::fill_rewards_msg(
-        //     config.bonding_manager_addr.into_string(),
-        //     creation_fee,
-        // )?);
+        messages.push(
+            BankMsg::Send {
+                to_address: config.fee_collector_addr.to_string(),
+                amount: vec![config.pool_creation_fee],
+            }
+            .into(),
+        );
     }
 
     // Check if the asset infos are the same

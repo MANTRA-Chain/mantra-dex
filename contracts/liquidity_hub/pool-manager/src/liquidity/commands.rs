@@ -7,7 +7,7 @@ use cosmwasm_std::{Decimal, OverflowError, Uint128};
 use amm::coin::aggregate_coins;
 use amm::common::validate_addr_or_default;
 use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
-use amm::pool_manager::{ExecuteMsg, PoolType, get_total_share};
+use amm::pool_manager::{get_total_share, ExecuteMsg, PoolType};
 use amm::U256;
 
 use crate::{

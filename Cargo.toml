@@ -37,8 +37,8 @@ serde_json = { version = "1.0.127" }
 thiserror = { version = "1.0.43" }
 osmosis-std-derive = { version = "0.15.3" }
 prost-types = { version = "0.11.9", default-features = false }
-amm = { path = "packages/amm"}
-mantra-utils = { path = "packages/utils"}
+amm = { path = "packages/amm" }
+mantra-utils = { path = "packages/utils" }
 white-whale-std = { version = "2.0.0-alpha.1" }
 common-testing = { path = "packages/common-testing" }
 cw-multi-test = { version = "0.20.0", features = ["cosmwasm_1_2"] }

@@ -2,12 +2,10 @@ use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{from_json, Addr, Uint64};
 use cw_controllers::AdminError;
 
+use amm::epoch_manager::{ConfigResponse, EpochConfig, ExecuteMsg, QueryMsg};
+use amm::pool_network::mock_querier::mock_dependencies;
 use epoch_manager::contract::{execute, query};
 use epoch_manager::ContractError;
-use amm::epoch_manager::{
-    ConfigResponse, EpochConfig, ExecuteMsg, QueryMsg,
-};
-use amm::pool_network::mock_querier::mock_dependencies;
 
 use crate::common::mock_instantiation;
 

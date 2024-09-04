@@ -1,8 +1,8 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Decimal, Deps};
-use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, UniqueIndex};
 pub use amm::pool_manager::Config;
 use amm::pool_manager::{PoolInfo, SwapOperation};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Coin, Decimal, Deps};
+use cw_storage_plus::{Index, IndexList, IndexedMap, Item, UniqueIndex};
 
 use crate::ContractError;
 
@@ -89,9 +89,6 @@ pub struct SwapOperations {
     /// The operations to be executed for a given swap.
     pub swap_operations: Vec<SwapOperation>,
 }
-
-pub const SWAP_ROUTES: Map<(&str, &str), SwapOperations> = Map::new("swap_routes");
-
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const POOL_COUNTER: Item<u64> = Item::new("pool_count");
 

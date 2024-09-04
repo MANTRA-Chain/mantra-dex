@@ -2,11 +2,11 @@ extern crate core;
 
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 
-use incentive_manager::ContractError;
 use amm::incentive_manager::{
     Config, Curve, Incentive, IncentiveAction, IncentiveParams, IncentivesBy, LpWeightResponse,
     Position, PositionAction, RewardsResponse,
 };
+use incentive_manager::ContractError;
 
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR;

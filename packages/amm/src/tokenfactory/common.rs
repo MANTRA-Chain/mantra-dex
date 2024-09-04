@@ -3,34 +3,17 @@ use cosmwasm_std::{CosmosMsg, StdResult};
 
 #[cw_serde]
 enum Protocol {
-    Injective,
-    CosmWasm,
     Osmosis,
 }
 
 impl Protocol {
     #![allow(dead_code)]
-    #[allow(unreachable_code)]
     fn from_features() -> Self {
-        #[cfg(feature = "injective")]
-        {
-            return Self::Injective;
-        }
-        #[cfg(feature = "token_factory")]
-        {
-            return Self::CosmWasm;
-        }
-        #[cfg(feature = "osmosis_token_factory")]
-        {
-            return Self::Osmosis;
-        }
-        unreachable!()
+        Self::Osmosis
     }
     #[allow(unused_assignments)]
     fn as_str(&self) -> &'static str {
         match self {
-            Self::Injective => "injective",
-            Self::CosmWasm => "cosmwasm",
             Self::Osmosis => "osmosis",
         }
     }

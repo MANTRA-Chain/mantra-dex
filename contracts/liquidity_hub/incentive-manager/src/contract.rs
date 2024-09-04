@@ -4,7 +4,9 @@ use cosmwasm_std::{
 use cw2::{get_contract_version, set_contract_version};
 use semver::Version;
 
-use amm::incentive_manager::{Config, ExecuteMsg, IncentiveAction, InstantiateMsg, MigrateMsg, PositionAction, QueryMsg};
+use amm::incentive_manager::{
+    Config, ExecuteMsg, IncentiveAction, InstantiateMsg, MigrateMsg, PositionAction, QueryMsg,
+};
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;

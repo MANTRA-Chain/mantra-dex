@@ -4,10 +4,10 @@ use cosmwasm_std::{
 };
 
 use amm::coin::{get_factory_token_subdenom, is_factory_token};
+use amm::constants::LP_SYMBOL;
 use amm::epoch_manager::EpochChangedHookMsg;
 use amm::incentive_manager::MIN_INCENTIVE_AMOUNT;
 use amm::incentive_manager::{Curve, Incentive, IncentiveParams};
-use amm::constants::LP_SYMBOL;
 
 use crate::helpers::{
     assert_incentive_asset, process_incentive_creation_fee, validate_emergency_unlock_penalty,

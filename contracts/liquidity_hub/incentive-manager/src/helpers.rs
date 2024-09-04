@@ -70,13 +70,14 @@ pub(crate) fn process_incentive_creation_fee(
         }
     }
 
-    //todo revise, remove this stuff, rewards to be sent to a fee collector
-
-    // // send incentive creation fee to whale lair for distribution
-    // messages.push(amm::bonding_manager::fill_rewards_msg(
-    //     config.bonding_manager_addr.clone().into_string(),
-    //     vec![incentive_creation_fee.to_owned()],
-    // )?);
+    // send incentive creation fee to fee collector
+    messages.push(
+        BankMsg::Send {
+            to_address: config.bonding_manager_addr.to_string(),
+            amount: vec![incentive_creation_fee.to_owned()],
+        }
+        .into(),
+    );
 
     Ok(messages)
 }

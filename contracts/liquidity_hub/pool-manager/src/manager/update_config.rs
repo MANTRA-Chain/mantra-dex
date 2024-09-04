@@ -1,12 +1,12 @@
-use cosmwasm_std::{Coin, DepsMut, MessageInfo, Response};
 use amm::pool_manager::{Config, FeatureToggle};
+use cosmwasm_std::{Coin, DepsMut, MessageInfo, Response};
 
 use crate::{state::CONFIG, ContractError};
 
 pub fn update_config(
     deps: DepsMut,
     info: MessageInfo,
-    bonding_manager_addr: Option<String>,
+    fee_collector_addr: Option<String>,
     pool_creation_fee: Option<Coin>,
     feature_toggle: Option<FeatureToggle>,
 ) -> Result<Response, ContractError> {
@@ -14,9 +14,9 @@ pub fn update_config(
     cw_ownable::assert_owner(deps.storage, &info.sender)?;
 
     CONFIG.update(deps.storage, |mut config| {
-        if let Some(new_bonding_manager_addr) = bonding_manager_addr {
-            let bonding_manager_addr = deps.api.addr_validate(&new_bonding_manager_addr)?;
-            config.bonding_manager_addr = bonding_manager_addr;
+        if let Some(new_fee_collector_addr) = fee_collector_addr {
+            let fee_collector_addr = deps.api.addr_validate(&new_fee_collector_addr)?;
+            config.fee_collector_addr = fee_collector_addr;
         }
 
         if let Some(pool_creation_fee) = pool_creation_fee {

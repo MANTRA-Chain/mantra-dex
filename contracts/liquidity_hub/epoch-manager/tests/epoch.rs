@@ -1,10 +1,10 @@
 use cosmwasm_std::from_json;
 use cosmwasm_std::testing::{mock_env, mock_info};
 
+use amm::epoch_manager::{Epoch, EpochChangedHookMsg, EpochResponse, ExecuteMsg, QueryMsg};
+use amm::pool_network::mock_querier::mock_dependencies;
 use epoch_manager::contract::{execute, query};
 use epoch_manager::ContractError;
-use amm::epoch_manager::{Epoch, EpochResponse, ExecuteMsg, QueryMsg, EpochChangedHookMsg};
-use amm::pool_network::mock_querier::mock_dependencies;
 
 use crate::common::{mock_add_hook, mock_instantiation};
 

@@ -1,6 +1,6 @@
-use cosmwasm_std::{to_json_binary, Addr, Coin, CosmosMsg, StdResult, Uint128, WasmMsg};
 use crate::coin::is_factory_token;
 use crate::tokenfactory;
+use cosmwasm_std::{to_json_binary, Addr, Coin, CosmosMsg, StdResult, Uint128, WasmMsg};
 
 pub const MINIMUM_LIQUIDITY_AMOUNT: Uint128 = Uint128::new(1_000u128);
 
@@ -14,15 +14,15 @@ pub fn mint_lp_token_msg(
 ) -> StdResult<CosmosMsg> {
     //todo revise this
     //if is_factory_token(liquidity_asset.as_str()) {
-        return Ok(tokenfactory::mint::mint(
-            sender.clone(),
-            Coin {
-                denom: liquidity_asset,
-                amount,
-            },
-            recipient.clone().into_string(),
-        ));
-   // }
+    return Ok(tokenfactory::mint::mint(
+        sender.clone(),
+        Coin {
+            denom: liquidity_asset,
+            amount,
+        },
+        recipient.clone().into_string(),
+    ));
+    // }
 
     // Ok(CosmosMsg::Wasm(WasmMsg::Execute {
     //     contract_addr: liquidity_asset,
@@ -43,14 +43,14 @@ pub fn burn_lp_asset_msg(
 ) -> StdResult<CosmosMsg> {
     //todo revise this
     //if is_factory_token(liquidity_asset.as_str()) {
-        return Ok(tokenfactory::burn::burn(
-            sender.clone(),
-            Coin {
-                denom: liquidity_asset,
-                amount,
-            },
-            sender.into_string(),
-        ));
+    return Ok(tokenfactory::burn::burn(
+        sender.clone(),
+        Coin {
+            denom: liquidity_asset,
+            amount,
+        },
+        sender.into_string(),
+    ));
     //}
 
     // Ok(CosmosMsg::Wasm(WasmMsg::Execute {

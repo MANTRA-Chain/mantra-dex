@@ -8,7 +8,6 @@ use cw_migrate_error_derive::cw_migrate_invalid_version_error;
 use cw_ownable::OwnershipError;
 use cw_utils::PaymentError;
 use thiserror::Error;
-use amm::pool_manager::SwapRoute;
 
 #[cw_migrate_invalid_version_error]
 #[derive(Error, Debug, PartialEq)]
@@ -125,12 +124,6 @@ pub enum ContractError {
     #[error(transparent)]
     ConversionOverflowError(#[from] ConversionOverflowError),
 
-    #[error("No swap route found for {offer_asset} -> {ask_asset}")]
-    NoSwapRouteForAssets {
-        offer_asset: String,
-        ask_asset: String,
-    },
-
     #[error("Must provide swap operations to execute")]
     NoSwapOperationsProvided,
 
@@ -145,15 +138,6 @@ pub enum ContractError {
 
     #[error("Funds for {denom} were missing when performing swap")]
     MissingNativeSwapFunds { denom: String },
-
-    #[error("Swap route already exists for {offer_asset} - {ask_asset}")]
-    SwapRouteAlreadyExists {
-        offer_asset: String,
-        ask_asset: String,
-    },
-
-    #[error("Invalid swap route: {0}")]
-    InvalidSwapRoute(SwapRoute),
 
     #[error("Invalid pool assets length, expected {expected} got {actual}")]
     InvalidPoolAssetsLength { expected: usize, actual: usize },

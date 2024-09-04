@@ -77,10 +77,8 @@ pub(crate) fn query_rewards(
     }
 
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = amm::epoch_manager::get_current_epoch(
-        deps,
-        config.epoch_manager_addr.into_string(),
-    )?;
+    let current_epoch =
+        amm::epoch_manager::get_current_epoch(deps, config.epoch_manager_addr.into_string())?;
 
     let mut total_rewards = vec![];
 

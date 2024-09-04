@@ -33,35 +33,6 @@ impl Display for Fee {
     }
 }
 
-/// Fees used by the flashloan vaults on the liquidity hub
-#[cw_serde]
-pub struct VaultFee {
-    pub protocol_fee: Fee,
-    pub flash_loan_fee: Fee,
-    pub burn_fee: Fee,
-}
-
-impl VaultFee {
-    /// Checks that the given [VaultFee] is valid, i.e. the fees provided are valid, and they don't
-    /// exceed 100% together
-    pub fn is_valid(&self) -> StdResult<()> {
-        self.protocol_fee.is_valid()?;
-        self.flash_loan_fee.is_valid()?;
-        self.burn_fee.is_valid()?;
-
-        if self
-            .protocol_fee
-            .share
-            .checked_add(self.flash_loan_fee.share)?
-            .checked_add(self.burn_fee.share)?
-            >= Decimal::percent(100)
-        {
-            return Err(StdError::generic_err("Invalid fees"));
-        }
-        Ok(())
-    }
-}
-
 //todo to move into pool_manager.rs ?
 /// Represents the fee structure for transactions within a pool.
 ///
@@ -94,11 +65,6 @@ pub struct PoolFee {
     /// helps in reducing the overall token supply.
     pub burn_fee: Fee,
 
-    /// Fee percentage charged on each transaction specifically for Osmosis integrations. This fee
-    /// is only applicable when the `osmosis` feature is enabled
-    #[cfg(feature = "osmosis")]
-    pub osmosis_fee: Fee,
-
     /// A list of custom, additional fees that can be defined for specific use cases or additional
     /// functionalities. This vector enables the flexibility to introduce new fees without altering
     /// the core fee structure. Total of all fees, including custom ones, is validated to not exceed
@@ -112,13 +78,7 @@ impl PoolFee {
         let mut total_share = Decimal::zero();
 
         // Validate predefined fees and accumulate their shares
-        let predefined_fees = [
-            &self.protocol_fee,
-            &self.swap_fee,
-            &self.burn_fee,
-            #[cfg(feature = "osmosis")]
-            &self.osmosis_fee,
-        ];
+        let predefined_fees = [&self.protocol_fee, &self.swap_fee, &self.burn_fee];
 
         for fee in predefined_fees.iter().copied() {
             fee.is_valid()?; // Validates the fee is not >= 100%
@@ -156,14 +116,6 @@ impl PoolFee {
         let burn_fee_amount = self.burn_fee.compute(amount);
         total_fee_amount += burn_fee_amount;
 
-        // Compute osmosis fee if applicable
-        #[cfg(feature = "osmosis")]
-        {
-            let osmosis_fee_amount = self.osmosis_fee.compute(amount);
-
-            total_fee_amount += osmosis_fee_amount;
-        }
-
         // Compute extra fees
         for extra_fee in &self.extra_fees {
             let extra_fee_amount = extra_fee.compute(amount);
@@ -180,7 +132,7 @@ impl PoolFee {
 mod tests {
     use cosmwasm_std::{Decimal, StdError, Uint128, Uint256};
 
-    use crate::fee::{Fee, PoolFee, VaultFee};
+    use crate::fee::{Fee, PoolFee};
     use test_case::test_case;
 
     #[test]
@@ -226,102 +178,6 @@ mod tests {
         assert_eq!(fee.is_valid(), Err(StdError::generic_err("Invalid fee")));
     }
 
-    #[test]
-    fn vault_fee() {
-        let vault_fee = VaultFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(50),
-            },
-            flash_loan_fee: Fee {
-                share: Decimal::percent(50),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-        };
-        assert_eq!(
-            vault_fee.is_valid(),
-            Err(StdError::generic_err("Invalid fees"))
-        );
-
-        let vault_fee = VaultFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(200),
-            },
-            flash_loan_fee: Fee {
-                share: Decimal::percent(20),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-        };
-        assert_eq!(
-            vault_fee.is_valid(),
-            Err(StdError::generic_err("Invalid fee"))
-        );
-
-        let vault_fee = VaultFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(20),
-            },
-            flash_loan_fee: Fee {
-                share: Decimal::percent(200),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-        };
-        assert_eq!(
-            vault_fee.is_valid(),
-            Err(StdError::generic_err("Invalid fee"))
-        );
-
-        let vault_fee = VaultFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(20),
-            },
-            flash_loan_fee: Fee {
-                share: Decimal::percent(20),
-            },
-            burn_fee: Fee {
-                share: Decimal::percent(200),
-            },
-        };
-        assert_eq!(
-            vault_fee.is_valid(),
-            Err(StdError::generic_err("Invalid fee"))
-        );
-
-        let vault_fee = VaultFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(20),
-            },
-            flash_loan_fee: Fee {
-                share: Decimal::percent(60),
-            },
-            burn_fee: Fee {
-                share: Decimal::percent(20),
-            },
-        };
-        assert_eq!(
-            vault_fee.is_valid(),
-            Err(StdError::generic_err("Invalid fees"))
-        );
-
-        let vault_fee = VaultFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(20),
-            },
-            flash_loan_fee: Fee {
-                share: Decimal::percent(60),
-            },
-            burn_fee: Fee {
-                share: Decimal::zero(),
-            },
-        };
-        assert_eq!(vault_fee.is_valid(), Ok(()));
-    }
-
     #[test_case(Decimal::permille(1), Decimal::permille(2), Decimal::permille(1), Uint256::from(1000u128), Uint128::from(4u128); "low fee scenario")]
     #[test_case(Decimal::percent(1), Decimal::percent(2), Decimal::zero(), Uint256::from(1000u128), Uint128::from(30u128); "higher fee scenario")]
     fn pool_fee_application(
@@ -346,10 +202,6 @@ mod tests {
             protocol_fee,
             swap_fee,
             burn_fee,
-            #[cfg(feature = "osmosis")]
-            osmosis_fee: Fee {
-                share: Decimal::zero(),
-            },
             extra_fees,
         };
 
@@ -379,10 +231,6 @@ mod tests {
             protocol_fee,
             swap_fee,
             burn_fee,
-            #[cfg(feature = "osmosis")]
-            osmosis_fee: Fee {
-                share: Decimal::zero(),
-            },
             extra_fees,
         };
 

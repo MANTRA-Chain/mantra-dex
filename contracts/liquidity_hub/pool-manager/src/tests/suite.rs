@@ -1,11 +1,11 @@
-use cosmwasm_std::testing::MockStorage;
-use std::cell::RefCell;
 use amm::pool_manager::{
     Config, FeatureToggle, PoolsResponse, ReverseSimulateSwapOperationsResponse,
     ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
     SwapRoute, SwapRouteCreatorResponse, SwapRouteResponse, SwapRoutesResponse,
 };
 use amm::pool_manager::{InstantiateMsg, PoolType};
+use cosmwasm_std::testing::MockStorage;
+use std::cell::RefCell;
 
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
 use cw_multi_test::addons::{MockAddressGenerator, MockApiBech32};
@@ -164,7 +164,7 @@ impl TestingSuite {
         incentive_manager_addr: String,
     ) -> &mut Self {
         let msg = InstantiateMsg {
-            bonding_manager_addr,
+            bonding_manager_addr: fee_collector_addr,
             incentive_manager_addr,
             pool_creation_fee: coin(1_000, "uusd"),
         };
@@ -503,7 +503,7 @@ impl TestingSuite {
             sender,
             self.pool_manager_addr.clone(),
             &amm::pool_manager::ExecuteMsg::UpdateConfig {
-                bonding_manager_addr: new_bonding_manager_addr.map(|addr| addr.to_string()),
+                fee_collector_addr: new_bonding_manager_addr.map(|addr| addr.to_string()),
                 pool_creation_fee: new_pool_creation_fee,
                 feature_toggle: new_feature_toggle,
             },

@@ -1,14 +1,15 @@
-use crate::{state::CONFIG, ContractError};
+use cosmwasm_std::Decimal;
 use cosmwasm_std::{ensure, Addr, BankMsg, CosmosMsg, DepsMut, MessageInfo, Response};
 
-pub const MAX_ASSETS_PER_POOL: usize = 4;
-
-use crate::state::get_pool_by_identifier;
-use cosmwasm_std::Decimal;
 use amm::coin::burn_coin_msg;
 use amm::common::validate_addr_or_default;
 
+use crate::state::get_pool_by_identifier;
+use crate::{state::CONFIG, ContractError};
+
 use super::perform_swap::perform_swap;
+
+pub const MAX_ASSETS_PER_POOL: usize = 4;
 
 #[allow(clippy::too_many_arguments)]
 pub fn swap(
@@ -75,11 +76,13 @@ pub fn swap(
     }
 
     if !swap_result.protocol_fee_asset.amount.is_zero() {
-        //todo revise this, sent fees to fee collector
-        // messages.push(amm::bonding_manager::fill_rewards_msg(
-        //     config.bonding_manager_addr.to_string(),
-        //     vec![swap_result.protocol_fee_asset.clone()],
-        // )?);
+        messages.push(
+            BankMsg::Send {
+                to_address: config.fee_collector_addr.to_string(),
+                amount: vec![swap_result.protocol_fee_asset.clone()],
+            }
+            .into(),
+        );
     }
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![

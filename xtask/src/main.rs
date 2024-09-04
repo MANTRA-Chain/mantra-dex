@@ -16,8 +16,8 @@ pub mod tasks {
 
     use cosmwasm_schema::{generate_api, remove_schemas};
 
+    use amm::*;
     use serde::Deserialize;
-    use amm::{*};
 
     fn project_root() -> PathBuf {
         Path::new(&env!("CARGO_MANIFEST_DIR"))

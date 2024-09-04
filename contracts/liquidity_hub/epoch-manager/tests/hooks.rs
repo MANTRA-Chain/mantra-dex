@@ -3,10 +3,10 @@ use cosmwasm_std::testing::{mock_env, mock_info};
 use cw_controllers::{AdminError, HookError, HooksResponse};
 
 use crate::common::{mock_add_hook, mock_instantiation};
-use epoch_manager::contract::{execute, query};
-use epoch_manager::ContractError;
 use amm::epoch_manager::{ExecuteMsg, QueryMsg};
 use amm::pool_network::mock_querier::mock_dependencies;
+use epoch_manager::contract::{execute, query};
+use epoch_manager::ContractError;
 
 mod common;
 #[test]

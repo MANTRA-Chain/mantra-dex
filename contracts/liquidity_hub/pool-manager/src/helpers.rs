@@ -1,12 +1,12 @@
 use std::ops::Mul;
 
+use amm::fee::PoolFee;
+use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, StdError, StdResult,
-    Storage, Uint128, Uint256,
+    Uint128, Uint256,
 };
-use amm::fee::PoolFee;
-use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 
 use crate::error::ContractError;
 use crate::math::Decimal256Helper;
