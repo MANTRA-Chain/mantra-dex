@@ -355,7 +355,7 @@ pub(crate) fn on_epoch_changed(
 pub(crate) fn update_config(
     deps: DepsMut,
     info: MessageInfo,
-    bonding_manager_addr: Option<String>,
+    fee_collector_addr: Option<String>,
     epoch_manager_addr: Option<String>,
     create_incentive_fee: Option<Coin>,
     max_concurrent_incentives: Option<u32>,
@@ -368,8 +368,8 @@ pub(crate) fn update_config(
 
     let mut config = CONFIG.load(deps.storage)?;
 
-    if let Some(new_bonding_manager_addr) = bonding_manager_addr {
-        config.bonding_manager_addr = deps.api.addr_validate(&new_bonding_manager_addr)?;
+    if let Some(new_fee_collector_addr) = fee_collector_addr {
+        config.fee_collector_addr = deps.api.addr_validate(&new_fee_collector_addr)?;
     }
 
     if let Some(epoch_manager_addr) = epoch_manager_addr {
@@ -423,10 +423,7 @@ pub(crate) fn update_config(
 
     Ok(Response::default().add_attributes(vec![
         ("action", "update_config".to_string()),
-        (
-            "bonding_manager_addr",
-            config.bonding_manager_addr.to_string(),
-        ),
+        ("fee_collector_addr", config.fee_collector_addr.to_string()),
         ("epoch_manager_addr", config.epoch_manager_addr.to_string()),
         ("create_flow_fee", config.create_incentive_fee.to_string()),
         (

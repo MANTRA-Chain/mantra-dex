@@ -1,7 +1,6 @@
 use cosmwasm_std::{ensure, entry_point, to_json_binary};
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use cw2::{get_contract_version, set_contract_version};
-use semver::Version;
+use cw2::set_contract_version;
 
 use amm::epoch_manager::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use mantra_utils::validate_contract;

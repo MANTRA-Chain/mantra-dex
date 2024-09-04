@@ -1,3 +1,12 @@
+use cosmwasm_std::{
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+};
+use cosmwasm_std::{wasm_execute, Reply, StdError};
+use cw2::set_contract_version;
+
+use amm::pool_manager::{ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg};
+use mantra_utils::validate_contract;
+
 use crate::error::ContractError;
 use crate::helpers::validate_asset_balance;
 use crate::state::{
@@ -5,13 +14,6 @@ use crate::state::{
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
 use crate::{liquidity, manager, queries, router, swap};
-use amm::pool_manager::{ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg};
-use cosmwasm_std::{
-    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-};
-use cosmwasm_std::{wasm_execute, Reply, StdError};
-use cw2::set_contract_version;
-use mantra_utils::validate_contract;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "mantra_pool-manager";
@@ -29,7 +31,7 @@ pub fn instantiate(
     let config: Config = Config {
         fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
         incentive_manager_addr: deps.api.addr_validate(&msg.incentive_manager_addr)?,
-        pool_creation_fee: msg.pool_creation_fee,
+        pool_creation_fee: msg.pool_creation_fee.clone(),
         feature_toggle: FeatureToggle {
             withdrawals_enabled: true,
             deposits_enabled: true,
@@ -41,7 +43,13 @@ pub fn instantiate(
     POOL_COUNTER.save(deps.storage, &0u64)?;
     cw_ownable::initialize_owner(deps.storage, deps.api, Some(info.sender.as_str()))?;
 
-    Ok(Response::default())
+    Ok(Response::default().add_attributes(vec![
+        ("action", "instantiate".to_string()),
+        ("owner", info.sender.to_string()),
+        ("fee_collector_addr", msg.fee_collector_addr),
+        ("incentive_manager_addr", msg.incentive_manager_addr),
+        ("pool_creation_fee", msg.pool_creation_fee.to_string()),
+    ]))
 }
 
 #[entry_point]

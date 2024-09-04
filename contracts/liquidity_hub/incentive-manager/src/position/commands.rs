@@ -242,12 +242,12 @@ pub(crate) fn withdraw_position(
             amount: penalty_fee,
         };
 
-        let bonding_manager_addr = CONFIG.load(deps.storage)?.bonding_manager_addr;
+        let fee_collector_addr = CONFIG.load(deps.storage)?.fee_collector_addr;
 
-        // send penalty to bonding manager for distribution
+        // send penalty to the fee collector
         messages.push(
             BankMsg::Send {
-                to_address: bonding_manager_addr.to_string(),
+                to_address: fee_collector_addr.to_string(),
                 amount: vec![penalty],
             }
             .into(),

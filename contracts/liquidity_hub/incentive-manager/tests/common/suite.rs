@@ -301,7 +301,7 @@ impl TestingSuite {
         let msg = InstantiateMsg {
             owner: self.creator().to_string(),
             epoch_manager_addr,
-            bonding_manager_addr,
+            bonding_manager_addr: fee_collector_addr,
             create_incentive_fee,
             max_concurrent_incentives,
             max_incentive_epoch_buffer,
@@ -345,7 +345,7 @@ impl TestingSuite {
         let msg = InstantiateMsg {
             owner: self.creator().to_string(),
             epoch_manager_addr,
-            bonding_manager_addr,
+            bonding_manager_addr: fee_collector_addr,
             create_incentive_fee,
             max_concurrent_incentives,
             max_incentive_epoch_buffer,
@@ -407,7 +407,7 @@ impl TestingSuite {
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
         let msg = amm::incentive_manager::ExecuteMsg::UpdateConfig {
-            bonding_manager_addr,
+            bonding_manager_addr: fee_collector_addr,
             epoch_manager_addr,
             create_incentive_fee,
             max_concurrent_incentives,

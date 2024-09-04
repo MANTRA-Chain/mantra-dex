@@ -73,7 +73,7 @@ pub(crate) fn process_incentive_creation_fee(
     // send incentive creation fee to fee collector
     messages.push(
         BankMsg::Send {
-            to_address: config.bonding_manager_addr.to_string(),
+            to_address: config.fee_collector_addr.to_string(),
             amount: vec![incentive_creation_fee.to_owned()],
         }
         .into(),

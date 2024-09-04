@@ -13,8 +13,8 @@ pub struct InstantiateMsg {
     pub owner: String,
     /// The epoch manager address, where the epochs are managed
     pub epoch_manager_addr: String,
-    /// The whale lair address, where protocol fees are distributed
-    pub bonding_manager_addr: String,
+    /// The fee collector address, where protocol fees are stored
+    pub fee_collector_addr: String,
     /// The fee that must be paid to create an incentive.
     pub create_incentive_fee: Coin,
     /// The maximum amount of incentives that can exist for a single LP token at a time.
@@ -47,8 +47,8 @@ pub enum ExecuteMsg {
     Claim,
     /// Updates the config of the contract
     UpdateConfig {
-        /// The address to of the bonding manager, to send fees to.
-        bonding_manager_addr: Option<String>,
+        /// The fee collector address, where protocol fees are stored
+        fee_collector_addr: Option<String>,
         /// The epoch manager address, where the epochs are managed
         epoch_manager_addr: Option<String>,
         /// The fee that must be paid to create an incentive.
@@ -128,8 +128,8 @@ pub enum IncentivesBy {
 /// Configuration for the contract (manager)
 #[cw_serde]
 pub struct Config {
-    /// The address to of the whale lair, to send fees to.
-    pub bonding_manager_addr: Addr,
+    /// The fee collector address, where protocol fees are stored
+    pub fee_collector_addr: Addr,
     /// The epoch manager address, where the epochs are managed
     pub epoch_manager_addr: Addr,
     /// The fee that must be paid to create an incentive.

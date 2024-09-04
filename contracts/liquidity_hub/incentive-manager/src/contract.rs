@@ -1,8 +1,7 @@
 use cosmwasm_std::{
     ensure, entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 };
-use cw2::{get_contract_version, set_contract_version};
-use semver::Version;
+use cw2::set_contract_version;
 
 use amm::incentive_manager::{
     Config, ExecuteMsg, IncentiveAction, InstantiateMsg, MigrateMsg, PositionAction, QueryMsg,
@@ -43,7 +42,7 @@ pub fn instantiate(
 
     let config = Config {
         epoch_manager_addr: deps.api.addr_validate(&msg.epoch_manager_addr)?,
-        bonding_manager_addr: deps.api.addr_validate(&msg.bonding_manager_addr)?,
+        fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
         create_incentive_fee: msg.create_incentive_fee,
         max_concurrent_incentives: msg.max_concurrent_incentives,
         max_incentive_epoch_buffer: msg.max_incentive_epoch_buffer,
@@ -60,10 +59,7 @@ pub fn instantiate(
         ("action", "instantiate".to_string()),
         ("owner", msg.owner),
         ("epoch_manager_addr", config.epoch_manager_addr.to_string()),
-        (
-            "bonding_manager_addr",
-            config.bonding_manager_addr.to_string(),
-        ),
+        ("fee_collector_addr", config.fee_collector_addr.to_string()),
         ("create_flow_fee", config.create_incentive_fee.to_string()),
         (
             "max_concurrent_flows",
@@ -137,7 +133,7 @@ pub fn execute(
             }
         },
         ExecuteMsg::UpdateConfig {
-            bonding_manager_addr,
+            fee_collector_addr: bonding_manager_addr,
             epoch_manager_addr,
             create_incentive_fee,
             max_concurrent_incentives,

@@ -931,7 +931,7 @@ pub fn update_config() {
     let epoch_manager = suite.epoch_manager_addr.clone();
 
     let expected_config = Config {
-        bonding_manager_addr,
+        bonding_manager_addr: fee_collector_addr,
         epoch_manager_addr: epoch_manager,
         create_incentive_fee: Coin {
             denom: "uwhale".to_string(),
@@ -1094,7 +1094,7 @@ pub fn update_config() {
     );
 
     let expected_config = Config {
-        bonding_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
+        fee_collector_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
         epoch_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
         create_incentive_fee: Coin {
             denom: "uwhale".to_string(),

@@ -307,7 +307,7 @@ impl TestingSuite {
         let msg = amm::incentive_manager::InstantiateMsg {
             owner: creator.clone().to_string(),
             epoch_manager_addr,
-            bonding_manager_addr,
+            bonding_manager_addr: fee_collector_addr,
             create_incentive_fee: Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::zero(),
