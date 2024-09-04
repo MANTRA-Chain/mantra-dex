@@ -112,41 +112,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Gets the swap route for the given offer and ask assets.",
-      "type": "object",
-      "required": [
-        "swap_route"
-      ],
-      "properties": {
-        "swap_route": {
-          "type": "object",
-          "required": [
-            "ask_asset_denom",
-            "offer_asset_denom"
-          ],
-          "properties": {
-            "ask_asset_denom": {
-              "description": "The ask asset denom, i.e. the asset that is being received.",
-              "type": "string"
-            },
-            "offer_asset_denom": {
-              "description": "The offer asset denom, i.e. the asset that is being swapped.",
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Gets all swap routes registered",
-      "type": "string",
-      "enum": [
-        "swap_routes"
-      ]
-    },
-    {
       "description": "Simulates swap operations.",
       "type": "object",
       "required": [
@@ -256,34 +221,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Retrieves the creator of the swap route to get from offer to ask asset. The creator of the swap route can remove it.",
-      "type": "object",
-      "required": [
-        "swap_route_creator"
-      ],
-      "properties": {
-        "swap_route_creator": {
-          "type": "object",
-          "required": [
-            "ask_asset_denom",
-            "offer_asset_denom"
-          ],
-          "properties": {
-            "ask_asset_denom": {
-              "description": "The ask asset denom, i.e. the asset that is being received.",
-              "type": "string"
-            },
-            "offer_asset_denom": {
-              "description": "The offer asset denom, i.e. the asset that is being swapped.",
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "description": "Query the contract's ownership information",
       "type": "object",
       "required": [
@@ -321,10 +258,10 @@
           "description": "A swap operation that uses the MantraSwap router.",
           "type": "object",
           "required": [
-            "whale_swap"
+            "mantra_swap"
           ],
           "properties": {
-            "whale_swap": {
+            "mantra_swap": {
               "type": "object",
               "required": [
                 "pool_identifier",

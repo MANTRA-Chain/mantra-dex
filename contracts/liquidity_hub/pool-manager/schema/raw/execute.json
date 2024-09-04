@@ -266,56 +266,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Adds swap routes to the router.",
-      "type": "object",
-      "required": [
-        "add_swap_routes"
-      ],
-      "properties": {
-        "add_swap_routes": {
-          "type": "object",
-          "required": [
-            "swap_routes"
-          ],
-          "properties": {
-            "swap_routes": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/SwapRoute"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Removes swap routes from the router.",
-      "type": "object",
-      "required": [
-        "remove_swap_routes"
-      ],
-      "properties": {
-        "remove_swap_routes": {
-          "type": "object",
-          "required": [
-            "swap_routes"
-          ],
-          "properties": {
-            "swap_routes": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/SwapRoute"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "description": "Updates the configuration of the contract. If a field is not specified (i.e., set to `None`), it will not be modified.",
       "type": "object",
       "required": [
@@ -325,13 +275,6 @@
         "update_config": {
           "type": "object",
           "properties": {
-            "bonding_manager_addr": {
-              "description": "The new bonding-manager contract address.",
-              "type": [
-                "string",
-                "null"
-              ]
-            },
             "feature_toggle": {
               "description": "The new feature toggles of the contract, allowing fine-tuned control over which operations are allowed.",
               "anyOf": [
@@ -341,6 +284,13 @@
                 {
                   "type": "null"
                 }
+              ]
+            },
+            "fee_collector_addr": {
+              "description": "The new fee collector contract address.",
+              "type": [
+                "string",
+                "null"
               ]
             },
             "pool_creation_fee": {
@@ -616,10 +566,10 @@
           "description": "A swap operation that uses the MantraSwap router.",
           "type": "object",
           "required": [
-            "whale_swap"
+            "mantra_swap"
           ],
           "properties": {
-            "whale_swap": {
+            "mantra_swap": {
               "type": "object",
               "required": [
                 "pool_identifier",
@@ -646,33 +596,6 @@
           "additionalProperties": false
         }
       ]
-    },
-    "SwapRoute": {
-      "description": "The swap route structure",
-      "type": "object",
-      "required": [
-        "ask_asset_denom",
-        "offer_asset_denom",
-        "swap_operations"
-      ],
-      "properties": {
-        "ask_asset_denom": {
-          "description": "The ask asset denom, i.e. the asset that is being received.",
-          "type": "string"
-        },
-        "offer_asset_denom": {
-          "description": "The offer asset denom, i.e. the asset that is being swapped.",
-          "type": "string"
-        },
-        "swap_operations": {
-          "description": "The swap operations to perform to get from offer asset to ask asset.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/SwapOperation"
-          }
-        }
-      },
-      "additionalProperties": false
     },
     "Timestamp": {
       "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",

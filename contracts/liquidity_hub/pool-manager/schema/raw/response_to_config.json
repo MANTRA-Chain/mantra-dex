@@ -41,22 +41,22 @@
       "description": "The contract configuration.",
       "type": "object",
       "required": [
-        "bonding_manager_addr",
         "feature_toggle",
+        "fee_collector_addr",
         "incentive_manager_addr",
         "pool_creation_fee"
       ],
       "properties": {
-        "bonding_manager_addr": {
-          "description": "The address of the bonding manager contract.",
+        "feature_toggle": {
+          "$ref": "#/definitions/FeatureToggle"
+        },
+        "fee_collector_addr": {
+          "description": "The address where the collected fees go to.",
           "allOf": [
             {
               "$ref": "#/definitions/Addr"
             }
           ]
-        },
-        "feature_toggle": {
-          "$ref": "#/definitions/FeatureToggle"
         },
         "incentive_manager_addr": {
           "description": "The address of the incentive manager contract.",
