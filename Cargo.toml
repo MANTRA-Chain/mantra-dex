@@ -3,20 +3,20 @@ resolver = "2"
 
 members = [
   "packages/*",
-  "contracts/liquidity_hub/pool-manager",
-  "contracts/liquidity_hub/epoch-manager",
-  "contracts/liquidity_hub/incentive-manager",
+  "contracts/pool-manager",
+  "contracts/epoch-manager",
+  "contracts/incentive-manager",
   "xtask",
 ]
 
 [workspace.package]
 edition = "2021"
-homepage = "https://whitewhale.money"
-documentation = "https://docs.whitewhale.money/white-whale"
+homepage = "https://mantra.zone"
+documentation = ""
 license = "MIT"
-repository = "https://github.com/White-Whale-Defi-Platform/migaloo-core"
+repository = "https://github.com/MANTRA-Finance/amm"
 publish = false
-authors = ["White Whale Defi"]
+authors = ["MANTRA Finance"]
 
 [workspace.dependencies]
 cosmwasm-schema = { version = "1.5.4" }
@@ -33,9 +33,12 @@ cw-utils = { version = "1.0.1" }
 schemars = { version = "0.8.12" }
 semver = { version = "1.0.12" }
 serde = { version = "1.0.145", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0.127" }
 thiserror = { version = "1.0.43" }
 osmosis-std-derive = { version = "0.15.3" }
 prost-types = { version = "0.11.9", default-features = false }
+amm = { path = "packages/amm" }
+mantra-utils = { path = "packages/utils" }
 white-whale-std = { version = "2.0.0-alpha.1" }
 common-testing = { path = "packages/common-testing" }
 cw-multi-test = { version = "0.20.0", features = ["cosmwasm_1_2"] }
@@ -55,9 +58,9 @@ test-case = { version = "3.3.1" }
 cw-migrate-error-derive = { version = "0.1.0" }
 
 # contracts
-epoch-manager = { path = "./contracts/liquidity_hub/epoch-manager" }
-pool-manager = { path = "./contracts/liquidity_hub/pool-manager" }
-incentive-manager = { path = "./contracts/liquidity_hub/incentive-manager" }
+epoch-manager = { path = "contracts/epoch-manager" }
+pool-manager = { path = "contracts/pool-manager" }
+incentive-manager = { path = "contracts/incentive-manager" }
 
 [workspace.metadata.dylint]
 libraries = [{ git = "https://github.com/0xFable/cw-lint" }]

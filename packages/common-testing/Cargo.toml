@@ -23,5 +23,5 @@ schemars.workspace = true
 serde.workspace = true
 cosmwasm-schema.workspace = true
 cw-multi-test.workspace = true
-white-whale-std.workspace = true
+amm.workspace = true
 epoch-manager.workspace = true
