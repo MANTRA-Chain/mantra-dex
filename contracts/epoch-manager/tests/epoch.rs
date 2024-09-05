@@ -1,8 +1,7 @@
 use cosmwasm_std::from_json;
-use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 
 use amm::epoch_manager::{Epoch, EpochChangedHookMsg, EpochResponse, ExecuteMsg, QueryMsg};
-use amm::pool_network::mock_querier::mock_dependencies;
 use epoch_manager::contract::{execute, query};
 use epoch_manager::ContractError;
 
@@ -12,7 +11,7 @@ mod common;
 
 #[test]
 fn create_new_epoch_successfully() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let info = mock_info("owner", &[]);
     let mut env = mock_env();
     mock_instantiation(deps.as_mut(), info.clone()).unwrap();
@@ -63,7 +62,7 @@ fn create_new_epoch_successfully() {
 
 #[test]
 fn create_new_epoch_unsuccessfully() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let info = mock_info("owner", &[]);
     let mut env = mock_env();
     mock_instantiation(deps.as_mut(), info.clone()).unwrap();

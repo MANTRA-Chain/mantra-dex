@@ -1,9 +1,8 @@
-use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::{from_json, Addr, Uint64};
 use cw_controllers::AdminError;
 
 use amm::epoch_manager::{ConfigResponse, EpochConfig, ExecuteMsg, QueryMsg};
-use amm::pool_network::mock_querier::mock_dependencies;
 use epoch_manager::contract::{execute, query};
 use epoch_manager::ContractError;
 
@@ -13,7 +12,7 @@ mod common;
 
 #[test]
 fn update_config_successfully() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let info = mock_info("owner", &[]);
     let current_time = mock_env().block.time;
     mock_instantiation(deps.as_mut(), info.clone()).unwrap();
@@ -53,7 +52,7 @@ fn update_config_successfully() {
 
 #[test]
 fn update_config_unsuccessfully() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let info = mock_info("owner", &[]);
     let current_time = mock_env().block.time;
     mock_instantiation(deps.as_mut(), info.clone()).unwrap();
