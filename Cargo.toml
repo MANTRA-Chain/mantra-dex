@@ -6,6 +6,7 @@ members = [
   "contracts/pool-manager",
   "contracts/epoch-manager",
   "contracts/incentive-manager",
+  "contracts/fee-collector",
   "xtask",
 ]
 

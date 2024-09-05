@@ -3,6 +3,7 @@ pub mod common;
 pub mod constants;
 pub mod epoch_manager;
 pub mod fee;
+pub mod fee_collector;
 pub mod incentive_manager;
 pub mod lp_common;
 pub mod pool_manager;

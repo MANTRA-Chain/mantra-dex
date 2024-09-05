@@ -562,6 +562,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 
 [[package]]
+name = "fee-collector"
+version = "0.1.0"
+dependencies = [
+ "amm",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-migrate-error-derive",
+ "cw-multi-test",
+ "cw-ownable",
+ "cw-utils",
+ "cw2",
+ "mantra-utils",
+ "schemars",
+ "semver",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "ff"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -738,6 +757,10 @@ dependencies = [
 [[package]]
 name = "mantra-utils"
 version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw-ownable",
+]
 
 [[package]]
 name = "memchr"

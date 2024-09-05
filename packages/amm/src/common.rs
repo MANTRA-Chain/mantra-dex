@@ -1,5 +1,4 @@
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Storage};
-use cw_ownable::{Action, OwnershipError};
+use cosmwasm_std::{Addr, Deps, StdError, StdResult, Storage};
 use cw_storage_plus::Item;
 
 /// Validates that the given address matches the address stored in the given `owner_item`.
@@ -16,20 +15,6 @@ pub fn validate_owner(
     }
 
     Ok(())
-}
-
-/// Updates the ownership of a contract using the cw_ownable package, which needs to be implemented by the contract.
-pub fn update_ownership(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    action: Action,
-) -> Result<Response, OwnershipError> {
-    cw_ownable::update_ownership(deps, &env.block, &info.sender, action).map(|ownership| {
-        Response::default()
-            .add_attribute("action", "update_ownership")
-            .add_attributes(ownership.into_attributes())
-    })
 }
 
 /// Validates a [String] address or returns the default address if the validation fails.
