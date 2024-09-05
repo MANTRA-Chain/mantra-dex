@@ -851,6 +851,7 @@ dependencies = [
  "cw20",
  "cw20-base",
  "epoch-manager",
+ "fee-collector",
  "incentive-manager",
  "mantra-utils",
  "proptest",

@@ -5,7 +5,7 @@ use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, StdError, StdResult,
-    Uint128, Uint256,
+    Uint128, Uint256, Uint512,
 };
 
 use crate::error::ContractError;
@@ -529,7 +529,7 @@ pub fn get_asset_indexes_in_pool(
 
 // TODO: handle unwraps properly
 #[allow(clippy::unwrap_used)]
-pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint256> {
+pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
     let n_coins = Uint128::from(deposits.len() as u128);
 
     // sum(x_i), a.k.a S
@@ -538,7 +538,7 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint256> {
         .fold(Uint128::zero(), |acc, x| acc.checked_add(x.amount).unwrap());
 
     if sum_x == Uint128::zero() {
-        Some(Uint256::zero())
+        Some(Uint512::zero())
     } else {
         // do as below but for a generic number of assets
         let amount_times_coins: Vec<Uint128> = deposits
@@ -547,8 +547,8 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint256> {
             .collect();
 
         // Newton's method to approximate D
-        let mut d_prev: Uint256;
-        let mut d: Uint256 = sum_x.into();
+        let mut d_prev: Uint512;
+        let mut d: Uint512 = sum_x.into();
         for _ in 0..256 {
             let mut d_prod = d;
             for amount in amount_times_coins.clone().into_iter() {
@@ -562,13 +562,15 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint256> {
             d = compute_next_d(amp_factor, d, d_prod, sum_x, n_coins).unwrap();
             // Equality with the precision of 1
             if d > d_prev {
-                if d.checked_sub(d_prev).unwrap() <= Uint256::one() {
+                if d.checked_sub(d_prev).unwrap() <= Uint512::one() {
                     break;
                 }
-            } else if d_prev.checked_sub(d).unwrap() <= Uint256::one() {
+            } else if d_prev.checked_sub(d).unwrap() <= Uint512::one() {
                 break;
             }
         }
+
+        println!("D: {:?}", d);
 
         Some(d)
     }
@@ -578,13 +580,13 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint256> {
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
     amp_factor: &u64,
-    d_init: Uint256,
-    d_prod: Uint256,
+    d_init: Uint512,
+    d_prod: Uint512,
     sum_x: Uint128,
     n_coins: Uint128,
-) -> Option<Uint256> {
+) -> Option<Uint512> {
     let ann = amp_factor.checked_mul(n_coins.u128() as u64)?;
-    let leverage = Uint256::from(sum_x).checked_mul(ann.into()).unwrap();
+    let leverage = Uint512::from(sum_x).checked_mul(ann.into()).unwrap();
     // d = (ann * sum_x + d_prod * n_coins) * d / ((ann - 1) * d + (n_coins + 1) * d_prod)
     let numerator = d_init
         .checked_mul(
@@ -636,7 +638,7 @@ pub fn compute_mint_amount_for_deposit(
     if d_1 <= d_0 {
         None
     } else {
-        let amount = Uint256::from(pool_token_supply)
+        let amount = Uint512::from(pool_token_supply)
             .checked_mul(d_1.checked_sub(d_0).unwrap())
             .unwrap()
             .checked_div(d_0)
@@ -660,8 +662,8 @@ pub fn compute_y_raw(
     swap_in: Uint128,
     //swap_out: Uint128,
     no_swap: Uint128,
-    d: Uint256,
-) -> Option<Uint256> {
+    d: Uint512,
+) -> Option<Uint512> {
     let ann = amp_factor.checked_mul(n_coins.into())?; // A * n ** n
 
     // sum' = prod' = x
@@ -695,14 +697,14 @@ pub fn compute_y_raw(
         .unwrap();
 
     // Solve for y by approximating: y**2 + b*y = c
-    let mut y_prev: Uint256;
+    let mut y_prev: Uint512;
     let mut y = d;
     for _ in 0..1000 {
         y_prev = y;
         // y = (y * y + c) / (2 * y + b - d);
         let y_numerator = y.checked_mul(y).unwrap().checked_add(c).unwrap();
         let y_denominator = y
-            .checked_mul(Uint256::from(2u8))
+            .checked_mul(Uint512::from(2u8))
             .unwrap()
             .checked_add(b)
             .unwrap()
@@ -710,10 +712,10 @@ pub fn compute_y_raw(
             .unwrap();
         y = y_numerator.checked_div(y_denominator).unwrap();
         if y > y_prev {
-            if y.checked_sub(y_prev).unwrap() <= Uint256::one() {
+            if y.checked_sub(y_prev).unwrap() <= Uint512::one() {
                 break;
             }
-        } else if y_prev.checked_sub(y).unwrap() <= Uint256::one() {
+        } else if y_prev.checked_sub(y).unwrap() <= Uint512::one() {
             break;
         }
     }
@@ -727,7 +729,7 @@ pub fn compute_y(
     amp_factor: &u64,
     x: Uint128,
     no_swap: Uint128,
-    d: Uint256,
+    d: Uint512,
 ) -> Option<Uint128> {
     let amount = compute_y_raw(n_coins, amp_factor, x, no_swap, d)?;
     Some(Uint128::try_from(amount).unwrap())
@@ -800,7 +802,7 @@ mod tests {
     /// Number of coins in a swap. Hardcoded to 3 to reuse previous tests
     pub const N_COINS: u8 = 3;
 
-    fn check_d(model: &Model, amount_a: u128, amount_b: u128, amount_c: u128) -> Uint256 {
+    fn check_d(model: &Model, amount_a: u128, amount_b: u128, amount_c: u128) -> Uint512 {
         let deposits = vec![
             coin(amount_a, "denom1"),
             coin(amount_b, "denom2"),
@@ -811,7 +813,7 @@ mod tests {
         d
     }
 
-    fn check_y(model: &Model, swap_in: u128, no_swap: u128, d: Uint256) {
+    fn check_y(model: &Model, swap_in: u128, no_swap: u128, d: Uint512) {
         let y = compute_y_raw(
             N_COINS,
             &model.amp_factor,
@@ -874,7 +876,6 @@ mod tests {
         assert_eq!(actual_mint_amount, expected_mint_amount);
     }
 
-    #[ignore]
     #[test]
     fn test_curve_math_with_random_inputs() {
         for _ in 0..100 {
@@ -1114,7 +1115,7 @@ mod tests {
             let d1 = compute_d(&amp_factor, &new_swaps).unwrap();
 
             assert!(d0 < d1);
-            assert!(d0 / Uint256::from( pool_token_supply) <= d1 /  Uint256::from( new_pool_token_supply));
+            assert!(d0 / Uint512::from( pool_token_supply) <= d1 /  Uint512::from( new_pool_token_supply));
         }
     }
 

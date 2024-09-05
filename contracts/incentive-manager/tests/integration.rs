@@ -103,13 +103,14 @@ fn create_incentives() {
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
+    suite.instantiate_default();
 
-    let creator = suite.creator();
+    let creator = suite.creator().clone();
     let other = suite.senders[1].clone();
+    let fee_collector = suite.fee_collector_addr.clone();
 
     // try all misconfigurations when creating an incentive
     suite
-        .instantiate_default()
         .manage_incentive(
             &creator,
             IncentiveAction::Fill {
@@ -276,7 +277,6 @@ fn create_incentives() {
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
-
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
@@ -360,30 +360,30 @@ fn create_incentives() {
     )
 
         .manage_incentive(
-        &other,
-        IncentiveAction::Fill {
-            params: IncentiveParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: Some(20),
-                preliminary_end_epoch: Some(20),
-                curve: None,
-                incentive_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(4_000u128),
+            &other,
+            IncentiveAction::Fill {
+                params: IncentiveParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(20),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    incentive_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    incentive_identifier: None,
                 },
-                incentive_identifier: None,
             },
-        },
-        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
-            match err {
-                ContractError::IncentiveStartTimeAfterEndTime { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::IncentiveStartTimeAfterEndTime"),
-            }
-        },
-    ).manage_incentive(
+                match err {
+                    ContractError::IncentiveStartTimeAfterEndTime { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::IncentiveStartTimeAfterEndTime"),
+                }
+            },
+        ).manage_incentive(
         &other,
         IncentiveAction::Fill {
             params: IncentiveParams {
@@ -530,7 +530,11 @@ fn create_incentives() {
                 let incentives_response = result.unwrap();
                 assert_eq!(incentives_response.incentives.len(), 2);
             },
-        );
+        )
+        // two incentives were created, therefore the fee collector should have received 2_000 uom
+        .query_balance("uom".to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(2 * 1_000));
+        });
 }
 
 #[test]
@@ -899,9 +903,6 @@ fn verify_ownership() {
             assert!(ownership.owner.is_none());
         });
 }
-
-#[test]
-fn test_epoch_change_hook() {}
 
 #[test]
 pub fn update_config() {

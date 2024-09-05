@@ -1,8 +1,7 @@
+use amm::fee_collector::ExecuteMsg::UpdateOwnership;
+use amm::fee_collector::{InstantiateMsg, QueryMsg};
 use cosmwasm_std::{Addr, Empty, StdResult};
 use cw_multi_test::{App, Contract, ContractWrapper, Executor};
-
-use fee_collector::msg::ExecuteMsg::UpdateOwnership;
-use fee_collector::msg::QueryMsg;
 
 pub fn fee_collector_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
@@ -19,7 +18,7 @@ pub fn fee_collector_contract() -> Box<dyn Contract<Empty>> {
 fn change_contract_ownership() {
     let mut app = App::default();
     let code_id = app.store_code(fee_collector_contract());
-    let msg = fee_collector::msg::InstantiateMsg {};
+    let msg = InstantiateMsg {};
 
     let admin = Addr::unchecked("admin");
     let alice = Addr::unchecked("alice");

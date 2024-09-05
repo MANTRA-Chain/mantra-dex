@@ -1,7 +1,6 @@
 use amm::pool_manager::{
     Config, FeatureToggle, PoolsResponse, ReverseSimulateSwapOperationsResponse,
     ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
-    SwapRoute, SwapRouteCreatorResponse, SwapRouteResponse, SwapRoutesResponse,
 };
 use amm::pool_manager::{InstantiateMsg, PoolType};
 use cosmwasm_std::testing::MockStorage;
@@ -14,12 +13,13 @@ use cw_multi_test::{
     Executor, FailingModule, GovFailingModule, IbcFailingModule, StakeKeeper, WasmKeeper,
 };
 
+use amm::constants::LP_SYMBOL;
 use amm::epoch_manager::{Epoch, EpochConfig};
 use amm::fee::PoolFee;
 use amm::incentive_manager::PositionsResponse;
-use amm::lp_common::LP_SYMBOL;
-use white_whale_testing::multi_test::stargate_mock::StargateMock;
+use common_testing::multi_test::stargate_mock::StargateMock;
 
+/// Creates the pool manager contract
 fn contract_pool_manager() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new_with_empty(
         crate::contract::execute,
@@ -31,15 +31,14 @@ fn contract_pool_manager() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-/// Creates the whale lair contract
-pub fn bonding_manager_contract() -> Box<dyn Contract<Empty>> {
+/// Creates the fee collector contract
+pub fn fee_collector_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
-        bonding_manager::contract::execute,
-        bonding_manager::contract::instantiate,
-        bonding_manager::contract::query,
+        fee_collector::contract::execute,
+        fee_collector::contract::instantiate,
+        fee_collector::contract::query,
     )
-    .with_reply(bonding_manager::contract::reply)
-    .with_migrate(bonding_manager::contract::migrate);
+    .with_migrate(fee_collector::contract::migrate);
 
     Box::new(contract)
 }
@@ -84,11 +83,10 @@ type OsmosisTokenFactoryApp = App<
 pub struct TestingSuite {
     app: OsmosisTokenFactoryApp,
     pub senders: [Addr; 3],
-    pub bonding_manager_addr: Addr,
+    pub fee_collector_addr: Addr,
     pub pool_manager_addr: Addr,
     pub incentive_manager_addr: Addr,
     pub epoch_manager_addr: Addr,
-    pub cw20_tokens: Vec<Addr>,
 }
 
 /// TestingSuite helpers
@@ -123,9 +121,9 @@ impl TestingSuite {
 /// Instantiate
 impl TestingSuite {
     pub(crate) fn default_with_balances(initial_balance: Vec<Coin>) -> Self {
-        let sender_1 = Addr::unchecked("migaloo1h3s5np57a8cxaca3rdjlgu8jzmr2d2zz55s5y3");
-        let sender_2 = Addr::unchecked("migaloo193lk767456jhkzddnz7kf5jvuzfn67gyfvhc40");
-        let sender_3 = Addr::unchecked("migaloo1ludaslnu24p5eftw499f7ngsc2jkzqdsrvxt75");
+        let sender_1 = Addr::unchecked("mantra15n2dapfyf7mzz70y0srycnduw5skp0s9u9g74e");
+        let sender_2 = Addr::unchecked("mantra13cxr0w5tvczvte29r5n0mauejmrg83m4zxj4l2");
+        let sender_3 = Addr::unchecked("mantra150qvkpleat9spklzs3mtwdxszjpeyjcssce49d");
 
         let bank = BankKeeper::new();
 
@@ -136,7 +134,7 @@ impl TestingSuite {
         ];
 
         let app = AppBuilder::new()
-            .with_api(MockApiBech32::new("migaloo"))
+            .with_api(MockApiBech32::new("mantra"))
             .with_wasm(WasmKeeper::default().with_address_generator(MockAddressGenerator))
             .with_bank(bank)
             .with_stargate(StargateMock {})
@@ -149,22 +147,21 @@ impl TestingSuite {
         Self {
             app,
             senders: [sender_1, sender_2, sender_3],
-            bonding_manager_addr: Addr::unchecked(""),
+            fee_collector_addr: Addr::unchecked(""),
             pool_manager_addr: Addr::unchecked(""),
             incentive_manager_addr: Addr::unchecked(""),
             epoch_manager_addr: Addr::unchecked(""),
-            cw20_tokens: vec![],
         }
     }
 
     #[track_caller]
     pub(crate) fn instantiate(
         &mut self,
-        bonding_manager_addr: String,
+        fee_collector_addr: String,
         incentive_manager_addr: String,
     ) -> &mut Self {
         let msg = InstantiateMsg {
-            bonding_manager_addr: fee_collector_addr,
+            fee_collector_addr,
             incentive_manager_addr,
             pool_creation_fee: coin(1_000, "uusd"),
         };
@@ -185,77 +182,48 @@ impl TestingSuite {
             )
             .unwrap();
 
-        let bonding_manager_addr = self.bonding_manager_addr.clone();
-
-        if !bonding_manager_addr.into_string().is_empty() {
-            let pool_manager_addr = self.pool_manager_addr.clone();
-            let epoch_manager_addr = self.epoch_manager_addr.clone();
-
-            let msg = amm::bonding_manager::ExecuteMsg::UpdateConfig {
-                epoch_manager_addr: Some(epoch_manager_addr.into_string()),
-                pool_manager_addr: Some(pool_manager_addr.into_string()),
-                unbonding_period: None,
-                growth_rate: None,
-            };
-
-            self.app
-                .execute_contract(
-                    creator.clone(),
-                    self.bonding_manager_addr.clone(),
-                    &msg,
-                    &[],
-                )
-                .unwrap();
-        }
-
         self
     }
 
     #[track_caller]
     pub(crate) fn instantiate_default(&mut self) -> &mut Self {
         self.create_epoch_manager();
-        self.create_bonding_manager();
+        self.create_fee_collector();
         self.create_incentive_manager();
         self.add_hook(self.incentive_manager_addr.clone());
-        self.add_hook(self.bonding_manager_addr.clone());
 
         // 25 April 2024 15:00:00 UTC
         let timestamp = Timestamp::from_seconds(1714057200);
         self.set_time(timestamp);
 
         self.instantiate(
-            self.bonding_manager_addr.to_string(),
+            self.fee_collector_addr.to_string(),
             self.incentive_manager_addr.to_string(),
         )
     }
 
-    fn create_bonding_manager(&mut self) {
-        let bonding_manager_id = self.app.store_code(bonding_manager_contract());
-        let epoch_manager_addr = self.epoch_manager_addr.to_string();
+    #[track_caller]
+    fn create_fee_collector(&mut self) {
+        let fee_collector_contract = self.app.store_code(fee_collector_contract());
 
-        let msg = amm::bonding_manager::InstantiateMsg {
-            distribution_denom: "uwhale".to_string(),
-            unbonding_period: 86_400u64,
-            growth_rate: Decimal::one(),
-            bonding_assets: vec!["bWHALE".to_string(), "ampWHALE".to_string()],
-            grace_period: Default::default(),
-            epoch_manager_addr,
-        };
+        // create fee collector
+        let msg = amm::fee_collector::InstantiateMsg {};
 
         let creator = self.creator().clone();
 
-        self.bonding_manager_addr = self
+        self.fee_collector_addr = self
             .app
             .instantiate_contract(
-                bonding_manager_id,
+                fee_collector_contract,
                 creator.clone(),
                 &msg,
                 &[],
-                "Bonding Manager".to_string(),
+                "Fee Collector".to_string(),
                 Some(creator.to_string()),
             )
             .unwrap();
     }
+
     fn create_epoch_manager(&mut self) {
         let epoch_manager_id = self.app.store_code(epoch_manager_contract());
 
@@ -302,12 +270,12 @@ impl TestingSuite {
 
         let creator = self.creator().clone();
         let epoch_manager_addr = self.epoch_manager_addr.to_string();
-        let bonding_manager_addr = self.bonding_manager_addr.to_string();
+        let fee_collector_addr = self.fee_collector_addr.to_string();
 
         let msg = amm::incentive_manager::InstantiateMsg {
             owner: creator.clone().to_string(),
             epoch_manager_addr,
-            bonding_manager_addr: fee_collector_addr,
+            fee_collector_addr,
             create_incentive_fee: Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::zero(),
@@ -338,16 +306,18 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn update_ownership(
         &mut self,
-        sender: Addr,
+        sender: &Addr,
         action: cw_ownable::Action,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
         let msg = amm::pool_manager::ExecuteMsg::UpdateOwnership(action);
 
-        result(
-            self.app
-                .execute_contract(sender, self.pool_manager_addr.clone(), &msg, &[]),
-        );
+        result(self.app.execute_contract(
+            sender.clone(),
+            self.pool_manager_addr.clone(),
+            &msg,
+            &[],
+        ));
 
         self
     }
@@ -355,7 +325,7 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn provide_liquidity(
         &mut self,
-        sender: Addr,
+        sender: &Addr,
         pool_identifier: String,
         unlocking_duration: Option<u64>,
         lock_position_identifier: Option<String>,
@@ -373,10 +343,12 @@ impl TestingSuite {
             lock_position_identifier,
         };
 
-        result(
-            self.app
-                .execute_contract(sender, self.pool_manager_addr.clone(), &msg, &funds),
-        );
+        result(self.app.execute_contract(
+            sender.clone(),
+            self.pool_manager_addr.clone(),
+            &msg,
+            &funds,
+        ));
 
         self
     }
@@ -385,7 +357,7 @@ impl TestingSuite {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn swap(
         &mut self,
-        sender: Addr,
+        sender: &Addr,
         ask_asset_denom: String,
         belief_price: Option<Decimal>,
         max_spread: Option<Decimal>,
@@ -402,10 +374,12 @@ impl TestingSuite {
             pool_identifier,
         };
 
-        result(
-            self.app
-                .execute_contract(sender, self.pool_manager_addr.clone(), &msg, &funds),
-        );
+        result(self.app.execute_contract(
+            sender.clone(),
+            self.pool_manager_addr.clone(),
+            &msg,
+            &funds,
+        ));
 
         self
     }
@@ -414,7 +388,7 @@ impl TestingSuite {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn execute_swap_operations(
         &mut self,
-        sender: Addr,
+        sender: &Addr,
         operations: Vec<SwapOperation>,
         minimum_receive: Option<Uint128>,
         receiver: Option<String>,
@@ -429,10 +403,12 @@ impl TestingSuite {
             max_spread,
         };
 
-        result(
-            self.app
-                .execute_contract(sender, self.pool_manager_addr.clone(), &msg, &funds),
-        );
+        result(self.app.execute_contract(
+            sender.clone(),
+            self.pool_manager_addr.clone(),
+            &msg,
+            &funds,
+        ));
 
         self
     }
@@ -441,7 +417,7 @@ impl TestingSuite {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn create_pool(
         &mut self,
-        sender: Addr,
+        sender: &Addr,
         asset_denoms: Vec<String>,
         asset_decimals: Vec<u8>,
         pool_fees: PoolFee,
@@ -459,7 +435,7 @@ impl TestingSuite {
         };
 
         result(self.app.execute_contract(
-            sender,
+            sender.clone(),
             self.pool_manager_addr.clone(),
             &msg,
             &pool_creation_fee_funds,
@@ -471,17 +447,19 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn withdraw_liquidity(
         &mut self,
-        sender: Addr,
+        sender: &Addr,
         pool_identifier: String,
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
         let msg = amm::pool_manager::ExecuteMsg::WithdrawLiquidity { pool_identifier };
 
-        result(
-            self.app
-                .execute_contract(sender, self.pool_manager_addr.clone(), &msg, &funds),
-        );
+        result(self.app.execute_contract(
+            sender.clone(),
+            self.pool_manager_addr.clone(),
+            &msg,
+            &funds,
+        ));
 
         self
     }
@@ -493,56 +471,20 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn update_config(
         &mut self,
-        sender: Addr,
+        sender: &Addr,
         new_bonding_manager_addr: Option<Addr>,
         new_pool_creation_fee: Option<Coin>,
         new_feature_toggle: Option<FeatureToggle>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
         result(self.app.execute_contract(
-            sender,
+            sender.clone(),
             self.pool_manager_addr.clone(),
             &amm::pool_manager::ExecuteMsg::UpdateConfig {
                 fee_collector_addr: new_bonding_manager_addr.map(|addr| addr.to_string()),
                 pool_creation_fee: new_pool_creation_fee,
                 feature_toggle: new_feature_toggle,
             },
-            &[],
-        ));
-
-        self
-    }
-
-    /// Adds swap routes to the pool manager contract.
-    #[track_caller]
-    pub(crate) fn add_swap_routes(
-        &mut self,
-        sender: Addr,
-        swap_routes: Vec<SwapRoute>,
-        result: impl Fn(Result<AppResponse, anyhow::Error>),
-    ) -> &mut Self {
-        result(self.app.execute_contract(
-            sender,
-            self.pool_manager_addr.clone(),
-            &amm::pool_manager::ExecuteMsg::AddSwapRoutes { swap_routes },
-            &[],
-        ));
-
-        self
-    }
-
-    /// Removes swap routes from the pool manager contract.
-    #[track_caller]
-    pub(crate) fn remove_swap_routes(
-        &mut self,
-        sender: Addr,
-        swap_routes: Vec<SwapRoute>,
-        result: impl Fn(Result<AppResponse, anyhow::Error>),
-    ) -> &mut Self {
-        result(self.app.execute_contract(
-            sender,
-            self.pool_manager_addr.clone(),
-            &amm::pool_manager::ExecuteMsg::RemoveSwapRoutes { swap_routes },
             &[],
         ));
 
@@ -587,7 +529,7 @@ impl TestingSuite {
 
     pub(crate) fn query_balance(
         &mut self,
-        addr: String,
+        addr: &String,
         denom: impl Into<String>,
         result: impl Fn(StdResult<Coin>),
     ) -> &mut Self {
@@ -600,7 +542,7 @@ impl TestingSuite {
 
     pub(crate) fn query_all_balances(
         &mut self,
-        addr: String,
+        addr: &String,
         result: impl Fn(StdResult<Vec<Coin>>),
     ) -> &mut Self {
         let balance_resp: StdResult<Vec<Coin>> = self.app.wrap().query_all_balances(addr);
@@ -717,7 +659,7 @@ impl TestingSuite {
     pub(crate) fn query_amount_of_lp_token(
         &mut self,
         identifier: String,
-        sender: String,
+        sender: &String,
         result: impl Fn(StdResult<Uint128>),
     ) -> &mut Self {
         // Get the LP token from Config
@@ -758,66 +700,10 @@ impl TestingSuite {
             .unwrap()
     }
 
-    /// Retrieves a swap route for a given pool of assets.
-    pub(crate) fn query_swap_route(
-        &mut self,
-        offer_asset_denom: String,
-        ask_asset_denom: String,
-        result: impl Fn(StdResult<SwapRouteResponse>),
-    ) -> &mut Self {
-        let swap_route_response: StdResult<SwapRouteResponse> = self.app.wrap().query_wasm_smart(
-            &self.pool_manager_addr,
-            &amm::pool_manager::QueryMsg::SwapRoute {
-                offer_asset_denom,
-                ask_asset_denom,
-            },
-        );
-
-        result(swap_route_response);
-
-        self
-    }
-
-    /// Retrieves the swap routes for a given poolr of assets.
-    pub(crate) fn query_swap_routes(
-        &mut self,
-        result: impl Fn(StdResult<SwapRoutesResponse>),
-    ) -> &mut Self {
-        let swap_routes_response: StdResult<SwapRoutesResponse> = self.app.wrap().query_wasm_smart(
-            &self.pool_manager_addr,
-            &amm::pool_manager::QueryMsg::SwapRoutes,
-        );
-
-        result(swap_routes_response);
-
-        self
-    }
-
-    /// Retrieves the swap route creator for a given pool of assets.
-    pub(crate) fn query_swap_route_creator(
-        &mut self,
-        offer_asset_denom: String,
-        ask_asset_denom: String,
-        result: impl Fn(StdResult<SwapRouteCreatorResponse>),
-    ) -> &mut Self {
-        let swap_route_creator_response: StdResult<SwapRouteCreatorResponse> =
-            self.app.wrap().query_wasm_smart(
-                &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::SwapRouteCreator {
-                    offer_asset_denom,
-                    ask_asset_denom,
-                },
-            );
-
-        result(swap_route_creator_response);
-
-        self
-    }
-
     #[track_caller]
     pub(crate) fn query_incentive_positions(
         &mut self,
-        address: Addr,
+        address: &Addr,
         open_state: Option<bool>,
         result: impl Fn(StdResult<PositionsResponse>),
     ) -> &mut Self {

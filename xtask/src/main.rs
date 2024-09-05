@@ -1,5 +1,4 @@
-#![cfg(not(tarpaulin_include))]
-
+#[cfg(not(tarpaulin_include))]
 use std::{env, error::Error};
 
 /// Traverses through the workspace and generates schemas
