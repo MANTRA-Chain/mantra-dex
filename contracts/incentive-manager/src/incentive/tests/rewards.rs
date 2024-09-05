@@ -1,12 +1,12 @@
 use crate::incentive::commands::{compute_start_from_epoch_for_user, compute_user_weights};
 use crate::state::LP_WEIGHT_HISTORY;
 use amm::incentive_manager::{Curve, Incentive, Position};
-use amm::pool_network::mock_querier::mock_dependencies;
+use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::{Addr, Coin, Uint128};
 
 #[test]
 fn compute_start_from_epoch_for_user_successfully() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let user = Addr::unchecked("user");
 
     let mut incentive = Incentive {
@@ -83,7 +83,7 @@ fn compute_start_from_epoch_for_user_successfully() {
 
 #[test]
 fn compute_user_weights_successfully() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
 
     let user = Addr::unchecked("user");
 

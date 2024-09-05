@@ -42,3 +42,4 @@ common-testing.workspace = true
 epoch-manager.workspace = true
 anyhow.workspace = true
 pool-manager.workspace = true
+fee-collector.workspace = true

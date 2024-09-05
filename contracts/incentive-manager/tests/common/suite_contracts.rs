@@ -13,32 +13,8 @@ pub fn incentive_manager_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-/// Creates the whale lair contract
-pub fn _whale_lair_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        whale_lair::contract::execute,
-        whale_lair::contract::instantiate,
-        whale_lair::contract::query,
-    )
-    .with_migrate(whale_lair::contract::migrate);
-
-    Box::new(contract)
-}
-
-/// Creates the whale lair contract
-pub fn _bonding_manager_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        bonding_manager::contract::execute,
-        bonding_manager::contract::instantiate,
-        bonding_manager::contract::query,
-    )
-    .with_migrate(bonding_manager::contract::migrate);
-
-    Box::new(contract)
-}
-
 /// Creates the pool manager contract
-pub fn _pool_manager_contract() -> Box<dyn Contract<Empty>> {
+pub fn pool_manager_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
         pool_manager::contract::execute,
         pool_manager::contract::instantiate,
@@ -57,6 +33,18 @@ pub fn epoch_manager_contract() -> Box<dyn Contract<Empty>> {
         epoch_manager::contract::query,
     )
     .with_migrate(epoch_manager::contract::migrate);
+
+    Box::new(contract)
+}
+
+/// Creates the fee collector contract
+pub fn fee_collector_contract() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        fee_collector::contract::execute,
+        fee_collector::contract::instantiate,
+        fee_collector::contract::query,
+    )
+    .with_migrate(fee_collector::contract::migrate);
 
     Box::new(contract)
 }

@@ -62,6 +62,7 @@ cw-migrate-error-derive = { version = "0.1.0" }
 epoch-manager = { path = "contracts/epoch-manager" }
 pool-manager = { path = "contracts/pool-manager" }
 incentive-manager = { path = "contracts/incentive-manager" }
+fee-collector = { path = "contracts/fee-collector" }
 
 [workspace.metadata.dylint]
 libraries = [{ git = "https://github.com/0xFable/cw-lint" }]

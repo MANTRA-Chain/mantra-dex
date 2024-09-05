@@ -677,6 +677,7 @@ dependencies = [
  "cw20",
  "cw20-base",
  "epoch-manager",
+ "fee-collector",
  "mantra-utils",
  "pool-manager",
  "schemars",
