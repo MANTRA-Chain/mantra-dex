@@ -102,7 +102,7 @@ pub fn execute(
         },
         ExecuteMsg::UpdateOwnership(action) => {
             cw_utils::nonpayable(&info)?;
-            amm::common::update_ownership(deps, env, info, action).map_err(Into::into)
+            mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
         }
         ExecuteMsg::EpochChangedHook(msg) => {
             manager::commands::on_epoch_changed(deps, env, info, msg)

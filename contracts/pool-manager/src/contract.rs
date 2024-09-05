@@ -149,15 +149,7 @@ pub fn execute(
             liquidity::commands::withdraw_liquidity(deps, env, info, pool_identifier)
         }
         ExecuteMsg::UpdateOwnership(action) => {
-            Ok(
-                cw_ownable::update_ownership(deps, &env.block, &info.sender, action).map(
-                    |ownership| {
-                        Response::default()
-                            .add_attribute("action", "update_ownership")
-                            .add_attributes(ownership.into_attributes())
-                    },
-                )?,
-            )
+            mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
         }
         ExecuteMsg::ExecuteSwapOperations {
             operations,

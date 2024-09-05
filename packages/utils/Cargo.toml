@@ -10,3 +10,5 @@ publish.workspace = true
 authors.workspace = true
 
 [dependencies]
+cosmwasm-std.workspace = true
+cw-ownable.workspace = true

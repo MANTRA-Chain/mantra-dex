@@ -1,0 +1,28 @@
+[package]
+name = "fee-collector"
+description = "Fee collector contract for MANTRA. Fees accrued by pool and incentive creation, in addition to swaps, are collected here."
+version = "0.1.0"
+authors = ["Javier C <javier.m.costa@mantra.finance>"]
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+
+[dependencies]
+cosmwasm-schema.workspace = true
+cosmwasm-std.workspace = true
+cw2.workspace = true
+schemars.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+cw-ownable.workspace = true
+mantra-utils.workspace = true
+cw-migrate-error-derive.workspace = true
+semver.workspace = true
+cw-utils.workspace = true
+amm.workspace = true
+
+[dev-dependencies]
+cw-multi-test.workspace = true

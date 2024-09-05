@@ -22,16 +22,16 @@ The following is the architecture of MANTRA DEX, and a general description of ea
 title: MANTRA DEX
 ---
 flowchart
-P[Pool Manager] <--> I[Incentive Manager]
-P -.->|swap fees| P
-P[Pool Manager] -->|protocol fees| F[Fee Collector]
-I <-->|on_epoch_created| E[Epoch Manager]
-I -->|protocol fees| F
+  P[Pool Manager] <--> I[Incentive Manager]
+  P -.->|swap fees| P
+  P -->|protocol fees| F[Fee Collector]
+  I <-->|on_epoch_created| E[Epoch Manager]
+  I -->|protocol fees| F
 
-    click P "https://github.com/MANTRA-Finance/amm/tree/main/contracts/pool-manager" "Pool Manager"
-    click I "https://github.com/MANTRA-Finance/amm/tree/main/contracts/incentive-manager" "Incentive Manager"
-    click E "https://github.com/MANTRA-Finance/amm/tree/main/contracts/epoch-manager" "Epoch Manager"
-    click F "https://github.com/MANTRA-Finance/amm/tree/main/contracts/fee-collector" "Fee Collector"
+  click P "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/pool-manager" "Pool Manager"
+  click I "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/incentive-manager" "Incentive Manager"
+  click E "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/epoch-manager" "Epoch Manager"
+  click F "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/fee-collector" "Fee Collector"
 ```
 
 The direction of the arrows represents the dependencies between the contracts.
