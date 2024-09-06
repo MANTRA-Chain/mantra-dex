@@ -435,11 +435,11 @@ pub(crate) fn update_config(
             config.max_incentive_epoch_buffer.to_string(),
         ),
         (
-            "min_unbonding_duration",
+            "min_unlocking_duration",
             config.min_unlocking_duration.to_string(),
         ),
         (
-            "max_unbonding_duration",
+            "max_unlocking_duration",
             config.max_unlocking_duration.to_string(),
         ),
         (

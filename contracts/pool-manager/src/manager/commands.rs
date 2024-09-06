@@ -88,7 +88,7 @@ pub fn create_pool(
     // Prepare the sending of pool creation fee
     let mut messages: Vec<CosmosMsg> = vec![];
     if !config.pool_creation_fee.amount.is_zero() {
-        // send pool creation fee to the bonding manager
+        // send pool creation fee to the fee collector
         messages.push(
             BankMsg::Send {
                 to_address: config.fee_collector_addr.to_string(),

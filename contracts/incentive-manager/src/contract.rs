@@ -70,11 +70,11 @@ pub fn instantiate(
             config.max_incentive_epoch_buffer.to_string(),
         ),
         (
-            "min_unbonding_duration",
+            "min_unlocking_duration",
             config.min_unlocking_duration.to_string(),
         ),
         (
-            "max_unbonding_duration",
+            "max_unlocking_duration",
             config.max_unlocking_duration.to_string(),
         ),
         (
@@ -133,7 +133,7 @@ pub fn execute(
             }
         },
         ExecuteMsg::UpdateConfig {
-            fee_collector_addr: bonding_manager_addr,
+            fee_collector_addr,
             epoch_manager_addr,
             create_incentive_fee,
             max_concurrent_incentives,
@@ -146,7 +146,7 @@ pub fn execute(
             manager::commands::update_config(
                 deps,
                 info,
-                bonding_manager_addr,
+                fee_collector_addr,
                 epoch_manager_addr,
                 create_incentive_fee,
                 max_concurrent_incentives,

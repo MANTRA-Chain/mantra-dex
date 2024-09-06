@@ -472,7 +472,7 @@ impl TestingSuite {
     pub(crate) fn update_config(
         &mut self,
         sender: &Addr,
-        new_bonding_manager_addr: Option<Addr>,
+        new_fee_collector_addr: Option<Addr>,
         new_pool_creation_fee: Option<Coin>,
         new_feature_toggle: Option<FeatureToggle>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
@@ -481,7 +481,7 @@ impl TestingSuite {
             sender.clone(),
             self.pool_manager_addr.clone(),
             &amm::pool_manager::ExecuteMsg::UpdateConfig {
-                fee_collector_addr: new_bonding_manager_addr.map(|addr| addr.to_string()),
+                fee_collector_addr: new_fee_collector_addr.map(|addr| addr.to_string()),
                 pool_creation_fee: new_pool_creation_fee,
                 feature_toggle: new_feature_toggle,
             },

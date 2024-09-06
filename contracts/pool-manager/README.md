@@ -52,3 +52,40 @@ successfully.
 
 After a swap takes place, the pool's balances are updated, and the fees are collected and sent to the Fee Collector, while
 the swap fee remains in the pool to benefit the LP token holders, increasing the pool's liquidity and thus the LP token value.
+
+---
+
+Pool Manager operations can be visualized as follows:
+
+```mermaid
+---
+title: Pool Manager Overview
+---
+graph LR
+    A[Pool Manager] --> B(Pool Creation)
+    A --> C(Deposits and Withdrawals)
+    A --> D(Swaps)
+
+    subgraph Pool Creation
+        B --> E["CreatePool (User)"]
+        E --> X[Fees Collected by Fee Collector]
+        E --> F[Pools Map]
+    end
+
+    subgraph Deposits and Withdrawals
+        C --> G["ProvideLiquidity (User)"]
+        C --> H["WithdrawLiquidity (User)"]
+        G --> I[LP Tokens Minted]
+        H --> J[LP Tokens Burned]
+        J --> Z[User gets assets equivalent to the LP shares burned]
+    end
+
+    subgraph Swaps
+        D --> K["Swap (Single-hop)"]
+        D --> L["ExecuteSwapOperations (Multi-hop)"]
+        K --> M{Pool Balances Updated}
+        L --> M
+        M --> N[Fees Collected by Fee Collector]
+        M --> O[Swap Fees Remain in Pool for LPs]
+    end
+```
