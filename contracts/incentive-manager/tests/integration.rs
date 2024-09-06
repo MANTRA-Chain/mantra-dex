@@ -55,7 +55,7 @@ fn instantiate_incentive_manager() {
 
             match err {
                 ContractError::InvalidUnlockingRange { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::InvalidUnbondingRange"),
+                _ => panic!("Wrong error type, should return ContractError::InvalidUnlockingRange"),
             }
         },
     ).instantiate_err(
@@ -1022,7 +1022,7 @@ pub fn update_config() {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
                 ContractError::InvalidUnlockingRange { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::InvalidUnbondingRange"),
+                _ => panic!("Wrong error type, should return ContractError::InvalidUnlockingRange"),
             }
         },
     ).update_config(
@@ -1043,7 +1043,7 @@ pub fn update_config() {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
                 ContractError::InvalidUnlockingRange { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::InvalidUnbondingRange"),
+                _ => panic!("Wrong error type, should return ContractError::InvalidUnlockingRange"),
             }
         },
     ).update_config(
@@ -2555,7 +2555,7 @@ fn test_multiple_incentives_and_positions() {
     suite.instantiate_default();
 
     let incentive_manager_addr = suite.incentive_manager_addr.clone();
-    let bonding_manager_addr = suite.fee_collector_addr.clone();
+    let fee_collector_addr = suite.fee_collector_addr.clone();
 
     // create 4 incentives with 2 different LPs
     suite
@@ -2884,7 +2884,7 @@ fn test_multiple_incentives_and_positions() {
         )
         .query_balance(
             lp_denom_1.clone().to_string(),
-            &bonding_manager_addr,
+            &fee_collector_addr,
             |balance| {
                 // 10% of the lp the user input initially
                 assert_eq!(balance, Uint128::new(4_000));
@@ -2892,7 +2892,7 @@ fn test_multiple_incentives_and_positions() {
         )
         .query_balance(
             lp_denom_2.clone().to_string(),
-            &bonding_manager_addr,
+            &fee_collector_addr,
             |balance| {
                 // 10% of the lp the user input initially
                 assert_eq!(balance, Uint128::new(8_000));

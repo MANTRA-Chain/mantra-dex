@@ -88,3 +88,31 @@ for that given incentive.
 To claim rewards, the user must call the `Claim` message. Once that's done, the contract will save the epoch in which the
 claim was made in `LAST_CLAIMED_EPOCH`, and will sync the user's LP weight history saved in `LP_WEIGHT_HISTORY`. This helps
 computing the rewards for the user.
+
+---
+
+```mermaid
+---
+title: Incentive Manager Overview
+---
+graph TD
+    A[Incentive Manager] --> B(Incentives)
+    A --> C(Positions)
+
+    subgraph Incentives
+        B --> D["Create Incentive (User)"]
+        B --> E["Top up Incentive (User)"]
+        B --> F["Close Incentive (Owner or Contract Owner)"]
+    end
+
+    subgraph Positions
+        C --> G["Create Position (User)"]
+        C --> H["Expand Position (User)"]
+        C --> I["Close Position (User)"]
+        C --> J["Withdraw Position (User)"]
+    end
+
+    L{On Epoch Changed} --> Q[Store LP weight for contract]
+    N["Claim Incentives (User)"] -->|Rewards go to user| O[Save user's last claimed epoch]
+    N --> P[Save LP Weight History]
+```

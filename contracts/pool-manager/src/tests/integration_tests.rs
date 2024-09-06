@@ -1838,7 +1838,7 @@ mod swapping {
             },
         );
 
-        // Verify fee collection by querying the address of the whale lair and checking its balance
+        // Verify fee collection by querying the address of the fee collector and checking its balance
         // Should be 99 uLUNA
         suite.query_balance(
             &suite.fee_collector_addr.to_string(),
