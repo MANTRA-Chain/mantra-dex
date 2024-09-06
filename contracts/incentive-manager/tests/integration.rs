@@ -16,13 +16,13 @@ mod common;
 #[test]
 fn instantiate_incentive_manager() {
     let mut suite =
-        TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, "uwhale".to_string())]);
+        TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, "uom".to_string())]);
 
     suite.instantiate_err(
         MOCK_CONTRACT_ADDR.to_string(),
         MOCK_CONTRACT_ADDR.to_string(),
         Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
         },
         0,
@@ -42,7 +42,7 @@ fn instantiate_incentive_manager() {
         MOCK_CONTRACT_ADDR.to_string(),
         MOCK_CONTRACT_ADDR.to_string(),
         Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
         },
         1,
@@ -62,7 +62,7 @@ fn instantiate_incentive_manager() {
         MOCK_CONTRACT_ADDR.to_string(),
         MOCK_CONTRACT_ADDR.to_string(),
         Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
         },
         1,
@@ -82,7 +82,7 @@ fn instantiate_incentive_manager() {
         MOCK_CONTRACT_ADDR.to_string(),
         MOCK_CONTRACT_ADDR.to_string(),
         Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
         },
         7,
@@ -98,20 +98,21 @@ fn create_incentives() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale".to_string()),
-        coin(1_000_000_000u128, "ulab".to_string()),
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
+    suite.instantiate_default();
 
-    let creator = suite.creator();
+    let creator = suite.creator().clone();
     let other = suite.senders[1].clone();
+    let fee_collector = suite.fee_collector_addr.clone();
 
     // try all misconfigurations when creating an incentive
     suite
-        .instantiate_default()
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -119,7 +120,7 @@ fn create_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Default::default(),
                     },
                     incentive_identifier: None,
@@ -138,7 +139,7 @@ fn create_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -146,13 +147,13 @@ fn create_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(2_000, "ulab")],
+            vec![coin(2_000, "uusdy")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -164,7 +165,7 @@ fn create_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -172,13 +173,13 @@ fn create_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "uwhale".to_string(),
+                        denom: "uom".to_string(),
                         amount: Uint128::new(5_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(8_000, "uwhale")],
+            vec![coin(8_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -188,7 +189,7 @@ fn create_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -196,13 +197,13 @@ fn create_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(1_000, "uwhale")],
+            vec![coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -212,7 +213,7 @@ fn create_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -220,13 +221,13 @@ fn create_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(5_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(5_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -236,7 +237,7 @@ fn create_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -244,13 +245,13 @@ fn create_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(5_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -260,7 +261,7 @@ fn create_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -268,15 +269,14 @@ fn create_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
-
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
@@ -286,7 +286,7 @@ fn create_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -294,13 +294,13 @@ fn create_incentives() {
                     preliminary_end_epoch: Some(8),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -310,7 +310,7 @@ fn create_incentives() {
                 }
             },
         ).manage_incentive(
-        other.clone(),
+        &other,
         IncentiveAction::Fill {
             params: IncentiveParams {
                 lp_denom: lp_denom.clone(),
@@ -318,13 +318,13 @@ fn create_incentives() {
                 preliminary_end_epoch: Some(15),
                 curve: None,
                 incentive_asset: Coin {
-                    denom: "ulab".to_string(),
+                    denom: "uusdy".to_string(),
                     amount: Uint128::new(4_000u128),
                 },
                 incentive_identifier: None,
             },
         },
-        vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -334,7 +334,7 @@ fn create_incentives() {
             }
         },
     ).manage_incentive(
-        other.clone(),
+        &other,
         IncentiveAction::Fill {
             params: IncentiveParams {
                 lp_denom: lp_denom.clone(),
@@ -342,13 +342,13 @@ fn create_incentives() {
                 preliminary_end_epoch: Some(5),
                 curve: None,
                 incentive_asset: Coin {
-                    denom: "ulab".to_string(),
+                    denom: "uusdy".to_string(),
                     amount: Uint128::new(4_000u128),
                 },
                 incentive_identifier: None,
             },
         },
-        vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -360,31 +360,31 @@ fn create_incentives() {
     )
 
         .manage_incentive(
-        other.clone(),
-        IncentiveAction::Fill {
-            params: IncentiveParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: Some(20),
-                preliminary_end_epoch: Some(20),
-                curve: None,
-                incentive_asset: Coin {
-                    denom: "ulab".to_string(),
-                    amount: Uint128::new(4_000u128),
+            &other,
+            IncentiveAction::Fill {
+                params: IncentiveParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(20),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    incentive_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    incentive_identifier: None,
                 },
-                incentive_identifier: None,
             },
-        },
-        vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
-            match err {
-                ContractError::IncentiveStartTimeAfterEndTime { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::IncentiveStartTimeAfterEndTime"),
-            }
-        },
-    ).manage_incentive(
-        other.clone(),
+                match err {
+                    ContractError::IncentiveStartTimeAfterEndTime { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::IncentiveStartTimeAfterEndTime"),
+                }
+            },
+        ).manage_incentive(
+        &other,
         IncentiveAction::Fill {
             params: IncentiveParams {
                 lp_denom: lp_denom.clone(),
@@ -392,13 +392,13 @@ fn create_incentives() {
                 preliminary_end_epoch: Some(35),
                 curve: None,
                 incentive_asset: Coin {
-                    denom: "ulab".to_string(),
+                    denom: "uusdy".to_string(),
                     amount: Uint128::new(4_000u128),
                 },
                 incentive_identifier: None,
             },
         },
-        vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -412,7 +412,7 @@ fn create_incentives() {
     // create an incentive properly
     suite
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -420,19 +420,19 @@ fn create_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -440,19 +440,19 @@ fn create_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(10_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(10_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -460,13 +460,13 @@ fn create_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 // should fail, max incentives per lp_denom was set to 2 in the instantiate_default
@@ -491,7 +491,7 @@ fn create_incentives() {
                 assert_eq!(
                     incentives_response.incentives[0].incentive_asset,
                     Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000),
                     }
                 );
@@ -507,14 +507,14 @@ fn create_incentives() {
                 assert_eq!(
                     incentives_response.incentives[0].incentive_asset,
                     Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000),
                     }
                 );
             },
         )
         .query_incentives(
-            Some(IncentivesBy::IncentiveAsset("ulab".to_string())),
+            Some(IncentivesBy::IncentiveAsset("uusdy".to_string())),
             None,
             None,
             |result| {
@@ -530,7 +530,11 @@ fn create_incentives() {
                 let incentives_response = result.unwrap();
                 assert_eq!(incentives_response.incentives.len(), 2);
             },
-        );
+        )
+        // two incentives were created, therefore the fee collector should have received 2_000 uom
+        .query_balance("uom".to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(2 * 1_000));
+        });
 }
 
 #[test]
@@ -538,8 +542,8 @@ fn expand_incentives() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale".to_string()),
-        coin(1_000_000_000u128, "ulab".to_string()),
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
@@ -550,7 +554,7 @@ fn expand_incentives() {
     suite
         .instantiate_default()
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -558,19 +562,19 @@ fn expand_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -578,13 +582,13 @@ fn expand_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(4_000, "ulab")],
+            vec![coin(4_000, "uusdy")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -595,7 +599,7 @@ fn expand_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -603,13 +607,13 @@ fn expand_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "uwhale".to_string(),
+                        denom: "uom".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(8_000, "uwhale")],
+            vec![coin(8_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -620,7 +624,7 @@ fn expand_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -628,13 +632,13 @@ fn expand_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_100u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(4_100, "ulab")],
+            vec![coin(4_100, "uusdy")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -656,7 +660,7 @@ fn expand_incentives() {
                 assert_eq!(
                     incentive.incentive_asset,
                     Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000),
                     }
                 );
@@ -665,7 +669,7 @@ fn expand_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -673,13 +677,13 @@ fn expand_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(5_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(5_000u128, "ulab")],
+            vec![coin(5_000u128, "uusdy")],
             |result| {
                 result.unwrap();
             },
@@ -694,7 +698,7 @@ fn expand_incentives() {
                 assert_eq!(
                     incentive.incentive_asset,
                     Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(9_000),
                     }
                 );
@@ -710,8 +714,8 @@ fn close_incentives() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale".to_string()),
-        coin(1_000_000_000u128, "ulab".to_string()),
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
@@ -723,7 +727,7 @@ fn close_incentives() {
     suite
         .instantiate_default()
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -731,23 +735,23 @@ fn close_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Close {
                 incentive_identifier: "incentive_1".to_string(),
             },
-            vec![coin(1_000, "uwhale")],
+            vec![coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -757,7 +761,7 @@ fn close_incentives() {
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Close {
                 incentive_identifier: "incentive_2".to_string(),
             },
@@ -774,7 +778,7 @@ fn close_incentives() {
             },
         )
         .manage_incentive(
-            another.clone(),
+            &another,
             IncentiveAction::Close {
                 incentive_identifier: "incentive_1".to_string(),
             },
@@ -788,11 +792,11 @@ fn close_incentives() {
                 }
             },
         )
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_996_000));
         })
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Close {
                 incentive_identifier: "incentive_1".to_string(),
             },
@@ -801,14 +805,14 @@ fn close_incentives() {
                 result.unwrap();
             },
         )
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1000_000_000));
         });
 
     suite
         .instantiate_default()
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -816,23 +820,23 @@ fn close_incentives() {
                     preliminary_end_epoch: Some(28),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_996_000));
         })
         // the owner of the contract can also close incentives
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Close {
                 incentive_identifier: "incentive_1".to_string(),
             },
@@ -841,7 +845,7 @@ fn close_incentives() {
                 result.unwrap();
             },
         )
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1000_000_000));
         });
 }
@@ -860,7 +864,7 @@ fn verify_ownership() {
             assert_eq!(Addr::unchecked(ownership.owner.unwrap()), creator);
         })
         .update_ownership(
-            unauthorized,
+            &unauthorized,
             cw_ownable::Action::TransferOwnership {
                 new_owner: other.to_string(),
                 expiry: None,
@@ -875,7 +879,7 @@ fn verify_ownership() {
             },
         )
         .update_ownership(
-            creator,
+            &creator,
             cw_ownable::Action::TransferOwnership {
                 new_owner: other.to_string(),
                 expiry: None,
@@ -884,24 +888,16 @@ fn verify_ownership() {
                 result.unwrap();
             },
         )
-        .update_ownership(
-            other.clone(),
-            cw_ownable::Action::AcceptOwnership,
-            |result| {
-                result.unwrap();
-            },
-        )
+        .update_ownership(&other, cw_ownable::Action::AcceptOwnership, |result| {
+            result.unwrap();
+        })
         .query_ownership(|result| {
             let ownership = result.unwrap();
             assert_eq!(Addr::unchecked(ownership.owner.unwrap()), other);
         })
-        .update_ownership(
-            other.clone(),
-            cw_ownable::Action::RenounceOwnership,
-            |result| {
-                result.unwrap();
-            },
-        )
+        .update_ownership(&other, cw_ownable::Action::RenounceOwnership, |result| {
+            result.unwrap();
+        })
         .query_ownership(|result| {
             let ownership = result.unwrap();
             assert!(ownership.owner.is_none());
@@ -909,15 +905,12 @@ fn verify_ownership() {
 }
 
 #[test]
-fn test_epoch_change_hook() {}
-
-#[test]
 pub fn update_config() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale".to_string()),
-        coin(1_000_000_000u128, "ulab".to_string()),
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
@@ -927,14 +920,14 @@ pub fn update_config() {
 
     suite.instantiate_default();
 
-    let bonding_manager_addr = suite.bonding_manager_addr.clone();
+    let fee_collector = suite.fee_collector_addr.clone();
     let epoch_manager = suite.epoch_manager_addr.clone();
 
     let expected_config = Config {
-        bonding_manager_addr: fee_collector_addr,
+        fee_collector_addr: fee_collector,
         epoch_manager_addr: epoch_manager,
         create_incentive_fee: Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
         },
         max_concurrent_incentives: 2u32,
@@ -949,11 +942,11 @@ pub fn update_config() {
         assert_eq!(config, expected_config);
     })
         .update_config(
-            other.clone(),
+            &other,
             Some(MOCK_CONTRACT_ADDR.to_string()),
             Some(MOCK_CONTRACT_ADDR.to_string()),
             Some(Coin {
-                denom: "uwhale".to_string(),
+                denom: "uom".to_string(),
                 amount: Uint128::new(2_000u128),
             }),
             Some(3u32),
@@ -961,7 +954,7 @@ pub fn update_config() {
             Some(172_800u64),
             Some(864_000u64),
             Some(Decimal::percent(50)),
-            vec![coin(1_000, "uwhale")],
+            vec![coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -970,11 +963,11 @@ pub fn update_config() {
                 }
             },
         ).update_config(
-        other.clone(),
+        &other,
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         }),
         Some(0u32),
@@ -991,11 +984,11 @@ pub fn update_config() {
             }
         },
     ).update_config(
-        creator.clone(),
+        &creator,
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         }),
         Some(0u32),
@@ -1012,11 +1005,11 @@ pub fn update_config() {
             }
         },
     ).update_config(
-        creator.clone(),
+        &creator,
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         }),
         Some(5u32),
@@ -1033,11 +1026,11 @@ pub fn update_config() {
             }
         },
     ).update_config(
-        creator.clone(),
+        &creator,
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         }),
         Some(5u32),
@@ -1054,11 +1047,11 @@ pub fn update_config() {
             }
         },
     ).update_config(
-        creator.clone(),
+        &creator,
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         }),
         Some(5u32),
@@ -1075,11 +1068,11 @@ pub fn update_config() {
             }
         },
     ).update_config(
-        creator.clone(),
+        &creator,
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         }),
         Some(5u32),
@@ -1097,7 +1090,7 @@ pub fn update_config() {
         fee_collector_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
         epoch_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
         create_incentive_fee: Coin {
-            denom: "uwhale".to_string(),
+            denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         },
         max_concurrent_incentives: 5u32,
@@ -1119,8 +1112,8 @@ pub fn test_manage_position() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale"),
-        coin(1_000_000_000u128, "ulab"),
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -1133,14 +1126,14 @@ pub fn test_manage_position() {
     suite.instantiate_default();
 
     let incentive_manager = suite.incentive_manager_addr.clone();
-    let whale_lair = suite.bonding_manager_addr.clone();
+    let fee_collector = suite.fee_collector_addr.clone();
 
     suite
-        .add_hook(creator.clone(), incentive_manager, vec![], |result| {
+        .add_hook(&creator, &incentive_manager, vec![], |result| {
             result.unwrap();
         })
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -1148,13 +1141,13 @@ pub fn test_manage_position() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(8_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1169,7 +1162,7 @@ pub fn test_manage_position() {
             );
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 80_400,
@@ -1187,7 +1180,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 32_536_000,
@@ -1205,7 +1198,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 32_536_000,
@@ -1221,7 +1214,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
@@ -1243,7 +1236,7 @@ pub fn test_manage_position() {
             );
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
@@ -1258,7 +1251,7 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_positions(creator.clone(), Some(true), |result| {
+        .query_positions(&creator, Some(true), |result| {
             let positions = result.unwrap();
             assert_eq!(positions.positions.len(), 1);
             assert_eq!(
@@ -1272,12 +1265,12 @@ pub fn test_manage_position() {
                     unlocking_duration: 86400,
                     open: true,
                     expiring_at: None,
-                    receiver: Addr::unchecked("migaloo1h3s5np57a8cxaca3rdjlgu8jzmr2d2zz55s5y3"),
+                    receiver: creator.clone(),
                 }
             );
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
@@ -1289,7 +1282,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Withdraw {
                 identifier: "creator_position".to_string(),
                 emergency_unlock: None,
@@ -1314,7 +1307,7 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_positions(creator.clone(), Some(true), |result| {
+        .query_positions(&creator, Some(true), |result| {
             let positions = result.unwrap();
             assert_eq!(positions.positions.len(), 1);
             assert_eq!(
@@ -1328,7 +1321,7 @@ pub fn test_manage_position() {
                     unlocking_duration: 86400,
                     open: true,
                     expiring_at: None,
-                    receiver: Addr::unchecked("migaloo1h3s5np57a8cxaca3rdjlgu8jzmr2d2zz55s5y3"),
+                    receiver: creator.clone(),
                 }
             );
         })
@@ -1343,7 +1336,7 @@ pub fn test_manage_position() {
             );
         })
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .query_current_epoch(|result| {
@@ -1363,7 +1356,7 @@ pub fn test_manage_position() {
             );
         })
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .query_current_epoch(|result| {
@@ -1381,7 +1374,7 @@ pub fn test_manage_position() {
             );
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 //refill position
                 identifier: Some("creator_position".to_string()),
@@ -1413,7 +1406,7 @@ pub fn test_manage_position() {
 
     suite
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Close {
                 identifier: "creator_position".to_string(),
                 lp_asset: Some(Coin {
@@ -1431,7 +1424,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Close {
                 // remove 4_000 from the 7_000 position
                 identifier: "creator_position".to_string(),
@@ -1449,31 +1442,27 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .claim(
-            creator.clone(),
-            vec![coin(4_000, lp_denom.clone())],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::PaymentError { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::PaymentError"),
-                }
-            },
-        )
-        .claim(other.clone(), vec![], |result| {
+        .claim(&creator, vec![coin(4_000, lp_denom.clone())], |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::PaymentError { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::PaymentError"),
+            }
+        })
+        .claim(&other, vec![], |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
                 ContractError::NoOpenPositions { .. } => {}
                 _ => panic!("Wrong error type, should return ContractError::NoOpenPositions"),
             }
         })
-        .query_balance("ulab".to_string(), creator.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_992_000));
         })
-        .claim(creator.clone(), vec![], |result| {
+        .claim(&creator, vec![], |result| {
             result.unwrap();
         })
-        .query_balance("ulab".to_string(), creator.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_994_000));
         })
         .query_incentives(None, None, None, |result| {
@@ -1485,7 +1474,7 @@ pub fn test_manage_position() {
             );
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Close {
                 identifier: "non_existent__position".to_string(),
                 lp_asset: Some(Coin {
@@ -1503,7 +1492,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Close {
                 identifier: "creator_position".to_string(),
                 lp_asset: Some(Coin {
@@ -1521,7 +1510,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Close {
                 identifier: "creator_position".to_string(),
                 lp_asset: Some(Coin {
@@ -1539,7 +1528,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(), // someone tries to close the creator's position
+            &creator, // someone tries to close the creator's position
             PositionAction::Close {
                 identifier: "creator_position".to_string(),
                 lp_asset: Some(Coin {
@@ -1557,7 +1546,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Close {
                 // remove 5_000 from the 7_000 position
                 identifier: "creator_position".to_string(),
@@ -1572,7 +1561,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Withdraw {
                 identifier: "2".to_string(),
                 emergency_unlock: None,
@@ -1614,12 +1603,12 @@ pub fn test_manage_position() {
         })
         // create a few epochs without any changes in the weight
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         //after a day the closed position should be able to be withdrawn
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Withdraw {
                 identifier: "creator_position".to_string(),
                 emergency_unlock: None,
@@ -1634,7 +1623,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Withdraw {
                 identifier: "non_existent_position".to_string(),
                 emergency_unlock: None,
@@ -1649,7 +1638,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Withdraw {
                 identifier: "2".to_string(),
                 emergency_unlock: None,
@@ -1664,11 +1653,11 @@ pub fn test_manage_position() {
             },
         )
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .query_lp_weight(&lp_denom, 14, |result| {
@@ -1698,10 +1687,10 @@ pub fn test_manage_position() {
             assert_eq!(epoch_response.epoch.id, 15);
         })
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
-        .query_rewards(creator.clone(), |result| {
+        .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { rewards } => {
@@ -1709,7 +1698,7 @@ pub fn test_manage_position() {
                     assert_eq!(
                         rewards[0],
                         Coin {
-                            denom: "ulab".to_string(),
+                            denom: "uusdy".to_string(),
                             amount: Uint128::new(6_000),
                         }
                     );
@@ -1727,7 +1716,7 @@ pub fn test_manage_position() {
             );
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Withdraw {
                 identifier: "2".to_string(),
                 emergency_unlock: None,
@@ -1741,10 +1730,10 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .claim(creator.clone(), vec![], |result| {
+        .claim(&creator, vec![], |result| {
             result.unwrap();
         })
-        .query_balance("ulab".to_string(), creator.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(1000_000_000));
         })
         .query_incentives(None, None, None, |result| {
@@ -1755,7 +1744,7 @@ pub fn test_manage_position() {
             );
             assert!(incentives_response.incentives[0].is_expired(15));
         })
-        .query_rewards(creator.clone(), |result| {
+        .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { rewards } => {
@@ -1766,14 +1755,14 @@ pub fn test_manage_position() {
                 }
             }
         })
-        .claim(creator.clone(), vec![], |result| {
+        .claim(&creator, vec![], |result| {
             result.unwrap();
         })
-        .query_balance("ulab".to_string(), creator.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(1000_000_000));
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Withdraw {
                 identifier: "2".to_string(),
                 emergency_unlock: None,
@@ -1783,23 +1772,23 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_positions(other.clone(), Some(false), |result| {
+        .query_positions(&other, Some(false), |result| {
             let positions = result.unwrap();
             assert!(positions.positions.is_empty());
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: None,
                 unlocking_duration: 86_400,
-                receiver: Some(another.clone().to_string()),
+                receiver: Some(another.to_string()),
             },
             vec![coin(5_000, lp_denom.clone())],
             |result| {
                 result.unwrap();
             },
         )
-        .query_positions(another.clone(), Some(true), |result| {
+        .query_positions(&another, Some(true), |result| {
             let positions = result.unwrap();
             assert_eq!(positions.positions.len(), 1);
             assert_eq!(
@@ -1818,7 +1807,7 @@ pub fn test_manage_position() {
             );
         })
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Close {
                 identifier: "3".to_string(),
                 lp_asset: None,
@@ -1833,7 +1822,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            another.clone(),
+            &another,
             PositionAction::Close {
                 identifier: "3".to_string(),
                 lp_asset: None, //close in full
@@ -1843,11 +1832,11 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_positions(another.clone(), Some(true), |result| {
+        .query_positions(&another, Some(true), |result| {
             let positions = result.unwrap();
             assert!(positions.positions.is_empty());
         })
-        .query_positions(another.clone(), Some(false), |result| {
+        .query_positions(&another, Some(false), |result| {
             let positions = result.unwrap();
             assert_eq!(positions.positions.len(), 1);
             assert_eq!(
@@ -1877,7 +1866,7 @@ pub fn test_manage_position() {
     // try emergency exit a position that is closed
     suite
         .manage_position(
-            another.clone(),
+            &another,
             PositionAction::Fill {
                 identifier: Some("special_position".to_string()),
                 unlocking_duration: 100_000,
@@ -1917,7 +1906,7 @@ pub fn test_manage_position() {
     // close the position
     suite
         .manage_position(
-            another.clone(),
+            &another,
             PositionAction::Close {
                 identifier: "special_position".to_string(),
                 lp_asset: None,
@@ -1941,15 +1930,11 @@ pub fn test_manage_position() {
 
     // emergency exit
     suite
-        .query_balance(
-            lp_denom.clone().to_string(),
-            whale_lair.clone(),
-            |balance| {
-                assert_eq!(balance, Uint128::zero());
-            },
-        )
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
         .manage_position(
-            another.clone(),
+            &another,
             PositionAction::Close {
                 identifier: "special_position".to_string(),
                 lp_asset: None,
@@ -1966,7 +1951,7 @@ pub fn test_manage_position() {
             },
         )
         .manage_position(
-            another.clone(),
+            &another,
             PositionAction::Withdraw {
                 identifier: "special_position".to_string(),
                 emergency_unlock: Some(true),
@@ -1976,13 +1961,9 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_balance(
-            lp_denom.clone().to_string(),
-            whale_lair.clone(),
-            |balance| {
-                assert_eq!(balance, Uint128::new(500));
-            },
-        );
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(500));
+        });
 }
 
 #[test]
@@ -1990,8 +1971,8 @@ fn claim_expired_incentive_returns_nothing() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale"),
-        coin(1_000_000_000u128, "ulab"),
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -2005,11 +1986,11 @@ fn claim_expired_incentive_returns_nothing() {
     let incentive_manager = suite.incentive_manager_addr.clone();
 
     suite
-        .add_hook(creator.clone(), incentive_manager, vec![], |result| {
+        .add_hook(&creator, &incentive_manager, vec![], |result| {
             result.unwrap();
         })
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -2017,19 +1998,19 @@ fn claim_expired_incentive_returns_nothing() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(8_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Fill {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
@@ -2050,7 +2031,7 @@ fn claim_expired_incentive_returns_nothing() {
                 }
             );
         })
-        .query_positions(other.clone(), Some(true), |result| {
+        .query_positions(&other, Some(true), |result| {
             let positions = result.unwrap();
             assert_eq!(positions.positions.len(), 1);
             assert_eq!(
@@ -2064,7 +2045,7 @@ fn claim_expired_incentive_returns_nothing() {
                     unlocking_duration: 86400,
                     open: true,
                     expiring_at: None,
-                    receiver: Addr::unchecked("migaloo193lk767456jhkzddnz7kf5jvuzfn67gyfvhc40"),
+                    receiver: other.clone(),
                 }
             );
         });
@@ -2073,45 +2054,45 @@ fn claim_expired_incentive_returns_nothing() {
 
     suite
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .add_one_day()
-        .create_epoch(creator.clone(), |result| {
+        .create_epoch(&creator, |result| {
             result.unwrap();
         })
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 14);
         })
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(other.clone(), vec![], |result| {
+        .claim(&other, vec![], |result| {
             result.unwrap();
         })
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_006_000u128));
         });
 
     // create a bunch of epochs to make the incentive expire
     for _ in 0..15 {
-        suite.add_one_day().create_epoch(creator.clone(), |result| {
+        suite.add_one_day().create_epoch(&creator, |result| {
             result.unwrap();
         });
     }
 
     // there shouldn't be anything to claim as the incentive has expired, even though it still has some funds
     suite
-        .query_rewards(creator.clone(), |result| {
+        .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { rewards } => {
@@ -2122,10 +2103,10 @@ fn claim_expired_incentive_returns_nothing() {
                 }
             }
         })
-        .claim(other.clone(), vec![], |result| {
+        .claim(&other, vec![], |result| {
             result.unwrap();
         })
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             // the balance hasn't changed
             assert_eq!(balance, Uint128::new(1_000_006_000u128));
         });
@@ -2136,8 +2117,8 @@ fn test_close_expired_incentives() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(2_000_000_000u128, "uwhale"),
-        coin(2_000_000_000u128, "ulab"),
+        coin(2_000_000_000u128, "uom"),
+        coin(2_000_000_000u128, "uusdy"),
         coin(2_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -2151,11 +2132,11 @@ fn test_close_expired_incentives() {
     let incentive_manager = suite.incentive_manager_addr.clone();
 
     suite
-        .add_hook(creator.clone(), incentive_manager, vec![], |result| {
+        .add_hook(&creator, &incentive_manager, vec![], |result| {
             result.unwrap();
         })
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -2163,13 +2144,13 @@ fn test_close_expired_incentives() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     incentive_identifier: None,
                 },
             },
-            vec![coin(8_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2177,7 +2158,7 @@ fn test_close_expired_incentives() {
 
     // create a bunch of epochs to make the incentive expire
     for _ in 0..20 {
-        suite.add_one_day().create_epoch(creator.clone(), |result| {
+        suite.add_one_day().create_epoch(&creator, |result| {
             result.unwrap();
         });
     }
@@ -2196,7 +2177,7 @@ fn test_close_expired_incentives() {
             assert!(incentives_response.incentives[0].is_expired(current_id));
         })
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -2204,13 +2185,13 @@ fn test_close_expired_incentives() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     incentive_identifier: Some("new_incentive".to_string()),
                 },
             },
-            vec![coin(10_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(10_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2225,7 +2206,7 @@ fn test_close_expired_incentives() {
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     claimed_amount: Uint128::zero(),
@@ -2246,7 +2227,7 @@ fn on_epoch_changed_unauthorized() {
 
     suite
         .instantiate_default()
-        .on_epoch_changed(creator, vec![], |result| {
+        .on_epoch_changed(&creator, vec![], |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
                 ContractError::Unauthorized { .. } => {}
@@ -2260,8 +2241,8 @@ fn expand_expired_incentive() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(2_000_000_000u128, "uwhale".to_string()),
-        coin(2_000_000_000u128, "ulab".to_string()),
+        coin(2_000_000_000u128, "uom".to_string()),
+        coin(2_000_000_000u128, "uusdy".to_string()),
         coin(2_000_000_000u128, "uosmo".to_string()),
         coin(2_000_000_000u128, lp_denom.clone()),
     ]);
@@ -2272,7 +2253,7 @@ fn expand_expired_incentive() {
     suite.instantiate_default();
 
     suite.manage_incentive(
-        other.clone(),
+        &other,
         IncentiveAction::Fill {
             params: IncentiveParams {
                 lp_denom: lp_denom.clone(),
@@ -2280,13 +2261,13 @@ fn expand_expired_incentive() {
                 preliminary_end_epoch: None,
                 curve: None,
                 incentive_asset: Coin {
-                    denom: "ulab".to_string(),
+                    denom: "uusdy".to_string(),
                     amount: Uint128::new(4_000u128),
                 },
                 incentive_identifier: Some("incentive".to_string()),
             },
         },
-        vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
         |result| {
             result.unwrap();
         },
@@ -2294,13 +2275,13 @@ fn expand_expired_incentive() {
 
     // create a bunch of epochs to make the incentive expire
     for _ in 0..15 {
-        suite.add_one_day().create_epoch(creator.clone(), |result| {
+        suite.add_one_day().create_epoch(&creator, |result| {
             result.unwrap();
         });
     }
 
     suite.manage_incentive(
-        other.clone(),
+        &other,
         IncentiveAction::Fill {
             params: IncentiveParams {
                 lp_denom: lp_denom.clone(),
@@ -2308,13 +2289,13 @@ fn expand_expired_incentive() {
                 preliminary_end_epoch: None,
                 curve: None,
                 incentive_asset: Coin {
-                    denom: "ulab".to_string(),
+                    denom: "uusdy".to_string(),
                     amount: Uint128::new(8_000u128),
                 },
                 incentive_identifier: Some("incentive".to_string()),
             },
         },
-        vec![coin(8_000u128, "ulab")],
+        vec![coin(8_000u128, "uusdy")],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
@@ -2332,8 +2313,8 @@ fn test_emergency_withdrawal() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale".to_string()),
-        coin(1_000_000_000u128, "ulab".to_string()),
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
@@ -2342,11 +2323,11 @@ fn test_emergency_withdrawal() {
 
     suite.instantiate_default();
 
-    let whale_lair_addr = suite.bonding_manager_addr.clone();
+    let fee_collector = suite.fee_collector_addr.clone();
 
     suite
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -2354,19 +2335,19 @@ fn test_emergency_withdrawal() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: Some("incentive".to_string()),
                 },
             },
-            vec![coin(4_000, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Fill {
                 identifier: Some("other_position".to_string()),
                 unlocking_duration: 86_400,
@@ -2377,7 +2358,7 @@ fn test_emergency_withdrawal() {
                 result.unwrap();
             },
         )
-        .query_positions(other.clone(), Some(true), |result| {
+        .query_positions(&other, Some(true), |result| {
             let positions = result.unwrap();
             assert_eq!(positions.positions.len(), 1);
             assert_eq!(
@@ -2395,18 +2376,14 @@ fn test_emergency_withdrawal() {
                 }
             );
         })
-        .query_balance(lp_denom.clone().to_string(), other.clone(), |balance| {
+        .query_balance(lp_denom.clone().to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_999_000));
         })
-        .query_balance(
-            lp_denom.clone().to_string(),
-            whale_lair_addr.clone(),
-            |balance| {
-                assert_eq!(balance, Uint128::zero());
-            },
-        )
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Withdraw {
                 identifier: "other_position".to_string(),
                 emergency_unlock: Some(true),
@@ -2416,17 +2393,13 @@ fn test_emergency_withdrawal() {
                 result.unwrap();
             },
         )
-        .query_balance(lp_denom.clone().to_string(), other.clone(), |balance| {
+        .query_balance(lp_denom.clone().to_string(), &other, |balance| {
             //emergency unlock penalty is 10% of the position amount, so the user gets 1000 - 100 = 900
             assert_eq!(balance, Uint128::new(999_999_900));
         })
-        .query_balance(
-            lp_denom.clone().to_string(),
-            whale_lair_addr.clone(),
-            |balance| {
-                assert_eq!(balance, Uint128::new(100));
-            },
-        );
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(100));
+        });
 }
 
 #[test]
@@ -2434,8 +2407,8 @@ fn test_incentive_helper() {
     let lp_denom = "factory/pool/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale".to_string()),
-        coin(1_000_000_000u128, "ulab".to_string()),
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
@@ -2445,12 +2418,12 @@ fn test_incentive_helper() {
 
     suite.instantiate_default();
 
-    let incentive_manager_addr = suite.incentive_manager_addr.clone();
-    let whale_lair_addr = suite.bonding_manager_addr.clone();
+    let incentive_manager = suite.incentive_manager_addr.clone();
+    let fee_collector = suite.fee_collector_addr.clone();
 
     suite
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -2458,13 +2431,13 @@ fn test_incentive_helper() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "uwhale".to_string(),
+                        denom: "uom".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     incentive_identifier: Some("incentive".to_string()),
                 },
             },
-            vec![coin(3_000, "uwhale")],
+            vec![coin(3_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -2475,21 +2448,17 @@ fn test_incentive_helper() {
                 }
             },
         )
-        .query_balance("uwhale".to_string(), creator.clone(), |balance| {
+        .query_balance("uom".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
-        .query_balance("uwhale".to_string(), whale_lair_addr.clone(), |balance| {
+        .query_balance("uom".to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
-        .query_balance(
-            "uwhale".to_string(),
-            incentive_manager_addr.clone(),
-            |balance| {
-                assert_eq!(balance, Uint128::zero());
-            },
-        )
+        .query_balance("uom".to_string(), &incentive_manager, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom.clone(),
@@ -2497,34 +2466,30 @@ fn test_incentive_helper() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
                     incentive_identifier: Some("incentive".to_string()),
                 },
             },
-            vec![coin(2_000, "ulab"), coin(3_000, "uwhale")],
+            vec![coin(2_000, "uusdy"), coin(3_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
-        .query_balance("uwhale".to_string(), whale_lair_addr.clone(), |balance| {
+        .query_balance("uom".to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::new(1_000));
         })
-        .query_balance(
-            "uwhale".to_string(),
-            incentive_manager_addr.clone(),
-            |balance| {
-                assert_eq!(balance, Uint128::zero());
-            },
-        )
-        .query_balance("uwhale".to_string(), creator.clone(), |balance| {
+        .query_balance("uom".to_string(), &incentive_manager, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .query_balance("uom".to_string(), &creator, |balance| {
             // got the excess of whale back
             assert_eq!(balance, Uint128::new(999_999_000));
         });
 
     suite.manage_incentive(
-        other.clone(),
+        &other,
         IncentiveAction::Fill {
             params: IncentiveParams {
                 lp_denom: lp_denom.clone(),
@@ -2532,13 +2497,13 @@ fn test_incentive_helper() {
                 preliminary_end_epoch: None,
                 curve: None,
                 incentive_asset: Coin {
-                    denom: "ulab".to_string(),
+                    denom: "uusdy".to_string(),
                     amount: Uint128::new(2_000u128),
                 },
                 incentive_identifier: Some("underpaid_incentive".to_string()),
             },
         },
-        vec![coin(2_000, "ulab"), coin(500, "uwhale")],
+        vec![coin(2_000, "uusdy"), coin(500, "uom")],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
@@ -2576,8 +2541,8 @@ fn test_multiple_incentives_and_positions() {
     let lp_denom_2 = "factory/pool2/uLP".to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uwhale".to_string()),
-        coin(1_000_000_000u128, "ulab".to_string()),
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom_1.clone()),
         coin(1_000_000_000u128, lp_denom_2.clone()),
@@ -2590,11 +2555,11 @@ fn test_multiple_incentives_and_positions() {
     suite.instantiate_default();
 
     let incentive_manager_addr = suite.incentive_manager_addr.clone();
-    let bonding_manager_addr = suite.bonding_manager_addr.clone();
+    let bonding_manager_addr = suite.fee_collector_addr.clone();
 
     // create 4 incentives with 2 different LPs
     suite
-        .add_hook(creator.clone(), incentive_manager_addr, vec![], |result| {
+        .add_hook(&creator, &incentive_manager_addr, vec![], |result| {
             result.unwrap();
         })
         .query_current_epoch(|result| {
@@ -2602,7 +2567,7 @@ fn test_multiple_incentives_and_positions() {
             assert_eq!(epoch_response.epoch.id, 10);
         })
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom_1.clone(),
@@ -2610,19 +2575,19 @@ fn test_multiple_incentives_and_positions() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
                     incentive_identifier: Some("incentive_1".to_string()),
                 },
             },
-            vec![coin(80_000u128, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(80_000u128, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_incentive(
-            creator.clone(),
+            &creator,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom_1.clone(),
@@ -2636,13 +2601,13 @@ fn test_multiple_incentives_and_positions() {
                     incentive_identifier: Some("incentive_2".to_string()),
                 },
             },
-            vec![coin(10_000u128, "uosmo"), coin(1_000, "uwhale")],
+            vec![coin(10_000u128, "uosmo"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom_2.clone(),
@@ -2650,19 +2615,19 @@ fn test_multiple_incentives_and_positions() {
                     preliminary_end_epoch: Some(23),
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "uwhale".to_string(),
+                        denom: "uom".to_string(),
                         amount: Uint128::new(30_000u128),
                     },
                     incentive_identifier: Some("incentive_3".to_string()),
                 },
             },
-            vec![coin(31_000u128, "uwhale")],
+            vec![coin(31_000u128, "uom")],
             |result| {
                 result.unwrap();
             },
         )
         .manage_incentive(
-            other.clone(),
+            &other,
             IncentiveAction::Fill {
                 params: IncentiveParams {
                     lp_denom: lp_denom_2.clone(),
@@ -2670,13 +2635,13 @@ fn test_multiple_incentives_and_positions() {
                     preliminary_end_epoch: None,
                     curve: None,
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
                     incentive_identifier: Some("incentive_4".to_string()),
                 },
             },
-            vec![coin(70_000u128, "ulab"), coin(1_000, "uwhale")],
+            vec![coin(70_000u128, "uusdy"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2685,7 +2650,7 @@ fn test_multiple_incentives_and_positions() {
     // creator fills a position
     suite
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_pos_1".to_string()),
                 unlocking_duration: 86_400,
@@ -2697,7 +2662,7 @@ fn test_multiple_incentives_and_positions() {
             },
         )
         .manage_position(
-            creator.clone(),
+            &creator,
             PositionAction::Fill {
                 identifier: Some("creator_pos_2".to_string()),
                 unlocking_duration: 86_400,
@@ -2721,7 +2686,7 @@ fn test_multiple_incentives_and_positions() {
     // other fills a position
     suite
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Fill {
                 identifier: Some("other_pos_1".to_string()),
                 unlocking_duration: 86_400,
@@ -2733,7 +2698,7 @@ fn test_multiple_incentives_and_positions() {
             },
         )
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Fill {
                 identifier: Some("other_pos_2".to_string()),
                 unlocking_duration: 86_400,
@@ -2767,7 +2732,7 @@ fn test_multiple_incentives_and_positions() {
                         owner: creator.clone(),
                         lp_denom: lp_denom_1.clone(),
                         incentive_asset: Coin {
-                            denom: "ulab".to_string(),
+                            denom: "uusdy".to_string(),
                             amount: Uint128::new(80_000u128),
                         },
                         claimed_amount: Uint128::zero(),
@@ -2780,13 +2745,13 @@ fn test_multiple_incentives_and_positions() {
                 );
             },
         )
-        .query_balance("ulab".to_string(), creator.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_920_000));
         })
-        .claim(creator.clone(), vec![], |result| {
+        .claim(&creator, vec![], |result| {
             result.unwrap();
         })
-        .query_balance("ulab".to_string(), creator.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_978_666));
         })
         .query_incentives(None, None, None, |result| {
@@ -2798,7 +2763,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
                     claimed_amount: Uint128::new(58_666),
@@ -2841,19 +2806,19 @@ fn test_multiple_incentives_and_positions() {
 
     // other emergency unlocks mid-way incentive 2
     suite
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_930_000));
         })
-        .query_balance("uosmo".to_string(), other.clone(), |balance| {
+        .query_balance("uosmo".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
-        .claim(other.clone(), vec![], |result| {
+        .claim(&other, vec![], |result| {
             result.unwrap();
         })
-        .query_balance("ulab".to_string(), other.clone(), |balance| {
+        .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_951_332));
         })
-        .query_balance("uosmo".to_string(), other.clone(), |balance| {
+        .query_balance("uosmo".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_003_198));
         })
         .query_incentives(None, None, None, |result| {
@@ -2865,7 +2830,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
                     claimed_amount: Uint128::new(79_998u128), // exhausted
@@ -2896,7 +2861,7 @@ fn test_multiple_incentives_and_positions() {
             );
         })
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Withdraw {
                 identifier: "other_pos_1".to_string(),
                 emergency_unlock: Some(true),
@@ -2907,7 +2872,7 @@ fn test_multiple_incentives_and_positions() {
             },
         )
         .manage_position(
-            other.clone(),
+            &other,
             PositionAction::Withdraw {
                 identifier: "other_pos_2".to_string(),
                 emergency_unlock: Some(true),
@@ -2919,7 +2884,7 @@ fn test_multiple_incentives_and_positions() {
         )
         .query_balance(
             lp_denom_1.clone().to_string(),
-            bonding_manager_addr.clone(),
+            &bonding_manager_addr,
             |balance| {
                 // 10% of the lp the user input initially
                 assert_eq!(balance, Uint128::new(4_000));
@@ -2927,7 +2892,7 @@ fn test_multiple_incentives_and_positions() {
         )
         .query_balance(
             lp_denom_2.clone().to_string(),
-            bonding_manager_addr.clone(),
+            &bonding_manager_addr,
             |balance| {
                 // 10% of the lp the user input initially
                 assert_eq!(balance, Uint128::new(8_000));
@@ -2943,7 +2908,7 @@ fn test_multiple_incentives_and_positions() {
 
     // another fills a position
     suite.manage_position(
-        another.clone(),
+        &another,
         PositionAction::Fill {
             identifier: Some("another_pos_1".to_string()),
             unlocking_duration: 15_778_476, // 6 months, should give him 5x multiplier
@@ -2973,7 +2938,7 @@ fn test_multiple_incentives_and_positions() {
         });
 
     suite
-        .claim(creator.clone(), vec![], |result| {
+        .claim(&creator, vec![], |result| {
             // creator claims from epoch 16 to 30
             // There's nothing to claim on incentive 1
             // On incentive 2, creator has a portion of the total weight until the epoch where other
@@ -2992,7 +2957,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
                     claimed_amount: Uint128::new(79_998u128), // exhausted
@@ -3028,7 +2993,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     incentive_asset: Coin {
-                        denom: "uwhale".to_string(),
+                        denom: "uom".to_string(),
                         amount: Uint128::new(30_000u128),
                     },
                     claimed_amount: Uint128::new(24_000),
@@ -3046,7 +3011,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
                     claimed_amount: Uint128::new(28_000),
@@ -3058,7 +3023,7 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
         })
-        .claim(another.clone(), vec![], |result| {
+        .claim(&another, vec![], |result| {
             result.unwrap();
         })
         .query_incentives(None, None, None, |result| {
@@ -3070,7 +3035,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
                     claimed_amount: Uint128::new(79_998u128), // exhausted
@@ -3106,7 +3071,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     incentive_asset: Coin {
-                        denom: "uwhale".to_string(),
+                        denom: "uom".to_string(),
                         amount: Uint128::new(30_000u128),
                     },
                     claimed_amount: Uint128::new(30_000), // exhausted
@@ -3124,7 +3089,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
                     claimed_amount: Uint128::new(40_000),
@@ -3141,7 +3106,7 @@ fn test_multiple_incentives_and_positions() {
     // since the total weight was 100k and he unlocked 50% of his position,
     // the new total weight is 85k, so he gets 15k/85k of the rewards while creator gets the rest
     suite.manage_position(
-        another.clone(),
+        &another,
         PositionAction::Close {
             identifier: "another_pos_1".to_string(),
             lp_asset: Some(coin(3_000, lp_denom_2.clone())),
@@ -3164,7 +3129,7 @@ fn test_multiple_incentives_and_positions() {
         });
 
     suite
-        .claim(creator.clone(), vec![], |result| {
+        .claim(&creator, vec![], |result| {
             result.unwrap();
         })
         .query_incentives(None, None, None, |result| {
@@ -3176,7 +3141,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
                     claimed_amount: Uint128::new(60_585),
@@ -3188,7 +3153,7 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
         })
-        .claim(another.clone(), vec![], |result| {
+        .claim(&another, vec![], |result| {
             result.unwrap();
         })
         .query_incentives(None, None, None, |result| {
@@ -3200,7 +3165,7 @@ fn test_multiple_incentives_and_positions() {
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     incentive_asset: Coin {
-                        denom: "ulab".to_string(),
+                        denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
                     claimed_amount: Uint128::new(64_995),
@@ -3227,7 +3192,7 @@ fn test_multiple_incentives_and_positions() {
         });
 
     suite.manage_incentive(
-        creator.clone(),
+        &creator,
         IncentiveAction::Close {
             incentive_identifier: "incentive_4".to_string(),
         },
