@@ -61,16 +61,6 @@ impl fmt::Display for SwapOperation {
     }
 }
 
-// Defines a structure for Fees which names a number of defined fee collection types, leaving
-// room for a custom fee a user can use to pass a fee with a defined custom name
-#[cw_serde]
-pub enum FeeTypes {
-    Protocol,
-    LiquidityProvider,
-    FlashLoanFees,
-    Custom(String),
-}
-
 /// Params for the stable swap, used when changing the amplification factor
 #[cw_serde]
 pub struct StableSwapParams {

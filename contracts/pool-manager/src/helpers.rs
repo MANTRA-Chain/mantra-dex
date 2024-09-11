@@ -495,8 +495,8 @@ pub fn validate_pool_identifier(identifier: &str) -> Result<(), ContractError> {
     Ok(())
 }
 
-/// Aggregates the fees from a simulation response that go out of the contract, i.e. protocol fee, burn fee
-/// and osmosis fee, if applicable. Doesn't know about the denom, just the amount.
+/// Aggregates the fees from a simulation response that go out of the contract, i.e. protocol fee and burn fee.
+/// Doesn't know about the denom, just the amount.
 pub fn aggregate_outgoing_fees(
     simulation_response: &SimulationResponse,
 ) -> Result<Uint128, ContractError> {

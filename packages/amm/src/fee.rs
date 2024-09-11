@@ -33,7 +33,6 @@ impl Display for Fee {
     }
 }
 
-//todo to move into pool_manager.rs ?
 /// Represents the fee structure for transactions within a pool.
 ///
 ///
@@ -44,15 +43,9 @@ impl Display for Fee {
 ///   liquidity to the pool, incentivizing participation and ensuring pool health.
 /// - `burn_fee`: A fee percentage that is burned on each transaction, helping manage the token
 ///   economy by reducing supply over time, potentially increasing token value.
-/// - `osmosis_fee` (optional): Specific to the Osmosis feature, this fee is charged on each
-///   transaction when the Osmosis feature is enabled, supporting specific ecosystem requirements.
 /// - `extra_fees`: A vector of custom fees allowing for extensible and adaptable fee structures
 ///   to meet diverse and evolving needs. Validation ensures that the total of all fees does not
 ///   exceed 100%, maintaining fairness and avoiding overcharging.
-///
-/// # Features
-/// - `osmosis`: Enables the `osmosis_fee` field, integrating specific fee requirements for the
-///   Osmosis protocol within the pool's fee structure.
 #[cw_serde]
 pub struct PoolFee {
     /// Fee percentage charged on each transaction for the protocol's benefit.
