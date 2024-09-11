@@ -483,7 +483,7 @@ pub fn validate_asset_balance(
 /// as the LP token symbol will be created as identifier.LP_SYMBOL. Also, that it contains
 pub fn validate_pool_identifier(identifier: &str) -> Result<(), ContractError> {
     ensure!(
-        identifier.len() <= FACTORY_MAX_SUBDENOM_SIZE - LP_SYMBOL.len() - 1
+        identifier.len() < FACTORY_MAX_SUBDENOM_SIZE - LP_SYMBOL.len()
             && identifier
                 .chars()
                 .all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '.'),

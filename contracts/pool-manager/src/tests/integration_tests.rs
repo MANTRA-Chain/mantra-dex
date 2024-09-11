@@ -301,7 +301,7 @@ mod pool_creation_failures {
     }
 
     #[test]
-    fn cant_recreate_existing_poo() {
+    fn cant_recreate_existing_pool() {
         let mut suite = TestingSuite::default_with_balances(vec![
             coin(1_000_000_001u128, "uwhale".to_string()),
             coin(1_000_000_000u128, "uluna".to_string()),

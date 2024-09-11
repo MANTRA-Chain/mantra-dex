@@ -1,5 +1,6 @@
 extern crate core;
 
+use amm::constants::LP_SYMBOL;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 
 use amm::incentive_manager::{
@@ -95,7 +96,7 @@ fn instantiate_incentive_manager() {
 
 #[test]
 fn create_incentives() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -539,7 +540,7 @@ fn create_incentives() {
 
 #[test]
 fn expand_incentives() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -711,7 +712,7 @@ fn expand_incentives() {
 #[test]
 #[allow(clippy::inconsistent_digit_grouping)]
 fn close_incentives() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -906,7 +907,7 @@ fn verify_ownership() {
 
 #[test]
 pub fn update_config() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -1109,7 +1110,7 @@ pub fn update_config() {
 #[test]
 #[allow(clippy::inconsistent_digit_grouping)]
 pub fn test_manage_position() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
@@ -1259,7 +1260,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "creator_position".to_string(),
                     lp_asset: Coin {
-                        denom: "factory/pool/uLP".to_string(),
+                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(1_000),
                     },
                     unlocking_duration: 86400,
@@ -1315,7 +1316,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "creator_position".to_string(),
                     lp_asset: Coin {
-                        denom: "factory/pool/uLP".to_string(),
+                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(6_000),
                     },
                     unlocking_duration: 86400,
@@ -1796,7 +1797,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "3".to_string(),
                     lp_asset: Coin {
-                        denom: "factory/pool/uLP".to_string(),
+                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(5_000),
                     },
                     unlocking_duration: 86400,
@@ -1844,7 +1845,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "3".to_string(),
                     lp_asset: Coin {
-                        denom: "factory/pool/uLP".to_string(),
+                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(5_000),
                     },
                     unlocking_duration: 86400,
@@ -1968,7 +1969,7 @@ pub fn test_manage_position() {
 
 #[test]
 fn claim_expired_incentive_returns_nothing() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
@@ -2039,7 +2040,7 @@ fn claim_expired_incentive_returns_nothing() {
                 Position {
                     identifier: "creator_position".to_string(),
                     lp_asset: Coin {
-                        denom: "factory/pool/uLP".to_string(),
+                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(5_000),
                     },
                     unlocking_duration: 86400,
@@ -2114,7 +2115,7 @@ fn claim_expired_incentive_returns_nothing() {
 
 #[test]
 fn test_close_expired_incentives() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(2_000_000_000u128, "uom"),
@@ -2238,7 +2239,7 @@ fn on_epoch_changed_unauthorized() {
 
 #[test]
 fn expand_expired_incentive() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(2_000_000_000u128, "uom".to_string()),
@@ -2310,7 +2311,7 @@ fn expand_expired_incentive() {
 
 #[test]
 fn test_emergency_withdrawal() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -2366,7 +2367,7 @@ fn test_emergency_withdrawal() {
                 Position {
                     identifier: "other_position".to_string(),
                     lp_asset: Coin {
-                        denom: "factory/pool/uLP".to_string(),
+                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(1_000),
                     },
                     unlocking_duration: 86400,
@@ -2404,7 +2405,7 @@ fn test_emergency_withdrawal() {
 
 #[test]
 fn test_incentive_helper() {
-    let lp_denom = "factory/pool/uLP".to_string();
+    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -2537,8 +2538,8 @@ fn test_incentive_helper() {
 /// Verify users got rewards pro rata to their locked tokens
 #[test]
 fn test_multiple_incentives_and_positions() {
-    let lp_denom_1 = "factory/pool1/uLP".to_string();
-    let lp_denom_2 = "factory/pool2/uLP".to_string();
+    let lp_denom_1 = format!("factory/pool1/{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/pool2/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
