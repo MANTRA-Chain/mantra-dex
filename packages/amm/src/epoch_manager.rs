@@ -150,6 +150,7 @@ pub struct EpochResponse {
 
 #[cw_serde]
 pub struct EpochChangedHookMsg {
+    // The current epoch
     pub current_epoch: Epoch,
 }
 

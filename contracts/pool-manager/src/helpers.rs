@@ -1,5 +1,7 @@
 use std::ops::Mul;
 
+use amm::coin::FACTORY_MAX_SUBDENOM_SIZE;
+use amm::constants::LP_SYMBOL;
 use amm::fee::PoolFee;
 use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 use cosmwasm_schema::cw_serde;
@@ -471,6 +473,22 @@ pub fn validate_asset_balance(
         ContractError::InvalidSingleSideLiquidityProvisionSwap {
             expected: expected_balance.amount,
             actual: new_asset_balance.amount
+        }
+    );
+
+    Ok(())
+}
+
+/// Validates pool identifier is correct, ensuring the identifier doesn't exceed 41 characters,
+/// as the LP token symbol will be created as identifier.LP_SYMBOL. Also, that it contains
+pub fn validate_pool_identifier(identifier: &str) -> Result<(), ContractError> {
+    ensure!(
+        identifier.len() <= FACTORY_MAX_SUBDENOM_SIZE - LP_SYMBOL.len() - 1
+            && identifier
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '.'),
+        ContractError::InvalidPoolIdentifier {
+            identifier: identifier.to_string()
         }
     );
 

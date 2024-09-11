@@ -112,8 +112,8 @@ impl TestingSuite {
 
     pub(crate) fn get_lp_denom(&self, pool_identifier: String) -> String {
         format!(
-            "factory/{}/u{}.pool.{}.{}",
-            self.pool_manager_addr, pool_identifier, pool_identifier, LP_SYMBOL
+            "factory/{}/{}.{}",
+            self.pool_manager_addr, pool_identifier, LP_SYMBOL
         )
     }
 }
