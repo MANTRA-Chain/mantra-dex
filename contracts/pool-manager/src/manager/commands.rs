@@ -1,17 +1,18 @@
 use cosmwasm_std::{
-    attr, Attribute, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
+    attr, ensure, Attribute, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
 };
 
+use amm::coin::is_factory_token;
+use amm::constants::LP_SYMBOL;
 use amm::fee::PoolFee;
+use amm::pool_manager::{PoolInfo, PoolType};
 
+use crate::helpers::validate_pool_identifier;
 use crate::state::{get_pool_by_identifier, POOL_COUNTER};
 use crate::{
     state::{Config, CONFIG, POOLS},
     ContractError,
 };
-
-use amm::constants::LP_SYMBOL;
-use amm::pool_manager::{PoolInfo, PoolType};
 
 pub const MAX_ASSETS_PER_POOL: usize = 4;
 
@@ -112,6 +113,7 @@ pub fn create_pool(
     let pool_id = POOL_COUNTER.load(deps.storage)?;
     // if no identifier is provided, use the pool counter (id) as identifier
     let identifier = pool_identifier.unwrap_or(pool_id.to_string());
+    validate_pool_identifier(&identifier)?;
 
     // check if there is an existing pool with the given identifier
     let pool = get_pool_by_identifier(&deps.as_ref(), &identifier);
@@ -126,9 +128,6 @@ pub fn create_pool(
         });
     }
 
-    // prepare labels for creating the pool token with a meaningful name
-    let pool_label = asset_denoms.join("-");
-
     let mut attributes = Vec::<Attribute>::new();
 
     // Convert all asset_infos into assets with 0 balances
@@ -140,8 +139,16 @@ pub fn create_pool(
         })
         .collect::<Vec<_>>();
 
-    let lp_symbol = format!("{pool_label}.pool.{identifier}.{LP_SYMBOL}");
+    let lp_symbol = format!("{identifier}.{LP_SYMBOL}");
     let lp_asset = format!("{}/{}/{}", "factory", env.contract.address, lp_symbol);
+
+    // sanity check for LP asset
+    ensure!(
+        is_factory_token(&lp_asset),
+        ContractError::InvalidLPAsset {
+            lp_asset: lp_asset.clone()
+        }
+    );
 
     #[allow(clippy::redundant_clone)]
     POOLS.save(
@@ -172,10 +179,8 @@ pub fn create_pool(
     })?;
 
     attributes.push(attr("action", "create_pool"));
-    attributes.push(attr("pool", &pool_label));
-    attributes.push(attr("pool_label", pool_label.as_str()));
-    attributes.push(attr("pool_type", pool_type.get_label()));
     attributes.push(attr("pool_identifier", identifier.as_str()));
+    attributes.push(attr("pool_type", pool_type.get_label()));
 
     Ok(Response::new()
         .add_attributes(attributes)

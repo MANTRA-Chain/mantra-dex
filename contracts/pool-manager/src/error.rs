@@ -144,6 +144,12 @@ pub enum ContractError {
 
     #[error("The pool has no assets")]
     PoolHasNoAssets,
+
+    #[error("Invalid LP asset {lp_asset}. This probably happened because the length of the subdenom was too long. Try to shorten the pool identifier.")]
+    InvalidLPAsset { lp_asset: String },
+
+    #[error("Invalid pool identifier {identifier}. Either too long or malformed, only alphanumeric characters, . and / are allowed.")]
+    InvalidPoolIdentifier { identifier: String },
 }
 
 impl From<semver::Error> for ContractError {
