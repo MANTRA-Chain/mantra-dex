@@ -1,11 +1,8 @@
-use std::fmt::Debug;
-
 use anyhow::Result as AnyResult;
-use cosmwasm_schema::schemars::JsonSchema;
 use cosmwasm_schema::serde::de::DeserializeOwned;
 use cosmwasm_std::{
-    coin, coins, to_json_binary, Addr, Api, BankMsg, Binary, BlockInfo, CustomQuery, Querier,
-    Storage, SubMsgResponse,
+    coin, coins, to_json_binary, Addr, Api, BankMsg, Binary, BlockInfo, CustomMsg, CustomQuery,
+    MsgResponse, Querier, Storage, SubMsgResponse,
 };
 use cw_multi_test::{AppResponse, BankSudo, CosmosRouter, Stargate};
 
@@ -18,7 +15,7 @@ use amm::tokenfactory::responses::{Params, QueryParamsResponse};
 pub struct StargateMock {}
 
 impl Stargate for StargateMock {
-    fn execute<ExecC, QueryC>(
+    fn execute_stargate<ExecC, QueryC>(
         &self,
         api: &dyn Api,
         storage: &mut dyn Storage,
@@ -29,7 +26,7 @@ impl Stargate for StargateMock {
         value: Binary,
     ) -> AnyResult<AppResponse>
     where
-        ExecC: Debug + Clone + PartialEq + JsonSchema + DeserializeOwned + 'static,
+        ExecC: CustomMsg + DeserializeOwned + 'static,
         QueryC: CustomQuery + DeserializeOwned + 'static,
     {
         match type_url.as_str() {
@@ -42,6 +39,15 @@ impl Stargate for StargateMock {
                     data: Some(to_json_binary(&MsgCreateDenomResponse {
                         new_token_denom: format!("factory/{}/{}", tf_msg.sender, tf_msg.subdenom),
                     })?),
+                    msg_responses: vec![MsgResponse {
+                        type_url,
+                        value: to_json_binary(&MsgCreateDenomResponse {
+                            new_token_denom: format!(
+                                "factory/{}/{}",
+                                tf_msg.sender, tf_msg.subdenom
+                            ),
+                        })?,
+                    }],
                 };
                 Ok(submsg_response.into())
             }
@@ -78,7 +84,7 @@ impl Stargate for StargateMock {
         }
     }
 
-    fn query(
+    fn query_stargate(
         &self,
         _api: &dyn Api,
         _storage: &dyn Storage,
