@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{CosmosMsg, StdResult};
+use cosmwasm_std::{AnyMsg, CosmosMsg, StdResult};
 
 #[cw_serde]
 enum Protocol {
@@ -49,12 +49,12 @@ pub trait EncodeMessage {
 
 #[allow(dead_code)]
 pub(crate) fn create_msg<M: EncodeMessage>(message_data: M, msg_type: &str) -> CosmosMsg {
-    CosmosMsg::Stargate {
+    CosmosMsg::Any(AnyMsg {
         type_url: format!(
             "/{}.tokenfactory.v1beta1.{}",
             Protocol::from_features().as_str(),
             msg_type
         ),
         value: M::encode(message_data).into(),
-    }
+    })
 }

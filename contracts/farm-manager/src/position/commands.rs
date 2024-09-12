@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    ensure, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
+    ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
+    Uint128,
 };
 
 use amm::farm_manager::{Position, RewardsResponse};
@@ -229,7 +230,9 @@ pub(crate) fn withdraw_position(
     if emergency_unlock.is_some() && emergency_unlock.unwrap() {
         let emergency_unlock_penalty = CONFIG.load(deps.storage)?.emergency_unlock_penalty;
 
-        let penalty_fee = position.lp_asset.amount * emergency_unlock_penalty;
+        let penalty_fee = Decimal::from_ratio(position.lp_asset.amount, Uint128::one())
+            .checked_mul(emergency_unlock_penalty)?
+            .to_uint_floor();
 
         // sanity check
         ensure!(

@@ -145,9 +145,7 @@ pub(crate) fn validate_farm_epochs(
         start_epoch
             <= current_epoch.checked_add(max_farm_epoch_buffer).ok_or(
                 ContractError::OverflowError(OverflowError {
-                    operation: OverflowOperation::Add,
-                    operand1: current_epoch.to_string(),
-                    operand2: max_farm_epoch_buffer.to_string(),
+                    operation: OverflowOperation::Add
                 })
             )?,
         ContractError::FarmStartTooFar

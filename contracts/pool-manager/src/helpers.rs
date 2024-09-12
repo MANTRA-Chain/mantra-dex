@@ -172,13 +172,17 @@ pub fn compute_swap(
         PoolType::ConstantProduct => {
             // offer => ask
             // ask_amount = (ask_pool * offer_amount / (offer_pool + offer_amount)) - swap_fee - protocol_fee - burn_fee
-            let return_amount: Uint256 = Uint256::one()
-                * Decimal256::from_ratio(ask_pool.mul(offer_amount), offer_pool + offer_amount);
+            let return_amount: Uint256 =
+                Decimal256::from_ratio(ask_pool.mul(offer_amount), offer_pool + offer_amount)
+                    .to_uint_floor();
 
             // calculate spread, swap and protocol fees
             let exchange_rate = Decimal256::checked_from_ratio(ask_pool, offer_pool)
                 .map_err(|_| ContractError::PoolHasNoAssets)?;
-            let spread_amount: Uint256 = (offer_amount * exchange_rate) - return_amount;
+            let spread_amount: Uint256 = (Decimal256::from_ratio(offer_amount, Uint256::one())
+                .checked_mul(exchange_rate)?
+                .to_uint_floor())
+            .checked_sub(return_amount)?;
 
             let fees_computation = compute_fees(pool_fees, return_amount)?;
 
@@ -347,13 +351,23 @@ pub fn compute_offer_amount(
     let offer_amount: Uint256 = Uint256::one()
         .multiply_ratio(
             cp,
-            ask_asset_in_pool.checked_sub(ask_amount * inv_one_minus_commission)?,
+            ask_asset_in_pool.checked_sub(
+                Decimal256::from_ratio(ask_amount, Uint256::one())
+                    .checked_mul(inv_one_minus_commission)?
+                    .to_uint_floor(),
+            )?,
         )
         .checked_sub(offer_asset_in_pool)?;
 
-    let before_commission_deduction: Uint256 = ask_amount * inv_one_minus_commission;
-    let before_spread_deduction: Uint256 =
-        offer_amount * Decimal256::from_ratio(ask_asset_in_pool, offer_asset_in_pool);
+    let before_commission_deduction: Uint256 = Decimal256::from_ratio(ask_amount, Uint256::one())
+        .checked_mul(inv_one_minus_commission)?
+        .to_uint_floor();
+    let before_spread_deduction: Uint256 = Decimal256::from_ratio(offer_amount, Uint256::one())
+        .checked_mul(Decimal256::from_ratio(
+            ask_asset_in_pool,
+            offer_asset_in_pool,
+        ))?
+        .to_uint_floor();
 
     let spread_amount = before_spread_deduction.saturating_sub(before_commission_deduction);
 
