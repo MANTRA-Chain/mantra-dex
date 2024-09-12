@@ -1,6 +1,6 @@
 use cosmwasm_std::{Addr, Coin, Decimal256, Order, StdError, Storage, Uint128};
 
-use amm::incentive_manager::{Config, EpochId};
+use amm::farm_manager::{Config, EpochId};
 
 use crate::state::LP_WEIGHT_HISTORY;
 use crate::ContractError;

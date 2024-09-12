@@ -6,15 +6,15 @@ use cosmwasm_std::{
 };
 
 use amm::coin::aggregate_coins;
-use amm::incentive_manager::{EpochId, Incentive, Position, RewardsResponse};
+use amm::farm_manager::{EpochId, Farm, Position, RewardsResponse};
 
 use crate::state::{
-    get_earliest_address_lp_weight, get_incentives_by_lp_denom, get_latest_address_lp_weight,
-    get_positions_by_receiver, CONFIG, INCENTIVES, LAST_CLAIMED_EPOCH, LP_WEIGHT_HISTORY,
+    get_earliest_address_lp_weight, get_farms_by_lp_denom, get_latest_address_lp_weight,
+    get_positions_by_receiver, CONFIG, FARMS, LAST_CLAIMED_EPOCH, LP_WEIGHT_HISTORY,
 };
 use crate::ContractError;
 
-/// Claims pending rewards for incentives where the user has LP
+/// Claims pending rewards for farms where the user has LP
 pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     cw_utils::nonpayable(&info)?;
 
@@ -39,28 +39,28 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
         match rewards_response {
             RewardsResponse::ClaimRewards {
                 rewards,
-                modified_incentives,
+                modified_farms,
             } => {
                 total_rewards.append(&mut rewards.clone());
 
-                // update the incentives with the claimed rewards
-                for (incentive_identifier, claimed_reward) in modified_incentives {
-                    INCENTIVES.update(
+                // update the farms with the claimed rewards
+                for (farm_identifier, claimed_reward) in modified_farms {
+                    FARMS.update(
                         deps.storage,
-                        &incentive_identifier,
-                        |incentive| -> Result<_, ContractError> {
-                            let mut incentive = incentive.unwrap();
-                            incentive.last_epoch_claimed = current_epoch.id;
-                            incentive.claimed_amount =
-                                incentive.claimed_amount.checked_add(claimed_reward)?;
+                        &farm_identifier,
+                        |farm| -> Result<_, ContractError> {
+                            let mut farm = farm.unwrap();
+                            farm.last_epoch_claimed = current_epoch.id;
+                            farm.claimed_amount =
+                                farm.claimed_amount.checked_add(claimed_reward)?;
 
-                            // sanity check to make sure an incentive doesn't get drained
+                            // sanity check to make sure a farm doesn't get drained
                             ensure!(
-                                incentive.claimed_amount <= incentive.incentive_asset.amount,
-                                ContractError::IncentiveExhausted
+                                farm.claimed_amount <= farm.farm_asset.amount,
+                                ContractError::FarmExhausted
                             );
 
-                            Ok(incentive)
+                            Ok(farm)
                         },
                     )?;
                 }
@@ -98,8 +98,8 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
 /// Calculates the rewards for a position
 /// ### Returns
 /// A [RewardsResponse] with the rewards for the position. If is_claim is true, the RewardsResponse type is
-/// ClaimRewards, which contains the rewards and the modified incentives (this is to modify the
-/// incentives in the claim function afterwards). If is_claim is false, the RewardsResponse only returns
+/// ClaimRewards, which contains the rewards and the modified farms (this is to modify the
+/// farms in the claim function afterward). If is_claim is false, the RewardsResponse only returns
 /// the rewards.
 pub(crate) fn calculate_rewards(
     deps: Deps,
@@ -110,11 +110,11 @@ pub(crate) fn calculate_rewards(
 ) -> Result<RewardsResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    let incentives = get_incentives_by_lp_denom(
+    let farms = get_farms_by_lp_denom(
         deps.storage,
         &position.lp_asset.denom,
         None,
-        Some(config.max_concurrent_incentives),
+        Some(config.max_concurrent_farms),
     )?;
 
     let last_claimed_epoch_for_user =
@@ -127,7 +127,7 @@ pub(crate) fn calculate_rewards(
             return if is_claim {
                 Ok(RewardsResponse::ClaimRewards {
                     rewards: vec![],
-                    modified_incentives: HashMap::new(),
+                    modified_farms: HashMap::new(),
                 })
             } else {
                 Ok(RewardsResponse::RewardsResponse { rewards: vec![] })
@@ -136,19 +136,19 @@ pub(crate) fn calculate_rewards(
     }
 
     let mut rewards: Vec<Coin> = vec![];
-    // what incentives are going to mutate when claiming rewards. Not used/returned when querying rewards.
-    let mut modified_incentives: HashMap<String, Uint128> = HashMap::new();
+    // what farms are going to mutate when claiming rewards. Not used/returned when querying rewards.
+    let mut modified_farms: HashMap<String, Uint128> = HashMap::new();
 
-    for incentive in incentives {
-        // skip expired incentives
-        if incentive.is_expired(current_epoch_id) || incentive.start_epoch > current_epoch_id {
+    for farm in farms {
+        // skip expired farms
+        if farm.is_expired(current_epoch_id) || farm.start_epoch > current_epoch_id {
             continue;
         }
 
-        // compute where the user can start claiming rewards for the incentive
+        // compute where the user can start claiming rewards for the farm
         let start_from_epoch = compute_start_from_epoch_for_user(
             deps.storage,
-            &incentive.lp_denom,
+            &farm.lp_denom,
             last_claimed_epoch_for_user,
             &position.receiver,
         )?;
@@ -157,12 +157,12 @@ pub(crate) fn calculate_rewards(
         let user_weights =
             compute_user_weights(deps.storage, position, &start_from_epoch, &current_epoch_id)?;
 
-        // compute the incentive emissions for the epochs between start_from_epoch and current_epoch_id
-        let (incentive_emissions, until_epoch) =
-            compute_incentive_emissions(&incentive, &start_from_epoch, &current_epoch_id)?;
+        // compute the farm emissions for the epochs between start_from_epoch and current_epoch_id
+        let (farm_emissions, until_epoch) =
+            compute_farm_emissions(&farm, &start_from_epoch, &current_epoch_id)?;
 
         for epoch_id in start_from_epoch..=until_epoch {
-            if incentive.start_epoch > epoch_id {
+            if farm.start_epoch > epoch_id {
                 continue;
             }
 
@@ -170,13 +170,13 @@ pub(crate) fn calculate_rewards(
             let total_lp_weight = LP_WEIGHT_HISTORY
                 .may_load(
                     deps.storage,
-                    (&env.contract.address, &incentive.lp_denom, epoch_id),
+                    (&env.contract.address, &farm.lp_denom, epoch_id),
                 )?
                 .ok_or(ContractError::LpWeightNotFound { epoch_id })?;
 
             let user_share = (user_weight, total_lp_weight);
 
-            let reward = incentive_emissions
+            let reward = farm_emissions
                 .get(&epoch_id)
                 .unwrap_or(&Uint128::zero())
                 .to_owned()
@@ -184,28 +184,25 @@ pub(crate) fn calculate_rewards(
 
             // sanity check
             ensure!(
-                reward.checked_add(incentive.claimed_amount)? <= incentive.incentive_asset.amount,
-                ContractError::IncentiveExhausted
+                reward.checked_add(farm.claimed_amount)? <= farm.farm_asset.amount,
+                ContractError::FarmExhausted
             );
 
             if reward > Uint128::zero() {
                 rewards.push(Coin {
-                    denom: incentive.incentive_asset.denom.clone(),
+                    denom: farm.farm_asset.denom.clone(),
                     amount: reward,
                 });
             }
 
             if is_claim {
-                // compound the rewards for the incentive
-                let maybe_reward = modified_incentives
-                    .get(&incentive.identifier)
+                // compound the rewards for the farm
+                let maybe_reward = modified_farms
+                    .get(&farm.identifier)
                     .unwrap_or(&Uint128::zero())
                     .to_owned();
 
-                modified_incentives.insert(
-                    incentive.identifier.clone(),
-                    reward.checked_add(maybe_reward)?,
-                );
+                modified_farms.insert(farm.identifier.clone(), reward.checked_add(maybe_reward)?);
             }
         }
     }
@@ -215,14 +212,14 @@ pub(crate) fn calculate_rewards(
     if is_claim {
         Ok(RewardsResponse::ClaimRewards {
             rewards,
-            modified_incentives,
+            modified_farms,
         })
     } else {
         Ok(RewardsResponse::RewardsResponse { rewards })
     }
 }
 
-/// Computes the epoch from which the user can start claiming rewards for a given incentive
+/// Computes the epoch from which the user can start claiming rewards for a given farm
 pub(crate) fn compute_start_from_epoch_for_user(
     storage: &dyn Storage,
     lp_denom: &str,
@@ -254,7 +251,7 @@ pub(crate) fn compute_user_weights(
     let mut last_weight_seen = Uint128::zero();
 
     // starts from start_from_epoch - 1 in case the user has a last_claimed_epoch, which means the user
-    // has a weight for the last_claimed_epoch. [compute_start_from_epoch_for_incentive] would return
+    // has a weight for the last_claimed_epoch. [compute_start_from_epoch_for_farm] would return
     // last_claimed_epoch + 1 in that case, which is correct, and if the user has not modified its
     // position, the weight will be the same for start_from_epoch as it is for last_claimed_epoch.
     for epoch_id in *start_from_epoch - 1..=*current_epoch_id {
@@ -273,30 +270,30 @@ pub(crate) fn compute_user_weights(
     Ok(user_weights)
 }
 
-/// Computes the incentive emissions for a given incentive. Let's assume for now that the incentive
-/// is expanded by a multiple of the original emission rate. todo revise this
+/// Computes the rewards emissions for a given farm. Let's assume for now that the farm
+/// is expanded by a multiple of the original emission rate.
 /// ### Returns
-/// A pair with the incentive emissions for each epoch between start_from_epoch and the current_epoch_id in a hashmap
-/// and the last epoch for which the incentive emissions were computed
-fn compute_incentive_emissions(
-    incentive: &Incentive,
+/// A pair with the reward emissions for each epoch between start_from_epoch and the current_epoch_id in a hashmap
+/// and the last epoch for which the farm emissions were computed
+fn compute_farm_emissions(
+    farm: &Farm,
     start_from_epoch: &EpochId,
     current_epoch_id: &EpochId,
 ) -> Result<(HashMap<EpochId, Uint128>, EpochId), ContractError> {
-    let mut incentive_emissions = HashMap::new();
+    let mut farm_emissions = HashMap::new();
 
-    let until_epoch = if incentive.preliminary_end_epoch <= *current_epoch_id {
-        // the preliminary_end_eopch is not inclusive, so we subtract 1
-        incentive.preliminary_end_epoch - 1u64
+    let until_epoch = if farm.preliminary_end_epoch <= *current_epoch_id {
+        // the preliminary_end_epoch is not inclusive, so we subtract 1
+        farm.preliminary_end_epoch - 1u64
     } else {
         *current_epoch_id
     };
 
     for epoch in *start_from_epoch..=until_epoch {
-        incentive_emissions.insert(epoch, incentive.emission_rate);
+        farm_emissions.insert(epoch, farm.emission_rate);
     }
 
-    Ok((incentive_emissions, until_epoch))
+    Ok((farm_emissions, until_epoch))
 }
 
 /// Syncs the address lp weight history for the given address and epoch_id, removing all the previous

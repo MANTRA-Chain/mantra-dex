@@ -1,7 +1,7 @@
 pub mod contract;
 mod error;
+pub mod farm;
 pub mod helpers;
-pub mod incentive;
 mod manager;
 pub mod position;
 mod queries;

@@ -77,7 +77,7 @@
           ],
           "properties": {
             "lock_position_identifier": {
-              "description": "The identifier of the position to lock the LP tokens in the incentive manager, if any.",
+              "description": "The identifier of the position to lock the LP tokens in the farm manager, if any.",
               "type": [
                 "string",
                 "null"
@@ -117,7 +117,7 @@
               ]
             },
             "unlocking_duration": {
-              "description": "The amount of time in seconds to unlock tokens if taking part on the incentives. If not passed, the tokens will not be locked and the LP tokens will be returned to the user.",
+              "description": "The amount of time in seconds to unlock tokens if taking part on the farms. If not passed, the tokens will not be locked and the LP tokens will be returned to the user.",
               "type": [
                 "integer",
                 "null"

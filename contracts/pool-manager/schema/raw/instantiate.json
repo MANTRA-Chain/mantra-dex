@@ -3,17 +3,17 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "farm_manager_addr",
     "fee_collector_addr",
-    "incentive_manager_addr",
     "pool_creation_fee"
   ],
   "properties": {
-    "fee_collector_addr": {
-      "description": "The address where the collected fees go to.",
+    "farm_manager_addr": {
+      "description": "The address of the farm manager contract.",
       "type": "string"
     },
-    "incentive_manager_addr": {
-      "description": "The address of the incentive manager contract.",
+    "fee_collector_addr": {
+      "description": "The address where the collected fees go to.",
       "type": "string"
     },
     "pool_creation_fee": {

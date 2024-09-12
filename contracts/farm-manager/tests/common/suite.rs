@@ -7,15 +7,14 @@ use cw_multi_test::{
 };
 
 use amm::epoch_manager::{Epoch, EpochChangedHookMsg, EpochConfig, EpochResponse};
-use amm::incentive_manager::{
-    Config, IncentiveAction, IncentivesBy, IncentivesResponse, InstantiateMsg, LpWeightResponse,
-    PositionAction, PositionsResponse, RewardsResponse,
+use amm::farm_manager::{
+    Config, FarmAction, FarmsBy, FarmsResponse, InstantiateMsg, LpWeightResponse, PositionAction,
+    PositionsResponse, RewardsResponse,
 };
 use common_testing::multi_test::stargate_mock::StargateMock;
 
 use crate::common::suite_contracts::{
-    epoch_manager_contract, fee_collector_contract, incentive_manager_contract,
-    pool_manager_contract,
+    epoch_manager_contract, farm_manager_contract, fee_collector_contract, pool_manager_contract,
 };
 
 type OsmosisTokenFactoryApp = App<
@@ -34,7 +33,7 @@ type OsmosisTokenFactoryApp = App<
 pub struct TestingSuite {
     app: OsmosisTokenFactoryApp,
     pub senders: [Addr; 3],
-    pub incentive_manager_addr: Addr,
+    pub farm_manager_addr: Addr,
     pub fee_collector_addr: Addr,
     pub pool_manager_addr: Addr,
     pub epoch_manager_addr: Addr,
@@ -101,7 +100,7 @@ impl TestingSuite {
         Self {
             app,
             senders: [sender_1, sender_2, sender_3],
-            incentive_manager_addr: Addr::unchecked(""),
+            farm_manager_addr: Addr::unchecked(""),
             fee_collector_addr: Addr::unchecked(""),
             pool_manager_addr: Addr::unchecked(""),
             epoch_manager_addr: Addr::unchecked(""),
@@ -117,7 +116,7 @@ impl TestingSuite {
         let timestamp = Timestamp::from_seconds(1712242800u64);
         self.set_time(timestamp);
 
-        // instantiates the incentive manager contract
+        // instantiates the farm manager contract
         self.instantiate(
             self.fee_collector_addr.to_string(),
             self.epoch_manager_addr.to_string(),
@@ -197,7 +196,7 @@ impl TestingSuite {
         // create pool manager
         let msg = amm::pool_manager::InstantiateMsg {
             fee_collector_addr: self.fee_collector_addr.to_string(),
-            incentive_manager_addr: self.incentive_manager_addr.to_string(),
+            farm_manager_addr: self.farm_manager_addr.to_string(),
             pool_creation_fee: Coin {
                 denom: "uom".to_string(),
                 amount: Uint128::new(1_000u128),
@@ -225,9 +224,9 @@ impl TestingSuite {
         &mut self,
         fee_collector_addr: String,
         epoch_manager_addr: String,
-        create_incentive_fee: Coin,
-        max_concurrent_incentives: u32,
-        max_incentive_epoch_buffer: u32,
+        create_farm_fee: Coin,
+        max_concurrent_farms: u32,
+        max_farm_epoch_buffer: u32,
         min_unlocking_duration: u64,
         max_unlocking_duration: u64,
         emergency_unlock_penalty: Decimal,
@@ -236,26 +235,26 @@ impl TestingSuite {
             owner: self.creator().to_string(),
             epoch_manager_addr,
             fee_collector_addr,
-            create_incentive_fee,
-            max_concurrent_incentives,
-            max_incentive_epoch_buffer,
+            create_farm_fee,
+            max_concurrent_farms,
+            max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
             emergency_unlock_penalty,
         };
 
-        let incentive_manager_id = self.app.store_code(incentive_manager_contract());
+        let farm_manager_id = self.app.store_code(farm_manager_contract());
 
         let creator = self.creator().clone();
 
-        self.incentive_manager_addr = self
+        self.farm_manager_addr = self
             .app
             .instantiate_contract(
-                incentive_manager_id,
+                farm_manager_id,
                 creator.clone(),
                 &msg,
                 &[],
-                "Incentive Manager",
+                "Farm Manager",
                 Some(creator.into_string()),
             )
             .unwrap();
@@ -268,9 +267,9 @@ impl TestingSuite {
         &mut self,
         fee_collector_addr: String,
         epoch_manager_addr: String,
-        create_incentive_fee: Coin,
-        max_concurrent_incentives: u32,
-        max_incentive_epoch_buffer: u32,
+        create_farm_fee: Coin,
+        max_concurrent_farms: u32,
+        max_farm_epoch_buffer: u32,
         min_unlocking_duration: u64,
         max_unlocking_duration: u64,
         emergency_unlock_penalty: Decimal,
@@ -280,24 +279,24 @@ impl TestingSuite {
             owner: self.creator().to_string(),
             epoch_manager_addr,
             fee_collector_addr,
-            create_incentive_fee,
-            max_concurrent_incentives,
-            max_incentive_epoch_buffer,
+            create_farm_fee,
+            max_concurrent_farms,
+            max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
             emergency_unlock_penalty,
         };
 
-        let incentive_manager_id = self.app.store_code(incentive_manager_contract());
+        let farm_manager_id = self.app.store_code(farm_manager_contract());
 
         let creator = self.creator().clone();
 
         result(self.app.instantiate_contract(
-            incentive_manager_id,
+            farm_manager_id,
             creator.clone(),
             &msg,
             &[],
-            "Incentive Manager",
+            "Farm Manager",
             Some(creator.into_string()),
         ));
 
@@ -314,11 +313,11 @@ impl TestingSuite {
         action: cw_ownable::Action,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::incentive_manager::ExecuteMsg::UpdateOwnership(action);
+        let msg = amm::farm_manager::ExecuteMsg::UpdateOwnership(action);
 
         result(self.app.execute_contract(
             sender.clone(),
-            self.incentive_manager_addr.clone(),
+            self.farm_manager_addr.clone(),
             &msg,
             &[],
         ));
@@ -333,21 +332,21 @@ impl TestingSuite {
         sender: &Addr,
         fee_collector_addr: Option<String>,
         epoch_manager_addr: Option<String>,
-        create_incentive_fee: Option<Coin>,
-        max_concurrent_incentives: Option<u32>,
-        max_incentive_epoch_buffer: Option<u32>,
+        create_farm_fee: Option<Coin>,
+        max_concurrent_farms: Option<u32>,
+        max_farm_epoch_buffer: Option<u32>,
         min_unlocking_duration: Option<u64>,
         max_unlocking_duration: Option<u64>,
         emergency_unlock_penalty: Option<Decimal>,
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::incentive_manager::ExecuteMsg::UpdateConfig {
+        let msg = amm::farm_manager::ExecuteMsg::UpdateConfig {
             fee_collector_addr,
             epoch_manager_addr,
-            create_incentive_fee,
-            max_concurrent_incentives,
-            max_incentive_epoch_buffer,
+            create_farm_fee,
+            max_concurrent_farms,
+            max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
             emergency_unlock_penalty,
@@ -355,7 +354,7 @@ impl TestingSuite {
 
         result(self.app.execute_contract(
             sender.clone(),
-            self.incentive_manager_addr.clone(),
+            self.farm_manager_addr.clone(),
             &msg,
             &funds,
         ));
@@ -364,18 +363,18 @@ impl TestingSuite {
     }
 
     #[track_caller]
-    pub(crate) fn manage_incentive(
+    pub(crate) fn manage_farm(
         &mut self,
         sender: &Addr,
-        action: IncentiveAction,
+        action: FarmAction,
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::incentive_manager::ExecuteMsg::ManageIncentive { action };
+        let msg = amm::farm_manager::ExecuteMsg::ManageFarm { action };
 
         result(self.app.execute_contract(
             sender.clone(),
-            self.incentive_manager_addr.clone(),
+            self.farm_manager_addr.clone(),
             &msg,
             &funds,
         ));
@@ -391,11 +390,11 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::incentive_manager::ExecuteMsg::ManagePosition { action };
+        let msg = amm::farm_manager::ExecuteMsg::ManagePosition { action };
 
         result(self.app.execute_contract(
             sender.clone(),
-            self.incentive_manager_addr.clone(),
+            self.farm_manager_addr.clone(),
             &msg,
             &funds,
         ));
@@ -410,11 +409,11 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::incentive_manager::ExecuteMsg::Claim;
+        let msg = amm::farm_manager::ExecuteMsg::Claim;
 
         result(self.app.execute_contract(
             sender.clone(),
-            self.incentive_manager_addr.clone(),
+            self.farm_manager_addr.clone(),
             &msg,
             &funds,
         ));
@@ -429,7 +428,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::incentive_manager::ExecuteMsg::EpochChangedHook(EpochChangedHookMsg {
+        let msg = amm::farm_manager::ExecuteMsg::EpochChangedHook(EpochChangedHookMsg {
             current_epoch: Epoch {
                 id: 0,
                 start_time: Default::default(),
@@ -438,7 +437,7 @@ impl TestingSuite {
 
         result(self.app.execute_contract(
             sender.clone(),
-            self.incentive_manager_addr.clone(),
+            self.farm_manager_addr.clone(),
             &msg,
             &funds,
         ));
@@ -455,8 +454,8 @@ impl TestingSuite {
     ) -> &mut Self {
         let ownership_response: StdResult<cw_ownable::Ownership<String>> =
             self.app.wrap().query_wasm_smart(
-                &self.incentive_manager_addr,
-                &amm::incentive_manager::QueryMsg::Ownership {},
+                &self.farm_manager_addr,
+                &amm::farm_manager::QueryMsg::Ownership {},
             );
 
         result(ownership_response);
@@ -467,8 +466,8 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn query_config(&mut self, result: impl Fn(StdResult<Config>)) -> &mut Self {
         let response: StdResult<Config> = self.app.wrap().query_wasm_smart(
-            &self.incentive_manager_addr,
-            &amm::incentive_manager::QueryMsg::Config {},
+            &self.farm_manager_addr,
+            &amm::farm_manager::QueryMsg::Config {},
         );
 
         result(response);
@@ -477,23 +476,23 @@ impl TestingSuite {
     }
 
     #[track_caller]
-    pub(crate) fn query_incentives(
+    pub(crate) fn query_farms(
         &mut self,
-        filter_by: Option<IncentivesBy>,
+        filter_by: Option<FarmsBy>,
         start_after: Option<String>,
         limit: Option<u32>,
-        result: impl Fn(StdResult<IncentivesResponse>),
+        result: impl Fn(StdResult<FarmsResponse>),
     ) -> &mut Self {
-        let incentives_response: StdResult<IncentivesResponse> = self.app.wrap().query_wasm_smart(
-            &self.incentive_manager_addr,
-            &amm::incentive_manager::QueryMsg::Incentives {
+        let farms_response: StdResult<FarmsResponse> = self.app.wrap().query_wasm_smart(
+            &self.farm_manager_addr,
+            &amm::farm_manager::QueryMsg::Farms {
                 filter_by,
                 start_after,
                 limit,
             },
         );
 
-        result(incentives_response);
+        result(farms_response);
 
         self
     }
@@ -506,8 +505,8 @@ impl TestingSuite {
         result: impl Fn(StdResult<PositionsResponse>),
     ) -> &mut Self {
         let positions_response: StdResult<PositionsResponse> = self.app.wrap().query_wasm_smart(
-            &self.incentive_manager_addr,
-            &amm::incentive_manager::QueryMsg::Positions {
+            &self.farm_manager_addr,
+            &amm::farm_manager::QueryMsg::Positions {
                 address: address.to_string(),
                 open_state,
             },
@@ -524,8 +523,8 @@ impl TestingSuite {
         result: impl Fn(StdResult<RewardsResponse>),
     ) -> &mut Self {
         let rewards_response: StdResult<RewardsResponse> = self.app.wrap().query_wasm_smart(
-            &self.incentive_manager_addr,
-            &amm::incentive_manager::QueryMsg::Rewards {
+            &self.farm_manager_addr,
+            &amm::farm_manager::QueryMsg::Rewards {
                 address: address.to_string(),
             },
         );
@@ -543,9 +542,9 @@ impl TestingSuite {
         result: impl Fn(StdResult<LpWeightResponse>),
     ) -> &mut Self {
         let rewards_response: StdResult<LpWeightResponse> = self.app.wrap().query_wasm_smart(
-            &self.incentive_manager_addr,
-            &amm::incentive_manager::QueryMsg::LPWeight {
-                address: self.incentive_manager_addr.to_string(),
+            &self.farm_manager_addr,
+            &amm::farm_manager::QueryMsg::LPWeight {
+                address: self.farm_manager_addr.to_string(),
                 denom: denom.to_string(),
                 epoch_id,
             },

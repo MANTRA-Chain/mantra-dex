@@ -4,7 +4,7 @@ The Epoch Manager is a contract which sole purpose is to create epochs on MANTRA
 the other contracts.
 
 An `Epoch` is a period of time that is defined by the `duration` parameter on `EpochConfig`, and they are used by other
-contracts to take timely actions. For example, the Incentive Manager uses epochs to calculate the incentive rewards for
+contracts to take timely actions. For example, the Farm Manager uses epochs to calculate the farm rewards for
 its users.
 
 ## How it works

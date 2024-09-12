@@ -22,14 +22,14 @@ The following is the architecture of MANTRA DEX, and a general description of ea
 title: MANTRA DEX
 ---
 flowchart
-  P[Pool Manager] <--> I[Incentive Manager]
+  P[Pool Manager] <--> I[Farm Manager]
   P -.->|swap fees| P
   P -->|protocol fees| F[Fee Collector]
   I <-->|on_epoch_created| E[Epoch Manager]
   I -->|protocol fees| F
 
   click P "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/pool-manager" "Pool Manager"
-  click I "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/incentive-manager" "Incentive Manager"
+  click I "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/farm-manager" "Farm Manager"
   click E "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/epoch-manager" "Epoch Manager"
   click F "https://github.com/MANTRA-Finance/MANTRA-dex/tree/main/contracts/fee-collector" "Fee Collector"
 ```
@@ -40,23 +40,23 @@ The direction of the arrows represents the dependencies between the contracts.
 
 The Pool Manager is the contract that manages the pools in the DEX. It is responsible for creating pool and handling
 swaps. Pool creation is permisionless, meaning anyone can create a pool if the fee is paid. The Pool Manager depends on
-the Incentive Manager and the Fee Collector.
+the Farm Manager and the Fee Collector.
 
-### Incentive Manager
+### Farm Manager
 
-The Incentive Manager is the contract that manages the incentives in the protocol. It is responsible for creating and
-distributing incentives on pools. Incentive creation is permissionless, meaning anyone can create an incentive if the fee is paid.
-The Incentive Manager depends on the Epoch Manager, as incentives are distributed based on epochs.
+The Farm Manager is the contract that manages the farms in the protocol. It is responsible for creating and
+distributing rewards on pools. Farm creation is permissionless, meaning anyone can create a farm if the fee is paid.
+The Farm Manager depends on the Epoch Manager, as rewards are distributed based on epochs.
 
 ### Fee Collector
 
-The Fee Collector collets the fees accrued by the protocol. Whenever a pool or an incentive is created, a fee is sent
+The Fee Collector collets the fees accrued by the protocol. Whenever a pool or a farm is created, a fee is sent
 to the Fee Collector. As of now, the Fee Collector does not have any other function.
 
 ### Epoch Manager
 
 The Epoch Manager is the contract that manages the epochs in the protocol. Its single responsibility is to create the epochs,
-which are used by the Incentive Manager for distributing incentives.
+which are used by the Farm Manager for distributing rewards.
 
 ## Instantiation
 
@@ -64,7 +64,7 @@ Based on the dependencies between the contracts, the instantiation of the contra
 
 - Epoch Manager
 - Fee Collector
-- Incentive Manager
+- Farm Manager
 - Pool Manager
 
 ---

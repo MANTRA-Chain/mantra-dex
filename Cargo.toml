@@ -5,7 +5,7 @@ members = [
   "packages/*",
   "contracts/pool-manager",
   "contracts/epoch-manager",
-  "contracts/incentive-manager",
+  "contracts/farm-manager",
   "contracts/fee-collector",
   "xtask",
 ]
@@ -63,7 +63,7 @@ rand = { version = "0.8.5" }
 # contracts
 epoch-manager = { path = "contracts/epoch-manager" }
 pool-manager = { path = "contracts/pool-manager" }
-incentive-manager = { path = "contracts/incentive-manager" }
+farm-manager = { path = "contracts/farm-manager" }
 fee-collector = { path = "contracts/fee-collector" }
 
 [workspace.metadata.dylint]

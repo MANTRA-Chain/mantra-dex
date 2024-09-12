@@ -1,6 +1,6 @@
-use crate::incentive::commands::{compute_start_from_epoch_for_user, compute_user_weights};
+use crate::farm::commands::{compute_start_from_epoch_for_user, compute_user_weights};
 use crate::state::LP_WEIGHT_HISTORY;
-use amm::incentive_manager::{Curve, Incentive, Position};
+use amm::farm_manager::{Curve, Farm, Position};
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::{Addr, Coin, Uint128};
 
@@ -9,12 +9,12 @@ fn compute_start_from_epoch_for_user_successfully() {
     let mut deps = mock_dependencies();
     let user = Addr::unchecked("user");
 
-    let mut incentive = Incentive {
-        identifier: "incentive".to_string(),
+    let mut farm = Farm {
+        identifier: "farm".to_string(),
         owner: user.clone(),
         lp_denom: "lp".to_string(),
-        incentive_asset: Coin {
-            denom: "incentive".to_string(),
+        farm_asset: Coin {
+            denom: "farm".to_string(),
             amount: Uint128::new(1_000),
         },
         claimed_amount: Default::default(),
@@ -25,7 +25,7 @@ fn compute_start_from_epoch_for_user_successfully() {
         last_epoch_claimed: 9,
     };
 
-    // Mimics the scenario where the user has never claimed before, but opened a position before the incentive
+    // Mimics the scenario where the user has never claimed before, but opened a position before the farm
     // went live
     let first_user_weight_epoch_id = 8;
     LP_WEIGHT_HISTORY
@@ -37,44 +37,44 @@ fn compute_start_from_epoch_for_user_successfully() {
         .unwrap();
 
     let start_from_epoch =
-        compute_start_from_epoch_for_user(&deps.storage, &incentive.lp_denom, None, &user).unwrap();
+        compute_start_from_epoch_for_user(&deps.storage, &farm.lp_denom, None, &user).unwrap();
 
-    // the function should return the start epoch of the incentive
+    // the function should return the start epoch of the farm
     assert_eq!(start_from_epoch, first_user_weight_epoch_id);
 
-    // Mimics the scenario where the user has never claimed before, but opened a position after the incentive
+    // Mimics the scenario where the user has never claimed before, but opened a position after the farm
     // went live
-    incentive.start_epoch = 5u64;
+    farm.start_epoch = 5u64;
     let start_from_epoch =
-        compute_start_from_epoch_for_user(&deps.storage, &incentive.lp_denom, None, &user).unwrap();
+        compute_start_from_epoch_for_user(&deps.storage, &farm.lp_denom, None, &user).unwrap();
 
     // the function should return the first epoch the user has a weight
     assert_eq!(start_from_epoch, first_user_weight_epoch_id);
 
-    // Mimics the scenario where the user has claimed already, after the incentive went live, i.e. the user
-    // has already partially claimed this incentive
-    incentive.start_epoch = 10u64;
+    // Mimics the scenario where the user has claimed already, after the farm went live, i.e. the user
+    // has already partially claimed this farm
+    farm.start_epoch = 10u64;
     let start_from_epoch =
-        compute_start_from_epoch_for_user(&deps.storage, &incentive.lp_denom, Some(12u64), &user)
+        compute_start_from_epoch_for_user(&deps.storage, &farm.lp_denom, Some(12u64), &user)
             .unwrap();
 
     // the function should return the next epoch after the last claimed one
     assert_eq!(start_from_epoch, 13);
 
-    // Mimics the scenario where the user has claimed already, before the incentive went live, i.e. the user
-    // has not claimed this incentive at all
-    incentive.start_epoch = 15u64;
+    // Mimics the scenario where the user has claimed already, before the farm went live, i.e. the user
+    // has not claimed this farm at all
+    farm.start_epoch = 15u64;
     let start_from_epoch =
-        compute_start_from_epoch_for_user(&deps.storage, &incentive.lp_denom, Some(12u64), &user)
+        compute_start_from_epoch_for_user(&deps.storage, &farm.lp_denom, Some(12u64), &user)
             .unwrap();
 
-    // the function should return the start epoch of the incentive
+    // the function should return the start epoch of the farm
     assert_eq!(start_from_epoch, 13);
 
-    // Mimics the scenario where the user has claimed the epoch the incentives went live
-    incentive.start_epoch = 15u64;
+    // Mimics the scenario where the user has claimed the epoch the farms went live
+    farm.start_epoch = 15u64;
     let start_from_epoch =
-        compute_start_from_epoch_for_user(&deps.storage, &incentive.lp_denom, Some(15u64), &user)
+        compute_start_from_epoch_for_user(&deps.storage, &farm.lp_denom, Some(15u64), &user)
             .unwrap();
 
     // the function should return the next epoch after the last claimed one

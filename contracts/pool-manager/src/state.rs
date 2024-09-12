@@ -42,10 +42,10 @@ pub struct LiquidityProvisionData {
     pub slippage_tolerance: Option<Decimal>,
     /// The identifier for the pool to provide liquidity for.
     pub pool_identifier: String,
-    /// The amount of time in seconds to unlock tokens if taking part on the incentives. If not passed,
+    /// The amount of time in seconds to unlock tokens if taking part on the farms. If not passed,
     /// the tokens will not be locked and the LP tokens will be returned to the user.
     pub unlocking_duration: Option<u64>,
-    /// The identifier of the position to lock the LP tokens in the incentive manager, if any.
+    /// The identifier of the position to lock the LP tokens in the farm manager, if any.
     pub lock_position_identifier: Option<String>,
 }
 

@@ -30,7 +30,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let config: Config = Config {
         fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
-        incentive_manager_addr: deps.api.addr_validate(&msg.incentive_manager_addr)?,
+        farm_manager_addr: deps.api.addr_validate(&msg.farm_manager_addr)?,
         pool_creation_fee: msg.pool_creation_fee.clone(),
         feature_toggle: FeatureToggle {
             withdrawals_enabled: true,
@@ -47,7 +47,7 @@ pub fn instantiate(
         ("action", "instantiate".to_string()),
         ("owner", info.sender.to_string()),
         ("fee_collector_addr", msg.fee_collector_addr),
-        ("incentive_manager_addr", msg.incentive_manager_addr),
+        ("farm_manager_addr", msg.farm_manager_addr),
         ("pool_creation_fee", msg.pool_creation_fee.to_string()),
     ]))
 }

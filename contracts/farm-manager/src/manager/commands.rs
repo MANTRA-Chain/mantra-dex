@@ -6,53 +6,53 @@ use cosmwasm_std::{
 use amm::coin::{get_factory_token_subdenom, is_factory_token};
 use amm::constants::LP_SYMBOL;
 use amm::epoch_manager::EpochChangedHookMsg;
-use amm::incentive_manager::MIN_INCENTIVE_AMOUNT;
-use amm::incentive_manager::{Curve, Incentive, IncentiveParams};
+use amm::farm_manager::MIN_FARM_AMOUNT;
+use amm::farm_manager::{Curve, Farm, FarmParams};
 
 use crate::helpers::{
-    assert_incentive_asset, process_incentive_creation_fee, validate_emergency_unlock_penalty,
-    validate_incentive_epochs,
+    assert_farm_asset, process_farm_creation_fee, validate_emergency_unlock_penalty,
+    validate_farm_epochs,
 };
 use crate::state::{
-    get_incentive_by_identifier, get_incentives_by_lp_denom, get_latest_address_lp_weight, CONFIG,
-    INCENTIVES, INCENTIVE_COUNTER, LP_WEIGHT_HISTORY,
+    get_farm_by_identifier, get_farms_by_lp_denom, get_latest_address_lp_weight, CONFIG, FARMS,
+    FARM_COUNTER, LP_WEIGHT_HISTORY,
 };
 use crate::ContractError;
 
-pub(crate) fn fill_incentive(
+pub(crate) fn fill_farm(
     deps: DepsMut,
     info: MessageInfo,
-    params: IncentiveParams,
+    params: FarmParams,
 ) -> Result<Response, ContractError> {
-    // if an incentive_identifier was passed in the params, check if an incentive with such identifier
-    // exists and if the sender is allow to refill it, otherwise create a new incentive
-    if let Some(incentive_indentifier) = params.clone().incentive_identifier {
-        let incentive_result = get_incentive_by_identifier(deps.storage, &incentive_indentifier);
+    // if a farm_identifier was passed in the params, check if a farm with such identifier
+    // exists and if the sender is allow to refill it, otherwise create a new farm
+    if let Some(farm_indentifier) = params.clone().farm_identifier {
+        let farm_result = get_farm_by_identifier(deps.storage, &farm_indentifier);
 
-        if let Ok(incentive) = incentive_result {
-            // the incentive exists, try to expand it
-            return expand_incentive(deps, info, incentive, params);
+        if let Ok(farm) = farm_result {
+            // the farm exists, try to expand it
+            return expand_farm(deps, info, farm, params);
         }
-        // the incentive does not exist, try to create it
+        // the farm does not exist, try to create it
     }
 
-    // if no identifier was passed in the params or if the incentive does not exist, try to create the incentive
-    create_incentive(deps, info, params)
+    // if no identifier was passed in the params or if the farm does not exist, try to create the farm
+    create_farm(deps, info, params)
 }
 
-/// Creates an incentive with the given params
-fn create_incentive(
+/// Creates a farm with the given params
+fn create_farm(
     deps: DepsMut,
     info: MessageInfo,
-    params: IncentiveParams,
+    params: FarmParams,
 ) -> Result<Response, ContractError> {
-    // check if there are any expired incentives for this LP asset
+    // check if there are any expired farms for this LP asset
     let config = CONFIG.load(deps.storage)?;
-    let incentives = get_incentives_by_lp_denom(
+    let farms = get_farms_by_lp_denom(
         deps.storage,
         &params.lp_denom,
         None,
-        Some(config.max_concurrent_incentives),
+        Some(config.max_concurrent_farms),
     )?;
 
     let current_epoch = amm::epoch_manager::get_current_epoch(
@@ -60,85 +60,83 @@ fn create_incentive(
         config.epoch_manager_addr.clone().into_string(),
     )?;
 
-    let (expired_incentives, incentives): (Vec<_>, Vec<_>) = incentives
+    let (expired_farms, farms): (Vec<_>, Vec<_>) = farms
         .into_iter()
-        .partition(|incentive| incentive.is_expired(current_epoch.id));
+        .partition(|farm| farm.is_expired(current_epoch.id));
 
     let mut messages: Vec<CosmosMsg> = vec![];
 
-    // close expired incentives if there are any
-    if !expired_incentives.is_empty() {
-        messages.append(&mut close_incentives(deps.storage, expired_incentives)?);
+    // close expired farms if there are any
+    if !expired_farms.is_empty() {
+        messages.append(&mut close_farms(deps.storage, expired_farms)?);
     }
 
-    // check if more incentives can be created for this particular LP asset
+    // check if more farms can be created for this particular LP asset
     ensure!(
-        incentives.len() < config.max_concurrent_incentives as usize,
-        ContractError::TooManyIncentives {
-            max: config.max_concurrent_incentives,
+        farms.len() < config.max_concurrent_farms as usize,
+        ContractError::TooManyFarms {
+            max: config.max_concurrent_farms,
         }
     );
 
-    // check the incentive is being created with a valid amount
+    // check the farm is being created with a valid amount
     ensure!(
-        params.incentive_asset.amount >= MIN_INCENTIVE_AMOUNT,
-        ContractError::InvalidIncentiveAmount {
-            min: MIN_INCENTIVE_AMOUNT.u128()
+        params.farm_asset.amount >= MIN_FARM_AMOUNT,
+        ContractError::InvalidFarmAmount {
+            min: MIN_FARM_AMOUNT.u128()
         }
     );
 
-    let incentive_creation_fee = config.clone().create_incentive_fee;
+    let farm_creation_fee = config.clone().create_farm_fee;
 
-    if incentive_creation_fee.amount != Uint128::zero() {
-        // verify the fee to create an incentive is being paid
-        messages.append(&mut process_incentive_creation_fee(
+    if farm_creation_fee.amount != Uint128::zero() {
+        // verify the fee to create an farm is being paid
+        messages.append(&mut process_farm_creation_fee(
             &config,
             &info,
-            &incentive_creation_fee,
+            &farm_creation_fee,
             &params,
         )?);
     }
 
-    // verify the incentive asset was sent
-    assert_incentive_asset(&info, &incentive_creation_fee, &params)?;
+    // verify the farm asset was sent
+    assert_farm_asset(&info, &farm_creation_fee, &params)?;
 
     // assert epoch params are correctly set
-    let (start_epoch, preliminary_end_epoch) = validate_incentive_epochs(
+    let (start_epoch, preliminary_end_epoch) = validate_farm_epochs(
         &params,
         current_epoch.id,
-        u64::from(config.max_incentive_epoch_buffer),
+        u64::from(config.max_farm_epoch_buffer),
     )?;
 
-    // create incentive identifier
-    let incentive_id = INCENTIVE_COUNTER
-        .update::<_, StdError>(deps.storage, |current_id| Ok(current_id + 1u64))?;
-    let incentive_identifier = params
-        .incentive_identifier
-        .unwrap_or(incentive_id.to_string());
+    // create farm identifier
+    let farm_id =
+        FARM_COUNTER.update::<_, StdError>(deps.storage, |current_id| Ok(current_id + 1u64))?;
+    let farm_identifier = params.farm_identifier.unwrap_or(farm_id.to_string());
 
-    // sanity check. Make sure another incentive with the same identifier doesn't exist. Theoretically this should
-    // never happen, since the fill_incentive function would try to expand the incentive if a user tries
-    // filling an incentive with an identifier that already exists
+    // sanity check. Make sure another farm with the same identifier doesn't exist. Theoretically this should
+    // never happen, since the fill_farm function would try to expand the farm if a user tries
+    // filling an farm with an identifier that already exists
     ensure!(
-        get_incentive_by_identifier(deps.storage, &incentive_identifier).is_err(),
-        ContractError::IncentiveAlreadyExists
+        get_farm_by_identifier(deps.storage, &farm_identifier).is_err(),
+        ContractError::FarmAlreadyExists
     );
-    // the incentive does not exist, all good, continue
+    // the farm does not exist, all good, continue
 
     // calculates the emission rate. The way it's calculated, it makes the last epoch to be
     // non-inclusive, i.e. the last epoch is not counted in the emission
     let emission_rate = params
-        .incentive_asset
+        .farm_asset
         .amount
         .checked_div_floor((preliminary_end_epoch.saturating_sub(start_epoch), 1u64))?;
 
-    // create the incentive
-    let incentive = Incentive {
-        identifier: incentive_identifier,
+    // create the farm
+    let farm = Farm {
+        identifier: farm_identifier,
         start_epoch,
         preliminary_end_epoch,
         curve: params.curve.unwrap_or(Curve::Linear),
-        incentive_asset: params.incentive_asset,
+        farm_asset: params.farm_asset,
         lp_denom: params.lp_denom,
         owner: info.sender,
         claimed_amount: Uint128::zero(),
@@ -146,73 +144,70 @@ fn create_incentive(
         last_epoch_claimed: start_epoch - 1,
     };
 
-    INCENTIVES.save(deps.storage, &incentive.identifier, &incentive)?;
+    FARMS.save(deps.storage, &farm.identifier, &farm)?;
 
     Ok(Response::default()
         .add_messages(messages)
         .add_attributes(vec![
-            ("action", "create_incentive".to_string()),
-            ("incentive_creator", incentive.owner.to_string()),
-            ("incentive_identifier", incentive.identifier),
-            ("start_epoch", incentive.start_epoch.to_string()),
+            ("action", "create_farm".to_string()),
+            ("farm_creator", farm.owner.to_string()),
+            ("farm_identifier", farm.identifier),
+            ("start_epoch", farm.start_epoch.to_string()),
             (
                 "preliminary_end_epoch",
-                incentive.preliminary_end_epoch.to_string(),
+                farm.preliminary_end_epoch.to_string(),
             ),
             ("emission_rate", emission_rate.to_string()),
-            ("curve", incentive.curve.to_string()),
-            ("incentive_asset", incentive.incentive_asset.to_string()),
-            ("lp_denom", incentive.lp_denom),
+            ("curve", farm.curve.to_string()),
+            ("farm_asset", farm.farm_asset.to_string()),
+            ("lp_denom", farm.lp_denom),
         ]))
 }
 
-/// Closes an incentive. If the incentive has expired, anyone can close it. Otherwise, only the
-/// incentive creator or the owner of the contract can close an incentive.
-pub(crate) fn close_incentive(
+/// Closes a farm. If the farm has expired, anyone can close it. Otherwise, only the
+/// farm creator or the owner of the contract can close a farm.
+pub(crate) fn close_farm(
     deps: DepsMut,
     info: MessageInfo,
-    incentive_identifier: String,
+    farm_identifier: String,
 ) -> Result<Response, ContractError> {
     cw_utils::nonpayable(&info)?;
 
-    // validate that user is allowed to close the incentive. Only the incentive creator or the owner
-    // of the contract can close an incentive
-    let incentive = get_incentive_by_identifier(deps.storage, &incentive_identifier)?;
+    // validate that user is allowed to close the farm. Only the farm creator or the owner
+    // of the contract can close a farm
+    let farm = get_farm_by_identifier(deps.storage, &farm_identifier)?;
 
     ensure!(
-        incentive.owner == info.sender || cw_ownable::is_owner(deps.storage, &info.sender)?,
+        farm.owner == info.sender || cw_ownable::is_owner(deps.storage, &info.sender)?,
         ContractError::Unauthorized
     );
 
     Ok(Response::default()
-        .add_messages(close_incentives(deps.storage, vec![incentive])?)
+        .add_messages(close_farms(deps.storage, vec![farm])?)
         .add_attributes(vec![
-            ("action", "close_incentive".to_string()),
-            ("incentive_identifier", incentive_identifier),
+            ("action", "close_farm".to_string()),
+            ("farm_identifier", farm_identifier),
         ]))
 }
 
-/// Closes a list of incentives. Does not validate the sender, do so before calling this function.
-fn close_incentives(
+/// Closes a list of farms. Does not validate the sender, do so before calling this function.
+fn close_farms(
     storage: &mut dyn Storage,
-    incentives: Vec<Incentive>,
+    farms: Vec<Farm>,
 ) -> Result<Vec<CosmosMsg>, ContractError> {
     let mut messages: Vec<CosmosMsg> = vec![];
 
-    for mut incentive in incentives {
-        // remove the incentive from the storage
-        INCENTIVES.remove(storage, &incentive.identifier)?;
+    for mut farm in farms {
+        // remove the farm from the storage
+        FARMS.remove(storage, &farm.identifier)?;
 
         // return the available asset, i.e. the amount that hasn't been claimed
-        incentive.incentive_asset.amount = incentive
-            .incentive_asset
-            .amount
-            .saturating_sub(incentive.claimed_amount);
+        farm.farm_asset.amount = farm.farm_asset.amount.saturating_sub(farm.claimed_amount);
 
         messages.push(
             BankMsg::Send {
-                to_address: incentive.owner.into_string(),
-                amount: vec![incentive.incentive_asset],
+                to_address: farm.owner.into_string(),
+                amount: vec![farm.farm_asset],
             }
             .into(),
         );
@@ -221,15 +216,15 @@ fn close_incentives(
     Ok(messages)
 }
 
-/// Expands an incentive with the given params
-fn expand_incentive(
+/// Expands a farm with the given params
+fn expand_farm(
     deps: DepsMut,
     info: MessageInfo,
-    mut incentive: Incentive,
-    params: IncentiveParams,
+    mut farm: Farm,
+    params: FarmParams,
 ) -> Result<Response, ContractError> {
-    // only the incentive owner can expand it
-    ensure!(incentive.owner == info.sender, ContractError::Unauthorized);
+    // only the farm owner can expand it
+    ensure!(farm.owner == info.sender, ContractError::Unauthorized);
 
     let config = CONFIG.load(deps.storage)?;
     let current_epoch = amm::epoch_manager::get_current_epoch(
@@ -237,50 +232,47 @@ fn expand_incentive(
         config.epoch_manager_addr.into_string(),
     )?;
 
-    // check if the incentive has already expired, can't be expanded
+    // check if the farm has already expired, can't be expanded
     ensure!(
-        !incentive.is_expired(current_epoch.id),
-        ContractError::IncentiveAlreadyExpired
+        !farm.is_expired(current_epoch.id),
+        ContractError::FarmAlreadyExpired
     );
 
     // check that the asset sent matches the asset expected
     ensure!(
-        incentive.incentive_asset.denom == params.incentive_asset.denom,
+        farm.farm_asset.denom == params.farm_asset.denom,
         ContractError::AssetMismatch
     );
 
     // make sure the expansion is a multiple of the emission rate
     ensure!(
-        params.incentive_asset.amount % incentive.emission_rate == Uint128::zero(),
+        params.farm_asset.amount % farm.emission_rate == Uint128::zero(),
         ContractError::InvalidExpansionAmount {
-            emission_rate: incentive.emission_rate
+            emission_rate: farm.emission_rate
         }
     );
 
-    // increase the total amount of the incentive
-    incentive.incentive_asset.amount = incentive
-        .incentive_asset
+    // increase the total amount of the farm
+    farm.farm_asset.amount = farm
+        .farm_asset
         .amount
-        .checked_add(params.incentive_asset.amount)?;
+        .checked_add(params.farm_asset.amount)?;
 
-    let additional_epochs = params
-        .incentive_asset
-        .amount
-        .checked_div(incentive.emission_rate)?;
+    let additional_epochs = params.farm_asset.amount.checked_div(farm.emission_rate)?;
 
     // adjust the preliminary end_epoch
-    incentive.preliminary_end_epoch = incentive
+    farm.preliminary_end_epoch = farm
         .preliminary_end_epoch
         .checked_add(Uint64::try_from(additional_epochs)?.u64())
         .ok_or(ContractError::InvalidEndEpoch)?;
 
-    INCENTIVES.save(deps.storage, &incentive.identifier, &incentive)?;
+    FARMS.save(deps.storage, &farm.identifier, &farm)?;
 
     Ok(Response::default().add_attributes(vec![
-        ("action", "expand_incentive".to_string()),
-        ("incentive_identifier", incentive.identifier),
-        ("expanded_by", params.incentive_asset.to_string()),
-        ("total_incentive", incentive.incentive_asset.to_string()),
+        ("action", "expand_farm".to_string()),
+        ("farm_identifier", farm.identifier),
+        ("expanded_by", params.farm_asset.to_string()),
+        ("total_farm", farm.farm_asset.to_string()),
     ]))
 }
 
@@ -357,9 +349,9 @@ pub(crate) fn update_config(
     info: MessageInfo,
     fee_collector_addr: Option<String>,
     epoch_manager_addr: Option<String>,
-    create_incentive_fee: Option<Coin>,
-    max_concurrent_incentives: Option<u32>,
-    max_incentive_epoch_buffer: Option<u32>,
+    create_farm_fee: Option<Coin>,
+    max_concurrent_farms: Option<u32>,
+    max_farm_epoch_buffer: Option<u32>,
     min_unlocking_duration: Option<u64>,
     max_unlocking_duration: Option<u64>,
     emergency_unlock_penalty: Option<Decimal>,
@@ -376,20 +368,20 @@ pub(crate) fn update_config(
         config.epoch_manager_addr = deps.api.addr_validate(&epoch_manager_addr)?;
     }
 
-    if let Some(create_incentive_fee) = create_incentive_fee {
-        config.create_incentive_fee = create_incentive_fee;
+    if let Some(create_farm_fee) = create_farm_fee {
+        config.create_farm_fee = create_farm_fee;
     }
 
-    if let Some(max_concurrent_incentives) = max_concurrent_incentives {
-        if max_concurrent_incentives == 0u32 {
-            return Err(ContractError::UnspecifiedConcurrentIncentives);
+    if let Some(max_concurrent_farms) = max_concurrent_farms {
+        if max_concurrent_farms == 0u32 {
+            return Err(ContractError::UnspecifiedConcurrentFarms);
         }
 
-        config.max_concurrent_incentives = max_concurrent_incentives;
+        config.max_concurrent_farms = max_concurrent_farms;
     }
 
-    if let Some(max_incentive_epoch_buffer) = max_incentive_epoch_buffer {
-        config.max_incentive_epoch_buffer = max_incentive_epoch_buffer;
+    if let Some(max_farm_epoch_buffer) = max_farm_epoch_buffer {
+        config.max_farm_epoch_buffer = max_farm_epoch_buffer;
     }
 
     if let Some(max_unlocking_duration) = max_unlocking_duration {
@@ -425,14 +417,14 @@ pub(crate) fn update_config(
         ("action", "update_config".to_string()),
         ("fee_collector_addr", config.fee_collector_addr.to_string()),
         ("epoch_manager_addr", config.epoch_manager_addr.to_string()),
-        ("create_flow_fee", config.create_incentive_fee.to_string()),
+        ("create_flow_fee", config.create_farm_fee.to_string()),
         (
             "max_concurrent_flows",
-            config.max_concurrent_incentives.to_string(),
+            config.max_concurrent_farms.to_string(),
         ),
         (
             "max_flow_epoch_buffer",
-            config.max_incentive_epoch_buffer.to_string(),
+            config.max_farm_epoch_buffer.to_string(),
         ),
         (
             "min_unlocking_duration",

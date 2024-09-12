@@ -1,15 +1,14 @@
 use cosmwasm_std::{Deps, Env};
 
 use amm::coin::aggregate_coins;
-use amm::incentive_manager::{
-    Config, EpochId, IncentivesBy, IncentivesResponse, LpWeightResponse, PositionsResponse,
-    RewardsResponse,
+use amm::farm_manager::{
+    Config, EpochId, FarmsBy, FarmsResponse, LpWeightResponse, PositionsResponse, RewardsResponse,
 };
 
-use crate::incentive::commands::calculate_rewards;
+use crate::farm::commands::calculate_rewards;
 use crate::state::{
-    get_incentive_by_identifier, get_incentives, get_incentives_by_incentive_asset,
-    get_incentives_by_lp_denom, get_positions_by_receiver, CONFIG, LP_WEIGHT_HISTORY,
+    get_farm_by_identifier, get_farms, get_farms_by_farm_asset, get_farms_by_lp_denom,
+    get_positions_by_receiver, CONFIG, LP_WEIGHT_HISTORY,
 };
 use crate::ContractError;
 
@@ -18,34 +17,31 @@ pub(crate) fn query_manager_config(deps: Deps) -> Result<Config, ContractError> 
     Ok(CONFIG.load(deps.storage)?)
 }
 
-/// Queries all incentives. If `lp_asset` is provided, it will return all incentives for that
+/// Queries all farms. If `lp_asset` is provided, it will return all farms for that
 /// particular lp.
-pub(crate) fn query_incentives(
+pub(crate) fn query_farms(
     deps: Deps,
-    filter_by: Option<IncentivesBy>,
+    filter_by: Option<FarmsBy>,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> Result<IncentivesResponse, ContractError> {
-    let incentives = if let Some(filter_by) = filter_by {
+) -> Result<FarmsResponse, ContractError> {
+    let farms = if let Some(filter_by) = filter_by {
         match filter_by {
-            IncentivesBy::Identifier(identifier) => {
-                vec![get_incentive_by_identifier(deps.storage, &identifier)?]
+            FarmsBy::Identifier(identifier) => {
+                vec![get_farm_by_identifier(deps.storage, &identifier)?]
             }
-            IncentivesBy::LPDenom(lp_denom) => {
-                get_incentives_by_lp_denom(deps.storage, lp_denom.as_str(), start_after, limit)?
+            FarmsBy::LPDenom(lp_denom) => {
+                get_farms_by_lp_denom(deps.storage, lp_denom.as_str(), start_after, limit)?
             }
-            IncentivesBy::IncentiveAsset(incentive_asset) => get_incentives_by_incentive_asset(
-                deps.storage,
-                incentive_asset.as_str(),
-                start_after,
-                limit,
-            )?,
+            FarmsBy::FarmAsset(farm_asset) => {
+                get_farms_by_farm_asset(deps.storage, farm_asset.as_str(), start_after, limit)?
+            }
         }
     } else {
-        get_incentives(deps.storage, start_after, limit)?
+        get_farms(deps.storage, start_after, limit)?
     };
 
-    Ok(IncentivesResponse { incentives })
+    Ok(FarmsResponse { farms })
 }
 
 /// Queries all positions. If `open_state` is provided, it will return all positions that match that

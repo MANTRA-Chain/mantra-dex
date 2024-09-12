@@ -1,14 +1,14 @@
 use cosmwasm_std::Empty;
 use cw_multi_test::{Contract, ContractWrapper};
 
-/// Creates the incentive manager contract
-pub fn incentive_manager_contract() -> Box<dyn Contract<Empty>> {
+/// Creates the farm manager contract
+pub fn farm_manager_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
-        incentive_manager::contract::execute,
-        incentive_manager::contract::instantiate,
-        incentive_manager::contract::query,
+        farm_manager::contract::execute,
+        farm_manager::contract::instantiate,
+        farm_manager::contract::query,
     )
-    .with_migrate(incentive_manager::contract::migrate);
+    .with_migrate(farm_manager::contract::migrate);
 
     Box::new(contract)
 }
