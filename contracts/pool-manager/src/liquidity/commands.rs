@@ -303,7 +303,7 @@ pub fn provide_liquidity(
             }
         };
 
-        // if the unlocking duration is set, lock the LP tokens in the incentive manager
+        // if the unlocking duration is set, lock the LP tokens in the farm manager
         if let Some(unlocking_duration) = unlocking_duration {
             // mint the lp tokens to the contract
             messages.push(amm::lp_common::mint_lp_token_msg(
@@ -313,12 +313,12 @@ pub fn provide_liquidity(
                 share,
             )?);
 
-            // lock the lp tokens in the incentive manager on behalf of the receiver
+            // lock the lp tokens in the farm manager on behalf of the receiver
             messages.push(
                 wasm_execute(
-                    config.incentive_manager_addr,
-                    &amm::incentive_manager::ExecuteMsg::ManagePosition {
-                        action: amm::incentive_manager::PositionAction::Fill {
+                    config.farm_manager_addr,
+                    &amm::farm_manager::ExecuteMsg::ManagePosition {
+                        action: amm::farm_manager::PositionAction::Fill {
                             identifier: lock_position_identifier,
                             unlocking_duration,
                             receiver: Some(receiver.clone()),

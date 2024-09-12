@@ -2056,8 +2056,8 @@ mod ownership {
 mod locking_lp {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 
+    use amm::farm_manager::Position;
     use amm::fee::{Fee, PoolFee};
-    use amm::incentive_manager::Position;
     use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
     use amm::pool_manager::PoolType;
 
@@ -2111,7 +2111,7 @@ mod locking_lp {
             );
 
         let contract_addr = suite.pool_manager_addr.clone();
-        let incentive_manager_addr = suite.incentive_manager_addr.clone();
+        let farm_manager_addr = suite.farm_manager_addr.clone();
         let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
 
         // Lets try to add liquidity
@@ -2147,7 +2147,7 @@ mod locking_lp {
             )
             .query_all_balances(&creator.to_string(), |result| {
                 let balances = result.unwrap();
-                // the lp tokens should have gone to the incentive manager
+                // the lp tokens should have gone to the farm manager
                 assert!(!balances
                     .iter()
                     .any(|coin| { coin.denom == lp_denom.clone() }));
@@ -2159,15 +2159,15 @@ mod locking_lp {
                     coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
                 }));
             })
-            // check the LP went to the incentive manager
-            .query_all_balances(&incentive_manager_addr.to_string(), |result| {
+            // check the LP went to the farm manager
+            .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom && coin.amount == Uint128::from(999_000u128)
                 }));
             });
 
-        suite.query_incentive_positions(&creator, None, |result| {
+        suite.query_farm_positions(&creator, None, |result| {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
@@ -2180,7 +2180,7 @@ mod locking_lp {
             });
         });
 
-        // let's do it again, it should create another position on the incentive manager
+        // let's do it again, it should create another position on the farm manager
 
         suite
             .provide_liquidity(
@@ -2206,20 +2206,20 @@ mod locking_lp {
             )
             .query_all_balances(&creator.to_string(), |result| {
                 let balances = result.unwrap();
-                // the lp tokens should have gone to the incentive manager
+                // the lp tokens should have gone to the farm manager
                 assert!(!balances
                     .iter()
                     .any(|coin| { coin.denom == lp_denom.clone() }));
             })
-            // check the LP went to the incentive manager
-            .query_all_balances(&incentive_manager_addr.to_string(), |result| {
+            // check the LP went to the farm manager
+            .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom && coin.amount == Uint128::from(1_999_000u128)
                 }));
             });
 
-        suite.query_incentive_positions(&creator, None, |result| {
+        suite.query_farm_positions(&creator, None, |result| {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
@@ -2289,7 +2289,7 @@ mod locking_lp {
             );
 
         let contract_addr = suite.pool_manager_addr.clone();
-        let incentive_manager_addr = suite.incentive_manager_addr.clone();
+        let farm_manager_addr = suite.farm_manager_addr.clone();
         let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
 
         // Lets try to add liquidity
@@ -2298,7 +2298,7 @@ mod locking_lp {
                 &creator,
                 "whale.uluna".to_string(),
                 Some(86_400u64),
-                Some("incentive_identifier".to_string()),
+                Some("farm_identifier".to_string()),
                 None,
                 None,
                 vec![
@@ -2325,7 +2325,7 @@ mod locking_lp {
             )
             .query_all_balances(&creator.to_string(), |result| {
                 let balances = result.unwrap();
-                // the lp tokens should have gone to the incentive manager
+                // the lp tokens should have gone to the farm manager
                 assert!(!balances
                     .iter()
                     .any(|coin| { coin.denom == lp_denom.clone() }));
@@ -2337,19 +2337,19 @@ mod locking_lp {
                     coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
                 }));
             })
-            // check the LP went to the incentive manager
-            .query_all_balances(&incentive_manager_addr.to_string(), |result| {
+            // check the LP went to the farm manager
+            .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom && coin.amount == Uint128::from(999_000u128)
                 }));
             });
 
-        suite.query_incentive_positions(&creator, None, |result| {
+        suite.query_farm_positions(&creator, None, |result| {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
-                identifier: "incentive_identifier".to_string(),
+                identifier: "farm_identifier".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
@@ -2358,14 +2358,14 @@ mod locking_lp {
             });
         });
 
-        // let's do it again, reusing the same incentive identifier
+        // let's do it again, reusing the same farm identifier
 
         suite
             .provide_liquidity(
                 &creator,
                 "whale.uluna".to_string(),
                 Some(200_000u64),
-                Some("incentive_identifier".to_string()),
+                Some("farm_identifier".to_string()),
                 None,
                 None,
                 vec![
@@ -2384,25 +2384,25 @@ mod locking_lp {
             )
             .query_all_balances(&creator.to_string(), |result| {
                 let balances = result.unwrap();
-                // the lp tokens should have gone to the incentive manager
+                // the lp tokens should have gone to the farm manager
                 assert!(!balances
                     .iter()
                     .any(|coin| { coin.denom == lp_denom.clone() }));
             })
-            // check the LP went to the incentive manager
-            .query_all_balances(&incentive_manager_addr.to_string(), |result| {
+            // check the LP went to the farm manager
+            .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom && coin.amount == Uint128::from(1_999_000u128)
                 }));
             });
 
-        suite.query_incentive_positions(&creator, None, |result| {
+        suite.query_farm_positions(&creator, None, |result| {
             let positions = result.unwrap().positions;
             // the position should be updated
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
-                identifier: "incentive_identifier".to_string(),
+                identifier: "farm_identifier".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(1_999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,

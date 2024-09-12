@@ -15,12 +15,12 @@ pub struct InstantiateMsg {
     pub epoch_manager_addr: String,
     /// The fee collector address, where protocol fees are stored
     pub fee_collector_addr: String,
-    /// The fee that must be paid to create an incentive.
-    pub create_incentive_fee: Coin,
-    /// The maximum amount of incentives that can exist for a single LP token at a time.
-    pub max_concurrent_incentives: u32,
-    /// New incentives are allowed to start up to `current_epoch + start_epoch_buffer` into the future.
-    pub max_incentive_epoch_buffer: u32,
+    /// The fee that must be paid to create an farm.
+    pub create_farm_fee: Coin,
+    /// The maximum amount of farms that can exist for a single LP token at a time.
+    pub max_concurrent_farms: u32,
+    /// New farms are allowed to start up to `current_epoch + start_epoch_buffer` into the future.
+    pub max_farm_epoch_buffer: u32,
     /// The minimum amount of time that a user can lock their tokens for. In seconds.
     pub min_unlocking_duration: u64,
     /// The maximum amount of time that a user can lock their tokens for. In seconds.
@@ -33,10 +33,10 @@ pub struct InstantiateMsg {
 #[cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
-    /// Manages an incentive based on the action, which can be:
-    /// - Fill: Creates or expands an incentive.
-    /// - Close: Closes an existing incentive.
-    ManageIncentive { action: IncentiveAction },
+    /// Manages a farm based on the action, which can be:
+    /// - Fill: Creates or expands a farm.
+    /// - Close: Closes an existing farm.
+    ManageFarm { action: FarmAction },
     /// Manages a position based on the action, which can be:
     /// - Fill: Creates or expands a position.
     /// - Close: Closes an existing position.
@@ -51,12 +51,12 @@ pub enum ExecuteMsg {
         fee_collector_addr: Option<String>,
         /// The epoch manager address, where the epochs are managed
         epoch_manager_addr: Option<String>,
-        /// The fee that must be paid to create an incentive.
-        create_incentive_fee: Option<Coin>,
-        /// The maximum amount of incentives that can exist for a single LP token at a time.
-        max_concurrent_incentives: Option<u32>,
-        /// The maximum amount of epochs in the future a new incentive is allowed to start in.
-        max_incentive_epoch_buffer: Option<u32>,
+        /// The fee that must be paid to create a farm.
+        create_farm_fee: Option<Coin>,
+        /// The maximum amount of farms that can exist for a single LP token at a time.
+        max_concurrent_farms: Option<u32>,
+        /// The maximum amount of epochs in the future a new farm is allowed to start in.
+        max_farm_epoch_buffer: Option<u32>,
         /// The minimum amount of time that a user can lock their tokens for. In seconds.
         min_unlocking_duration: Option<u64>,
         /// The maximum amount of time that a user can lock their tokens for. In seconds.
@@ -79,14 +79,14 @@ pub enum QueryMsg {
     #[returns(Config)]
     Config,
     /// Retrieves the configuration of the manager.
-    #[returns(IncentivesResponse)]
-    Incentives {
-        /// An optional parameter specifying what to filter incentives by.
-        /// Can be either the incentive identifier, lp denom or the incentive asset.
-        filter_by: Option<IncentivesBy>,
-        /// An optional parameter specifying what incentive (identifier) to start searching after.
+    #[returns(FarmsResponse)]
+    Farms {
+        /// An optional parameter specifying what to filter farms by.
+        /// Can be either the farm identifier, lp denom or the farm asset.
+        filter_by: Option<FarmsBy>,
+        /// An optional parameter specifying what farm (identifier) to start searching after.
         start_after: Option<String>,
-        /// The amount of incentives to return.
+        /// The amount of farms to return.
         /// If unspecified, will default to a value specified by the contract.
         limit: Option<u32>,
     },
@@ -102,7 +102,7 @@ pub enum QueryMsg {
     /// Retrieves the rewards for an address.
     #[returns(RewardsResponse)]
     Rewards {
-        /// The address to get all the incentive rewards for.
+        /// The address to get all the farm rewards for.
         address: String,
     },
     /// Retrieves the total LP weight in the contract for a given denom on a given epoch.
@@ -117,12 +117,12 @@ pub enum QueryMsg {
     },
 }
 
-/// Enum to filter incentives by identifier, lp denom or the incentive asset. Used in the Incentives query.
+/// Enum to filter farms by identifier, lp denom or the farm asset. Used in the farms query.
 #[cw_serde]
-pub enum IncentivesBy {
+pub enum FarmsBy {
     Identifier(String),
     LPDenom(String),
-    IncentiveAsset(String),
+    FarmAsset(String),
 }
 
 /// Configuration for the contract (manager)
@@ -132,12 +132,12 @@ pub struct Config {
     pub fee_collector_addr: Addr,
     /// The epoch manager address, where the epochs are managed
     pub epoch_manager_addr: Addr,
-    /// The fee that must be paid to create an incentive.
-    pub create_incentive_fee: Coin,
-    /// The maximum amount of incentives that can exist for a single LP token at a time.
-    pub max_concurrent_incentives: u32,
-    /// The maximum amount of epochs in the future a new incentive is allowed to start in.
-    pub max_incentive_epoch_buffer: u32,
+    /// The fee that must be paid to create a farm.
+    pub create_farm_fee: Coin,
+    /// The maximum amount of farms that can exist for a single LP token at a time.
+    pub max_concurrent_farms: u32,
+    /// The maximum amount of epochs in the future a new farm is allowed to start in.
+    pub max_farm_epoch_buffer: u32,
     /// The minimum amount of time that a user can lock their tokens for. In seconds.
     pub min_unlocking_duration: u64,
     /// The maximum amount of time that a user can lock their tokens for. In seconds.
@@ -146,38 +146,38 @@ pub struct Config {
     pub emergency_unlock_penalty: Decimal,
 }
 
-/// Parameters for creating incentive
+/// Parameters for creating farms
 #[cw_serde]
-pub struct IncentiveParams {
-    /// The LP asset denom to create the incentive for.
+pub struct FarmParams {
+    /// The LP asset denom to create the farm for.
     pub lp_denom: String,
-    /// The epoch at which the incentive will start. If unspecified, it will start at the
+    /// The epoch at which the farm will start. If unspecified, it will start at the
     /// current epoch.
     pub start_epoch: Option<u64>,
-    /// The epoch at which the incentive should preliminarily end (if it's not expanded). If
-    /// unspecified, the incentive will default to end at 14 epochs from the current one.
+    /// The epoch at which the farm should preliminarily end (if it's not expanded). If
+    /// unspecified, the farm will default to end at 14 epochs from the current one.
     pub preliminary_end_epoch: Option<u64>,
     /// The type of distribution curve. If unspecified, the distribution will be linear.
     pub curve: Option<Curve>,
-    /// The asset to be distributed in this incentive.
-    pub incentive_asset: Coin,
-    /// If set, it  will be used to identify the incentive.
-    pub incentive_identifier: Option<String>,
+    /// The asset to be distributed in this farm.
+    pub farm_asset: Coin,
+    /// If set, it  will be used to identify the farm.
+    pub farm_identifier: Option<String>,
 }
 
 #[cw_serde]
-pub enum IncentiveAction {
-    /// Fills an incentive. If the incentive doesn't exist, it creates a new one. If it exists already,
-    /// it expands it given the sender created the original incentive and the params are correct.
+pub enum FarmAction {
+    /// Fills a farm. If the farm doesn't exist, it creates a new one. If it exists already,
+    /// it expands it given the sender created the original farm and the params are correct.
     Fill {
-        /// The parameters for the incentive to fill.
-        params: IncentiveParams,
+        /// The parameters for the farm to fill.
+        params: FarmParams,
     },
-    //// Closes an incentive with the given identifier. If the incentive has expired, anyone can
-    // close it. Otherwise, only the incentive creator or the owner of the contract can close an incentive.
+    //// Closes a farm with the given identifier. If the farm has expired, anyone can
+    // close it. Otherwise, only the farm creator or the owner of the contract can close a farm.
     Close {
-        /// The incentive identifier to close.
-        incentive_identifier: String,
+        /// The farm identifier to close.
+        farm_identifier: String,
     },
 }
 
@@ -194,7 +194,7 @@ pub enum PositionAction {
         /// If left empty, defaults to the message sender.
         receiver: Option<String>,
     },
-    /// Closes an existing position. The position stops earning incentive rewards.
+    /// Closes an existing position. The position stops earning farm rewards.
     Close {
         /// The identifier of the position.
         identifier: String,
@@ -213,40 +213,37 @@ pub enum PositionAction {
 // type for the epoch id
 pub type EpochId = u64;
 
-/// Represents an incentive.
+/// Represents a farm.
 #[cw_serde]
-pub struct Incentive {
-    /// The ID of the incentive.
+pub struct Farm {
+    /// The ID of the farm.
     pub identifier: String,
-    /// The account which opened the incentive and can manage it.
+    /// The account which opened the farm and can manage it.
     pub owner: Addr,
-    /// The LP asset denom to create the incentive for.
+    /// The LP asset denom to create the farm for.
     pub lp_denom: String,
-    /// The asset the incentive was created to distribute.
-    pub incentive_asset: Coin,
-    /// The amount of the `incentive_asset` that has been claimed so far.
+    /// The asset the farm was created to distribute.
+    pub farm_asset: Coin,
+    /// The amount of the `farm_asset` that has been claimed so far.
     pub claimed_amount: Uint128,
-    /// The amount of the `incentive_asset` that is to be distributed every epoch.
+    /// The amount of the `farm_asset` that is to be distributed every epoch.
     pub emission_rate: Uint128,
-    /// The type of curve the incentive has.
+    /// The type of curve the farm has.
     pub curve: Curve,
-    /// The epoch at which the incentive starts.
+    /// The epoch at which the farm starts.
     pub start_epoch: EpochId,
-    /// The epoch at which the incentive will preliminary end (in case it's not expanded).
+    /// The epoch at which the farm will preliminary end (in case it's not expanded).
     pub preliminary_end_epoch: EpochId,
-    /// The last epoch this incentive was claimed.
+    /// The last epoch this farm was claimed.
     pub last_epoch_claimed: EpochId,
 }
 
-impl Incentive {
-    /// Returns true if the incentive is expired
+impl Farm {
+    /// Returns true if the farm is expired
     pub fn is_expired(&self, epoch_id: EpochId) -> bool {
-        self.incentive_asset
-            .amount
-            .saturating_sub(self.claimed_amount)
-            < MIN_INCENTIVE_AMOUNT
+        self.farm_asset.amount.saturating_sub(self.claimed_amount) < MIN_FARM_AMOUNT
             || (epoch_id > self.start_epoch
-                && epoch_id >= self.last_epoch_claimed + DEFAULT_INCENTIVE_DURATION)
+                && epoch_id >= self.last_epoch_claimed + DEFAULT_FARM_DURATION)
     }
 }
 
@@ -269,7 +266,7 @@ impl std::fmt::Display for Curve {
 pub struct Position {
     /// The identifier of the position.
     pub identifier: String,
-    /// The amount of LP tokens that are put up to earn incentives.
+    /// The amount of LP tokens that are put up to farm rewards.
     pub lp_asset: Coin,
     /// Represents the amount of time in seconds the user must wait after unlocking for the LP tokens to be released.
     pub unlocking_duration: u64,
@@ -290,22 +287,22 @@ pub enum RewardsResponse {
     ClaimRewards {
         /// The rewards that is available to a user if they executed the `claim` function at this point.
         rewards: Vec<Coin>,
-        /// The rewards that were claimed on each incentive, if any.
-        modified_incentives: HashMap<String, Uint128>,
+        /// The rewards that were claimed on each farm, if any.
+        modified_farms: HashMap<String, Uint128>,
     },
 }
 
-/// Minimum amount of an asset to create an incentive with
-pub const MIN_INCENTIVE_AMOUNT: Uint128 = Uint128::new(1_000u128);
+/// Minimum amount of an asset to create a farm with
+pub const MIN_FARM_AMOUNT: Uint128 = Uint128::new(1_000u128);
 
-/// Default incentive duration in epochs
-pub const DEFAULT_INCENTIVE_DURATION: u64 = 14u64;
+/// Default farm duration in epochs
+pub const DEFAULT_FARM_DURATION: u64 = 14u64;
 
-/// The response for the incentives query
+/// The response for the farms query
 #[cw_serde]
-pub struct IncentivesResponse {
-    /// The list of incentives
-    pub incentives: Vec<Incentive>,
+pub struct FarmsResponse {
+    /// The list of farms
+    pub farms: Vec<Farm>,
 }
 
 #[cw_serde]

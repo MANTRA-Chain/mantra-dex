@@ -3,17 +3,17 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use amm::incentive_manager::{
-    Config, ExecuteMsg, IncentiveAction, InstantiateMsg, MigrateMsg, PositionAction, QueryMsg,
+use amm::farm_manager::{
+    Config, ExecuteMsg, FarmAction, InstantiateMsg, MigrateMsg, PositionAction, QueryMsg,
 };
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;
 use crate::helpers::validate_emergency_unlock_penalty;
-use crate::state::{CONFIG, INCENTIVE_COUNTER};
-use crate::{incentive, manager, position, queries};
+use crate::state::{CONFIG, FARM_COUNTER};
+use crate::{farm, manager, position, queries};
 
-const CONTRACT_NAME: &str = "mantra_incentive-manager";
+const CONTRACT_NAME: &str = "mantra_farm-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
@@ -25,10 +25,10 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    // ensure that max_concurrent_incentives is non-zero
+    // ensure that max_concurrent_farms is non-zero
     ensure!(
-        msg.max_concurrent_incentives > 0,
-        ContractError::UnspecifiedConcurrentIncentives
+        msg.max_concurrent_farms > 0,
+        ContractError::UnspecifiedConcurrentFarms
     );
 
     // ensure the unlocking duration range is valid
@@ -43,16 +43,16 @@ pub fn instantiate(
     let config = Config {
         epoch_manager_addr: deps.api.addr_validate(&msg.epoch_manager_addr)?,
         fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
-        create_incentive_fee: msg.create_incentive_fee,
-        max_concurrent_incentives: msg.max_concurrent_incentives,
-        max_incentive_epoch_buffer: msg.max_incentive_epoch_buffer,
+        create_farm_fee: msg.create_farm_fee,
+        max_concurrent_farms: msg.max_concurrent_farms,
+        max_farm_epoch_buffer: msg.max_farm_epoch_buffer,
         min_unlocking_duration: msg.min_unlocking_duration,
         max_unlocking_duration: msg.max_unlocking_duration,
         emergency_unlock_penalty: validate_emergency_unlock_penalty(msg.emergency_unlock_penalty)?,
     };
 
     CONFIG.save(deps.storage, &config)?;
-    INCENTIVE_COUNTER.save(deps.storage, &0)?;
+    FARM_COUNTER.save(deps.storage, &0)?;
     cw_ownable::initialize_owner(deps.storage, deps.api, Some(msg.owner.as_str()))?;
 
     Ok(Response::default().add_attributes(vec![
@@ -60,14 +60,14 @@ pub fn instantiate(
         ("owner", msg.owner),
         ("epoch_manager_addr", config.epoch_manager_addr.to_string()),
         ("fee_collector_addr", config.fee_collector_addr.to_string()),
-        ("create_flow_fee", config.create_incentive_fee.to_string()),
+        ("create_flow_fee", config.create_farm_fee.to_string()),
         (
             "max_concurrent_flows",
-            config.max_concurrent_incentives.to_string(),
+            config.max_concurrent_farms.to_string(),
         ),
         (
             "max_flow_epoch_buffer",
-            config.max_incentive_epoch_buffer.to_string(),
+            config.max_farm_epoch_buffer.to_string(),
         ),
         (
             "min_unlocking_duration",
@@ -92,13 +92,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::ManageIncentive { action } => match action {
-            IncentiveAction::Fill { params } => {
-                manager::commands::fill_incentive(deps, info, params)
+        ExecuteMsg::ManageFarm { action } => match action {
+            FarmAction::Fill { params } => manager::commands::fill_farm(deps, info, params),
+            FarmAction::Close { farm_identifier } => {
+                manager::commands::close_farm(deps, info, farm_identifier)
             }
-            IncentiveAction::Close {
-                incentive_identifier,
-            } => manager::commands::close_incentive(deps, info, incentive_identifier),
         },
         ExecuteMsg::UpdateOwnership(action) => {
             cw_utils::nonpayable(&info)?;
@@ -107,7 +105,7 @@ pub fn execute(
         ExecuteMsg::EpochChangedHook(msg) => {
             manager::commands::on_epoch_changed(deps, env, info, msg)
         }
-        ExecuteMsg::Claim => incentive::commands::claim(deps, env, info),
+        ExecuteMsg::Claim => farm::commands::claim(deps, env, info),
         ExecuteMsg::ManagePosition { action } => match action {
             PositionAction::Fill {
                 identifier,
@@ -135,9 +133,9 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             fee_collector_addr,
             epoch_manager_addr,
-            create_incentive_fee,
-            max_concurrent_incentives,
-            max_incentive_epoch_buffer,
+            create_farm_fee,
+            max_concurrent_farms,
+            max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
             emergency_unlock_penalty,
@@ -148,9 +146,9 @@ pub fn execute(
                 info,
                 fee_collector_addr,
                 epoch_manager_addr,
-                create_incentive_fee,
-                max_concurrent_incentives,
-                max_incentive_epoch_buffer,
+                create_farm_fee,
+                max_concurrent_farms,
+                max_farm_epoch_buffer,
                 min_unlocking_duration,
                 max_unlocking_duration,
                 emergency_unlock_penalty,
@@ -164,11 +162,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
     match msg {
         QueryMsg::Config => Ok(to_json_binary(&queries::query_manager_config(deps)?)?),
         QueryMsg::Ownership {} => Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?),
-        QueryMsg::Incentives {
+        QueryMsg::Farms {
             filter_by,
             start_after,
             limit,
-        } => Ok(to_json_binary(&queries::query_incentives(
+        } => Ok(to_json_binary(&queries::query_farms(
             deps,
             filter_by,
             start_after,

@@ -2,7 +2,7 @@ use cosmwasm_std::{
     ensure, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
 };
 
-use amm::incentive_manager::{Position, RewardsResponse};
+use amm::farm_manager::{Position, RewardsResponse};
 
 use crate::position::helpers::validate_unlocking_duration;
 use crate::position::helpers::{calculate_weight, get_latest_address_weight};

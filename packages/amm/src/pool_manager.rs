@@ -61,16 +61,6 @@ impl fmt::Display for SwapOperation {
     }
 }
 
-// Defines a structure for Fees which names a number of defined fee collection types, leaving
-// room for a custom fee a user can use to pass a fee with a defined custom name
-#[cw_serde]
-pub enum FeeTypes {
-    Protocol,
-    LiquidityProvider,
-    FlashLoanFees,
-    Custom(String),
-}
-
 /// Params for the stable swap, used when changing the amplification factor
 #[cw_serde]
 pub struct StableSwapParams {
@@ -133,8 +123,8 @@ impl PoolType {
 pub struct Config {
     /// The address where the collected fees go to.
     pub fee_collector_addr: Addr,
-    /// The address of the incentive manager contract.
-    pub incentive_manager_addr: Addr,
+    /// The address of the farm manager contract.
+    pub farm_manager_addr: Addr,
     /// How much it costs to create a pool. It helps prevent spamming of new pools.
     pub pool_creation_fee: Coin,
     //  Whether or not swaps, deposits, and withdrawals are enabled
@@ -145,8 +135,8 @@ pub struct Config {
 pub struct InstantiateMsg {
     /// The address where the collected fees go to.
     pub fee_collector_addr: String,
-    /// The address of the incentive manager contract.
-    pub incentive_manager_addr: String,
+    /// The address of the farm manager contract.
+    pub farm_manager_addr: String,
     /// How much it costs to create a pool. It helps prevent spamming of new pools.
     pub pool_creation_fee: Coin,
 }
@@ -184,10 +174,10 @@ pub enum ExecuteMsg {
         receiver: Option<String>,
         /// The identifier for the pool to provide liquidity for.
         pool_identifier: String,
-        /// The amount of time in seconds to unlock tokens if taking part on the incentives. If not passed,
+        /// The amount of time in seconds to unlock tokens if taking part on the farms. If not passed,
         /// the tokens will not be locked and the LP tokens will be returned to the user.
         unlocking_duration: Option<u64>,
-        /// The identifier of the position to lock the LP tokens in the incentive manager, if any.
+        /// The identifier of the position to lock the LP tokens in the farm manager, if any.
         lock_position_identifier: Option<String>,
     },
     /// Swap an offer asset to the other

@@ -4,7 +4,7 @@ use std::string::ToString;
 use cosmwasm_std::{Addr, Order, StdResult, Storage, Uint128};
 use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 
-use amm::incentive_manager::{Config, EpochId, Incentive, Position};
+use amm::farm_manager::{Config, EpochId, Farm, Position};
 
 use crate::ContractError;
 
@@ -46,34 +46,30 @@ pub const LAST_CLAIMED_EPOCH: Map<&Addr, EpochId> = Map::new("last_claimed_epoch
 /// Key is a tuple of (address, lp_denom, epoch_id), value is the lp weight.
 pub const LP_WEIGHT_HISTORY: Map<(&Addr, &str, EpochId), Uint128> = Map::new("lp_weight_history");
 
-/// A monotonically increasing counter to generate unique incentive identifiers.
-pub const INCENTIVE_COUNTER: Item<u64> = Item::new("incentive_counter");
+/// A monotonically increasing counter to generate unique farm identifiers.
+pub const FARM_COUNTER: Item<u64> = Item::new("farm_counter");
 
-/// Incentives map
-pub const INCENTIVES: IndexedMap<&str, Incentive, IncentiveIndexes> = IndexedMap::new(
-    "incentives",
-    IncentiveIndexes {
-        lp_denom: MultiIndex::new(
-            |_pk, i| i.lp_denom.to_string(),
-            "incentives",
-            "incentives__lp_asset",
-        ),
-        incentive_asset: MultiIndex::new(
-            |_pk, i| i.incentive_asset.denom.clone(),
-            "incentives",
-            "incentives__incentive_asset",
+/// Farms map
+pub const FARMS: IndexedMap<&str, Farm, FarmIndexes> = IndexedMap::new(
+    "farms",
+    FarmIndexes {
+        lp_denom: MultiIndex::new(|_pk, i| i.lp_denom.to_string(), "farms", "farms__lp_asset"),
+        farm_asset: MultiIndex::new(
+            |_pk, i| i.farm_asset.denom.clone(),
+            "farms",
+            "farms__farm_asset",
         ),
     },
 );
 
-pub struct IncentiveIndexes<'a> {
-    pub lp_denom: MultiIndex<'a, String, Incentive, String>,
-    pub incentive_asset: MultiIndex<'a, String, Incentive, String>,
+pub struct FarmIndexes<'a> {
+    pub lp_denom: MultiIndex<'a, String, Farm, String>,
+    pub farm_asset: MultiIndex<'a, String, Farm, String>,
 }
 
-impl<'a> IndexList<Incentive> for IncentiveIndexes<'a> {
-    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Incentive>> + '_> {
-        let v: Vec<&dyn Index<Incentive>> = vec![&self.lp_denom, &self.incentive_asset];
+impl<'a> IndexList<Farm> for FarmIndexes<'a> {
+    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Farm>> + '_> {
+        let v: Vec<&dyn Index<Farm>> = vec![&self.lp_denom, &self.farm_asset];
         Box::new(v.into_iter())
     }
 }
@@ -82,82 +78,82 @@ impl<'a> IndexList<Incentive> for IncentiveIndexes<'a> {
 pub(crate) const MAX_LIMIT: u32 = 100;
 const DEFAULT_LIMIT: u32 = 10;
 
-/// Gets the incentives in the contract
-pub fn get_incentives(
+/// Gets the farms in the contract
+pub fn get_farms(
     storage: &dyn Storage,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<Incentive>> {
+) -> StdResult<Vec<Farm>> {
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
-    INCENTIVES
+    FARMS
         .range(storage, start, None, Order::Ascending)
         .take(limit)
         .map(|item| {
-            let (_, incentive) = item?;
+            let (_, farm) = item?;
 
-            Ok(incentive)
+            Ok(farm)
         })
         .collect()
 }
 
-/// Gets incentives given an lp denom.
-pub fn get_incentives_by_lp_denom(
+/// Gets farms given an lp denom.
+pub fn get_farms_by_lp_denom(
     storage: &dyn Storage,
     lp_denom: &str,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<Incentive>> {
+) -> StdResult<Vec<Farm>> {
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
-    INCENTIVES
+    FARMS
         .idx
         .lp_denom
         .prefix(lp_denom.to_owned())
         .range(storage, start, None, Order::Ascending)
         .take(limit)
         .map(|item| {
-            let (_, incentive) = item?;
+            let (_, farm) = item?;
 
-            Ok(incentive)
+            Ok(farm)
         })
         .collect()
 }
 
-/// Gets all the incentives that are offering the given incentive_asset as a reward.
-pub fn get_incentives_by_incentive_asset(
+/// Gets all the farms that are offering the given [farm_asset] as a reward.
+pub fn get_farms_by_farm_asset(
     storage: &dyn Storage,
-    incentive_asset: &str,
+    farm_asset: &str,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<Incentive>> {
+) -> StdResult<Vec<Farm>> {
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
-    INCENTIVES
+    FARMS
         .idx
-        .incentive_asset
-        .prefix(incentive_asset.to_owned())
+        .farm_asset
+        .prefix(farm_asset.to_owned())
         .range(storage, start, None, Order::Ascending)
         .take(limit)
         .map(|item| {
-            let (_, incentive) = item?;
+            let (_, farm) = item?;
 
-            Ok(incentive)
+            Ok(farm)
         })
         .collect()
 }
 
-/// Gets the incentive given its identifier
-pub fn get_incentive_by_identifier(
+/// Gets the farm given its identifier
+pub fn get_farm_by_identifier(
     storage: &dyn Storage,
-    incentive_identifier: &String,
-) -> Result<Incentive, ContractError> {
-    INCENTIVES
-        .may_load(storage, incentive_identifier)?
-        .ok_or(ContractError::NonExistentIncentive {})
+    farm_identifier: &String,
+) -> Result<Farm, ContractError> {
+    FARMS
+        .may_load(storage, farm_identifier)?
+        .ok_or(ContractError::NonExistentFarm)
 }
 
 /// Gets a position given its identifier. If the position is not found with the given identifier, it returns None.

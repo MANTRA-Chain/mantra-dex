@@ -3,11 +3,11 @@ extern crate core;
 use amm::constants::LP_SYMBOL;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 
-use amm::incentive_manager::{
-    Config, Curve, Incentive, IncentiveAction, IncentiveParams, IncentivesBy, LpWeightResponse,
-    Position, PositionAction, RewardsResponse,
+use amm::farm_manager::{
+    Config, Curve, Farm, FarmAction, FarmParams, FarmsBy, LpWeightResponse, Position,
+    PositionAction, RewardsResponse,
 };
-use incentive_manager::ContractError;
+use farm_manager::ContractError;
 
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR;
@@ -15,7 +15,7 @@ use crate::common::MOCK_CONTRACT_ADDR;
 mod common;
 
 #[test]
-fn instantiate_incentive_manager() {
+fn instantiate_farm_manager() {
     let mut suite =
         TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, "uom".to_string())]);
 
@@ -35,8 +35,8 @@ fn instantiate_incentive_manager() {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
             match err {
-                ContractError::UnspecifiedConcurrentIncentives { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::UnspecifiedConcurrentIncentives"),
+                ContractError::UnspecifiedConcurrentFarms { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::UnspecifiedConcurrentFarms"),
             }
         },
     ).instantiate_err(
@@ -95,7 +95,7 @@ fn instantiate_incentive_manager() {
 }
 
 #[test]
-fn create_incentives() {
+fn create_farms() {
     let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -110,21 +110,21 @@ fn create_incentives() {
     let other = suite.senders[1].clone();
     let fee_collector = suite.fee_collector_addr.clone();
 
-    // try all misconfigurations when creating an incentive
+    // try all misconfigurations when creating a farm
     suite
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(25),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Default::default(),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![],
@@ -132,52 +132,50 @@ fn create_incentives() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::InvalidIncentiveAmount { .. } => {}
-                    _ => panic!(
-                        "Wrong error type, should return ContractError::InvalidIncentiveAmount"
-                    ),
+                    ContractError::InvalidFarmAmount { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::InvalidFarmAmount"),
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(25),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(2_000, "uusdy")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::IncentiveFeeMissing { .. } => {}
+                    ContractError::FarmFeeMissing { .. } => {}
                     _ => {
-                        panic!("Wrong error type, should return ContractError::IncentiveFeeMissing")
+                        panic!("Wrong error type, should return ContractError::FarmFeeMissing")
                     }
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(25),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uom".to_string(),
                         amount: Uint128::new(5_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(8_000, "uom")],
@@ -189,19 +187,19 @@ fn create_incentives() {
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(25),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(1_000, "uom")],
@@ -213,19 +211,19 @@ fn create_incentives() {
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(25),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(5_000, "uusdy"), coin(1_000, "uom")],
@@ -237,19 +235,19 @@ fn create_incentives() {
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(25),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(5_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -261,19 +259,19 @@ fn create_incentives() {
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(25),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -281,24 +279,24 @@ fn create_incentives() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::IncentiveStartTooFar { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::IncentiveStartTooFar"),
+                    ContractError::FarmStartTooFar { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::FarmStartTooFar"),
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(8),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -306,73 +304,78 @@ fn create_incentives() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::IncentiveStartTimeAfterEndTime { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::IncentiveStartTimeAfterEndTime"),
+                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
+                    ),
                 }
             },
-        ).manage_incentive(
-        &other,
-        IncentiveAction::Fill {
-            params: IncentiveParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: Some(20),
-                preliminary_end_epoch: Some(15),
-                curve: None,
-                incentive_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(4_000u128),
-                },
-                incentive_identifier: None,
-            },
-        },
-        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
-            match err {
-                ContractError::IncentiveStartTimeAfterEndTime { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::IncentiveStartTimeAfterEndTime"),
-            }
-        },
-    ).manage_incentive(
-        &other,
-        IncentiveAction::Fill {
-            params: IncentiveParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: Some(3),
-                preliminary_end_epoch: Some(5),
-                curve: None,
-                incentive_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(4_000u128),
-                },
-                incentive_identifier: None,
-            },
-        },
-        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
-            match err {
-                ContractError::IncentiveEndsInPast { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::IncentiveEndsInPast"),
-            }
-        },
-    )
-
-        .manage_incentive(
+        )
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(20),
+                    preliminary_end_epoch: Some(15),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
+                    ),
+                }
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(3),
+                    preliminary_end_epoch: Some(5),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::FarmEndsInPast { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::FarmEndsInPast"),
+                }
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(20),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -380,51 +383,54 @@ fn create_incentives() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::IncentiveStartTimeAfterEndTime { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::IncentiveStartTimeAfterEndTime"),
+                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
+                    ),
                 }
             },
-        ).manage_incentive(
-        &other,
-        IncentiveAction::Fill {
-            params: IncentiveParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: Some(30),
-                preliminary_end_epoch: Some(35),
-                curve: None,
-                incentive_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(4_000u128),
-                },
-                incentive_identifier: None,
-            },
-        },
-        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
-            match err {
-                ContractError::IncentiveStartTooFar { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::IncentiveStartTooFar"),
-            }
-        },
-    );
-
-    // create an incentive properly
-    suite
-        .manage_incentive(
+        )
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(30),
+                    preliminary_end_epoch: Some(35),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::FarmStartTooFar { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::FarmStartTooFar"),
+                }
+            },
+        );
+
+    // create an farm properly
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -432,19 +438,19 @@ fn create_incentives() {
                 result.unwrap();
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(10_000, "uusdy"), coin(1_000, "uom")],
@@ -452,45 +458,45 @@ fn create_incentives() {
                 result.unwrap();
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                // should fail, max incentives per lp_denom was set to 2 in the instantiate_default
+                // should fail, max farms per lp_denom was set to 2 in the instantiate_default
                 // function
                 match err {
-                    ContractError::TooManyIncentives { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::TooManyIncentives"),
+                    ContractError::TooManyFarms { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::TooManyFarms"),
                 }
             },
         )
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
-            assert_eq!(incentives_response.incentives.len(), 2);
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
         })
-        .query_incentives(
-            Some(IncentivesBy::Identifier("incentive_1".to_string())),
+        .query_farms(
+            Some(FarmsBy::Identifier("farm_1".to_string())),
             None,
             None,
             |result| {
-                let incentives_response = result.unwrap();
-                assert_eq!(incentives_response.incentives.len(), 1);
+                let farms_response = result.unwrap();
+                assert_eq!(farms_response.farms.len(), 1);
                 assert_eq!(
-                    incentives_response.incentives[0].incentive_asset,
+                    farms_response.farms[0].farm_asset,
                     Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000),
@@ -498,15 +504,15 @@ fn create_incentives() {
                 );
             },
         )
-        .query_incentives(
-            Some(IncentivesBy::Identifier("2".to_string())),
+        .query_farms(
+            Some(FarmsBy::Identifier("2".to_string())),
             None,
             None,
             |result| {
-                let incentives_response = result.unwrap();
-                assert_eq!(incentives_response.incentives.len(), 1);
+                let farms_response = result.unwrap();
+                assert_eq!(farms_response.farms.len(), 1);
                 assert_eq!(
-                    incentives_response.incentives[0].incentive_asset,
+                    farms_response.farms[0].farm_asset,
                     Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000),
@@ -514,32 +520,32 @@ fn create_incentives() {
                 );
             },
         )
-        .query_incentives(
-            Some(IncentivesBy::IncentiveAsset("uusdy".to_string())),
+        .query_farms(
+            Some(FarmsBy::FarmAsset("uusdy".to_string())),
             None,
             None,
             |result| {
-                let incentives_response = result.unwrap();
-                assert_eq!(incentives_response.incentives.len(), 2);
+                let farms_response = result.unwrap();
+                assert_eq!(farms_response.farms.len(), 2);
             },
         )
-        .query_incentives(
-            Some(IncentivesBy::LPDenom(lp_denom.clone())),
+        .query_farms(
+            Some(FarmsBy::LPDenom(lp_denom.clone())),
             None,
             None,
             |result| {
-                let incentives_response = result.unwrap();
-                assert_eq!(incentives_response.incentives.len(), 2);
+                let farms_response = result.unwrap();
+                assert_eq!(farms_response.farms.len(), 2);
             },
         )
-        // two incentives were created, therefore the fee collector should have received 2_000 uom
+        // two farms were created, therefore the fee collector should have received 2_000 uom
         .query_balance("uom".to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::new(2 * 1_000));
         });
 }
 
 #[test]
-fn expand_incentives() {
+fn expand_farms() {
     let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -554,19 +560,19 @@ fn expand_incentives() {
 
     suite
         .instantiate_default()
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -574,19 +580,19 @@ fn expand_incentives() {
                 result.unwrap();
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(4_000, "uusdy")],
@@ -599,19 +605,19 @@ fn expand_incentives() {
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uom".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(8_000, "uom")],
@@ -624,19 +630,19 @@ fn expand_incentives() {
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_100u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(4_100, "uusdy")],
@@ -651,37 +657,37 @@ fn expand_incentives() {
                 }
             },
         )
-        .query_incentives(
-            Some(IncentivesBy::Identifier("incentive_1".to_string())),
+        .query_farms(
+            Some(FarmsBy::Identifier("farm_1".to_string())),
             None,
             None,
             |result| {
-                let incentives_response = result.unwrap();
-                let incentive = incentives_response.incentives[0].clone();
+                let farms_response = result.unwrap();
+                let farm = farms_response.farms[0].clone();
                 assert_eq!(
-                    incentive.incentive_asset,
+                    farm.farm_asset,
                     Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000),
                     }
                 );
 
-                assert_eq!(incentive.preliminary_end_epoch, 28);
+                assert_eq!(farm.preliminary_end_epoch, 28);
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(5_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(5_000u128, "uusdy")],
@@ -689,29 +695,29 @@ fn expand_incentives() {
                 result.unwrap();
             },
         )
-        .query_incentives(
-            Some(IncentivesBy::Identifier("incentive_1".to_string())),
+        .query_farms(
+            Some(FarmsBy::Identifier("farm_1".to_string())),
             None,
             None,
             |result| {
-                let incentives_response = result.unwrap();
-                let incentive = incentives_response.incentives[0].clone();
+                let farms_response = result.unwrap();
+                let farm = farms_response.farms[0].clone();
                 assert_eq!(
-                    incentive.incentive_asset,
+                    farm.farm_asset,
                     Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(9_000),
                     }
                 );
 
-                assert_eq!(incentive.preliminary_end_epoch, 38);
+                assert_eq!(farm.preliminary_end_epoch, 38);
             },
         );
 }
 
 #[test]
 #[allow(clippy::inconsistent_digit_grouping)]
-fn close_incentives() {
+fn close_farms() {
     let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -727,19 +733,19 @@ fn close_incentives() {
 
     suite
         .instantiate_default()
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -747,10 +753,10 @@ fn close_incentives() {
                 result.unwrap();
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Close {
-                incentive_identifier: "incentive_1".to_string(),
+            FarmAction::Close {
+                farm_identifier: "farm_1".to_string(),
             },
             vec![coin(1_000, "uom")],
             |result| {
@@ -761,27 +767,25 @@ fn close_incentives() {
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Close {
-                incentive_identifier: "incentive_2".to_string(),
+            FarmAction::Close {
+                farm_identifier: "farm_2".to_string(),
             },
             vec![],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::NonExistentIncentive { .. } => {}
-                    _ => panic!(
-                        "Wrong error type, should return ContractError::NonExistentIncentive"
-                    ),
+                    ContractError::NonExistentFarm { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::NonExistentFarm"),
                 }
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &another,
-            IncentiveAction::Close {
-                incentive_identifier: "incentive_1".to_string(),
+            FarmAction::Close {
+                farm_identifier: "farm_1".to_string(),
             },
             vec![],
             |result| {
@@ -796,10 +800,10 @@ fn close_incentives() {
         .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_996_000));
         })
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Close {
-                incentive_identifier: "incentive_1".to_string(),
+            FarmAction::Close {
+                farm_identifier: "farm_1".to_string(),
             },
             vec![],
             |result| {
@@ -812,19 +816,19 @@ fn close_incentives() {
 
     suite
         .instantiate_default()
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(28),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -835,11 +839,11 @@ fn close_incentives() {
         .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_996_000));
         })
-        // the owner of the contract can also close incentives
-        .manage_incentive(
+        // the owner of the contract can also close farms
+        .manage_farm(
             &creator,
-            IncentiveAction::Close {
-                incentive_identifier: "incentive_1".to_string(),
+            FarmAction::Close {
+                farm_identifier: "farm_1".to_string(),
             },
             vec![],
             |result| {
@@ -927,12 +931,12 @@ pub fn update_config() {
     let expected_config = Config {
         fee_collector_addr: fee_collector,
         epoch_manager_addr: epoch_manager,
-        create_incentive_fee: Coin {
+        create_farm_fee: Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
         },
-        max_concurrent_incentives: 2u32,
-        max_incentive_epoch_buffer: 14u32,
+        max_concurrent_farms: 2u32,
+        max_farm_epoch_buffer: 14u32,
         min_unlocking_duration: 86_400u64,
         max_unlocking_duration: 31_536_000u64,
         emergency_unlock_penalty: Decimal::percent(10),
@@ -1001,8 +1005,8 @@ pub fn update_config() {
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::UnspecifiedConcurrentIncentives { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::UnspecifiedConcurrentIncentives"),
+                ContractError::UnspecifiedConcurrentFarms { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::UnspecifiedConcurrentFarms"),
             }
         },
     ).update_config(
@@ -1090,12 +1094,12 @@ pub fn update_config() {
     let expected_config = Config {
         fee_collector_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
         epoch_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
-        create_incentive_fee: Coin {
+        create_farm_fee: Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
         },
-        max_concurrent_incentives: 5u32,
-        max_incentive_epoch_buffer: 15u32,
+        max_concurrent_farms: 5u32,
+        max_farm_epoch_buffer: 15u32,
         min_unlocking_duration: 100_000u64,
         max_unlocking_duration: 200_000u64,
         emergency_unlock_penalty: Decimal::percent(20),
@@ -1126,26 +1130,26 @@ pub fn test_manage_position() {
 
     suite.instantiate_default();
 
-    let incentive_manager = suite.incentive_manager_addr.clone();
+    let farm_manager = suite.farm_manager_addr.clone();
     let fee_collector = suite.fee_collector_addr.clone();
 
     suite
-        .add_hook(&creator, &incentive_manager, vec![], |result| {
+        .add_hook(&creator, &farm_manager, vec![], |result| {
             result.unwrap();
         })
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(12),
                     preliminary_end_epoch: Some(16),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
@@ -1466,13 +1470,10 @@ pub fn test_manage_position() {
         .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_994_000));
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
-            assert_eq!(incentives_response.incentives.len(), 1);
-            assert_eq!(
-                incentives_response.incentives[0].claimed_amount,
-                Uint128::new(2_000),
-            );
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::new(2_000),);
         })
         .manage_position(
             &creator,
@@ -1709,12 +1710,9 @@ pub fn test_manage_position() {
                 }
             }
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
-            assert_eq!(
-                incentives_response.incentives[0].claimed_amount,
-                Uint128::new(2_000)
-            );
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::new(2_000));
         })
         .manage_position(
             &creator,
@@ -1737,13 +1735,13 @@ pub fn test_manage_position() {
         .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(1000_000_000));
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
             assert_eq!(
-                incentives_response.incentives[0].incentive_asset.amount,
-                incentives_response.incentives[0].claimed_amount
+                farms_response.farms[0].farm_asset.amount,
+                farms_response.farms[0].claimed_amount
             );
-            assert!(incentives_response.incentives[0].is_expired(15));
+            assert!(farms_response.farms[0].is_expired(15));
         })
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
@@ -1968,7 +1966,7 @@ pub fn test_manage_position() {
 }
 
 #[test]
-fn claim_expired_incentive_returns_nothing() {
+fn claim_expired_farm_returns_nothing() {
     let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -1984,25 +1982,25 @@ fn claim_expired_incentive_returns_nothing() {
 
     suite.instantiate_default();
 
-    let incentive_manager = suite.incentive_manager_addr.clone();
+    let farm_manager = suite.farm_manager_addr.clone();
 
     suite
-        .add_hook(&creator, &incentive_manager, vec![], |result| {
+        .add_hook(&creator, &farm_manager, vec![], |result| {
             result.unwrap();
         })
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(12),
                     preliminary_end_epoch: Some(16),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
@@ -2051,7 +2049,7 @@ fn claim_expired_incentive_returns_nothing() {
             );
         });
 
-    // create a couple of epochs to make the incentive active
+    // create a couple of epochs to make the farm active
 
     suite
         .add_one_day()
@@ -2084,14 +2082,14 @@ fn claim_expired_incentive_returns_nothing() {
             assert_eq!(balance, Uint128::new(1_000_006_000u128));
         });
 
-    // create a bunch of epochs to make the incentive expire
+    // create a bunch of epochs to make the farm expire
     for _ in 0..15 {
         suite.add_one_day().create_epoch(&creator, |result| {
             result.unwrap();
         });
     }
 
-    // there shouldn't be anything to claim as the incentive has expired, even though it still has some funds
+    // there shouldn't be anything to claim as the farm has expired, even though it still has some funds
     suite
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
@@ -2114,7 +2112,7 @@ fn claim_expired_incentive_returns_nothing() {
 }
 
 #[test]
-fn test_close_expired_incentives() {
+fn test_close_expired_farms() {
     let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -2130,25 +2128,25 @@ fn test_close_expired_incentives() {
 
     suite.instantiate_default();
 
-    let incentive_manager = suite.incentive_manager_addr.clone();
+    let farm_manager = suite.farm_manager_addr.clone();
 
     suite
-        .add_hook(&creator, &incentive_manager, vec![], |result| {
+        .add_hook(&creator, &farm_manager, vec![], |result| {
             result.unwrap();
         })
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(12),
                     preliminary_end_epoch: Some(16),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    incentive_identifier: None,
+                    farm_identifier: None,
                 },
             },
             vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
@@ -2157,7 +2155,7 @@ fn test_close_expired_incentives() {
             },
         );
 
-    // create a bunch of epochs to make the incentive expire
+    // create a bunch of epochs to make the farm expire
     for _ in 0..20 {
         suite.add_one_day().create_epoch(&creator, |result| {
             result.unwrap();
@@ -2166,30 +2164,30 @@ fn test_close_expired_incentives() {
 
     let mut current_id = 0;
 
-    // try opening another incentive for the same lp denom, the expired incentive should get closed
+    // try opening another farm for the same lp denom, the expired farm should get closed
     suite
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             current_id = epoch_response.epoch.id;
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
-            assert_eq!(incentives_response.incentives.len(), 1);
-            assert!(incentives_response.incentives[0].is_expired(current_id));
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert!(farms_response.farms[0].is_expired(current_id));
         })
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
-                    incentive_identifier: Some("new_incentive".to_string()),
+                    farm_identifier: Some("new_farm".to_string()),
                 },
             },
             vec![coin(10_000, "uusdy"), coin(1_000, "uom")],
@@ -2197,16 +2195,16 @@ fn test_close_expired_incentives() {
                 result.unwrap();
             },
         )
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
-            assert_eq!(incentives_response.incentives.len(), 1);
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
             assert_eq!(
-                incentives_response.incentives[0],
-                Incentive {
-                    identifier: "new_incentive".to_string(),
+                farms_response.farms[0],
+                Farm {
+                    identifier: "new_farm".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
@@ -2238,7 +2236,7 @@ fn on_epoch_changed_unauthorized() {
 }
 
 #[test]
-fn expand_expired_incentive() {
+fn expand_expired_farm() {
     let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -2253,19 +2251,19 @@ fn expand_expired_incentive() {
 
     suite.instantiate_default();
 
-    suite.manage_incentive(
+    suite.manage_farm(
         &other,
-        IncentiveAction::Fill {
-            params: IncentiveParams {
+        FarmAction::Fill {
+            params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: None,
                 preliminary_end_epoch: None,
                 curve: None,
-                incentive_asset: Coin {
+                farm_asset: Coin {
                     denom: "uusdy".to_string(),
                     amount: Uint128::new(4_000u128),
                 },
-                incentive_identifier: Some("incentive".to_string()),
+                farm_identifier: Some("farm".to_string()),
             },
         },
         vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -2274,35 +2272,35 @@ fn expand_expired_incentive() {
         },
     );
 
-    // create a bunch of epochs to make the incentive expire
+    // create a bunch of epochs to make the farm expire
     for _ in 0..15 {
         suite.add_one_day().create_epoch(&creator, |result| {
             result.unwrap();
         });
     }
 
-    suite.manage_incentive(
+    suite.manage_farm(
         &other,
-        IncentiveAction::Fill {
-            params: IncentiveParams {
+        FarmAction::Fill {
+            params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: None,
                 preliminary_end_epoch: None,
                 curve: None,
-                incentive_asset: Coin {
+                farm_asset: Coin {
                     denom: "uusdy".to_string(),
                     amount: Uint128::new(8_000u128),
                 },
-                incentive_identifier: Some("incentive".to_string()),
+                farm_identifier: Some("farm".to_string()),
             },
         },
         vec![coin(8_000u128, "uusdy")],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::IncentiveAlreadyExpired { .. } => {}
+                ContractError::FarmAlreadyExpired { .. } => {}
                 _ => {
-                    panic!("Wrong error type, should return ContractError::IncentiveAlreadyExpired")
+                    panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
                 }
             }
         },
@@ -2327,19 +2325,19 @@ fn test_emergency_withdrawal() {
     let fee_collector = suite.fee_collector_addr.clone();
 
     suite
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: Some("incentive".to_string()),
+                    farm_identifier: Some("farm".to_string()),
                 },
             },
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
@@ -2404,7 +2402,7 @@ fn test_emergency_withdrawal() {
 }
 
 #[test]
-fn test_incentive_helper() {
+fn test_farm_helper() {
     let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -2419,23 +2417,23 @@ fn test_incentive_helper() {
 
     suite.instantiate_default();
 
-    let incentive_manager = suite.incentive_manager_addr.clone();
+    let farm_manager = suite.farm_manager_addr.clone();
     let fee_collector = suite.fee_collector_addr.clone();
 
     suite
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uom".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
-                    incentive_identifier: Some("incentive".to_string()),
+                    farm_identifier: Some("farm".to_string()),
                 },
             },
             vec![coin(3_000, "uom")],
@@ -2455,22 +2453,22 @@ fn test_incentive_helper() {
         .query_balance("uom".to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
-        .query_balance("uom".to_string(), &incentive_manager, |balance| {
+        .query_balance("uom".to_string(), &farm_manager, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(2_000u128),
                     },
-                    incentive_identifier: Some("incentive".to_string()),
+                    farm_identifier: Some("farm".to_string()),
                 },
             },
             vec![coin(2_000, "uusdy"), coin(3_000, "uom")],
@@ -2481,7 +2479,7 @@ fn test_incentive_helper() {
         .query_balance("uom".to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::new(1_000));
         })
-        .query_balance("uom".to_string(), &incentive_manager, |balance| {
+        .query_balance("uom".to_string(), &farm_manager, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
         .query_balance("uom".to_string(), &creator, |balance| {
@@ -2489,55 +2487,55 @@ fn test_incentive_helper() {
             assert_eq!(balance, Uint128::new(999_999_000));
         });
 
-    suite.manage_incentive(
+    suite.manage_farm(
         &other,
-        IncentiveAction::Fill {
-            params: IncentiveParams {
+        FarmAction::Fill {
+            params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: None,
                 preliminary_end_epoch: None,
                 curve: None,
-                incentive_asset: Coin {
+                farm_asset: Coin {
                     denom: "uusdy".to_string(),
                     amount: Uint128::new(2_000u128),
                 },
-                incentive_identifier: Some("underpaid_incentive".to_string()),
+                farm_identifier: Some("underpaid_farm".to_string()),
             },
         },
         vec![coin(2_000, "uusdy"), coin(500, "uom")],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::IncentiveFeeNotPaid { .. } => {}
+                ContractError::FarmFeeNotPaid { .. } => {}
                 _ => {
-                    panic!("Wrong error type, should return ContractError::IncentiveFeeNotPaid")
+                    panic!("Wrong error type, should return ContractError::FarmFeeNotPaid")
                 }
             }
         },
     );
 }
 
-/// Complex test case with 4 incentives for 2 different LPs somewhat overlapping in time
-/// Incentive 1 -> runs from epoch 12 to 16
-/// Incentive 2 -> run from epoch 14 to 25
-/// Incentive 3 -> runs from epoch 20 to 23
-/// Incentive 4 -> runs from epoch 23 to 37
+/// Complex test case with 4 farms for 2 different LPs somewhat overlapping in time
+/// Farm 1 -> runs from epoch 12 to 16
+/// Farm 2 -> run from epoch 14 to 25
+/// Farm 3 -> runs from epoch 20 to 23
+/// Farm 4 -> runs from epoch 23 to 37
 ///
 /// There are 3 users, creator, other and another
 ///
 /// Locking tokens:
-/// creator locks 35% of the LP tokens before incentive 1 starts
-/// other locks 40% of the LP tokens before after incentive 1 starts and before incentive 2 starts
-/// another locks 25% of the LP tokens after incentive 3 starts, before incentive 3 ends
+/// creator locks 35% of the LP tokens before farm 1 starts
+/// other locks 40% of the LP tokens before after farm 1 starts and before farm 2 starts
+/// another locks 25% of the LP tokens after farm 3 starts, before farm 3 ends
 ///
 /// Unlocking tokens:
 /// creator never unlocks
-/// other emergency unlocks mid-way through incentive 2
-/// another partially unlocks mid-way through incentive 4
+/// other emergency unlocks mid-way through farm 2
+/// another partially unlocks mid-way through farm 4
 ///
 /// Verify users got rewards pro rata to their locked tokens
 #[test]
-fn test_multiple_incentives_and_positions() {
+fn test_multiple_farms_and_positions() {
     let lp_denom_1 = format!("factory/pool1/{LP_SYMBOL}").to_string();
     let lp_denom_2 = format!("factory/pool2/{LP_SYMBOL}").to_string();
 
@@ -2555,31 +2553,31 @@ fn test_multiple_incentives_and_positions() {
 
     suite.instantiate_default();
 
-    let incentive_manager_addr = suite.incentive_manager_addr.clone();
+    let farm_manager_addr = suite.farm_manager_addr.clone();
     let fee_collector_addr = suite.fee_collector_addr.clone();
 
-    // create 4 incentives with 2 different LPs
+    // create 4 farms with 2 different LPs
     suite
-        .add_hook(&creator, &incentive_manager_addr, vec![], |result| {
+        .add_hook(&creator, &farm_manager_addr, vec![], |result| {
             result.unwrap();
         })
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 10);
         })
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(12),
                     preliminary_end_epoch: Some(16),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
-                    incentive_identifier: Some("incentive_1".to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![coin(80_000u128, "uusdy"), coin(1_000, "uom")],
@@ -2587,19 +2585,19 @@ fn test_multiple_incentives_and_positions() {
                 result.unwrap();
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &creator,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(14),
                     preliminary_end_epoch: Some(24),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uosmo".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
-                    incentive_identifier: Some("incentive_2".to_string()),
+                    farm_identifier: Some("farm_2".to_string()),
                 },
             },
             vec![coin(10_000u128, "uosmo"), coin(1_000, "uom")],
@@ -2607,19 +2605,19 @@ fn test_multiple_incentives_and_positions() {
                 result.unwrap();
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(20),
                     preliminary_end_epoch: Some(23),
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uom".to_string(),
                         amount: Uint128::new(30_000u128),
                     },
-                    incentive_identifier: Some("incentive_3".to_string()),
+                    farm_identifier: Some("farm_3".to_string()),
                 },
             },
             vec![coin(31_000u128, "uom")],
@@ -2627,19 +2625,19 @@ fn test_multiple_incentives_and_positions() {
                 result.unwrap();
             },
         )
-        .manage_incentive(
+        .manage_farm(
             &other,
-            IncentiveAction::Fill {
-                params: IncentiveParams {
+            FarmAction::Fill {
+                params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(23),
                     preliminary_end_epoch: None,
                     curve: None,
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
-                    incentive_identifier: Some("incentive_4".to_string()),
+                    farm_identifier: Some("farm_4".to_string()),
                 },
             },
             vec![coin(70_000u128, "uusdy"), coin(1_000, "uom")],
@@ -2720,19 +2718,19 @@ fn test_multiple_incentives_and_positions() {
         });
 
     suite
-        .query_incentives(
-            Some(IncentivesBy::Identifier("incentive_1".to_string())),
+        .query_farms(
+            Some(FarmsBy::Identifier("farm_1".to_string())),
             None,
             None,
             |result| {
-                let incentives_response = result.unwrap();
+                let farms_response = result.unwrap();
                 assert_eq!(
-                    incentives_response.incentives[0],
-                    Incentive {
-                        identifier: "incentive_1".to_string(),
+                    farms_response.farms[0],
+                    Farm {
+                        identifier: "farm_1".to_string(),
                         owner: creator.clone(),
                         lp_denom: lp_denom_1.clone(),
-                        incentive_asset: Coin {
+                        farm_asset: Coin {
                             denom: "uusdy".to_string(),
                             amount: Uint128::new(80_000u128),
                         },
@@ -2755,15 +2753,15 @@ fn test_multiple_incentives_and_positions() {
         .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_978_666));
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
             assert_eq!(
-                incentives_response.incentives[0],
-                Incentive {
-                    identifier: "incentive_1".to_string(),
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
@@ -2776,12 +2774,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[1],
-                Incentive {
-                    identifier: "incentive_2".to_string(),
+                farms_response.farms[1],
+                Farm {
+                    identifier: "farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uosmo".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
@@ -2805,7 +2803,7 @@ fn test_multiple_incentives_and_positions() {
             assert_eq!(epoch_response.epoch.id, 19);
         });
 
-    // other emergency unlocks mid-way incentive 2
+    // other emergency unlocks mid-way farm 2
     suite
         .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_930_000));
@@ -2822,15 +2820,15 @@ fn test_multiple_incentives_and_positions() {
         .query_balance("uosmo".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_003_198));
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
             assert_eq!(
-                incentives_response.incentives[0],
-                Incentive {
-                    identifier: "incentive_1".to_string(),
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
@@ -2843,12 +2841,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[1],
-                Incentive {
-                    identifier: "incentive_2".to_string(),
+                farms_response.farms[1],
+                Farm {
+                    identifier: "farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uosmo".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
@@ -2941,23 +2939,23 @@ fn test_multiple_incentives_and_positions() {
     suite
         .claim(&creator, vec![], |result| {
             // creator claims from epoch 16 to 30
-            // There's nothing to claim on incentive 1
-            // On incentive 2, creator has a portion of the total weight until the epoch where other
+            // There's nothing to claim on farm 1
+            // On farm 2, creator has a portion of the total weight until the epoch where other
             // triggered the emergency withdrawal. From that point (epoch 20) it has 100% of the weight
             // for lp_denom_1.
-            // another never locked for lp_denom_1, so creator gets all the rewards for the incentive 2
+            // another never locked for lp_denom_1, so creator gets all the rewards for the farm 2
             // from epoch 20 till it finishes at epoch 23
             result.unwrap();
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
             assert_eq!(
-                incentives_response.incentives[0],
-                Incentive {
-                    identifier: "incentive_1".to_string(),
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
@@ -2970,12 +2968,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[1],
-                Incentive {
-                    identifier: "incentive_2".to_string(),
+                farms_response.farms[1],
+                Farm {
+                    identifier: "farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uosmo".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
@@ -2988,12 +2986,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[2],
-                Incentive {
-                    identifier: "incentive_3".to_string(),
+                farms_response.farms[2],
+                Farm {
+                    identifier: "farm_3".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uom".to_string(),
                         amount: Uint128::new(30_000u128),
                     },
@@ -3006,12 +3004,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[3],
-                Incentive {
-                    identifier: "incentive_4".to_string(),
+                farms_response.farms[3],
+                Farm {
+                    identifier: "farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
@@ -3027,15 +3025,15 @@ fn test_multiple_incentives_and_positions() {
         .claim(&another, vec![], |result| {
             result.unwrap();
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
             assert_eq!(
-                incentives_response.incentives[0],
-                Incentive {
-                    identifier: "incentive_1".to_string(),
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(80_000u128),
                     },
@@ -3048,12 +3046,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[1],
-                Incentive {
-                    identifier: "incentive_2".to_string(),
+                farms_response.farms[1],
+                Farm {
+                    identifier: "farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uosmo".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
@@ -3066,12 +3064,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[2],
-                Incentive {
-                    identifier: "incentive_3".to_string(),
+                farms_response.farms[2],
+                Farm {
+                    identifier: "farm_3".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uom".to_string(),
                         amount: Uint128::new(30_000u128),
                     },
@@ -3084,12 +3082,12 @@ fn test_multiple_incentives_and_positions() {
                 }
             );
             assert_eq!(
-                incentives_response.incentives[3],
-                Incentive {
-                    identifier: "incentive_4".to_string(),
+                farms_response.farms[3],
+                Farm {
+                    identifier: "farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
@@ -3103,7 +3101,7 @@ fn test_multiple_incentives_and_positions() {
             );
         });
 
-    // another closes part of his position mid-way through incentive 4.
+    // another closes part of his position mid-way through farm 4.
     // since the total weight was 100k and he unlocked 50% of his position,
     // the new total weight is 85k, so he gets 15k/85k of the rewards while creator gets the rest
     suite.manage_position(
@@ -3133,15 +3131,15 @@ fn test_multiple_incentives_and_positions() {
         .claim(&creator, vec![], |result| {
             result.unwrap();
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
             assert_eq!(
-                incentives_response.incentives[3],
-                Incentive {
-                    identifier: "incentive_4".to_string(),
+                farms_response.farms[3],
+                Farm {
+                    identifier: "farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
@@ -3157,15 +3155,15 @@ fn test_multiple_incentives_and_positions() {
         .claim(&another, vec![], |result| {
             result.unwrap();
         })
-        .query_incentives(None, None, None, |result| {
-            let incentives_response = result.unwrap();
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
             assert_eq!(
-                incentives_response.incentives[3],
-                Incentive {
-                    identifier: "incentive_4".to_string(),
+                farms_response.farms[3],
+                Farm {
+                    identifier: "farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
-                    incentive_asset: Coin {
+                    farm_asset: Coin {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(70_000u128),
                     },
@@ -3179,7 +3177,7 @@ fn test_multiple_incentives_and_positions() {
             );
         });
 
-    // now the epochs go by, the incentive expires and the creator withdraws the rest of the incentive
+    // now the epochs go by, the farm expires and the creator withdraws the rest of the rewards
 
     suite
         .add_one_epoch()
@@ -3192,10 +3190,10 @@ fn test_multiple_incentives_and_positions() {
             assert_eq!(epoch_response.epoch.id, 40);
         });
 
-    suite.manage_incentive(
+    suite.manage_farm(
         &creator,
-        IncentiveAction::Close {
-            incentive_identifier: "incentive_4".to_string(),
+        FarmAction::Close {
+            farm_identifier: "farm_4".to_string(),
         },
         vec![],
         |result| {

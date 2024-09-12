@@ -16,8 +16,8 @@ function display_usage() {
 	echo -e "Available flags:\n"
 	echo -e "  -h \thelp"
 	echo -e "  -c \tThe chain where you want to deploy (juno|juno-testnet|terra|terra-testnet|... check chain_env.sh for the complete list of supported chains)"
-	echo -e "  -d \tWhat to deploy (all|pool-manager|vault-manager|epoch-manager|bonding-manager|incentive-manager)"
-	echo -e "  -s \tStore artifacts on chain (all|pool-manager|vault-manager|epoch-manager|bonding-manager|incentive-manager)"
+	echo -e "  -d \tWhat to deploy (all|pool-manager|vault-manager|epoch-manager|bonding-manager|farm-manager)"
+	echo -e "  -s \tStore artifacts on chain (all|pool-manager|vault-manager|epoch-manager|bonding-manager|farm-manager)"
 	echo -e "  -a \tArtifacts folder path (default: $project_root_path/artifacts)"
 }
 
@@ -93,11 +93,11 @@ function init_epoch_manager() {
 
 function init_pool_manager() {
 	bonding_manager_addr=$(jq '.contracts[] | select (.wasm == "bonding_manager.wasm") | .contract_address' $output_file)
-	incentive_manager_addr=$(jq '.contracts[] | select (.wasm == "incentive_manager.wasm") | .contract_address' $output_file)
+	farm_manager_addr=$(jq '.contracts[] | select (.wasm == "farm_manager.wasm") | .contract_address' $output_file)
 
 	init_msg='{
               "bonding_manager_addr": "'$bonding_manager_addr'",
-              "incentive_manager_addr": "'$incentive_manager_addr'",
+              "farm_manager_addr": "'$farm_manager_addr'",
               "pool_creation_fee": {
                 "denom": "uwhale",
                 "amount": "1000000000"
@@ -137,7 +137,7 @@ function init_bonding_manager() {
 	init_artifact 'bonding_manager.wasm' "$init_msg" "White Whale Bonding Manager"
 }
 
-function init_incentive_manager() {
+function init_farm_manager() {
 	epoch_manager_addr=$(jq '.contracts[] | select (.wasm == "epoch_manager.wasm") | .contract_address' $output_file)
 	bonding_manager_addr=$(jq '.contracts[] | select (.wasm == "bonding_manager.wasm") | .contract_address' $output_file)
 
@@ -145,17 +145,17 @@ function init_incentive_manager() {
               "owner": "migaloo1...",
               "epoch_manager_addr": "'$epoch_manager_addr'",
               "bonding_manager_addr": "'$bonding_manager_addr'",
-              "create_incentive_fee": {
+              "create_farm_fee": {
                 "denom": "uwhale",
                 "amount": "1000000000"
               },
-              "max_concurrent_incentives": 7,
-              "max_incentive_epoch_buffer": 14,
+              "max_concurrent_farms": 7,
+              "max_farm_epoch_buffer": 14,
               "min_unlocking_duration": 86400,
               "max_unlocking_duration": 31536000,
               "emergency_unlock_penalty": "0.01"
             }'
-	init_artifact 'incentive_manager.wasm' "$init_msg" "White Whale Incentive Manager"
+	init_artifact 'farm_manager.wasm' "$init_msg" "White Whale Farm Manager"
 }
 
 function init_v2() {
@@ -163,7 +163,7 @@ function init_v2() {
 
 	init_epoch_manager
 	init_bonding_manager
-	init_incentive_manager
+	init_farm_manager
 	init_pool_manager
 	init_vault_manager
 }
@@ -231,8 +231,8 @@ function deploy() {
 	bonding-manager)
 		init_bonding_manager
 		;;
-	incentive-manager)
-		init_incentive_manager
+	farm-manager)
+		init_farm_manager
 		;;
 	*) # store all
 		init_v2
@@ -273,8 +273,8 @@ function store() {
 	bonding-manager)
 		store_artifact_on_chain $artifacts_path/bonding_manager.wasm
 		;;
-	incentive-manager)
-		store_artifact_on_chain $artifacts_path/incentive_manager.wasm
+	farm-manager)
+		store_artifact_on_chain $artifacts_path/farm_manager.wasm
 		;;
 	*) # store all
 		store_artifacts_on_chain

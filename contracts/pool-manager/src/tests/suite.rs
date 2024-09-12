@@ -15,8 +15,8 @@ use cw_multi_test::{
 
 use amm::constants::LP_SYMBOL;
 use amm::epoch_manager::{Epoch, EpochConfig};
+use amm::farm_manager::PositionsResponse;
 use amm::fee::PoolFee;
-use amm::incentive_manager::PositionsResponse;
 use common_testing::multi_test::stargate_mock::StargateMock;
 
 /// Creates the pool manager contract
@@ -55,14 +55,14 @@ pub fn epoch_manager_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-/// Creates the incentive manager contract
-pub fn incentive_manager_contract() -> Box<dyn Contract<Empty>> {
+/// Creates the farm manager contract
+pub fn farm_manager_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
-        incentive_manager::contract::execute,
-        incentive_manager::contract::instantiate,
-        incentive_manager::contract::query,
+        farm_manager::contract::execute,
+        farm_manager::contract::instantiate,
+        farm_manager::contract::query,
     )
-    .with_migrate(incentive_manager::contract::migrate);
+    .with_migrate(farm_manager::contract::migrate);
 
     Box::new(contract)
 }
@@ -85,7 +85,7 @@ pub struct TestingSuite {
     pub senders: [Addr; 3],
     pub fee_collector_addr: Addr,
     pub pool_manager_addr: Addr,
-    pub incentive_manager_addr: Addr,
+    pub farm_manager_addr: Addr,
     pub epoch_manager_addr: Addr,
 }
 
@@ -149,7 +149,7 @@ impl TestingSuite {
             senders: [sender_1, sender_2, sender_3],
             fee_collector_addr: Addr::unchecked(""),
             pool_manager_addr: Addr::unchecked(""),
-            incentive_manager_addr: Addr::unchecked(""),
+            farm_manager_addr: Addr::unchecked(""),
             epoch_manager_addr: Addr::unchecked(""),
         }
     }
@@ -158,11 +158,11 @@ impl TestingSuite {
     pub(crate) fn instantiate(
         &mut self,
         fee_collector_addr: String,
-        incentive_manager_addr: String,
+        farm_manager_addr: String,
     ) -> &mut Self {
         let msg = InstantiateMsg {
             fee_collector_addr,
-            incentive_manager_addr,
+            farm_manager_addr,
             pool_creation_fee: coin(1_000, "uusd"),
         };
 
@@ -189,8 +189,8 @@ impl TestingSuite {
     pub(crate) fn instantiate_default(&mut self) -> &mut Self {
         self.create_epoch_manager();
         self.create_fee_collector();
-        self.create_incentive_manager();
-        self.add_hook(self.incentive_manager_addr.clone());
+        self.create_farm_manager();
+        self.add_hook(self.farm_manager_addr.clone());
 
         // 25 April 2024 15:00:00 UTC
         let timestamp = Timestamp::from_seconds(1714057200);
@@ -198,7 +198,7 @@ impl TestingSuite {
 
         self.instantiate(
             self.fee_collector_addr.to_string(),
-            self.incentive_manager_addr.to_string(),
+            self.farm_manager_addr.to_string(),
         )
     }
 
@@ -265,36 +265,36 @@ impl TestingSuite {
             .unwrap();
     }
 
-    fn create_incentive_manager(&mut self) {
-        let incentive_manager_id = self.app.store_code(incentive_manager_contract());
+    fn create_farm_manager(&mut self) {
+        let farm_manager_id = self.app.store_code(farm_manager_contract());
 
         let creator = self.creator().clone();
         let epoch_manager_addr = self.epoch_manager_addr.to_string();
         let fee_collector_addr = self.fee_collector_addr.to_string();
 
-        let msg = amm::incentive_manager::InstantiateMsg {
+        let msg = amm::farm_manager::InstantiateMsg {
             owner: creator.clone().to_string(),
             epoch_manager_addr,
             fee_collector_addr,
-            create_incentive_fee: Coin {
+            create_farm_fee: Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::zero(),
             },
-            max_concurrent_incentives: 5,
-            max_incentive_epoch_buffer: 014,
+            max_concurrent_farms: 5,
+            max_farm_epoch_buffer: 014,
             min_unlocking_duration: 86_400,
             max_unlocking_duration: 31_536_000,
             emergency_unlock_penalty: Decimal::percent(10),
         };
 
-        self.incentive_manager_addr = self
+        self.farm_manager_addr = self
             .app
             .instantiate_contract(
-                incentive_manager_id,
+                farm_manager_id,
                 creator.clone(),
                 &msg,
                 &[],
-                "Incentive Manager".to_string(),
+                "Farm Manager".to_string(),
                 Some(creator.to_string()),
             )
             .unwrap();
@@ -701,15 +701,15 @@ impl TestingSuite {
     }
 
     #[track_caller]
-    pub(crate) fn query_incentive_positions(
+    pub(crate) fn query_farm_positions(
         &mut self,
         address: &Addr,
         open_state: Option<bool>,
         result: impl Fn(StdResult<PositionsResponse>),
     ) -> &mut Self {
         let positions_response: StdResult<PositionsResponse> = self.app.wrap().query_wasm_smart(
-            &self.incentive_manager_addr,
-            &amm::incentive_manager::QueryMsg::Positions {
+            &self.farm_manager_addr,
+            &amm::farm_manager::QueryMsg::Positions {
                 address: address.to_string(),
                 open_state,
             },

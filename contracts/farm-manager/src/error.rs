@@ -7,7 +7,7 @@ use cw_ownable::OwnershipError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-use amm::incentive_manager::EpochId;
+use amm::farm_manager::EpochId;
 
 #[cw_migrate_invalid_version_error]
 #[derive(Error, Debug)]
@@ -42,62 +42,60 @@ pub enum ContractError {
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 
-    #[error("An incentive with the given identifier already exists")]
-    IncentiveAlreadyExists,
+    #[error("An farm with the given identifier already exists")]
+    FarmAlreadyExists,
 
     #[error("max_concurrent_flows cannot be set to zero")]
-    UnspecifiedConcurrentIncentives,
+    UnspecifiedConcurrentFarms,
 
-    #[error("Incentive doesn't exist")]
-    NonExistentIncentive {},
+    #[error("Farm doesn't exist")]
+    NonExistentFarm,
 
-    #[error("Attempt to create a new incentive with a small incentive_asset amount, which is less than the minimum of {min}")]
-    InvalidIncentiveAmount {
-        /// The minimum amount of an asset to create an incentive with
+    #[error("Attempt to create a new farm with a small farm_asset amount, which is less than the minimum of {min}")]
+    InvalidFarmAmount {
+        /// The minimum amount of an asset to create a farm with
         min: u128,
     },
 
-    #[error("Incentive creation fee was not included")]
-    IncentiveFeeMissing,
+    #[error("Farm creation fee was not included")]
+    FarmFeeMissing,
 
-    #[error("Incentive end timestamp was set to a time in the past")]
-    IncentiveEndsInPast,
+    #[error("Farm end timestamp was set to a time in the past")]
+    FarmEndsInPast,
 
-    #[error("The incentive you are intending to create doesn't meet the minimum required of {min} after taking the fee")]
-    EmptyIncentiveAfterFee { min: u128 },
+    #[error("The farm you are intending to create doesn't meet the minimum required of {min} after taking the fee")]
+    EmptyFarmAfterFee { min: u128 },
 
-    #[error(
-        "Incentive creation fee was not fulfilled, only {paid_amount} / {required_amount} present"
-    )]
-    IncentiveFeeNotPaid {
+    #[error("Farm creation fee was not fulfilled, only {paid_amount} / {required_amount} present")]
+    FarmFeeNotPaid {
         /// The amount that was paid
         paid_amount: Uint128,
         /// The amount that needed to be paid
         required_amount: Uint128,
     },
 
-    #[error("Incentive start timestamp is after the end timestamp")]
-    IncentiveStartTimeAfterEndTime,
+    #[error("Farm start timestamp is after the end timestamp")]
+    FarmStartTimeAfterEndTime,
 
-    #[error("Incentive start timestamp is too far into the future")]
-    IncentiveStartTooFar,
+    #[error("Farm start timestamp is too far into the future")]
+    FarmStartTooFar,
 
-    #[error("The incentive has already expired, can't be expanded")]
-    IncentiveAlreadyExpired,
+    #[error("The farm has already expired, can't be expanded")]
+    FarmAlreadyExpired,
 
-    #[error("The incentive doesn't have enough funds to pay out the reward")]
-    IncentiveExhausted,
+    #[error("The farm doesn't have enough funds to pay out the reward")]
+    FarmExhausted,
 
     #[error("The asset sent doesn't match the asset expected")]
     AssetMismatch,
 
-    #[error("Attempt to create a new incentive, which exceeds the maximum of {max} incentives allowed per LP at a time")]
-    TooManyIncentives {
-        /// The maximum amount of incentives that can exist
+    #[error("Attempt to create a new farm, which exceeds the maximum of {max} farms allowed per LP at a time")]
+    TooManyFarms {
+        /// The maximum amount of farms that can exist
         max: u32,
     },
 
-    #[error("The end epoch for this incentive is invalid")]
+    #[error("The end epoch for this farm is invalid")]
     InvalidEndEpoch,
 
     #[error("The sender doesn't have open positions")]
@@ -141,9 +139,9 @@ pub enum ContractError {
     #[error("There are pending rewards to be claimed before this action can be executed")]
     PendingRewards,
 
-    #[error("The incentive expansion amount must be a multiple of the emission rate, which is {emission_rate}")]
+    #[error("The farm expansion amount must be a multiple of the emission rate, which is {emission_rate}")]
     InvalidExpansionAmount {
-        /// The emission rate of the incentive
+        /// The emission rate of the farm
         emission_rate: Uint128,
     },
 
