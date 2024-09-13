@@ -1,5 +1,6 @@
-use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{from_json, Addr, Uint64};
+use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
+use cosmwasm_std::{from_json, Uint64};
+use cw_multi_test::IntoBech32;
 
 use amm::epoch_manager::{ConfigResponse, Epoch, EpochConfig, InstantiateMsg, QueryMsg};
 use epoch_manager::contract::{instantiate, query};
@@ -12,7 +13,8 @@ fn instantiation_successful() {
     let mut deps = mock_dependencies();
 
     let current_time = mock_env().block.time;
-    let info = mock_info("owner", &[]);
+    let owner = "owner".into_bech32();
+    let info = message_info(&owner, &[]);
     let msg = InstantiateMsg {
         start_epoch: Epoch {
             id: 123,
@@ -35,7 +37,7 @@ fn instantiation_successful() {
         },
         config_res.epoch_config
     );
-    assert_eq!(Addr::unchecked("owner"), config_res.owner);
+    assert_eq!(owner, config_res.owner);
 }
 
 #[test]
@@ -43,7 +45,8 @@ fn instantiation_unsuccessful() {
     let mut deps = mock_dependencies();
 
     let current_time = mock_env().block.time;
-    let info = mock_info("owner", &[]);
+    let owner = "owner".into_bech32();
+    let info = message_info(&owner, &[]);
     let msg = InstantiateMsg {
         start_epoch: Epoch {
             id: 123,

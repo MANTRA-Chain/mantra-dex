@@ -35,3 +35,6 @@ mantra-utils.workspace = true
 cw-controllers.workspace = true
 cw-utils.workspace = true
 cw-migrate-error-derive.workspace = true
+
+[dev-dependencies]
+cw-multi-test.workspace = true

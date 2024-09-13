@@ -36,7 +36,11 @@ thiserror = { version = "1.0.43" }
 amm = { path = "packages/amm" }
 mantra-utils = { path = "packages/utils" }
 common-testing = { path = "packages/common-testing" }
-cw-multi-test = { version = "2.1.1", features = ["cosmwasm_1_2"] }
+cw-multi-test = { version = "2.1.1", features = [
+  "cosmwasm_2_0",
+  "staking",
+  "stargate",
+] }
 uint = { version = "0.10.0" }
 anyhow = { version = "1.0.71" }
 cw-controllers = { version = "2.0.0" }

@@ -1,5 +1,6 @@
 use cosmwasm_std::from_json;
-use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
+use cw_multi_test::IntoBech32;
 
 use amm::epoch_manager::{Epoch, EpochChangedHookMsg, EpochResponse, ExecuteMsg, QueryMsg};
 use epoch_manager::contract::{execute, query};
@@ -12,10 +13,13 @@ mod common;
 #[test]
 fn create_new_epoch_successfully() {
     let mut deps = mock_dependencies();
-    let info = mock_info("owner", &[]);
+    let owner = "owner".into_bech32();
+    let hook = "hook".into_bech32();
+
+    let info = message_info(&owner, &[]);
     let mut env = mock_env();
     mock_instantiation(deps.as_mut(), info.clone()).unwrap();
-    mock_add_hook(deps.as_mut(), info.clone()).unwrap();
+    mock_add_hook(deps.as_mut(), info.clone(), &hook).unwrap();
     let next_epoch_time = env.block.time.plus_nanos(86400); //86400 is the duration of the epoch
 
     // move time ahead so we can create the epoch
@@ -39,7 +43,7 @@ fn create_new_epoch_successfully() {
         EpochChangedHookMsg {
             current_epoch: current_epoch.clone()
         }
-        .into_cosmos_msg("hook_contract_1")
+        .into_cosmos_msg(hook)
         .unwrap()
     );
 
@@ -63,7 +67,9 @@ fn create_new_epoch_successfully() {
 #[test]
 fn create_new_epoch_unsuccessfully() {
     let mut deps = mock_dependencies();
-    let info = mock_info("owner", &[]);
+    let owner = "owner".into_bech32();
+
+    let info = message_info(&owner, &[]);
     let mut env = mock_env();
     mock_instantiation(deps.as_mut(), info.clone()).unwrap();
 
