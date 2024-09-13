@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::mock_env;
-use cosmwasm_std::{DepsMut, MessageInfo, Response, Uint64};
+use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response, Uint64};
 
 use amm::epoch_manager::{Epoch, EpochConfig, ExecuteMsg, InstantiateMsg};
 use epoch_manager::contract::{execute, instantiate};
@@ -25,9 +25,13 @@ pub fn mock_instantiation(deps: DepsMut, info: MessageInfo) -> Result<Response, 
 
 /// Mocks hook addition.
 #[allow(dead_code)]
-pub fn mock_add_hook(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn mock_add_hook(
+    deps: DepsMut,
+    info: MessageInfo,
+    hook: &Addr,
+) -> Result<Response, ContractError> {
     let msg = ExecuteMsg::AddHook {
-        contract_addr: "hook_contract_1".to_string(),
+        contract_addr: hook.to_string(),
     };
 
     execute(deps, mock_env(), info, msg)

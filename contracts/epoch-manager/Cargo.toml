@@ -21,10 +21,6 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
-
 [dependencies]
 cosmwasm-schema.workspace = true
 cosmwasm-std.workspace = true
@@ -39,3 +35,6 @@ mantra-utils.workspace = true
 cw-controllers.workspace = true
 cw-utils.workspace = true
 cw-migrate-error-derive.workspace = true
+
+[dev-dependencies]
+cw-multi-test.workspace = true

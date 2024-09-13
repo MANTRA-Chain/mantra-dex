@@ -20,41 +20,33 @@ publish = false
 authors = ["MANTRA Finance"]
 
 [workspace.dependencies]
-cosmwasm-schema = { version = "1.5.4" }
-cosmwasm-std = { version = "1.5.4", features = [
-  "iterator",
-  "cosmwasm_1_2",
+cosmwasm-schema = { version = "2.1.3" }
+cosmwasm-std = { version = "2.1.3", default-features = true, features = [
+  "cosmwasm_2_1",
   "stargate",
 ] }
-cw2 = { version = "1.0.1" }
-cw20 = { version = "1.0.1" }
-cw20-base = { version = "1.1.0", features = ["library"] }
-cw-storage-plus = { version = "1.1.0" }
-cw-utils = { version = "1.0.1" }
+cw2 = { version = "2.0.0" }
+cw-storage-plus = { version = "2.0.0" }
+cw-utils = { version = "2.0.0" }
 schemars = { version = "0.8.12" }
 semver = { version = "1.0.12" }
 serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.127" }
 thiserror = { version = "1.0.43" }
-osmosis-std-derive = { version = "0.15.3" }
-prost-types = { version = "0.11.9", default-features = false }
 amm = { path = "packages/amm" }
 mantra-utils = { path = "packages/utils" }
-white-whale-std = { version = "2.0.0-alpha.1" }
 common-testing = { path = "packages/common-testing" }
-cw-multi-test = { version = "0.20.0", features = ["cosmwasm_1_2"] }
-uint = { version = "0.9.5" }
-integer-sqrt = { version = "0.1.5" }
-anyhow = { version = "1.0.71" }
-cw-controllers = { version = "1.1.0" }
-cw-ownable = { version = "0.5.1" }
-anybuf = { version = "0.4.0" }
-sha2 = { version = "=0.10.8" }
-sha256 = { version = "1.4.0" }
-protobuf = { version = "=3.2.0", features = ["with-bytes"] }
-prost = { version = "0.11.9", default-features = false, features = [
-  "prost-derive",
+cw-multi-test = { version = "2.1.1", features = [
+  "cosmwasm_2_0",
+  "staking",
+  "stargate",
 ] }
+uint = { version = "0.10.0" }
+anyhow = { version = "1.0.71" }
+cw-controllers = { version = "2.0.0" }
+cw-ownable = { version = "2.0.0" }
+anybuf = { version = "0.5.0" }
+sha2 = { version = "=0.10.8" }
 test-case = { version = "3.3.1" }
 cw-migrate-error-derive = { version = "0.1.0" }
 proptest = { version = "1.5.0" }

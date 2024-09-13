@@ -1,6 +1,8 @@
+use std::fmt::{Display, Formatter};
+use std::ops::Mul;
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Decimal256, StdError, StdResult, Uint128, Uint256};
-use std::fmt::{Display, Formatter};
 
 #[cw_serde]
 pub struct Fee {
@@ -10,7 +12,10 @@ pub struct Fee {
 impl Fee {
     /// Computes the fee for the given amount
     pub fn compute(&self, amount: Uint256) -> Uint256 {
-        amount * Decimal256::from(self.share)
+        //todo change to checked_mul
+        Decimal256::from_ratio(amount, Uint256::one())
+            .mul(self.to_decimal_256())
+            .to_uint_floor()
     }
 
     /// Converts a Fee to a Decimal256
@@ -64,6 +69,7 @@ pub struct PoolFee {
     /// 100%, ensuring a balanced and fair fee distribution.
     pub extra_fees: Vec<Fee>,
 }
+
 impl PoolFee {
     /// Validates the PoolFee structure to ensure no individual fee is zero or negative
     /// and the sum of all fees does not exceed 20%.
@@ -124,9 +130,9 @@ impl PoolFee {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{Decimal, StdError, Uint128, Uint256};
+    use test_case::test_case;
 
     use crate::fee::{Fee, PoolFee};
-    use test_case::test_case;
 
     #[test]
     fn valid_fee() {
@@ -171,8 +177,12 @@ mod tests {
         assert_eq!(fee.is_valid(), Err(StdError::generic_err("Invalid fee")));
     }
 
-    #[test_case(Decimal::permille(1), Decimal::permille(2), Decimal::permille(1), Uint256::from(1000u128), Uint128::from(4u128); "low fee scenario")]
-    #[test_case(Decimal::percent(1), Decimal::percent(2), Decimal::zero(), Uint256::from(1000u128), Uint128::from(30u128); "higher fee scenario")]
+    #[test_case(
+        Decimal::permille(1), Decimal::permille(2), Decimal::permille(1), Uint256::from(1000u128), Uint128::from(4u128); "low fee scenario"
+    )]
+    #[test_case(
+        Decimal::percent(1), Decimal::percent(2), Decimal::zero(), Uint256::from(1000u128), Uint128::from(30u128); "higher fee scenario"
+    )]
     fn pool_fee_application(
         protocol_fee_share: Decimal,
         swap_fee_share: Decimal,

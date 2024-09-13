@@ -1,9 +1,8 @@
 use cosmwasm_std::testing::MockStorage;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
-use cw_multi_test::addons::{MockAddressGenerator, MockApiBech32};
 use cw_multi_test::{
     App, AppBuilder, AppResponse, BankKeeper, DistributionKeeper, Executor, FailingModule,
-    GovFailingModule, IbcFailingModule, StakeKeeper, WasmKeeper,
+    GovFailingModule, IbcFailingModule, MockApiBech32, StakeKeeper, WasmKeeper,
 };
 
 use amm::epoch_manager::{Epoch, EpochChangedHookMsg, EpochConfig, EpochResponse};
@@ -88,7 +87,7 @@ impl TestingSuite {
 
         let app = AppBuilder::new()
             .with_api(MockApiBech32::new("mantra"))
-            .with_wasm(WasmKeeper::default().with_address_generator(MockAddressGenerator))
+            .with_wasm(WasmKeeper::default())
             .with_bank(bank)
             .with_stargate(StargateMock {})
             .build(|router, _api, storage| {

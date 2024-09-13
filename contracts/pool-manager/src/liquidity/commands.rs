@@ -397,7 +397,9 @@ pub fn withdraw_liquidity(
         .map(|pool_asset| {
             Ok(Coin {
                 denom: pool_asset.denom.clone(),
-                amount: pool_asset.amount * share_ratio,
+                amount: Decimal::from_ratio(pool_asset.amount, Uint128::one())
+                    .checked_mul(share_ratio)?
+                    .to_uint_floor(),
             })
         })
         .collect::<Result<Vec<Coin>, OverflowError>>()?;

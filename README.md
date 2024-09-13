@@ -50,7 +50,7 @@ The Farm Manager depends on the Epoch Manager, as rewards are distributed based 
 
 ### Fee Collector
 
-The Fee Collector collets the fees accrued by the protocol. Whenever a pool or a farm is created, a fee is sent
+The Fee Collector collects the fees accrued by the protocol. Whenever a pool or a farm is created, a fee is sent
 to the Fee Collector. As of now, the Fee Collector does not have any other function.
 
 ### Epoch Manager
