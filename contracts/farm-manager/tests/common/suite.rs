@@ -408,7 +408,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::farm_manager::ExecuteMsg::Claim;
+        let msg = amm::farm_manager::ExecuteMsg::Claim {};
 
         result(self.app.execute_contract(
             sender.clone(),

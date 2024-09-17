@@ -35,7 +35,8 @@
         "denom": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Config": {
       "description": "The contract configuration.",

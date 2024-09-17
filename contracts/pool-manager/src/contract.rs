@@ -181,7 +181,7 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::Config => Ok(to_json_binary(&queries::query_config(deps)?)?),
+        QueryMsg::Config {} => Ok(to_json_binary(&queries::query_config(deps)?)?),
         QueryMsg::AssetDecimals {
             pool_identifier,
             denom,

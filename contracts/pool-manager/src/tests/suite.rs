@@ -502,7 +502,7 @@ impl TestingSuite {
         result(self.app.execute_contract(
             user,
             self.epoch_manager_addr.clone(),
-            &amm::epoch_manager::ExecuteMsg::CreateEpoch,
+            &amm::epoch_manager::ExecuteMsg::CreateEpoch {},
             &[],
         ));
 
@@ -695,7 +695,7 @@ impl TestingSuite {
             .wrap()
             .query_wasm_smart(
                 &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::Config,
+                &amm::pool_manager::QueryMsg::Config {},
             )
             .unwrap()
     }
