@@ -21,7 +21,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     /// Creates a new epoch. It's permissionless. A new epoch can only be created after the current
     /// one has ended.
-    CreateEpoch,
+    CreateEpoch {},
     /// Adds a new hook to the hook registry, i.e. adds a contract to be notified when a new epoch
     /// is created.
     AddHook {
@@ -47,10 +47,10 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     /// Returns the current epoch, which is the last on the EPOCHS map.
     #[returns(ConfigResponse)]
-    Config,
+    Config {},
     /// Returns the current epoch, which is the last on the EPOCHS map.
     #[returns(EpochResponse)]
-    CurrentEpoch,
+    CurrentEpoch {},
     /// Returns the epoch with the given id.
     #[returns(EpochResponse)]
     Epoch {
@@ -59,7 +59,7 @@ pub enum QueryMsg {
     },
     /// Returns the hooks in the registry.
     #[returns(HooksResponse)]
-    Hooks,
+    Hooks {},
     /// Returns whether or not a hook has been registered.
     #[returns(bool)]
     Hook {

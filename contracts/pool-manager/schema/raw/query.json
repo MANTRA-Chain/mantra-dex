@@ -4,10 +4,17 @@
   "oneOf": [
     {
       "description": "Retrieves the contract's config.",
-      "type": "string",
-      "enum": [
+      "type": "object",
+      "required": [
         "config"
-      ]
+      ],
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     },
     {
       "description": "Retrieves the decimals for the given asset.",
@@ -249,7 +256,8 @@
         "denom": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "SwapOperation": {
       "description": "The type of swap operation to perform.",

@@ -235,7 +235,7 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     /// Retrieves the contract's config.
     #[returns(ConfigResponse)]
-    Config,
+    Config {},
     /// Retrieves the decimals for the given asset.
     #[returns(AssetDecimalsResponse)]
     AssetDecimals {

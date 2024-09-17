@@ -44,7 +44,7 @@ pub enum ExecuteMsg {
     /// Gets triggered by the epoch manager when a new epoch is created
     EpochChangedHook(EpochChangedHookMsg),
     /// Claims the rewards for the user
-    Claim,
+    Claim {},
     /// Updates the config of the contract
     UpdateConfig {
         /// The fee collector address, where protocol fees are stored
@@ -77,7 +77,7 @@ pub struct MigrateMsg {}
 pub enum QueryMsg {
     /// Retrieves the configuration of the manager.
     #[returns(Config)]
-    Config,
+    Config {},
     /// Retrieves the configuration of the manager.
     #[returns(FarmsResponse)]
     Farms {

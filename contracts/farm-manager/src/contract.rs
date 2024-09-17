@@ -105,7 +105,7 @@ pub fn execute(
         ExecuteMsg::EpochChangedHook(msg) => {
             manager::commands::on_epoch_changed(deps, env, info, msg)
         }
-        ExecuteMsg::Claim => farm::commands::claim(deps, env, info),
+        ExecuteMsg::Claim {} => farm::commands::claim(deps, env, info),
         ExecuteMsg::ManagePosition { action } => match action {
             PositionAction::Fill {
                 identifier,
@@ -160,7 +160,7 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::Config => Ok(to_json_binary(&queries::query_manager_config(deps)?)?),
+        QueryMsg::Config {} => Ok(to_json_binary(&queries::query_manager_config(deps)?)?),
         QueryMsg::Ownership {} => Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?),
         QueryMsg::Farms {
             filter_by,
