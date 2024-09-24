@@ -30,7 +30,7 @@ pub(crate) fn query_farms(
             FarmsBy::Identifier(identifier) => {
                 vec![get_farm_by_identifier(deps.storage, &identifier)?]
             }
-            FarmsBy::LPDenom(lp_denom) => {
+            FarmsBy::LpDenom(lp_denom) => {
                 get_farms_by_lp_denom(deps.storage, lp_denom.as_str(), start_after, limit)?
             }
             FarmsBy::FarmAsset(farm_asset) => {

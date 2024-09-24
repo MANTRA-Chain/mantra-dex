@@ -485,7 +485,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let rewards_response: StdResult<LpWeightResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::LPWeight {
+            &amm::farm_manager::QueryMsg::LpWeight {
                 address: self.farm_manager_addr.to_string(),
                 denom: denom.to_string(),
                 epoch_id,

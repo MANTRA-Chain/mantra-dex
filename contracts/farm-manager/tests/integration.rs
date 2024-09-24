@@ -569,7 +569,7 @@ fn create_farms() {
             },
         )
         .query_farms(
-            Some(FarmsBy::LPDenom(lp_denom.clone())),
+            Some(FarmsBy::LpDenom(lp_denom.clone())),
             None,
             None,
             |result| {
