@@ -3,9 +3,9 @@ use cosmwasm_std::{
 };
 
 use amm::coin::is_factory_token;
-use amm::constants::LP_SYMBOL;
 use amm::fee::PoolFee;
 use amm::pool_manager::{PoolInfo, PoolType};
+use amm::constants::LP_SYMBOL;
 
 use crate::helpers::validate_pool_identifier;
 use crate::state::{get_pool_by_identifier, POOL_COUNTER};
@@ -74,17 +74,36 @@ pub fn create_pool(
     // Load config for pool creation fee
     let config: Config = CONFIG.load(deps.storage)?;
 
-    // Check if fee was provided and is sufficient
-    if !config.pool_creation_fee.amount.is_zero() {
-        // verify fee payment
-        let amount = cw_utils::must_pay(&info, &config.pool_creation_fee.denom)?;
-        if amount != config.pool_creation_fee.amount {
-            return Err(ContractError::InvalidPoolCreationFee {
-                amount,
-                expected: config.pool_creation_fee.amount,
-            });
+    // The user should send the pool creation fee + token factory denom creation fee for this
+    // operation to succeed.
+
+    // Check if fee was provided and is sufficient. The pool_creation_fee.denom is gonna be the same
+    // as the token factory denom creation fee
+    let paid_fee_amount = cw_utils::must_pay(&info, &config.pool_creation_fee.denom)?;
+    //todo query the token factory params from the chain instead of using the hardcoded TOKEN_FACTORY_FEE value
+
+    let token_factory_fee = Coin {
+        denom: "uom".to_string(),
+        amount: Uint128::new(88_888_888_888u128),
+    };
+
+    let expected_fee_amount = if config.pool_creation_fee.amount.is_zero() {
+        token_factory_fee.amount
+    } else {
+        config
+            .pool_creation_fee
+            .amount
+            .checked_add(token_factory_fee.amount)?
+    };
+
+    ensure!(
+        config.pool_creation_fee.denom == token_factory_fee.denom
+            && paid_fee_amount == expected_fee_amount,
+        ContractError::InvalidPoolCreationFee {
+            amount: paid_fee_amount,
+            expected: expected_fee_amount,
         }
-    }
+    );
 
     // Prepare the sending of pool creation fee
     let mut messages: Vec<CosmosMsg> = vec![];

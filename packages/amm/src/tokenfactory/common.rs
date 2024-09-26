@@ -2,17 +2,17 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{AnyMsg, CosmosMsg, StdResult};
 
 #[cw_serde]
-enum Protocol {
+pub(crate) enum Protocol {
     Osmosis,
 }
 
 impl Protocol {
     #![allow(dead_code)]
-    fn from_features() -> Self {
+    pub(crate) fn from_features() -> Self {
         Self::Osmosis
     }
     #[allow(unused_assignments)]
-    fn as_str(&self) -> &'static str {
+    pub(crate) fn as_str(&self) -> &'static str {
         match self {
             Self::Osmosis => "osmosis",
         }
@@ -24,6 +24,7 @@ pub(crate) enum MsgTypes {
     CreateDenom,
     Mint,
     Burn,
+    QueryParams,
 }
 
 impl MsgTypes {
@@ -33,6 +34,7 @@ impl MsgTypes {
             Self::CreateDenom => "MsgCreateDenom",
             Self::Mint => "MsgMint",
             Self::Burn => "MsgBurn",
+            Self::QueryParams => "Query/Params",
         }
     }
 }

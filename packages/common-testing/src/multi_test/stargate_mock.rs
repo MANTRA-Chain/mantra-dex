@@ -10,7 +10,7 @@ use amm::tokenfactory::burn::MsgBurn;
 use amm::tokenfactory::common::EncodeMessage;
 use amm::tokenfactory::create_denom::{MsgCreateDenom, MsgCreateDenomResponse};
 use amm::tokenfactory::mint::MsgMint;
-use amm::tokenfactory::responses::{Params, QueryParamsResponse};
+use amm::tokenfactory::queries::{Params, QueryParamsResponse};
 
 pub struct StargateMock {}
 
@@ -62,6 +62,7 @@ impl Stargate for StargateMock {
                     params: Some(Params {
                         denom_creation_fee: vec![coin(1_000_000, "uosmo")],
                         denom_creation_gas_consume: 0,
+                        fee_collector_address: "".to_string(),
                     }),
                 })?)
             }
