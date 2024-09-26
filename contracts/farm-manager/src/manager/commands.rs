@@ -298,7 +298,7 @@ pub(crate) fn on_epoch_changed(
         .filter(|asset| {
             if is_factory_token(asset.denom.as_str()) {
                 match get_factory_token_subdenom(asset.denom.as_str()) {
-                    Ok(subdenom) => subdenom == LP_SYMBOL,
+                    Ok(subdenom) => subdenom.ends_with(LP_SYMBOL),
                     Err(_) => false,
                 }
             } else {

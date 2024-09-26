@@ -47,6 +47,11 @@ pub(crate) fn fill_position(
             ContractError::AssetMismatch
         );
 
+        ensure!(
+            position.receiver == receiver.sender,
+            ContractError::Unauthorized
+        );
+
         // if the position is found, ignore if there's a change in the unlocking_duration as it is
         // considered the same position, so use the existing unlocking_duration and only update the
         // amount of the LP asset

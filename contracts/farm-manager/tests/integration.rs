@@ -1157,7 +1157,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 10, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 10, |result| {
             let err = result.unwrap_err().to_string();
 
             assert_eq!(
@@ -1230,7 +1230,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 11, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1302,7 +1302,7 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 11, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1330,7 +1330,7 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 11, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1351,7 +1351,7 @@ pub fn test_manage_position() {
 
     // make sure snapshots are working correctly
     suite
-        .query_lp_weight(&lp_denom, 15, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 15, |result| {
             let err = result.unwrap_err().to_string();
 
             assert_eq!(
@@ -1368,7 +1368,7 @@ pub fn test_manage_position() {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 12);
         })
-        .query_lp_weight(&lp_denom, 12, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 12, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1391,7 +1391,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 12, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 12, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1579,7 +1579,7 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_lp_weight(&lp_denom, 12, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 12, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1591,7 +1591,7 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_lp_weight(&lp_denom, 13, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 13, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1662,7 +1662,7 @@ pub fn test_manage_position() {
         .create_epoch(&creator, |result| {
             result.unwrap();
         })
-        .query_lp_weight(&lp_denom, 14, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 14, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1673,7 +1673,7 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_lp_weight(&lp_denom, 15, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 15, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1876,7 +1876,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 18, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 18, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1886,7 +1886,7 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_lp_weight(&lp_denom, 19, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 19, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1915,7 +1915,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 20, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 20, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -2020,7 +2020,7 @@ fn claim_expired_farm_returns_nothing() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 11, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -3200,4 +3200,273 @@ fn test_multiple_farms_and_positions() {
             result.unwrap();
         },
     );
+}
+
+#[test]
+fn test_lp_weight_snapshots_on_new_epoch_created() {
+    let lp_denom_1 = format!("factory/pool1/pool.identifier.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/pool2/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom_1.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator = suite.creator();
+    let other = suite.senders[1].clone();
+    let another = suite.senders[2].clone();
+
+    suite.instantiate_default();
+
+    let farm_manager_addr = suite.farm_manager_addr.clone();
+
+    suite
+        .add_hook(&creator, &farm_manager_addr, vec![], |result| {
+            result.unwrap();
+        })
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 10);
+        })
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 10, |result| {
+            let err = result.unwrap_err().to_string();
+
+            assert_eq!(
+                err,
+                "Generic error: Querier contract error: There's no snapshot of the LP \
+           weight in the contract for the epoch 10"
+            );
+        });
+
+    // check the lp_denom_1 balance on the farm manager is 0
+    // then add a position. This will record the LP weight for the next epoch for the contract, and the user
+    // check the lp weight for the next epoch.
+    // then create another epoch, make sure the snapshot got taken for the next epoch even though nobody opened/closed positions
+    suite
+        .query_balance(lp_denom_1.to_string(), &farm_manager_addr, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_1.to_string(), &farm_manager_addr, |balance| {
+            assert_eq!(balance, Uint128::new(1_000u128));
+        })
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 10, |result| {
+            let err = result.unwrap_err().to_string();
+
+            assert_eq!(
+                err,
+                "Generic error: Querier contract error: There's no snapshot of the LP \
+           weight in the contract for the epoch 10"
+            );
+        })
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 11, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1_000),
+                    epoch_id: 11
+                }
+            );
+        })
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 11);
+        })
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 11, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1_000),
+                    epoch_id: 11
+                }
+            );
+        })
+        .query_lp_weight(&farm_manager_addr, &lp_denom_2, 11, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1_000_000),
+                    epoch_id: 11
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1_000),
+                    epoch_id: 11
+                }
+            );
+        })
+        // adding an extra epoch without opening/closing positions
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 12, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1_000),
+                    epoch_id: 12
+                }
+            );
+        })
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 13, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1_000),
+                    epoch_id: 13
+                }
+            );
+        })
+        // add another position, so the lp weight for the next epoch should be recorded
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom_1.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 14, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(11_000),
+                    epoch_id: 14
+                }
+            );
+        })
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(4_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 14, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(15_000),
+                    epoch_id: 14
+                }
+            );
+        })
+        .manage_position(
+            &other,
+            PositionAction::Close {
+                identifier: "other_position".to_string(),
+                lp_asset: Some(coin(2_000, lp_denom_1.clone())),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 14, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(13_000),
+                    epoch_id: 14
+                }
+            );
+        })
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 15, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(13_000),
+                    epoch_id: 15
+                }
+            );
+        });
+
+    suite
+        .manage_position(
+            &other,
+            PositionAction::Close {
+                identifier: "other_position".to_string(),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .add_one_epoch()
+        .query_lp_weight(&farm_manager_addr, &lp_denom_1, 16, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(11_000),
+                    epoch_id: 16
+                }
+            );
+        })
+        .query_lp_weight(&farm_manager_addr, &lp_denom_2, 16, |result| {
+            assert_eq!(
+                result.unwrap(),
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1_000_000),
+                    epoch_id: 16
+                }
+            );
+        });
 }

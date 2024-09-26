@@ -68,6 +68,20 @@ impl TestingSuite {
 
         self
     }
+
+    pub(crate) fn send_tokens(
+        &mut self,
+        sender: &Addr,
+        recipient: &Addr,
+        coins: Vec<Coin>,
+        result: impl Fn(anyhow::Result<AppResponse>),
+    ) -> &mut Self {
+        result(
+            self.app
+                .send_tokens(sender.clone(), recipient.clone(), &coins),
+        );
+        self
+    }
 }
 
 /// Instantiate
@@ -536,6 +550,7 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn query_lp_weight(
         &mut self,
+        address: &Addr,
         denom: &str,
         epoch_id: u64,
         result: impl Fn(StdResult<LpWeightResponse>),
@@ -543,7 +558,7 @@ impl TestingSuite {
         let rewards_response: StdResult<LpWeightResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
             &amm::farm_manager::QueryMsg::LpWeight {
-                address: self.farm_manager_addr.to_string(),
+                address: address.to_string(),
                 denom: denom.to_string(),
                 epoch_id,
             },
