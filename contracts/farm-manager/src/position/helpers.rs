@@ -87,7 +87,7 @@ fn return_latest_weight(
 
 /// Validates the `unlocking_duration` specified in the position params is within the range specified
 /// in the config.
-pub(crate) fn validate_unlocking_duration(
+pub(crate) fn validate_unlocking_duration_for_position(
     config: &Config,
     unlocking_duration: u64,
 ) -> Result<(), ContractError> {

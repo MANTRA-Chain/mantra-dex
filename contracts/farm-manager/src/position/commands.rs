@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use amm::farm_manager::{Position, RewardsResponse};
 
-use crate::position::helpers::validate_unlocking_duration;
+use crate::position::helpers::validate_unlocking_duration_for_position;
 use crate::position::helpers::{calculate_weight, get_latest_address_weight};
 use crate::queries::query_rewards;
 use crate::state::{get_position, CONFIG, LP_WEIGHT_HISTORY, POSITIONS, POSITION_ID_COUNTER};
@@ -25,7 +25,7 @@ pub(crate) fn fill_position(
     let lp_asset = cw_utils::one_coin(&info)?;
 
     // validate unlocking duration
-    validate_unlocking_duration(&config, unlocking_duration)?;
+    validate_unlocking_duration_for_position(&config, unlocking_duration)?;
 
     // if receiver was not specified, default to the sender of the message.
     let receiver = receiver

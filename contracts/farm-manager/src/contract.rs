@@ -9,7 +9,7 @@ use amm::farm_manager::{
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;
-use crate::helpers::validate_emergency_unlock_penalty;
+use crate::helpers::{validate_emergency_unlock_penalty, validate_unlocking_duration};
 use crate::state::{CONFIG, FARM_COUNTER};
 use crate::{farm, manager, position, queries};
 
@@ -32,13 +32,7 @@ pub fn instantiate(
     );
 
     // ensure the unlocking duration range is valid
-    ensure!(
-        msg.max_unlocking_duration > msg.min_unlocking_duration,
-        ContractError::InvalidUnlockingRange {
-            min: msg.min_unlocking_duration,
-            max: msg.max_unlocking_duration,
-        }
-    );
+    validate_unlocking_duration(msg.min_unlocking_duration, msg.max_unlocking_duration)?;
 
     let config = Config {
         epoch_manager_addr: deps.api.addr_validate(&msg.epoch_manager_addr)?,

@@ -165,3 +165,19 @@ pub(crate) fn validate_emergency_unlock_penalty(
 
     Ok(emergency_unlock_penalty)
 }
+
+/// Validates the unlocking duration range
+pub(crate) fn validate_unlocking_duration(
+    min_unlocking_duration: u64,
+    max_unlocking_duration: u64,
+) -> Result<(), ContractError> {
+    ensure!(
+        max_unlocking_duration >= min_unlocking_duration,
+        ContractError::InvalidUnlockingRange {
+            min: min_unlocking_duration,
+            max: max_unlocking_duration,
+        }
+    );
+
+    Ok(())
+}

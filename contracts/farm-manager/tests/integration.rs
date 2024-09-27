@@ -1073,7 +1073,45 @@ pub fn update_config() {
                 _ => panic!("Wrong error type, should return ContractError::InvalidEmergencyUnlockPenalty"),
             }
         },
-    ).update_config(
+    )
+        .update_config(
+            &creator,
+            Some(MOCK_CONTRACT_ADDR.to_string()),
+            Some(MOCK_CONTRACT_ADDR.to_string()),
+            Some(Coin {
+                denom: "uom".to_string(),
+                amount: Uint128::new(2_000u128),
+            }),
+            Some(5u32),
+            Some(15u32),
+            Some(200_000u64),
+            Some(200_000u64),
+            Some(Decimal::percent(20)),
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .update_config(
+            &creator,
+            Some(MOCK_CONTRACT_ADDR.to_string()),
+            Some(MOCK_CONTRACT_ADDR.to_string()),
+            Some(Coin {
+                denom: "uom".to_string(),
+                amount: Uint128::new(2_000u128),
+            }),
+            Some(5u32),
+            Some(15u32),
+            Some(100_000u64),
+            Some(200_000u64),
+            Some(Decimal::percent(20)),
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+
+        .update_config(
         &creator,
         Some(MOCK_CONTRACT_ADDR.to_string()),
         Some(MOCK_CONTRACT_ADDR.to_string()),
