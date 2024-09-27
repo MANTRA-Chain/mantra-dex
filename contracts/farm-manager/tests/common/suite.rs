@@ -51,6 +51,12 @@ impl TestingSuite {
 
         self
     }
+
+    pub(crate) fn get_time(&mut self, result: impl Fn(Timestamp)) -> &mut Self {
+        result(self.app.block_info().time);
+
+        self
+    }
     pub(crate) fn add_one_day(&mut self) -> &mut Self {
         let mut block_info = self.app.block_info();
         block_info.time = block_info.time.plus_days(1);
@@ -140,7 +146,7 @@ impl TestingSuite {
             2,
             14,
             86_400,
-            31_536_000,
+            31_556_926,
             Decimal::percent(10), //10% penalty
         );
 

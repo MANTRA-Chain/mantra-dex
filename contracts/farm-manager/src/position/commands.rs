@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
+    coin, ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
     Uint128,
 };
 
@@ -40,11 +40,18 @@ pub(crate) fn fill_position(
     // check if there's an existing open position with the given `identifier`
     let mut position = get_position(deps.storage, identifier.clone())?;
 
-    if let Some(ref mut position) = position {
+    let position_unlocking_duration = if let Some(ref mut position) = position {
         // there is a position, refill it
         ensure!(
             position.lp_asset.denom == lp_asset.denom,
             ContractError::AssetMismatch
+        );
+
+        ensure!(
+            position.open,
+            ContractError::PositionAlreadyClosed {
+                identifier: position.identifier.clone(),
+            }
         );
 
         ensure!(
@@ -58,6 +65,7 @@ pub(crate) fn fill_position(
 
         position.lp_asset.amount = position.lp_asset.amount.checked_add(lp_asset.amount)?;
         POSITIONS.save(deps.storage, &position.identifier, position)?;
+        position.unlocking_duration
     } else {
         // No position found, create a new one
         let position_id_counter = POSITION_ID_COUNTER
@@ -82,10 +90,18 @@ pub(crate) fn fill_position(
                 receiver: receiver.sender.clone(),
             },
         )?;
-    }
+        unlocking_duration
+    };
 
     // Update weights for the LP and the user
-    update_weights(deps, env, &receiver, &lp_asset, unlocking_duration, true)?;
+    update_weights(
+        deps,
+        env,
+        &receiver,
+        &lp_asset,
+        position_unlocking_duration,
+        true,
+    )?;
 
     let action = match position {
         Some(_) => "expand_position",
@@ -148,7 +164,7 @@ pub(crate) fn close_position(
         .seconds();
 
     // check if it's going to be closed in full or partially
-    if let Some(lp_asset) = lp_asset {
+    let lp_amount_to_close = if let Some(lp_asset) = lp_asset {
         // close position partially
 
         // make sure the lp_asset requested to close matches the lp_asset of the position, and since
@@ -169,7 +185,7 @@ pub(crate) fn close_position(
 
         let partial_position = Position {
             identifier: identifier.to_string(),
-            lp_asset,
+            lp_asset: lp_asset.clone(),
             unlocking_duration: position.unlocking_duration,
             open: false,
             expiring_at: Some(expires_at),
@@ -177,11 +193,16 @@ pub(crate) fn close_position(
         };
 
         POSITIONS.save(deps.storage, &identifier.to_string(), &partial_position)?;
+        // partial amount
+        lp_asset.amount
     } else {
         // close position in full
         position.open = false;
         position.expiring_at = Some(expires_at);
-    }
+        // full amount
+        position.lp_asset.amount
+    };
+
     let close_in_full = !position.open;
     attributes.push(("close_in_full", close_in_full.to_string()));
 
@@ -189,7 +210,7 @@ pub(crate) fn close_position(
         deps.branch(),
         &env,
         &info,
-        &position.lp_asset,
+        &coin(lp_amount_to_close.u128(), &position.lp_asset.denom),
         position.unlocking_duration,
         false,
     )?;
@@ -253,13 +274,15 @@ pub(crate) fn withdraw_position(
         let fee_collector_addr = CONFIG.load(deps.storage)?.fee_collector_addr;
 
         // send penalty to the fee collector
-        messages.push(
-            BankMsg::Send {
-                to_address: fee_collector_addr.to_string(),
-                amount: vec![penalty],
-            }
-            .into(),
-        );
+        if !penalty.amount.is_zero() {
+            messages.push(
+                BankMsg::Send {
+                    to_address: fee_collector_addr.to_string(),
+                    amount: vec![penalty],
+                }
+                .into(),
+            );
+        }
 
         // if the position is open, update the weights when doing the emergency withdrawal
         // otherwise not, as the weights have already being updated when the position was closed
