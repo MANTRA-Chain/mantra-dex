@@ -2,7 +2,7 @@ use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
 use cosmwasm_std::{from_json, Uint64};
 use cw_multi_test::IntoBech32;
 
-use amm::epoch_manager::{ConfigResponse, Epoch, EpochConfig, InstantiateMsg, QueryMsg};
+use amm::epoch_manager::{ConfigResponse, EpochConfig, InstantiateMsg, QueryMsg};
 use epoch_manager::contract::{instantiate, query};
 use epoch_manager::ContractError;
 
@@ -16,10 +16,6 @@ fn instantiation_successful() {
     let owner = "owner".into_bech32();
     let info = message_info(&owner, &[]);
     let msg = InstantiateMsg {
-        start_epoch: Epoch {
-            id: 123,
-            start_time: current_time,
-        },
         epoch_config: EpochConfig {
             duration: Uint64::new(86400),
             genesis_epoch: Uint64::new(current_time.nanos()),
@@ -48,10 +44,6 @@ fn instantiation_unsuccessful() {
     let owner = "owner".into_bech32();
     let info = message_info(&owner, &[]);
     let msg = InstantiateMsg {
-        start_epoch: Epoch {
-            id: 123,
-            start_time: current_time.minus_days(1),
-        },
         epoch_config: EpochConfig {
             duration: Uint64::new(86400),
             genesis_epoch: Uint64::new(current_time.minus_days(1).nanos()),
@@ -62,22 +54,5 @@ fn instantiation_unsuccessful() {
     match err {
         ContractError::InvalidStartTime => {}
         _ => panic!("should return ContractError::InvalidStartTime"),
-    }
-
-    let msg = InstantiateMsg {
-        start_epoch: Epoch {
-            id: 123,
-            start_time: current_time.plus_days(1),
-        },
-        epoch_config: EpochConfig {
-            duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.plus_days(2).nanos()),
-        },
-    };
-
-    let err = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap_err();
-    match err {
-        ContractError::EpochConfigMismatch => {}
-        _ => panic!("should return ContractError::EpochConfigMismatch"),
     }
 }

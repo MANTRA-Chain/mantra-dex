@@ -97,6 +97,21 @@ pub fn get_factory_token_subdenom(denom: &str) -> StdResult<&str> {
     )
 }
 
+/// Gets the creator of a factory token. To be called after [is_factory_token] has been successful.
+#[allow(clippy::needless_splitn)]
+pub fn get_factory_token_creator(denom: &str) -> StdResult<&str> {
+    let creator = denom.splitn(3, '/').nth(1);
+
+    creator.map_or_else(
+        || {
+            Err(StdError::generic_err(
+                "Splitting factory token creator failed",
+            ))
+        },
+        Ok,
+    )
+}
+
 /// Builds the label for a factory token denom in such way that it returns a label like "f/123...456".
 /// Call after [crate::pool_network::asset::is_factory_token] has been successful
 fn get_factory_token_label(denom: &str) -> StdResult<String> {
@@ -170,7 +185,7 @@ pub fn burn_coin_msg(coin: Coin) -> CosmosMsg {
 
 #[cfg(test)]
 mod coin_tests {
-    use crate::coin::{get_label, is_factory_token, is_ibc_token};
+    use crate::coin::{get_factory_token_creator, get_label, is_factory_token, is_ibc_token};
 
     #[test]
     fn is_factory_token_test() {
@@ -216,5 +231,12 @@ mod coin_tests {
         assert_eq!(get_label(coin_2).unwrap(), "f/sub..nom");
         assert_eq!(get_label(coin_3).unwrap(), "f/thi...as");
         assert_eq!(get_label(coin_4).unwrap(), "uom");
+    }
+
+    #[test]
+    fn test_factory_token_creator() {
+        let denom = "factory/creator/subdenom";
+
+        assert_eq!(get_factory_token_creator(denom).unwrap(), "creator");
     }
 }

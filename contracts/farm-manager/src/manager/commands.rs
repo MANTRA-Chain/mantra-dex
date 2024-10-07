@@ -1,22 +1,16 @@
 use cosmwasm_std::{
-    ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
-    Storage, Uint128, Uint64,
+    ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, MessageInfo, Response, StdError, Storage,
+    Uint128, Uint64,
 };
 
-use amm::coin::{get_factory_token_subdenom, is_factory_token};
-use amm::constants::LP_SYMBOL;
-use amm::epoch_manager::EpochChangedHookMsg;
 use amm::farm_manager::MIN_FARM_AMOUNT;
 use amm::farm_manager::{Curve, Farm, FarmParams};
 
 use crate::helpers::{
     assert_farm_asset, process_farm_creation_fee, validate_emergency_unlock_penalty,
-    validate_farm_epochs,
+    validate_farm_epochs, validate_lp_denom,
 };
-use crate::state::{
-    get_farm_by_identifier, get_farms_by_lp_denom, get_latest_address_lp_weight, CONFIG, FARMS,
-    FARM_COUNTER, LP_WEIGHT_HISTORY,
-};
+use crate::state::{get_farm_by_identifier, get_farms_by_lp_denom, CONFIG, FARMS, FARM_COUNTER};
 use crate::ContractError;
 
 pub(crate) fn fill_farm(
@@ -46,8 +40,12 @@ fn create_farm(
     info: MessageInfo,
     params: FarmParams,
 ) -> Result<Response, ContractError> {
-    // check if there are any expired farms for this LP asset
     let config = CONFIG.load(deps.storage)?;
+
+    // ensure the lp denom is valid and was created by the pool manager
+    validate_lp_denom(&params.lp_denom, config.pool_manager_addr.as_str())?;
+
+    // check if there are any expired farms for this LP asset
     let farms = get_farms_by_lp_denom(
         deps.storage,
         &params.lp_denom,
@@ -90,7 +88,7 @@ fn create_farm(
     let farm_creation_fee = config.clone().create_farm_fee;
 
     if farm_creation_fee.amount != Uint128::zero() {
-        // verify the fee to create an farm is being paid
+        // verify the fee to create a farm is being paid
         messages.append(&mut process_farm_creation_fee(
             &config,
             &info,
@@ -116,7 +114,7 @@ fn create_farm(
 
     // sanity check. Make sure another farm with the same identifier doesn't exist. Theoretically this should
     // never happen, since the fill_farm function would try to expand the farm if a user tries
-    // filling an farm with an identifier that already exists
+    // filling a farm with an identifier that already exists
     ensure!(
         get_farm_by_identifier(deps.storage, &farm_identifier).is_err(),
         ContractError::FarmAlreadyExists
@@ -238,6 +236,9 @@ fn expand_farm(
         ContractError::FarmAlreadyExpired
     );
 
+    // ensure the lp denom is valid and was created by the pool manager
+    validate_lp_denom(&params.lp_denom, config.pool_manager_addr.as_str())?;
+
     // check that the asset sent matches the asset expected
     ensure!(
         farm.farm_asset.denom == params.farm_asset.denom,
@@ -276,72 +277,6 @@ fn expand_farm(
     ]))
 }
 
-/// EpochChanged hook implementation. Updates the LP_WEIGHTS.
-pub(crate) fn on_epoch_changed(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: EpochChangedHookMsg,
-) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    // only the epoch manager can trigger this
-    ensure!(
-        info.sender == config.epoch_manager_addr,
-        ContractError::Unauthorized
-    );
-
-    // get all LP tokens and update the LP_WEIGHTS_HISTORY
-    let lp_denoms = deps
-        .querier
-        .query_all_balances(env.contract.address.clone())?
-        .into_iter()
-        .filter(|asset| {
-            if is_factory_token(asset.denom.as_str()) {
-                match get_factory_token_subdenom(asset.denom.as_str()) {
-                    Ok(subdenom) => subdenom == LP_SYMBOL,
-                    Err(_) => false,
-                }
-            } else {
-                false
-            }
-        })
-        .map(|asset| asset.denom)
-        .collect::<Vec<String>>();
-
-    for lp_denom in &lp_denoms {
-        let lp_weight_option = LP_WEIGHT_HISTORY.may_load(
-            deps.storage,
-            (&env.contract.address, lp_denom, msg.current_epoch.id),
-        )?;
-
-        // if the weight for this LP token at this epoch has already been recorded, i.e. someone
-        // opened or closed positions in the previous epoch, skip it
-        if lp_weight_option.is_some() {
-            continue;
-        } else {
-            // if the weight for this LP token at this epoch has not been recorded, i.e. no one
-            // opened or closed positions in the previous epoch, get the last recorded weight
-            let (_, latest_lp_weight_record) = get_latest_address_lp_weight(
-                deps.storage,
-                &env.contract.address,
-                lp_denom,
-                &msg.current_epoch.id,
-            )?;
-
-            LP_WEIGHT_HISTORY.save(
-                deps.storage,
-                (&env.contract.address, lp_denom, msg.current_epoch.id),
-                &latest_lp_weight_record,
-            )?;
-        }
-    }
-
-    Ok(Response::default().add_attributes(vec![
-        ("action", "on_epoch_changed".to_string()),
-        ("epoch", msg.current_epoch.to_string()),
-    ]))
-}
-
 #[allow(clippy::too_many_arguments)]
 /// Updates the configuration of the contract
 pub(crate) fn update_config(
@@ -349,6 +284,7 @@ pub(crate) fn update_config(
     info: MessageInfo,
     fee_collector_addr: Option<String>,
     epoch_manager_addr: Option<String>,
+    pool_manager_addr: Option<String>,
     create_farm_fee: Option<Coin>,
     max_concurrent_farms: Option<u32>,
     max_farm_epoch_buffer: Option<u32>,
@@ -366,6 +302,10 @@ pub(crate) fn update_config(
 
     if let Some(epoch_manager_addr) = epoch_manager_addr {
         config.epoch_manager_addr = deps.api.addr_validate(&epoch_manager_addr)?;
+    }
+
+    if let Some(pool_manager_addr) = pool_manager_addr {
+        config.pool_manager_addr = deps.api.addr_validate(&pool_manager_addr)?;
     }
 
     if let Some(create_farm_fee) = create_farm_fee {
@@ -417,6 +357,7 @@ pub(crate) fn update_config(
         ("action", "update_config".to_string()),
         ("fee_collector_addr", config.fee_collector_addr.to_string()),
         ("epoch_manager_addr", config.epoch_manager_addr.to_string()),
+        ("pool_manager_addr", config.pool_manager_addr.to_string()),
         ("create_flow_fee", config.create_farm_fee.to_string()),
         (
             "max_concurrent_flows",

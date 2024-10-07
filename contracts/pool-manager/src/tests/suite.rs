@@ -14,7 +14,7 @@ use cw_multi_test::{
 };
 
 use amm::constants::LP_SYMBOL;
-use amm::epoch_manager::{Epoch, EpochConfig};
+use amm::epoch_manager::EpochConfig;
 use amm::farm_manager::PositionsResponse;
 use amm::fee::PoolFee;
 use common_testing::multi_test::stargate_mock::StargateMock;
@@ -110,6 +110,11 @@ impl TestingSuite {
         self
     }
 
+    pub(crate) fn add_one_epoch(&mut self) -> &mut Self {
+        self.add_one_day();
+        self
+    }
+
     pub(crate) fn get_lp_denom(&self, pool_identifier: String) -> String {
         format!(
             "factory/{}/{}.{}",
@@ -190,16 +195,21 @@ impl TestingSuite {
         self.create_epoch_manager();
         self.create_fee_collector();
         self.create_farm_manager();
-        self.add_hook(self.farm_manager_addr.clone());
 
         // 25 April 2024 15:00:00 UTC
         let timestamp = Timestamp::from_seconds(1714057200);
         self.set_time(timestamp);
 
+        let creator = self.creator().clone();
+
         self.instantiate(
             self.fee_collector_addr.to_string(),
             self.farm_manager_addr.to_string(),
-        )
+        );
+
+        self.update_farm_manager_config(&creator, self.pool_manager_addr.clone(), |res| {
+            assert!(res.is_ok());
+        })
     }
 
     #[track_caller]
@@ -228,10 +238,6 @@ impl TestingSuite {
         let epoch_manager_id = self.app.store_code(epoch_manager_contract());
 
         let msg = amm::epoch_manager::InstantiateMsg {
-            start_epoch: Epoch {
-                id: 0,
-                start_time: Timestamp::from_seconds(1714057200),
-            },
             epoch_config: EpochConfig {
                 duration: Uint64::new(86_400_000000000),
                 genesis_epoch: Uint64::new(1714057200_000000000),
@@ -253,18 +259,6 @@ impl TestingSuite {
             .unwrap();
     }
 
-    fn add_hook(&mut self, contract: Addr) {
-        let msg = amm::epoch_manager::ExecuteMsg::AddHook {
-            contract_addr: contract.to_string(),
-        };
-
-        let creator = self.creator().clone();
-
-        self.app
-            .execute_contract(creator, self.epoch_manager_addr.clone(), &msg, &[])
-            .unwrap();
-    }
-
     fn create_farm_manager(&mut self) {
         let farm_manager_id = self.app.store_code(farm_manager_contract());
 
@@ -276,6 +270,7 @@ impl TestingSuite {
             owner: creator.clone().to_string(),
             epoch_manager_addr,
             fee_collector_addr,
+            pool_manager_addr: "".to_string(),
             create_farm_fee: Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::zero(),
@@ -491,18 +486,31 @@ impl TestingSuite {
         self
     }
 
-    /// Creates a new epoch.
+    /// Updates the configuration of the farm manager contract.
+    ///
+    /// Any parameters which are set to `None` when passed will not update
+    /// the current configuration.
     #[track_caller]
-    pub(crate) fn create_new_epoch(
+    pub(crate) fn update_farm_manager_config(
         &mut self,
+        sender: &Addr,
+        new_pool_manager_addr: Addr,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let user = self.creator();
-
         result(self.app.execute_contract(
-            user,
-            self.epoch_manager_addr.clone(),
-            &amm::epoch_manager::ExecuteMsg::CreateEpoch {},
+            sender.clone(),
+            self.farm_manager_addr.clone(),
+            &amm::farm_manager::ExecuteMsg::UpdateConfig {
+                fee_collector_addr: None,
+                epoch_manager_addr: None,
+                pool_manager_addr: Some(new_pool_manager_addr.to_string()),
+                create_farm_fee: None,
+                max_concurrent_farms: None,
+                max_farm_epoch_buffer: None,
+                min_unlocking_duration: None,
+                max_unlocking_duration: None,
+                emergency_unlock_penalty: None,
+            },
             &[],
         ));
 

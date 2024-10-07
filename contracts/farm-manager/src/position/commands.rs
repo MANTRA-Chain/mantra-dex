@@ -1,10 +1,10 @@
+use amm::farm_manager::{Position, RewardsResponse};
 use cosmwasm_std::{
     ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
     Uint128,
 };
 
-use amm::farm_manager::{Position, RewardsResponse};
-
+use crate::helpers::validate_lp_denom;
 use crate::position::helpers::validate_unlocking_duration;
 use crate::position::helpers::{calculate_weight, get_latest_address_weight};
 use crate::queries::query_rewards;
@@ -21,8 +21,10 @@ pub(crate) fn fill_position(
     receiver: Option<String>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-
     let lp_asset = cw_utils::one_coin(&info)?;
+
+    // ensure the lp denom is valid and was created by the pool manager
+    validate_lp_denom(&lp_asset.denom, config.pool_manager_addr.as_str())?;
 
     // validate unlocking duration
     validate_unlocking_duration(&config, unlocking_duration)?;
@@ -315,9 +317,10 @@ fn update_weights(
     fill: bool,
 ) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
+
     let current_epoch = amm::epoch_manager::get_current_epoch(
         deps.as_ref(),
-        config.epoch_manager_addr.into_string(),
+        config.epoch_manager_addr.to_string(),
     )?;
 
     let weight = calculate_weight(lp_asset, unlocking_duration)?;

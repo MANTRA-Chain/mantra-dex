@@ -4,8 +4,6 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 
-use crate::epoch_manager::EpochChangedHookMsg;
-
 /// The instantiation message
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -15,7 +13,9 @@ pub struct InstantiateMsg {
     pub epoch_manager_addr: String,
     /// The fee collector address, where protocol fees are stored
     pub fee_collector_addr: String,
-    /// The fee that must be paid to create an farm.
+    /// The pool manager address, where pools are created
+    pub pool_manager_addr: String,
+    /// The fee that must be paid to create a farm.
     pub create_farm_fee: Coin,
     /// The maximum amount of farms that can exist for a single LP token at a time.
     pub max_concurrent_farms: u32,
@@ -41,8 +41,6 @@ pub enum ExecuteMsg {
     /// - Fill: Creates or expands a position.
     /// - Close: Closes an existing position.
     ManagePosition { action: PositionAction },
-    /// Gets triggered by the epoch manager when a new epoch is created
-    EpochChangedHook(EpochChangedHookMsg),
     /// Claims the rewards for the user
     Claim {},
     /// Updates the config of the contract
@@ -51,6 +49,8 @@ pub enum ExecuteMsg {
         fee_collector_addr: Option<String>,
         /// The epoch manager address, where the epochs are managed
         epoch_manager_addr: Option<String>,
+        /// The pool manager address, where pools are created
+        pool_manager_addr: Option<String>,
         /// The fee that must be paid to create a farm.
         create_farm_fee: Option<Coin>,
         /// The maximum amount of farms that can exist for a single LP token at a time.
@@ -132,6 +132,8 @@ pub struct Config {
     pub fee_collector_addr: Addr,
     /// The epoch manager address, where the epochs are managed
     pub epoch_manager_addr: Addr,
+    /// The pool manager address, where pools are created
+    pub pool_manager_addr: Addr,
     /// The fee that must be paid to create a farm.
     pub create_farm_fee: Coin,
     /// The maximum amount of farms that can exist for a single LP token at a time.
