@@ -280,6 +280,7 @@ pub(crate) fn compute_address_weights(
     Ok(address_weights)
 }
 
+/// Computes the contract weights for a given LP denom for the epochs between start_from_epoch and current_epoch_id.
 pub(crate) fn compute_contract_weights(
     storage: &dyn Storage,
     contract: &Addr,
