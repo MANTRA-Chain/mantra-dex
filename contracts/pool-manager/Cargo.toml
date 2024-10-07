@@ -1,6 +1,6 @@
 [package]
 name = "pool-manager"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
   "0xFable <0xfable@protonmail.com>",
   "kaimen-sano <kaimen_sano@protonmail.com>",

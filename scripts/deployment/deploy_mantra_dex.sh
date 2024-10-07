@@ -80,11 +80,11 @@ function init_epoch_manager() {
 	init_msg='{
     "start_epoch": {
       "id": 0,
-      "start_time": "1727179440000000000"
+      "start_time": "1727443200000000000"
     },
     "epoch_config": {
       "duration": "3600000000000",
-      "genesis_epoch": "1727179440000000000"
+      "genesis_epoch": "1727443200000000000"
     }
   }'
 	init_artifact 'epoch_manager.wasm' "$init_msg" "MANTRA Epoch Manager"
@@ -125,7 +125,7 @@ function init_farm_manager() {
               "max_concurrent_farms": 7,
               "max_farm_epoch_buffer": 14,
               "min_unlocking_duration": 86400,
-              "max_unlocking_duration": 31536000,
+              "max_unlocking_duration": 86400,
               "emergency_unlock_penalty": "0.01"
             }'
 	init_artifact 'farm_manager.wasm' "$init_msg" "MANTRA Farm Manager"

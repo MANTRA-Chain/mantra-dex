@@ -211,8 +211,8 @@ pub fn provide_liquidity(
                     // Make sure at least MINIMUM_LIQUIDITY_AMOUNT is deposited to mitigate the risk of the first
                     // depositor preventing small liquidity providers from joining the pool
                     let share = Uint128::new(
-                        (U256::from(pool_assets[0].amount.u128())
-                            .checked_mul(U256::from(pool_assets[1].amount.u128()))
+                        (U256::from(deposits[0].amount.u128())
+                            .checked_mul(U256::from(deposits[1].amount.u128()))
                             .ok_or::<ContractError>(
                                 ContractError::LiquidityShareComputationFailed,
                             ))?
@@ -238,10 +238,10 @@ pub fn provide_liquidity(
                     share
                 } else {
                     let amount = std::cmp::min(
-                        pool_assets[0]
+                        deposits[0]
                             .amount
                             .multiply_ratio(total_share, pool_assets[0].amount),
-                        pool_assets[1]
+                        deposits[1]
                             .amount
                             .multiply_ratio(total_share, pool_assets[1].amount),
                     );
@@ -288,8 +288,8 @@ pub fn provide_liquidity(
                         &deposits,
                         &pool_assets,
                         total_share,
-                    )
-                    .unwrap();
+                    ).ok_or(ContractError::StableLpMintError)?;
+
                     helpers::assert_slippage_tolerance(
                         &slippage_tolerance,
                         &deposits,
@@ -388,7 +388,7 @@ pub fn withdraw_liquidity(
     let share_ratio: Decimal = Decimal::from_ratio(amount, total_share);
 
     // sanity check, the share_ratio cannot possibly be greater than 1
-    ensure!(share_ratio <= Decimal::one(), ContractError::InvalidLpShare);
+    ensure!(share_ratio <= Decimal::one(), ContractError::InvalidLpShareToWithdraw);
 
     // Use the ratio to calculate the amount of each pool asset to refund
     let refund_assets: Vec<Coin> = pool
