@@ -24,7 +24,7 @@ pub fn instantiate(
 
     // validate start_time for the initial epoch
     ensure!(
-        msg.epoch_config.genesis_epoch.u64() >= env.block.time.nanos(), //todo change to seconds
+        msg.epoch_config.genesis_epoch.u64() >= env.block.time.seconds(),
         ContractError::InvalidStartTime
     );
 

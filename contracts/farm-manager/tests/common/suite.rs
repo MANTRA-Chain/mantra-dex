@@ -107,7 +107,7 @@ impl TestingSuite {
         self.create_fee_collector();
 
         // April 4th 2024 15:00:00 UTC
-        let timestamp = Timestamp::from_seconds(1712242800u64);
+        let timestamp = Timestamp::from_seconds(1_712_242_800u64);
         self.set_time(timestamp);
 
         // instantiates the farm manager contract
@@ -138,8 +138,8 @@ impl TestingSuite {
         let msg = amm::epoch_manager::InstantiateMsg {
             owner: creator.to_string(),
             epoch_config: EpochConfig {
-                duration: Uint64::new(86400_000000000u64),
-                genesis_epoch: Uint64::new(1712242800_000000000u64), // April 4th 2024 15:00:00 UTC
+                duration: Uint64::new(86_400u64),
+                genesis_epoch: Uint64::new(1_712_242_800u64), // April 4th 2024 15:00:00 UTC
             },
         };
 

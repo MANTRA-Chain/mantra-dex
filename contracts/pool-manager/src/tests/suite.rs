@@ -197,7 +197,7 @@ impl TestingSuite {
         self.create_farm_manager();
 
         // 25 April 2024 15:00:00 UTC
-        let timestamp = Timestamp::from_seconds(1714057200);
+        let timestamp = Timestamp::from_seconds(1_714_057_200);
         self.set_time(timestamp);
 
         let creator = self.creator().clone();
@@ -242,8 +242,8 @@ impl TestingSuite {
         let msg = amm::epoch_manager::InstantiateMsg {
             owner: creator.to_string(),
             epoch_config: EpochConfig {
-                duration: Uint64::new(86_400_000000000),
-                genesis_epoch: Uint64::new(1714057200_000000000),
+                duration: Uint64::new(86_400),
+                genesis_epoch: Uint64::new(1_714_057_200),
             },
         };
 

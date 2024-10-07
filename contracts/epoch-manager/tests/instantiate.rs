@@ -18,8 +18,8 @@ fn instantiation_successful() {
     let msg = InstantiateMsg {
         owner: "owner".into_bech32().to_string(),
         epoch_config: EpochConfig {
-            duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            duration: Uint64::new(86_400),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         },
     };
 
@@ -29,8 +29,8 @@ fn instantiation_successful() {
     let config_res: ConfigResponse = from_json(query_res).unwrap();
     assert_eq!(
         EpochConfig {
-            duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            duration: Uint64::new(86_400),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         },
         config_res.epoch_config
     );
@@ -46,8 +46,8 @@ fn instantiation_unsuccessful() {
     let msg = InstantiateMsg {
         owner: "owner".into_bech32().to_string(),
         epoch_config: EpochConfig {
-            duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.minus_days(1).nanos()),
+            duration: Uint64::new(86_400),
+            genesis_epoch: Uint64::new(current_time.minus_days(1).seconds()),
         },
     };
 

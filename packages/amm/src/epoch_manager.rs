@@ -74,10 +74,9 @@ impl Display for Epoch {
 /// The epoch configuration.
 #[cw_serde]
 pub struct EpochConfig {
-    //todo change to seconds
-    /// The duration of an epoch in nanoseconds.
+    /// The duration of an epoch in seconds.
     pub duration: Uint64,
-    /// Timestamp for the first epoch, in nanoseconds.
+    /// Timestamp for the first epoch, in seconds.
     pub genesis_epoch: Uint64,
 }
 

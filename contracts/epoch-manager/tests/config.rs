@@ -25,7 +25,7 @@ fn update_config_successfully() {
     assert_eq!(
         EpochConfig {
             duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         },
         config_res.epoch_config
     );
@@ -33,7 +33,7 @@ fn update_config_successfully() {
     let msg = ExecuteMsg::UpdateConfig {
         epoch_config: Some(EpochConfig {
             duration: Uint64::new(172800),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         }),
     };
 
@@ -44,7 +44,7 @@ fn update_config_successfully() {
     assert_eq!(
         EpochConfig {
             duration: Uint64::new(172800),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         },
         config_res.epoch_config
     );
@@ -65,7 +65,7 @@ fn update_config_unsuccessfully() {
     assert_eq!(
         EpochConfig {
             duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         },
         config_res.epoch_config
     );
@@ -73,7 +73,7 @@ fn update_config_unsuccessfully() {
     let msg = ExecuteMsg::UpdateConfig {
         epoch_config: Some(EpochConfig {
             duration: Uint64::new(172800),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         }),
     };
 
@@ -96,7 +96,7 @@ fn update_config_unsuccessfully() {
     assert_eq!(
         EpochConfig {
             duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         },
         config_res.epoch_config
     );

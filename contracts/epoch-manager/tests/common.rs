@@ -18,7 +18,7 @@ pub fn mock_instantiation(
         owner: "owner".into_bech32().to_string(),
         epoch_config: EpochConfig {
             duration: Uint64::new(86400),
-            genesis_epoch: Uint64::new(current_time.nanos()),
+            genesis_epoch: Uint64::new(current_time.seconds()),
         },
     };
 
