@@ -239,6 +239,11 @@ fn expand_farm(
     // ensure the lp denom is valid and was created by the pool manager
     validate_lp_denom(&params.lp_denom, config.pool_manager_addr.as_str())?;
 
+    // ensure the farm asset, i.e. the additional reward, was sent
+    let reward = cw_utils::one_coin(&info)?;
+
+    ensure!(reward == params.farm_asset, ContractError::AssetMismatch);
+
     // check that the asset sent matches the asset expected
     ensure!(
         farm.farm_asset.denom == params.farm_asset.denom,
@@ -247,17 +252,14 @@ fn expand_farm(
 
     // make sure the expansion is a multiple of the emission rate
     ensure!(
-        params.farm_asset.amount % farm.emission_rate == Uint128::zero(),
+        reward.amount % farm.emission_rate == Uint128::zero(),
         ContractError::InvalidExpansionAmount {
             emission_rate: farm.emission_rate
         }
     );
 
     // increase the total amount of the farm
-    farm.farm_asset.amount = farm
-        .farm_asset
-        .amount
-        .checked_add(params.farm_asset.amount)?;
+    farm.farm_asset.amount = farm.farm_asset.amount.checked_add(reward.amount)?;
 
     let additional_epochs = params.farm_asset.amount.checked_div(farm.emission_rate)?;
 

@@ -2,6 +2,7 @@ extern crate core;
 
 use amm::constants::LP_SYMBOL;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+use cw_utils::PaymentError;
 
 use amm::farm_manager::{
     Config, Curve, Farm, FarmAction, FarmParams, FarmsBy, LpWeightResponse, Position,
@@ -667,7 +668,6 @@ fn expand_farms() {
             vec![coin(8_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
                 match err {
                     ContractError::AssetMismatch { .. } => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
@@ -698,6 +698,85 @@ fn expand_farms() {
                     _ => panic!(
                         "Wrong error type, should return ContractError::InvalidExpansionAmount"
                     ),
+                }
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(20),
+                    preliminary_end_epoch: Some(28),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_100u128),
+                    },
+                    farm_identifier: Some("farm_1".to_string()),
+                },
+            },
+            vec![], // sending no funds when expanding a farm should fail
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::PaymentError(e) => {
+                        assert_eq!(e, PaymentError::NoFunds {})
+                    }
+                    _ => panic!("Wrong error type, should return ContractError::PaymentError"),
+                }
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(20),
+                    preliminary_end_epoch: Some(28),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_100u128),
+                    },
+                    farm_identifier: Some("farm_1".to_string()),
+                },
+            },
+            vec![coin(4_100u128, "uom"), coin(4_100u128, "uusdy")], // sending different funds than the one provided in the params should fail
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::PaymentError(e) => {
+                        assert_eq!(e, PaymentError::MultipleDenoms {})
+                    }
+                    _ => panic!("Wrong error type, should return ContractError::PaymentError"),
+                }
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(20),
+                    preliminary_end_epoch: Some(28),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_100u128),
+                    },
+                    farm_identifier: Some("farm_1".to_string()),
+                },
+            },
+            vec![coin(4_100u128, "uom")], // sending different funds than the one provided in the params should fail
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::AssetMismatch => {}
+                    _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
         )
