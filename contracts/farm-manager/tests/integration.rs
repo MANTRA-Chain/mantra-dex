@@ -10,7 +10,7 @@ use amm::farm_manager::{
 use farm_manager::ContractError;
 
 use crate::common::suite::TestingSuite;
-use crate::common::MOCK_CONTRACT_ADDR;
+use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
 
 mod common;
 
@@ -20,8 +20,9 @@ fn instantiate_farm_manager() {
         TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, "uom".to_string())]);
 
     suite.instantiate_err(
-        MOCK_CONTRACT_ADDR.to_string(),
-        MOCK_CONTRACT_ADDR.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
@@ -40,8 +41,9 @@ fn instantiate_farm_manager() {
             }
         },
     ).instantiate_err(
-        MOCK_CONTRACT_ADDR.to_string(),
-        MOCK_CONTRACT_ADDR.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
@@ -60,8 +62,9 @@ fn instantiate_farm_manager() {
             }
         },
     ).instantiate_err(
-        MOCK_CONTRACT_ADDR.to_string(),
-        MOCK_CONTRACT_ADDR.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
@@ -80,8 +83,9 @@ fn instantiate_farm_manager() {
             }
         },
     ).instantiate(
-        MOCK_CONTRACT_ADDR.to_string(),
-        MOCK_CONTRACT_ADDR.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
@@ -96,19 +100,26 @@ fn instantiate_farm_manager() {
 
 #[test]
 fn create_farms() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
         coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, invalid_lp_denom.clone()),
     ]);
     suite.instantiate_default();
 
     let creator = suite.creator().clone();
     let other = suite.senders[1].clone();
     let fee_collector = suite.fee_collector_addr.clone();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+    // current epoch is 10
 
     // try all misconfigurations when creating a farm
     suite
@@ -343,6 +354,7 @@ fn create_farms() {
             FarmAction::Fill {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
+                    // current epoch is 10
                     start_epoch: Some(3),
                     preliminary_end_epoch: Some(5),
                     curve: None,
@@ -414,9 +426,35 @@ fn create_farms() {
                     _ => panic!("Wrong error type, should return ContractError::FarmStartTooFar"),
                 }
             },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: invalid_lp_denom.clone(),
+                    start_epoch: Some(20),
+                    preliminary_end_epoch: Some(28),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm_1".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                // trying to create a farm for an invalid lp_denom, i.e. an lp_denom that wasn't created
+                // by the pool manager, should fail
+                match err {
+                    ContractError::AssetMismatch { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+                }
+            },
         );
 
-    // create an farm properly
+    // create a farm properly
     suite
         .manage_farm(
             &other,
@@ -546,7 +584,7 @@ fn create_farms() {
 
 #[test]
 fn expand_farms() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -558,8 +596,14 @@ fn expand_farms() {
     let creator = suite.creator();
     let other = suite.senders[1].clone();
 
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+    // current epoch is 10
+
     suite
-        .instantiate_default()
         .manage_farm(
             &other,
             FarmAction::Fill {
@@ -718,7 +762,7 @@ fn expand_farms() {
 #[test]
 #[allow(clippy::inconsistent_digit_grouping)]
 fn close_farms() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -727,32 +771,37 @@ fn close_farms() {
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
 
-    let creator = suite.creator();
+    suite.instantiate_default();
+
     let other = suite.senders[1].clone();
     let another = suite.senders[2].clone();
 
-    suite
-        .instantiate_default()
-        .manage_farm(
-            &other,
-            FarmAction::Fill {
-                params: FarmParams {
-                    lp_denom: lp_denom.clone(),
-                    start_epoch: Some(20),
-                    preliminary_end_epoch: Some(28),
-                    curve: None,
-                    farm_asset: Coin {
-                        denom: "uusdy".to_string(),
-                        amount: Uint128::new(4_000u128),
-                    },
-                    farm_identifier: Some("farm_1".to_string()),
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+    // current epoch is 10
+
+    suite.manage_farm(
+        &other,
+        FarmAction::Fill {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: Some(20),
+                preliminary_end_epoch: Some(28),
+                curve: None,
+                farm_asset: Coin {
+                    denom: "uusdy".to_string(),
+                    amount: Uint128::new(4_000u128),
                 },
+                farm_identifier: Some("farm_1".to_string()),
             },
-            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-            |result| {
-                result.unwrap();
-            },
-        )
+        },
+        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+    suite
         .manage_farm(
             &other,
             FarmAction::Close {
@@ -802,46 +851,6 @@ fn close_farms() {
         })
         .manage_farm(
             &other,
-            FarmAction::Close {
-                farm_identifier: "farm_1".to_string(),
-            },
-            vec![],
-            |result| {
-                result.unwrap();
-            },
-        )
-        .query_balance("uusdy".to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(1000_000_000));
-        });
-
-    suite
-        .instantiate_default()
-        .manage_farm(
-            &other,
-            FarmAction::Fill {
-                params: FarmParams {
-                    lp_denom: lp_denom.clone(),
-                    start_epoch: Some(20),
-                    preliminary_end_epoch: Some(28),
-                    curve: None,
-                    farm_asset: Coin {
-                        denom: "uusdy".to_string(),
-                        amount: Uint128::new(4_000u128),
-                    },
-                    farm_identifier: Some("farm_1".to_string()),
-                },
-            },
-            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-            |result| {
-                result.unwrap();
-            },
-        )
-        .query_balance("uusdy".to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(999_996_000));
-        })
-        // the owner of the contract can also close farms
-        .manage_farm(
-            &creator,
             FarmAction::Close {
                 farm_identifier: "farm_1".to_string(),
             },
@@ -911,7 +920,7 @@ fn verify_ownership() {
 
 #[test]
 pub fn update_config() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -927,10 +936,12 @@ pub fn update_config() {
 
     let fee_collector = suite.fee_collector_addr.clone();
     let epoch_manager = suite.epoch_manager_addr.clone();
+    let pool_manager = suite.pool_manager_addr.clone();
 
     let expected_config = Config {
         fee_collector_addr: fee_collector,
         epoch_manager_addr: epoch_manager,
+        pool_manager_addr: pool_manager,
         create_farm_fee: Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(1_000u128),
@@ -948,8 +959,9 @@ pub fn update_config() {
     })
         .update_config(
             &other,
-            Some(MOCK_CONTRACT_ADDR.to_string()),
-            Some(MOCK_CONTRACT_ADDR.to_string()),
+            Some(MOCK_CONTRACT_ADDR_1.to_string()),
+            Some(MOCK_CONTRACT_ADDR_1.to_string()),
+            Some(MOCK_CONTRACT_ADDR_1.to_string()),
             Some(Coin {
                 denom: "uom".to_string(),
                 amount: Uint128::new(2_000u128),
@@ -969,8 +981,9 @@ pub fn update_config() {
             },
         ).update_config(
         &other,
-        Some(MOCK_CONTRACT_ADDR.to_string()),
-        Some(MOCK_CONTRACT_ADDR.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
@@ -990,8 +1003,9 @@ pub fn update_config() {
         },
     ).update_config(
         &creator,
-        Some(MOCK_CONTRACT_ADDR.to_string()),
-        Some(MOCK_CONTRACT_ADDR.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
@@ -1011,8 +1025,9 @@ pub fn update_config() {
         },
     ).update_config(
         &creator,
-        Some(MOCK_CONTRACT_ADDR.to_string()),
-        Some(MOCK_CONTRACT_ADDR.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
@@ -1032,8 +1047,9 @@ pub fn update_config() {
         },
     ).update_config(
         &creator,
-        Some(MOCK_CONTRACT_ADDR.to_string()),
-        Some(MOCK_CONTRACT_ADDR.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
@@ -1053,8 +1069,9 @@ pub fn update_config() {
         },
     ).update_config(
         &creator,
-        Some(MOCK_CONTRACT_ADDR.to_string()),
-        Some(MOCK_CONTRACT_ADDR.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
@@ -1074,8 +1091,9 @@ pub fn update_config() {
         },
     ).update_config(
         &creator,
-        Some(MOCK_CONTRACT_ADDR.to_string()),
-        Some(MOCK_CONTRACT_ADDR.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
+        Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
@@ -1092,8 +1110,9 @@ pub fn update_config() {
     );
 
     let expected_config = Config {
-        fee_collector_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
-        epoch_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR),
+        fee_collector_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
+        epoch_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
+        pool_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
         create_farm_fee: Coin {
             denom: "uom".to_string(),
             amount: Uint128::new(2_000u128),
@@ -1114,14 +1133,17 @@ pub fn update_config() {
 #[test]
 #[allow(clippy::inconsistent_digit_grouping)]
 pub fn test_manage_position() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let another_lp = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+    let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
         coin(1_000_000_000u128, "uusdy"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, "invalid_lp"),
+        coin(1_000_000_000u128, invalid_lp_denom.clone()),
+        coin(1_000_000_000u128, another_lp.clone()),
     ]);
 
     let creator = suite.creator();
@@ -1130,20 +1152,16 @@ pub fn test_manage_position() {
 
     suite.instantiate_default();
 
-    let farm_manager = suite.farm_manager_addr.clone();
     let fee_collector = suite.fee_collector_addr.clone();
 
     suite
-        .add_hook(&creator, &farm_manager, vec![], |result| {
-            result.unwrap();
-        })
         .manage_farm(
             &creator,
             FarmAction::Fill {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
-                    start_epoch: Some(12),
-                    preliminary_end_epoch: Some(16),
+                    start_epoch: Some(2),
+                    preliminary_end_epoch: Some(6),
                     curve: None,
                     farm_asset: Coin {
                         denom: "uusdy".to_string(),
@@ -1157,13 +1175,13 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 10, |result| {
+        .query_lp_weight(&lp_denom, 0, |result| {
             let err = result.unwrap_err().to_string();
 
             assert_eq!(
                 err,
                 "Generic error: Querier contract error: There's no snapshot of the LP \
-           weight in the contract for the epoch 10"
+           weight in the contract for the epoch 0"
             );
         })
         .manage_position(
@@ -1230,16 +1248,17 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&lp_denom, 1, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
                     lp_weight: Uint128::new(1_000),
-                    epoch_id: 11,
+                    epoch_id: 1,
                 }
             );
         })
+        // refilling the position with a different LP asset should fail
         .manage_position(
             &creator,
             PositionAction::Fill {
@@ -1247,7 +1266,7 @@ pub fn test_manage_position() {
                 unlocking_duration: 86_400,
                 receiver: None,
             },
-            vec![coin(1_000, "invalid_lp".to_string())],
+            vec![coin(1_000, another_lp.clone())],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -1264,7 +1283,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "creator_position".to_string(),
                     lp_asset: Coin {
-                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
+                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(1_000),
                     },
                     unlocking_duration: 86400,
@@ -1302,13 +1321,13 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&lp_denom, 1, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
                     lp_weight: Uint128::new(6_000),
-                    epoch_id: 11,
+                    epoch_id: 1,
                 }
             );
         })
@@ -1320,7 +1339,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "creator_position".to_string(),
                     lp_asset: Coin {
-                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
+                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(6_000),
                     },
                     unlocking_duration: 86400,
@@ -1330,53 +1349,28 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&lp_denom, 1, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
                     lp_weight: Uint128::new(6_000),
-                    epoch_id: 11,
+                    epoch_id: 1,
                 }
             );
         })
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
+        .add_one_epoch()
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 11);
+            assert_eq!(epoch_response.epoch.id, 1);
         });
 
     // make sure snapshots are working correctly
     suite
-        .query_lp_weight(&lp_denom, 15, |result| {
-            let err = result.unwrap_err().to_string();
-
-            assert_eq!(
-                err,
-                "Generic error: Querier contract error: There's no snapshot of the LP weight in the \
-            contract for the epoch 15"
-            );
-        })
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
+        .add_one_epoch()
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 12);
-        })
-        .query_lp_weight(&lp_denom, 12, |result| {
-            let lp_weight = result.unwrap();
-            assert_eq!(
-                lp_weight,
-                LpWeightResponse {
-                    lp_weight: Uint128::new(6_000), //snapshot taken from the previous epoch
-                    epoch_id: 12,
-                }
-            );
+            assert_eq!(epoch_response.epoch.id, 2);
         })
         .manage_position(
             &creator,
@@ -1390,23 +1384,11 @@ pub fn test_manage_position() {
             |result| {
                 result.unwrap();
             },
-        )
-        .query_lp_weight(&lp_denom, 12, |result| {
-            let lp_weight = result.unwrap();
-            assert_eq!(
-                lp_weight,
-                LpWeightResponse {
-                    // should be the same for epoch 12, as the weight for new positions is added
-                    // to the next epoch
-                    lp_weight: Uint128::new(6_000),
-                    epoch_id: 12,
-                }
-            );
-        });
+        );
 
     suite.query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, 12);
+        assert_eq!(epoch_response.epoch.id, 2);
     });
 
     suite
@@ -1516,7 +1498,7 @@ pub fn test_manage_position() {
             PositionAction::Close {
                 identifier: "creator_position".to_string(),
                 lp_asset: Some(Coin {
-                    denom: "invalid_lp".to_string(),
+                    denom: another_lp.clone(),
                     amount: Uint128::new(4_000),
                 }),
             },
@@ -1579,35 +1561,20 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_lp_weight(&lp_denom, 12, |result| {
+        .query_lp_weight(&lp_denom, 3, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
-                    // should be the same for epoch 12, as the weight for new positions is added
-                    // to the next epoch
-                    lp_weight: Uint128::new(6_000),
-                    epoch_id: 12,
-                }
-            );
-        })
-        .query_lp_weight(&lp_denom, 13, |result| {
-            let lp_weight = result.unwrap();
-            assert_eq!(
-                lp_weight,
-                LpWeightResponse {
-                    // should be the same for epoch 12, as the weight for new positions is added
+                    // should be the same for epoch 2, as the weight for new positions is added
                     // to the next epoch
                     lp_weight: Uint128::new(5_000),
-                    epoch_id: 13,
+                    epoch_id: 3,
                 }
             );
         })
         // create a few epochs without any changes in the weight
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
+        .add_one_epoch()
         //after a day the closed position should be able to be withdrawn
         .manage_position(
             &other,
@@ -1654,44 +1621,13 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
-        .query_lp_weight(&lp_denom, 14, |result| {
-            let lp_weight = result.unwrap();
-            assert_eq!(
-                lp_weight,
-                LpWeightResponse {
-                    // should be the same for epoch 13, as nobody changed their positions
-                    lp_weight: Uint128::new(5_000),
-                    epoch_id: 14,
-                }
-            );
-        })
-        .query_lp_weight(&lp_denom, 15, |result| {
-            let lp_weight = result.unwrap();
-            assert_eq!(
-                lp_weight,
-                LpWeightResponse {
-                    // should be the same for epoch 13, as nobody changed their positions
-                    lp_weight: Uint128::new(5_000),
-                    epoch_id: 15,
-                }
-            );
-        })
+        .add_one_epoch()
+        .add_one_epoch()
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 15);
+            assert_eq!(epoch_response.epoch.id, 5);
         })
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
+        .add_one_epoch()
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
@@ -1741,7 +1677,7 @@ pub fn test_manage_position() {
                 farms_response.farms[0].farm_asset.amount,
                 farms_response.farms[0].claimed_amount
             );
-            assert!(farms_response.farms[0].is_expired(15));
+            assert!(farms_response.farms[0].is_expired(5));
         })
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
@@ -1795,7 +1731,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "3".to_string(),
                     lp_asset: Coin {
-                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
+                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(5_000),
                     },
                     unlocking_duration: 86400,
@@ -1843,7 +1779,7 @@ pub fn test_manage_position() {
                 Position {
                     identifier: "3".to_string(),
                     lp_asset: Coin {
-                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
+                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(5_000),
                     },
                     unlocking_duration: 86400,
@@ -1859,7 +1795,7 @@ pub fn test_manage_position() {
         .add_one_epoch()
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 18);
+            assert_eq!(epoch_response.epoch.id, 8);
         });
 
     // try emergency exit a position that is closed
@@ -1876,30 +1812,20 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 18, |result| {
-            let lp_weight = result.unwrap();
-            assert_eq!(
-                lp_weight,
-                LpWeightResponse {
-                    lp_weight: Uint128::new(5_000),
-                    epoch_id: 18,
-                }
-            );
-        })
-        .query_lp_weight(&lp_denom, 19, |result| {
+        .query_lp_weight(&lp_denom, 9, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
                     lp_weight: Uint128::new(10_002),
-                    epoch_id: 19,
+                    epoch_id: 9,
                 }
             );
         });
 
     suite.add_one_epoch().query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, 19);
+        assert_eq!(epoch_response.epoch.id, 9);
     });
 
     // close the position
@@ -1915,14 +1841,14 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 20, |result| {
+        .query_lp_weight(&lp_denom, 10, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
                     // the weight went back to what it was before the position was opened
                     lp_weight: Uint128::new(5_000),
-                    epoch_id: 20,
+                    epoch_id: 10,
                 }
             );
         });
@@ -1963,11 +1889,30 @@ pub fn test_manage_position() {
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::new(500));
         });
+
+    // trying to open a position with an invalid lp which has not been created by the pool manager
+    // should fail
+    suite.manage_position(
+        &other,
+        PositionAction::Fill {
+            identifier: Some("a_new_position_with_invalid_lp".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(5_000, invalid_lp_denom.clone())],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::AssetMismatch => {}
+                _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+            }
+        },
+    );
 }
 
 #[test]
 fn claim_expired_farm_returns_nothing() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
@@ -1982,12 +1927,11 @@ fn claim_expired_farm_returns_nothing() {
 
     suite.instantiate_default();
 
-    let farm_manager = suite.farm_manager_addr.clone();
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
 
     suite
-        .add_hook(&creator, &farm_manager, vec![], |result| {
-            result.unwrap();
-        })
         .manage_farm(
             &creator,
             FarmAction::Fill {
@@ -2038,7 +1982,7 @@ fn claim_expired_farm_returns_nothing() {
                 Position {
                     identifier: "creator_position".to_string(),
                     lp_asset: Coin {
-                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
+                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(5_000),
                     },
                     unlocking_duration: 86400,
@@ -2052,22 +1996,10 @@ fn claim_expired_farm_returns_nothing() {
     // create a couple of epochs to make the farm active
 
     suite
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
-        .add_one_day()
-        .create_epoch(&creator, |result| {
-            result.unwrap();
-        })
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 14);
@@ -2084,9 +2016,7 @@ fn claim_expired_farm_returns_nothing() {
 
     // create a bunch of epochs to make the farm expire
     for _ in 0..15 {
-        suite.add_one_day().create_epoch(&creator, |result| {
-            result.unwrap();
-        });
+        suite.add_one_epoch();
     }
 
     // there shouldn't be anything to claim as the farm has expired, even though it still has some funds
@@ -2113,7 +2043,7 @@ fn claim_expired_farm_returns_nothing() {
 
 #[test]
 fn test_close_expired_farms() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(2_000_000_000u128, "uom"),
@@ -2128,38 +2058,34 @@ fn test_close_expired_farms() {
 
     suite.instantiate_default();
 
-    let farm_manager = suite.farm_manager_addr.clone();
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
 
-    suite
-        .add_hook(&creator, &farm_manager, vec![], |result| {
-            result.unwrap();
-        })
-        .manage_farm(
-            &creator,
-            FarmAction::Fill {
-                params: FarmParams {
-                    lp_denom: lp_denom.clone(),
-                    start_epoch: Some(12),
-                    preliminary_end_epoch: Some(16),
-                    curve: None,
-                    farm_asset: Coin {
-                        denom: "uusdy".to_string(),
-                        amount: Uint128::new(8_000u128),
-                    },
-                    farm_identifier: None,
+    suite.manage_farm(
+        &creator,
+        FarmAction::Fill {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: Some(12),
+                preliminary_end_epoch: Some(16),
+                curve: None,
+                farm_asset: Coin {
+                    denom: "uusdy".to_string(),
+                    amount: Uint128::new(8_000u128),
                 },
+                farm_identifier: None,
             },
-            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
-            |result| {
-                result.unwrap();
-            },
-        );
+        },
+        vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
 
     // create a bunch of epochs to make the farm expire
     for _ in 0..20 {
-        suite.add_one_day().create_epoch(&creator, |result| {
-            result.unwrap();
-        });
+        suite.add_one_epoch();
     }
 
     let mut current_id = 0;
@@ -2211,33 +2137,17 @@ fn test_close_expired_farms() {
                     claimed_amount: Uint128::zero(),
                     emission_rate: Uint128::new(714),
                     curve: Curve::Linear,
-                    start_epoch: 30u64,
-                    preliminary_end_epoch: 44u64,
-                    last_epoch_claimed: 29u64,
+                    start_epoch: 31u64,
+                    preliminary_end_epoch: 45u64,
+                    last_epoch_claimed: 30u64,
                 }
             );
         });
 }
 
 #[test]
-fn on_epoch_changed_unauthorized() {
-    let mut suite = TestingSuite::default_with_balances(vec![]);
-    let creator = suite.creator();
-
-    suite
-        .instantiate_default()
-        .on_epoch_changed(&creator, vec![], |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-            match err {
-                ContractError::Unauthorized { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
-            }
-        });
-}
-
-#[test]
 fn expand_expired_farm() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(2_000_000_000u128, "uom".to_string()),
@@ -2246,7 +2156,6 @@ fn expand_expired_farm() {
         coin(2_000_000_000u128, lp_denom.clone()),
     ]);
 
-    let creator = suite.creator();
     let other = suite.senders[1].clone();
 
     suite.instantiate_default();
@@ -2274,9 +2183,7 @@ fn expand_expired_farm() {
 
     // create a bunch of epochs to make the farm expire
     for _ in 0..15 {
-        suite.add_one_day().create_epoch(&creator, |result| {
-            result.unwrap();
-        });
+        suite.add_one_epoch();
     }
 
     suite.manage_farm(
@@ -2309,7 +2216,7 @@ fn expand_expired_farm() {
 
 #[test]
 fn test_emergency_withdrawal() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -2365,7 +2272,7 @@ fn test_emergency_withdrawal() {
                 Position {
                     identifier: "other_position".to_string(),
                     lp_asset: Coin {
-                        denom: format!("factory/pool/{LP_SYMBOL}").to_string(),
+                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
                         amount: Uint128::new(1_000),
                     },
                     unlocking_duration: 86400,
@@ -2403,7 +2310,7 @@ fn test_emergency_withdrawal() {
 
 #[test]
 fn test_farm_helper() {
-    let lp_denom = format!("factory/pool/{LP_SYMBOL}").to_string();
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -2536,8 +2443,8 @@ fn test_farm_helper() {
 /// Verify users got rewards pro rata to their locked tokens
 #[test]
 fn test_multiple_farms_and_positions() {
-    let lp_denom_1 = format!("factory/pool1/{LP_SYMBOL}").to_string();
-    let lp_denom_2 = format!("factory/pool2/{LP_SYMBOL}").to_string();
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
@@ -2553,14 +2460,14 @@ fn test_multiple_farms_and_positions() {
 
     suite.instantiate_default();
 
-    let farm_manager_addr = suite.farm_manager_addr.clone();
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
     let fee_collector_addr = suite.fee_collector_addr.clone();
 
     // create 4 farms with 2 different LPs
     suite
-        .add_hook(&creator, &farm_manager_addr, vec![], |result| {
-            result.unwrap();
-        })
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 10);

@@ -42,7 +42,7 @@ pub enum ContractError {
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
 
-    #[error("An farm with the given identifier already exists")]
+    #[error("A farm with the given identifier already exists")]
     FarmAlreadyExists,
 
     #[error("max_concurrent_flows cannot be set to zero")]

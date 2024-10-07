@@ -83,6 +83,7 @@ where
     ExecC: CustomMsg + DeserializeOwned + 'static,
     QueryC: CustomQuery + DeserializeOwned + 'static,
 {
+    #[allow(deprecated)]
     match type_url.as_str() {
         "/osmosis.tokenfactory.v1beta1.MsgCreateDenom" => {
             let tf_msg: MsgCreateDenom = MsgCreateDenom::decode(value.into())?;

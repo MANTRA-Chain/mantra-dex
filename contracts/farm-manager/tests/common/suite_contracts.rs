@@ -13,18 +13,6 @@ pub fn farm_manager_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-/// Creates the pool manager contract
-pub fn pool_manager_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        pool_manager::contract::execute,
-        pool_manager::contract::instantiate,
-        pool_manager::contract::query,
-    )
-    .with_migrate(pool_manager::contract::migrate);
-
-    Box::new(contract)
-}
-
 /// Creates the epoch manager contract
 pub fn epoch_manager_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(

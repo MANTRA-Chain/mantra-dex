@@ -5,6 +5,7 @@ use cosmwasm_std::{
     Uint128,
 };
 
+use amm::coin::{get_factory_token_creator, is_factory_token};
 use amm::farm_manager::{Config, FarmParams, DEFAULT_FARM_DURATION};
 
 use crate::ContractError;
@@ -120,7 +121,7 @@ pub(crate) fn validate_farm_epochs(
     max_farm_epoch_buffer: u64,
 ) -> Result<(u64, u64), ContractError> {
     // assert epoch params are correctly set
-    let start_epoch = params.start_epoch.unwrap_or(current_epoch);
+    let start_epoch = params.start_epoch.unwrap_or(current_epoch + 1u64);
 
     let preliminary_end_epoch = params.preliminary_end_epoch.unwrap_or(
         start_epoch
@@ -164,4 +165,17 @@ pub(crate) fn validate_emergency_unlock_penalty(
     );
 
     Ok(emergency_unlock_penalty)
+}
+
+/// Validates that the denom was created by the pool manager, i.e. it belongs to a valid pool.
+pub(crate) fn validate_lp_denom(
+    lp_denom: &str,
+    pool_manager_addr: &str,
+) -> Result<(), ContractError> {
+    ensure!(
+        is_factory_token(lp_denom) && get_factory_token_creator(lp_denom)? == pool_manager_addr,
+        ContractError::AssetMismatch
+    );
+
+    Ok(())
 }

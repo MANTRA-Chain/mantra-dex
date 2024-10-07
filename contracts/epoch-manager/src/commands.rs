@@ -1,77 +1,9 @@
-use cosmwasm_std::{ensure, Api, DepsMut, Env, MessageInfo, Response, SubMsg};
+use cosmwasm_std::{DepsMut, MessageInfo, Response};
 
-use amm::epoch_manager::{EpochChangedHookMsg, EpochConfig};
+use amm::epoch_manager::EpochConfig;
 
-use crate::queries::query_current_epoch;
-use crate::state::{ADMIN, CONFIG, EPOCHS, HOOKS};
+use crate::state::{ADMIN, CONFIG};
 use crate::ContractError;
-
-/// Adds a new hook to the contract.
-pub fn add_hook(
-    deps: DepsMut,
-    info: MessageInfo,
-    api: &dyn Api,
-    contract_addr: &str,
-) -> Result<Response, ContractError> {
-    Ok(HOOKS.execute_add_hook(&ADMIN, deps, info, api.addr_validate(contract_addr)?)?)
-}
-
-pub(crate) fn remove_hook(
-    deps: DepsMut,
-    info: MessageInfo,
-    api: &dyn Api,
-    contract_addr: &str,
-) -> Result<Response, ContractError> {
-    Ok(HOOKS.execute_remove_hook(&ADMIN, deps, info, api.addr_validate(contract_addr)?)?)
-}
-
-/// Creates a new epoch.
-pub fn create_epoch(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    cw_utils::nonpayable(&info)?;
-
-    let mut current_epoch = query_current_epoch(deps.as_ref())?.epoch;
-    let config = CONFIG.load(deps.storage)?;
-
-    ensure!(
-        env.block.time >= current_epoch.start_time,
-        ContractError::GenesisEpochHasNotStarted
-    );
-
-    if env
-        .block
-        .time
-        .minus_nanos(current_epoch.start_time.nanos())
-        .nanos()
-        < config.epoch_config.duration.u64()
-    {
-        return Err(ContractError::CurrentEpochNotExpired);
-    }
-
-    current_epoch.id = current_epoch
-        .id
-        .checked_add(1u64)
-        .ok_or(ContractError::EpochOverflow)?;
-    current_epoch.start_time = current_epoch
-        .start_time
-        .plus_nanos(config.epoch_config.duration.u64());
-
-    EPOCHS.save(deps.storage, current_epoch.id, &current_epoch)?;
-
-    let messages = HOOKS.prepare_hooks(deps.storage, |hook| {
-        EpochChangedHookMsg {
-            current_epoch: current_epoch.clone(),
-        }
-        .into_cosmos_msg(hook)
-        .map(SubMsg::new)
-    })?;
-
-    Ok(Response::default()
-        .add_submessages(messages)
-        .add_attributes(vec![
-            ("action", "create_epoch".to_string()),
-            ("current_epoch", current_epoch.to_string()),
-        ]))
-}
 
 /// Updates the config of the contract.
 pub fn update_config(

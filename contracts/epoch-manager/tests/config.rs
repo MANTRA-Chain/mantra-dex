@@ -20,7 +20,7 @@ fn update_config_successfully() {
 
     let info = message_info(&owner, &[]);
     let current_time = mock_env().block.time;
-    mock_instantiation(deps.as_mut(), info.clone()).unwrap();
+    mock_instantiation(deps.as_mut(), &mock_env(), info.clone()).unwrap();
 
     let query_res = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
     let config_res: ConfigResponse = from_json(query_res).unwrap();
@@ -64,7 +64,7 @@ fn update_config_unsuccessfully() {
 
     let info = message_info(&owner, &[]);
     let current_time = mock_env().block.time;
-    mock_instantiation(deps.as_mut(), info.clone()).unwrap();
+    mock_instantiation(deps.as_mut(), &mock_env(), info.clone()).unwrap();
 
     let query_res = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
     let config_res: ConfigResponse = from_json(query_res).unwrap();

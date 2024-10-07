@@ -5,16 +5,16 @@ use cw_multi_test::{
     GovFailingModule, IbcFailingModule, MockApiBech32, StakeKeeper, WasmKeeper,
 };
 
-use amm::epoch_manager::{Epoch, EpochChangedHookMsg, EpochConfig, EpochResponse};
+use crate::common::suite_contracts::{
+    epoch_manager_contract, farm_manager_contract, fee_collector_contract,
+};
+use crate::common::MOCK_CONTRACT_ADDR_1;
+use amm::epoch_manager::{EpochConfig, EpochResponse};
 use amm::farm_manager::{
     Config, FarmAction, FarmsBy, FarmsResponse, InstantiateMsg, LpWeightResponse, PositionAction,
     PositionsResponse, RewardsResponse,
 };
 use common_testing::multi_test::stargate_mock::StargateMock;
-
-use crate::common::suite_contracts::{
-    epoch_manager_contract, farm_manager_contract, fee_collector_contract, pool_manager_contract,
-};
 
 type OsmosisTokenFactoryApp = App<
     BankKeeper,
@@ -60,12 +60,7 @@ impl TestingSuite {
     }
 
     pub(crate) fn add_one_epoch(&mut self) -> &mut Self {
-        let creator = self.creator();
-
-        self.add_one_day().create_epoch(&creator, |res| {
-            res.unwrap();
-        });
-
+        self.add_one_day();
         self
     }
 }
@@ -101,7 +96,7 @@ impl TestingSuite {
             senders: [sender_1, sender_2, sender_3],
             farm_manager_addr: Addr::unchecked(""),
             fee_collector_addr: Addr::unchecked(""),
-            pool_manager_addr: Addr::unchecked(""),
+            pool_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
             epoch_manager_addr: Addr::unchecked(""),
         }
     }
@@ -119,6 +114,7 @@ impl TestingSuite {
         self.instantiate(
             self.fee_collector_addr.to_string(),
             self.epoch_manager_addr.to_string(),
+            self.pool_manager_addr.to_string(),
             Coin {
                 denom: "uom".to_string(),
                 amount: Uint128::new(1_000u128),
@@ -130,8 +126,6 @@ impl TestingSuite {
             Decimal::percent(10), //10% penalty
         );
 
-        self.create_pool_manager();
-
         self
     }
 
@@ -141,10 +135,6 @@ impl TestingSuite {
 
         // create epoch manager
         let msg = amm::epoch_manager::InstantiateMsg {
-            start_epoch: Epoch {
-                id: 10,
-                start_time: Timestamp::from_nanos(1712242800_000000000u64),
-            },
             epoch_config: EpochConfig {
                 duration: Uint64::new(86400_000000000u64),
                 genesis_epoch: Uint64::new(1712242800_000000000u64), // April 4th 2024 15:00:00 UTC
@@ -189,40 +179,12 @@ impl TestingSuite {
     }
 
     #[track_caller]
-    fn create_pool_manager(&mut self) {
-        let pool_manager_contract = self.app.store_code(pool_manager_contract());
-
-        // create pool manager
-        let msg = amm::pool_manager::InstantiateMsg {
-            fee_collector_addr: self.fee_collector_addr.to_string(),
-            farm_manager_addr: self.farm_manager_addr.to_string(),
-            pool_creation_fee: Coin {
-                denom: "uom".to_string(),
-                amount: Uint128::new(1_000u128),
-            },
-        };
-
-        let creator = self.creator().clone();
-
-        self.pool_manager_addr = self
-            .app
-            .instantiate_contract(
-                pool_manager_contract,
-                creator.clone(),
-                &msg,
-                &[],
-                "Pool Manager".to_string(),
-                Some(creator.to_string()),
-            )
-            .unwrap();
-    }
-
-    #[track_caller]
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn instantiate(
         &mut self,
         fee_collector_addr: String,
         epoch_manager_addr: String,
+        pool_manager_addr: String,
         create_farm_fee: Coin,
         max_concurrent_farms: u32,
         max_farm_epoch_buffer: u32,
@@ -234,6 +196,7 @@ impl TestingSuite {
             owner: self.creator().to_string(),
             epoch_manager_addr,
             fee_collector_addr,
+            pool_manager_addr,
             create_farm_fee,
             max_concurrent_farms,
             max_farm_epoch_buffer,
@@ -266,6 +229,7 @@ impl TestingSuite {
         &mut self,
         fee_collector_addr: String,
         epoch_manager_addr: String,
+        pool_manager_addr: String,
         create_farm_fee: Coin,
         max_concurrent_farms: u32,
         max_farm_epoch_buffer: u32,
@@ -278,6 +242,7 @@ impl TestingSuite {
             owner: self.creator().to_string(),
             epoch_manager_addr,
             fee_collector_addr,
+            pool_manager_addr,
             create_farm_fee,
             max_concurrent_farms,
             max_farm_epoch_buffer,
@@ -331,6 +296,7 @@ impl TestingSuite {
         sender: &Addr,
         fee_collector_addr: Option<String>,
         epoch_manager_addr: Option<String>,
+        pool_manager_addr: Option<String>,
         create_farm_fee: Option<Coin>,
         max_concurrent_farms: Option<u32>,
         max_farm_epoch_buffer: Option<u32>,
@@ -343,6 +309,7 @@ impl TestingSuite {
         let msg = amm::farm_manager::ExecuteMsg::UpdateConfig {
             fee_collector_addr,
             epoch_manager_addr,
+            pool_manager_addr,
             create_farm_fee,
             max_concurrent_farms,
             max_farm_epoch_buffer,
@@ -409,30 +376,6 @@ impl TestingSuite {
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
         let msg = amm::farm_manager::ExecuteMsg::Claim {};
-
-        result(self.app.execute_contract(
-            sender.clone(),
-            self.farm_manager_addr.clone(),
-            &msg,
-            &funds,
-        ));
-
-        self
-    }
-
-    #[track_caller]
-    pub(crate) fn on_epoch_changed(
-        &mut self,
-        sender: &Addr,
-        funds: Vec<Coin>,
-        result: impl Fn(Result<AppResponse, anyhow::Error>),
-    ) -> &mut Self {
-        let msg = amm::farm_manager::ExecuteMsg::EpochChangedHook(EpochChangedHookMsg {
-            current_epoch: Epoch {
-                id: 0,
-                start_time: Default::default(),
-            },
-        });
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -570,46 +513,6 @@ impl TestingSuite {
 
 /// Epoch manager actions
 impl TestingSuite {
-    #[track_caller]
-    pub(crate) fn create_epoch(
-        &mut self,
-        sender: &Addr,
-        result: impl Fn(Result<AppResponse, anyhow::Error>),
-    ) -> &mut Self {
-        let msg = amm::epoch_manager::ExecuteMsg::CreateEpoch {};
-
-        result(self.app.execute_contract(
-            sender.clone(),
-            self.epoch_manager_addr.clone(),
-            &msg,
-            &[],
-        ));
-
-        self
-    }
-
-    #[track_caller]
-    pub(crate) fn add_hook(
-        &mut self,
-        sender: &Addr,
-        contract_addr: &Addr,
-        funds: Vec<Coin>,
-        result: impl Fn(Result<AppResponse, anyhow::Error>),
-    ) -> &mut Self {
-        let msg = amm::epoch_manager::ExecuteMsg::AddHook {
-            contract_addr: contract_addr.to_string(),
-        };
-
-        result(self.app.execute_contract(
-            sender.clone(),
-            self.epoch_manager_addr.clone(),
-            &msg,
-            &funds,
-        ));
-
-        self
-    }
-
     #[track_caller]
     pub(crate) fn query_current_epoch(
         &mut self,

@@ -1,9 +1,8 @@
-use cosmwasm_std::{Addr, Deps, Order, StdError, StdResult};
-use cw_controllers::HooksResponse;
+use cosmwasm_std::{ensure, Addr, Deps, Env, StdError, StdResult, Timestamp, Uint64};
 
-use amm::epoch_manager::{ConfigResponse, EpochResponse};
+use amm::epoch_manager::{ConfigResponse, Epoch, EpochResponse};
 
-use crate::state::{ADMIN, CONFIG, EPOCHS, HOOKS};
+use crate::state::{ADMIN, CONFIG};
 
 /// Queries the config. Returns a [ConfigResponse].
 pub(crate) fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
@@ -16,15 +15,37 @@ pub(crate) fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     })
 }
 
-/// Queries the current epoch. Returns an [EpochResponse].
-pub(crate) fn query_current_epoch(deps: Deps) -> StdResult<EpochResponse> {
-    let option = EPOCHS
-        .range(deps.storage, None, None, Order::Descending)
-        .next();
+/// Derives the current epoch. Returns an [EpochResponse].
+pub(crate) fn query_current_epoch(deps: Deps, env: Env) -> StdResult<EpochResponse> {
+    let config = CONFIG.load(deps.storage)?;
 
-    let epoch = match option {
-        Some(Ok((_, epoch))) => epoch,
-        _ => Err(StdError::generic_err("No epochs stored"))?,
+    ensure!(
+        env.block.time.nanos() >= config.epoch_config.genesis_epoch.u64(),
+        StdError::generic_err("Genesis epoch has not started")
+    );
+
+    let current_epoch = Uint64::new(
+        env.block
+            .time
+            .minus_nanos(config.epoch_config.genesis_epoch.u64())
+            .nanos(),
+    )
+    .checked_div_floor((config.epoch_config.duration.u64(), 1u64))
+    .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?;
+
+    let start_time = config
+        .epoch_config
+        .genesis_epoch
+        .checked_add(
+            current_epoch
+                .checked_mul(config.epoch_config.duration)
+                .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?,
+        )
+        .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?;
+
+    let epoch = Epoch {
+        id: current_epoch.u64(),
+        start_time: Timestamp::from_nanos(start_time.u64()),
     };
 
     Ok(EpochResponse { epoch })
@@ -32,18 +53,22 @@ pub(crate) fn query_current_epoch(deps: Deps) -> StdResult<EpochResponse> {
 
 /// Queries the current epoch. Returns an [EpochResponse].
 pub(crate) fn query_epoch(deps: Deps, id: u64) -> StdResult<EpochResponse> {
-    let epoch = EPOCHS
-        .may_load(deps.storage, id)?
-        .ok_or_else(|| StdError::generic_err(format!("No epoch found with id {}", id)))?;
+    let config = CONFIG.load(deps.storage)?;
+
+    let start_time = config
+        .epoch_config
+        .genesis_epoch
+        .checked_add(
+            Uint64::new(id)
+                .checked_mul(config.epoch_config.duration)
+                .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?,
+        )
+        .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?;
+
+    let epoch = Epoch {
+        id,
+        start_time: Timestamp::from_nanos(start_time.u64()),
+    };
+
     Ok(epoch.to_epoch_response())
-}
-
-/// Queries hooks. Returns a [HooksResponse].
-pub(crate) fn query_hooks(deps: Deps) -> StdResult<HooksResponse> {
-    HOOKS.query_hooks(deps)
-}
-
-/// Check whether or not a hook is in the registry. Returns a [bool].
-pub(crate) fn query_hook(deps: Deps, hook: String) -> StdResult<bool> {
-    HOOKS.query_hook(deps, hook)
 }

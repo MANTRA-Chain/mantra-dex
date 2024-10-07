@@ -146,7 +146,7 @@ pub(crate) fn calculate_rewards(
         }
 
         // compute where the user can start claiming rewards for the farm
-        let start_from_epoch = compute_start_from_epoch_for_user(
+        let start_from_epoch = compute_start_from_epoch_for_address(
             deps.storage,
             &farm.lp_denom,
             last_claimed_epoch_for_user,
@@ -154,8 +154,22 @@ pub(crate) fn calculate_rewards(
         )?;
 
         // compute the weights of the user for the epochs between start_from_epoch and current_epoch_id
-        let user_weights =
-            compute_user_weights(deps.storage, position, &start_from_epoch, &current_epoch_id)?;
+        let user_weights = compute_address_weights(
+            deps.storage,
+            &position.receiver,
+            &position.lp_asset.denom,
+            &start_from_epoch,
+            &current_epoch_id,
+        )?;
+
+        // compute the weights of the contract for the epochs between start_from_epoch and current_epoch_id
+        let contract_weights = compute_contract_weights(
+            deps.storage,
+            &env.contract.address,
+            &position.lp_asset.denom,
+            &start_from_epoch,
+            &current_epoch_id,
+        )?;
 
         // compute the farm emissions for the epochs between start_from_epoch and current_epoch_id
         let (farm_emissions, until_epoch) =
@@ -167,12 +181,10 @@ pub(crate) fn calculate_rewards(
             }
 
             let user_weight = user_weights[&epoch_id];
-            let total_lp_weight = LP_WEIGHT_HISTORY
-                .may_load(
-                    deps.storage,
-                    (&env.contract.address, &farm.lp_denom, epoch_id),
-                )?
-                .ok_or(ContractError::LpWeightNotFound { epoch_id })?;
+            let total_lp_weight = contract_weights
+                .get(&epoch_id)
+                .unwrap_or(&Uint128::zero())
+                .to_owned();
 
             let user_share = (user_weight, total_lp_weight);
 
@@ -220,7 +232,7 @@ pub(crate) fn calculate_rewards(
 }
 
 /// Computes the epoch from which the user can start claiming rewards for a given farm
-pub(crate) fn compute_start_from_epoch_for_user(
+pub(crate) fn compute_start_from_epoch_for_address(
     storage: &dyn Storage,
     lp_denom: &str,
     last_claimed_epoch: Option<EpochId>,
@@ -238,16 +250,17 @@ pub(crate) fn compute_start_from_epoch_for_user(
     Ok(first_claimable_epoch_for_user)
 }
 
-/// Computes the user weights for a given LP asset. This assumes that [compute_start_from_epoch_for_user]
+/// Computes the user weights for a given LP asset. This assumes that [compute_start_from_epoch_for_address]
 /// was called before this function, computing the start_from_epoch for the user with either the last_claimed_epoch
 /// or the first epoch the user had a weight in the system.
-pub(crate) fn compute_user_weights(
+pub(crate) fn compute_address_weights(
     storage: &dyn Storage,
-    position: &Position,
+    address: &Addr,
+    lp_asset_denom: &str,
     start_from_epoch: &EpochId,
     current_epoch_id: &EpochId,
 ) -> Result<HashMap<EpochId, Uint128>, ContractError> {
-    let mut user_weights = HashMap::new();
+    let mut address_weights = HashMap::new();
     let mut last_weight_seen = Uint128::zero();
 
     // starts from start_from_epoch - 1 in case the user has a last_claimed_epoch, which means the user
@@ -255,19 +268,78 @@ pub(crate) fn compute_user_weights(
     // last_claimed_epoch + 1 in that case, which is correct, and if the user has not modified its
     // position, the weight will be the same for start_from_epoch as it is for last_claimed_epoch.
     for epoch_id in *start_from_epoch - 1..=*current_epoch_id {
-        let weight = LP_WEIGHT_HISTORY.may_load(
-            storage,
-            (&position.receiver, &position.lp_asset.denom, epoch_id),
-        )?;
+        let weight = LP_WEIGHT_HISTORY.may_load(storage, (address, lp_asset_denom, epoch_id))?;
 
         if let Some(weight) = weight {
             last_weight_seen = weight;
-            user_weights.insert(epoch_id, weight);
+            address_weights.insert(epoch_id, weight);
         } else {
-            user_weights.insert(epoch_id, last_weight_seen);
+            address_weights.insert(epoch_id, last_weight_seen);
         }
     }
-    Ok(user_weights)
+    Ok(address_weights)
+}
+
+pub(crate) fn compute_contract_weights(
+    storage: &dyn Storage,
+    contract: &Addr,
+    lp_asset_denom: &str,
+    start_from_epoch: &EpochId,
+    current_epoch_id: &EpochId,
+) -> Result<HashMap<EpochId, Uint128>, ContractError> {
+    let mut contract_weights = HashMap::new();
+
+    let contract_lp_weight =
+        LP_WEIGHT_HISTORY.may_load(storage, (contract, lp_asset_denom, *start_from_epoch))?;
+
+    // get which epoch to start filling the hashmap from
+    let (start_epoch_id_with_contract_lp_weight, mut last_weight_seen) =
+        if let Some(weight) = contract_lp_weight {
+            // there's a weight recorded for start_from_epoch for the contract, start from there
+            // insert it in the hashmap as we need a weight for the start_from_epoch, which is the epoch
+            // the user can start claiming rewards from
+            contract_weights.insert(*start_from_epoch, weight);
+            (*start_from_epoch, weight)
+        } else {
+            // there's no weight recorded for start_from_epoch for the contract, which means nobody has
+            // opened or closed a position during the last epoch. Go fetch the last recoded
+            // lp weight and derive weights from there
+            let earliest_contract_lp_weight_result =
+                get_earliest_address_lp_weight(storage, contract, lp_asset_denom);
+
+            match earliest_contract_lp_weight_result {
+                Err(_) => {
+                    // it means the contract has not recorded a lp weight ever for this denom, which should
+                    // not happen if someone has ever created a position, and this wouldn't even reach this
+                    // point as the function to calculate farm rewards only loops on opened positions.
+                    return Err(ContractError::Unauthorized);
+                }
+                Ok((earliest_epoch_id, weight)) => {
+                    // some weight was recorded for the contract in the past, start from there
+                    (earliest_epoch_id, weight)
+                }
+            }
+        };
+
+    // start from the epoch after the last recorded weight for the contract. If the start_epoch_id_with_contract_lp_weight
+    // is the same as the start_from_epoch, the weight was already put into the hashmap above. Otherwise,
+    // it means the epoch is in the past, before the start_epoch_from, so we can safely move on and start
+    // from the next epoch after start_epoch_id_with_contract_lp_weight.
+    for epoch_id in start_epoch_id_with_contract_lp_weight + 1u64..=*current_epoch_id {
+        let weight = LP_WEIGHT_HISTORY.may_load(storage, (contract, lp_asset_denom, epoch_id))?;
+
+        if let Some(weight) = weight {
+            last_weight_seen = weight;
+        }
+
+        // store the weight in the hashmap only if it's relevant, i.e. if the epoch id is greater or equal
+        // than the start_from_epoch.
+        if epoch_id >= *start_from_epoch {
+            contract_weights.insert(epoch_id, last_weight_seen);
+        }
+    }
+
+    Ok(contract_weights)
 }
 
 /// Computes the rewards emissions for a given farm. Let's assume for now that the farm

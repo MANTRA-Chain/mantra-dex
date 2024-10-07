@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    ensure, entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    ensure, entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 };
 use cw2::set_contract_version;
 
@@ -40,9 +40,13 @@ pub fn instantiate(
         }
     );
 
+    // due to the circular dependency between the pool manager and the farm manager,
+    // do not validate the pool manager address here, it has to be updated via the UpdateConfig msg
+    // once the pool manager is instantiated
     let config = Config {
         epoch_manager_addr: deps.api.addr_validate(&msg.epoch_manager_addr)?,
         fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
+        pool_manager_addr: Addr::unchecked(msg.pool_manager_addr),
         create_farm_fee: msg.create_farm_fee,
         max_concurrent_farms: msg.max_concurrent_farms,
         max_farm_epoch_buffer: msg.max_farm_epoch_buffer,
@@ -102,9 +106,6 @@ pub fn execute(
             cw_utils::nonpayable(&info)?;
             mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
         }
-        ExecuteMsg::EpochChangedHook(msg) => {
-            manager::commands::on_epoch_changed(deps, env, info, msg)
-        }
         ExecuteMsg::Claim {} => farm::commands::claim(deps, env, info),
         ExecuteMsg::ManagePosition { action } => match action {
             PositionAction::Fill {
@@ -133,6 +134,7 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             fee_collector_addr,
             epoch_manager_addr,
+            pool_manager_addr,
             create_farm_fee,
             max_concurrent_farms,
             max_farm_epoch_buffer,
@@ -146,6 +148,7 @@ pub fn execute(
                 info,
                 fee_collector_addr,
                 epoch_manager_addr,
+                pool_manager_addr,
                 create_farm_fee,
                 max_concurrent_farms,
                 max_farm_epoch_buffer,
