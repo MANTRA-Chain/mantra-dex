@@ -6,7 +6,7 @@ use amm::epoch_manager::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMs
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;
-use crate::state::{ADMIN, CONFIG};
+use crate::state::CONFIG;
 use crate::{commands, queries};
 
 // version info for migration info
@@ -15,9 +15,9 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
 pub fn instantiate(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -28,7 +28,7 @@ pub fn instantiate(
         ContractError::InvalidStartTime
     );
 
-    ADMIN.set(deps.branch(), Some(info.sender))?;
+    cw_ownable::initialize_owner(deps.storage, deps.api, Some(msg.owner.as_str()))?;
 
     CONFIG.save(
         deps.storage,
@@ -36,8 +36,10 @@ pub fn instantiate(
             epoch_config: msg.epoch_config.clone(),
         },
     )?;
+
     Ok(Response::default().add_attributes(vec![
         ("action", "instantiate".to_string()),
+        ("owner", msg.owner),
         ("epoch_config", msg.epoch_config.to_string()),
     ]))
 }
@@ -45,15 +47,19 @@ pub fn instantiate(
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::UpdateConfig {
-            owner,
-            epoch_config,
-        } => commands::update_config(deps, &info, owner, epoch_config),
+        ExecuteMsg::UpdateConfig { epoch_config } => {
+            cw_utils::nonpayable(&info)?;
+            commands::update_config(deps, &info, epoch_config)
+        }
+        ExecuteMsg::UpdateOwnership(action) => {
+            cw_utils::nonpayable(&info)?;
+            mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
+        }
     }
 }
 
@@ -63,6 +69,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Config {} => Ok(to_json_binary(&queries::query_config(deps)?)?),
         QueryMsg::CurrentEpoch {} => Ok(to_json_binary(&queries::query_current_epoch(deps, env)?)?),
         QueryMsg::Epoch { id } => Ok(to_json_binary(&queries::query_epoch(deps, id)?)?),
+        QueryMsg::Ownership {} => Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?),
     }
 }
 

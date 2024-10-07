@@ -16,6 +16,7 @@ fn instantiation_successful() {
     let owner = "owner".into_bech32();
     let info = message_info(&owner, &[]);
     let msg = InstantiateMsg {
+        owner: "owner".into_bech32().to_string(),
         epoch_config: EpochConfig {
             duration: Uint64::new(86400),
             genesis_epoch: Uint64::new(current_time.nanos()),
@@ -33,7 +34,6 @@ fn instantiation_successful() {
         },
         config_res.epoch_config
     );
-    assert_eq!(owner, config_res.owner);
 }
 
 #[test]
@@ -44,6 +44,7 @@ fn instantiation_unsuccessful() {
     let owner = "owner".into_bech32();
     let info = message_info(&owner, &[]);
     let msg = InstantiateMsg {
+        owner: "owner".into_bech32().to_string(),
         epoch_config: EpochConfig {
             duration: Uint64::new(86400),
             genesis_epoch: Uint64::new(current_time.minus_days(1).nanos()),

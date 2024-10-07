@@ -27,7 +27,6 @@ dependencies = [
  "anybuf",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-controllers",
  "cw-ownable",
  "cw-storage-plus",
  "test-case",
@@ -451,21 +450,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-controllers"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50c1804013d21060b994dea28a080f9eab78a3bcb6b617f05e7634b0600bf7b1"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus",
- "cw-utils",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cw-migrate-error-derive"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -691,9 +675,9 @@ dependencies = [
  "amm",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-controllers",
  "cw-migrate-error-derive",
  "cw-multi-test",
+ "cw-ownable",
  "cw-storage-plus",
  "cw-utils",
  "cw2",

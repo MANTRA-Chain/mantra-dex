@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
-use cosmwasm_std::{from_json, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{from_json, Timestamp, Uint64};
 use cw_multi_test::IntoBech32;
 
 use amm::epoch_manager::{
@@ -119,6 +119,7 @@ fn get_new_epoch_unsuccessfully() {
 
     let current_time = env.block.time;
     let msg = InstantiateMsg {
+        owner: "owner".into_bech32().to_string(),
         epoch_config: EpochConfig {
             duration: Uint64::new(86400),
             // instantiate the epoch manager with the genesis epoch 1 day in the future

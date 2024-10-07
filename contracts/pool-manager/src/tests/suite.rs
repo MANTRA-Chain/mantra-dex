@@ -237,7 +237,10 @@ impl TestingSuite {
     fn create_epoch_manager(&mut self) {
         let epoch_manager_id = self.app.store_code(epoch_manager_contract());
 
+        let creator = self.creator().clone();
+
         let msg = amm::epoch_manager::InstantiateMsg {
+            owner: creator.to_string(),
             epoch_config: EpochConfig {
                 duration: Uint64::new(86_400_000000000),
                 genesis_epoch: Uint64::new(1714057200_000000000),

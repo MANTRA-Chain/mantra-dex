@@ -1,6 +1,6 @@
 use cosmwasm_std::StdError;
-use cw_controllers::{AdminError, HookError};
 use cw_migrate_error_derive::cw_migrate_invalid_version_error;
+use cw_ownable::OwnershipError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 
@@ -11,10 +11,7 @@ pub enum ContractError {
     Std(#[from] StdError),
 
     #[error("{0}")]
-    AdminError(#[from] AdminError),
-
-    #[error("{0}")]
-    HookError(#[from] HookError),
+    OwnershipError(#[from] OwnershipError),
 
     #[error("The epoch id has overflowed.")]
     EpochOverflow,
