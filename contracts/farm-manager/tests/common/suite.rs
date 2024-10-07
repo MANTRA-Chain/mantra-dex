@@ -132,16 +132,16 @@ impl TestingSuite {
     #[allow(clippy::inconsistent_digit_grouping)]
     fn create_epoch_manager(&mut self) {
         let epoch_manager_contract = self.app.store_code(epoch_manager_contract());
+        let creator = self.creator().clone();
 
         // create epoch manager
         let msg = amm::epoch_manager::InstantiateMsg {
+            owner: creator.to_string(),
             epoch_config: EpochConfig {
                 duration: Uint64::new(86400_000000000u64),
                 genesis_epoch: Uint64::new(1712242800_000000000u64), // April 4th 2024 15:00:00 UTC
             },
         };
-
-        let creator = self.creator().clone();
 
         self.epoch_manager_addr = self
             .app

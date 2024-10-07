@@ -1,18 +1,12 @@
-use cosmwasm_std::{ensure, Addr, Deps, Env, StdError, StdResult, Timestamp, Uint64};
+use cosmwasm_std::{ensure, Deps, Env, StdError, StdResult, Timestamp, Uint64};
 
 use amm::epoch_manager::{ConfigResponse, Epoch, EpochResponse};
 
-use crate::state::{ADMIN, CONFIG};
+use crate::state::CONFIG;
 
 /// Queries the config. Returns a [ConfigResponse].
 pub(crate) fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
-    let admin = ADMIN.get(deps)?.unwrap_or(Addr::unchecked(""));
-    let config = CONFIG.load(deps.storage)?;
-
-    Ok(ConfigResponse {
-        owner: admin,
-        epoch_config: config.epoch_config,
-    })
+    CONFIG.load(deps.storage)
 }
 
 /// Derives the current epoch. Returns an [EpochResponse].

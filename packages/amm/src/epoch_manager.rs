@@ -3,25 +3,28 @@ use std::fmt;
 use std::fmt::Display;
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Deps, StdResult, Timestamp, Uint64};
+use cosmwasm_std::{Deps, StdResult, Timestamp, Uint64};
+use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    /// The owner of the contract.
+    pub owner: String,
     /// The configuration for the epochs.
     pub epoch_config: EpochConfig,
 }
 
+#[cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Updates the contract configuration.
     UpdateConfig {
-        /// The new owner of the contract.
-        owner: Option<String>,
         /// The new epoch configuration.
         epoch_config: Option<EpochConfig>,
     },
 }
 
+#[cw_ownable_query]
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
@@ -88,28 +91,12 @@ impl Display for EpochConfig {
     }
 }
 
+pub type ConfigResponse = Config;
+
 /// The contract configuration.
 #[cw_serde]
 pub struct Config {
     /// The epoch configuration
-    pub epoch_config: EpochConfig,
-}
-
-impl Config {
-    pub fn to_config_response(self, owner: Addr) -> ConfigResponse {
-        ConfigResponse {
-            owner,
-            epoch_config: self.epoch_config,
-        }
-    }
-}
-
-/// The response for the config query.
-#[cw_serde]
-pub struct ConfigResponse {
-    /// The owner of the contract.
-    pub owner: Addr,
-    /// The epoch configuration.
     pub epoch_config: EpochConfig,
 }
 

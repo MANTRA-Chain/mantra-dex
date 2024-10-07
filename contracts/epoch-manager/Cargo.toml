@@ -32,7 +32,7 @@ semver.workspace = true
 thiserror.workspace = true
 amm.workspace = true
 mantra-utils.workspace = true
-cw-controllers.workspace = true
+cw-ownable.workspace = true
 cw-utils.workspace = true
 cw-migrate-error-derive.workspace = true
 
