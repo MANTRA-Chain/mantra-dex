@@ -107,7 +107,7 @@ pub enum QueryMsg {
     },
     /// Retrieves the total LP weight in the contract for a given denom on a given epoch.
     #[returns(LpWeightResponse)]
-    LPWeight {
+    LpWeight {
         /// The address to get the LP weight for.
         address: String,
         /// The denom to get the total LP weight for.
@@ -121,7 +121,7 @@ pub enum QueryMsg {
 #[cw_serde]
 pub enum FarmsBy {
     Identifier(String),
-    LPDenom(String),
+    LpDenom(String),
     FarmAsset(String),
 }
 
