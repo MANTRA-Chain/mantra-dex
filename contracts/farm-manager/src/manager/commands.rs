@@ -8,7 +8,7 @@ use amm::farm_manager::{Curve, Farm, FarmParams};
 
 use crate::helpers::{
     assert_farm_asset, process_farm_creation_fee, validate_emergency_unlock_penalty,
-    validate_farm_epochs, validate_lp_denom,
+    validate_farm_epochs, validate_lp_denom, validate_unlocking_duration,
 };
 use crate::state::{get_farm_by_identifier, get_farms_by_lp_denom, CONFIG, FARMS, FARM_COUNTER};
 use crate::ContractError;
@@ -315,9 +315,10 @@ pub(crate) fn update_config(
     }
 
     if let Some(max_concurrent_farms) = max_concurrent_farms {
-        if max_concurrent_farms == 0u32 {
-            return Err(ContractError::UnspecifiedConcurrentFarms);
-        }
+        ensure!(
+            max_concurrent_farms >= config.max_concurrent_farms,
+            ContractError::MaximumConcurrentFarmsDecreased
+        );
 
         config.max_concurrent_farms = max_concurrent_farms;
     }
@@ -327,24 +328,12 @@ pub(crate) fn update_config(
     }
 
     if let Some(max_unlocking_duration) = max_unlocking_duration {
-        if max_unlocking_duration < config.min_unlocking_duration {
-            return Err(ContractError::InvalidUnlockingRange {
-                min: config.min_unlocking_duration,
-                max: max_unlocking_duration,
-            });
-        }
-
+        validate_unlocking_duration(config.min_unlocking_duration, max_unlocking_duration)?;
         config.max_unlocking_duration = max_unlocking_duration;
     }
 
     if let Some(min_unlocking_duration) = min_unlocking_duration {
-        if config.max_unlocking_duration < min_unlocking_duration {
-            return Err(ContractError::InvalidUnlockingRange {
-                min: min_unlocking_duration,
-                max: config.max_unlocking_duration,
-            });
-        }
-
+        validate_unlocking_duration(min_unlocking_duration, config.max_unlocking_duration)?;
         config.min_unlocking_duration = min_unlocking_duration;
     }
 

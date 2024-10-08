@@ -95,6 +95,9 @@ pub enum ContractError {
         max: u32,
     },
 
+    #[error("Attempt to decrease the max concurrent farms to a value that is less than the current amount of concurrent farms")]
+    MaximumConcurrentFarmsDecreased,
+
     #[error("The end epoch for this farm is invalid")]
     InvalidEndEpoch,
 
