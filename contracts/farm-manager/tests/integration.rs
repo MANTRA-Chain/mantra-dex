@@ -3520,3 +3520,200 @@ fn test_fill_closed_position() {
             assert_eq!(response.lp_weight, Uint128::zero());
         });
 }
+
+#[test]
+fn test_refill_position_uses_current_position_unlocking_period() {
+    let lp_denom_1 =
+        format!("factory/{MOCK_CONTRACT_ADDR_1}/pool.identifier.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom_1.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    let farm_manager_addr = suite.farm_manager_addr.clone();
+
+    suite.query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 10);
+    });
+
+    // open a position with the minimum unlocking period
+    // try to refill the same position with the maximum unlocking period
+    // the weight should remain unaffected, i.e. the refilling should use the
+    // unlocking period of the current position
+    suite
+        .query_balance(lp_denom_1.to_string(), &farm_manager_addr, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 1);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(1_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.lp_weight, Uint128::new(1_000));
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                // this shouldn't inflate the lp weight
+                unlocking_duration: 31_556_926,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 1);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            let response = result.unwrap();
+            // the weight shouldn't be affected by the large unlocking period used in the refill
+            assert_eq!(response.lp_weight, Uint128::new(2_000));
+        });
+
+    // let's do the reverse, using the maximum unlocking period
+    // and then refilling with the minimum unlocking period
+    suite
+        .query_balance(lp_denom_2.to_string(), &farm_manager_addr, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("lp_denom_2_position".to_string()),
+                unlocking_duration: 31_556_926,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 2);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                response.positions[1],
+                Position {
+                    identifier: "lp_denom_2_position".to_string(),
+                    lp_asset: coin(1_000, lp_denom_2.clone()),
+                    unlocking_duration: 31_556_926,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_2, 11, |result| {
+            let response = result.unwrap();
+            // ~16x multiplier for the large unlocking period with an 1_000 lp position
+            assert_eq!(response.lp_weight, Uint128::new(15_999));
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("lp_denom_2_position".to_string()),
+                // this shouldn't deflate the lp weight
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 2);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                response.positions[1],
+                Position {
+                    identifier: "lp_denom_2_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_2.clone()),
+                    unlocking_duration: 31_556_926,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_2, 11, |result| {
+            let response = result.unwrap();
+            // the weight shouldn't be affected by the low unlocking period used in the refill
+            assert_eq!(response.lp_weight, Uint128::new(31_998));
+        });
+}
