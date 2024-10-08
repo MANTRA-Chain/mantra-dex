@@ -1099,8 +1099,8 @@ pub fn update_config() {
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::UnspecifiedConcurrentFarms { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::UnspecifiedConcurrentFarms"),
+                ContractError::MaximumConcurrentFarmsDecreased => {}
+                _ => panic!("Wrong error type, should return ContractError::MaximumConcurrentFarmsDecreased"),
             }
         },
     ).update_config(
