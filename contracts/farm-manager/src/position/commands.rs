@@ -5,7 +5,7 @@ use cosmwasm_std::{
 };
 
 use crate::helpers::validate_lp_denom;
-use crate::position::helpers::validate_unlocking_duration;
+use crate::position::helpers::validate_unlocking_duration_for_position;
 use crate::position::helpers::{calculate_weight, get_latest_address_weight};
 use crate::queries::query_rewards;
 use crate::state::{get_position, CONFIG, LP_WEIGHT_HISTORY, POSITIONS, POSITION_ID_COUNTER};
@@ -27,7 +27,7 @@ pub(crate) fn fill_position(
     validate_lp_denom(&lp_asset.denom, config.pool_manager_addr.as_str())?;
 
     // validate unlocking duration
-    validate_unlocking_duration(&config, unlocking_duration)?;
+    validate_unlocking_duration_for_position(&config, unlocking_duration)?;
 
     // if receiver was not specified, default to the sender of the message.
     let receiver = receiver
@@ -42,18 +42,17 @@ pub(crate) fn fill_position(
     // check if there's an existing open position with the given `identifier`
     let mut position = get_position(deps.storage, identifier.clone())?;
 
-    if let Some(ref mut position) = position {
+    let position_unlocking_duration = if let Some(ref mut position) = position {
         // there is a position, refill it
         ensure!(
             position.lp_asset.denom == lp_asset.denom,
             ContractError::AssetMismatch
         );
 
-        // ensure the position is open
         ensure!(
             position.open,
             ContractError::PositionAlreadyClosed {
-                identifier: position.identifier.clone()
+                identifier: position.identifier.clone(),
             }
         );
 
@@ -63,6 +62,7 @@ pub(crate) fn fill_position(
 
         position.lp_asset.amount = position.lp_asset.amount.checked_add(lp_asset.amount)?;
         POSITIONS.save(deps.storage, &position.identifier, position)?;
+        position.unlocking_duration
     } else {
         // No position found, create a new one
         let position_id_counter = POSITION_ID_COUNTER
@@ -87,10 +87,18 @@ pub(crate) fn fill_position(
                 receiver: receiver.sender.clone(),
             },
         )?;
-    }
+        unlocking_duration
+    };
 
     // Update weights for the LP and the user
-    update_weights(deps, env, &receiver, &lp_asset, unlocking_duration, true)?;
+    update_weights(
+        deps,
+        env,
+        &receiver,
+        &lp_asset,
+        position_unlocking_duration,
+        true,
+    )?;
 
     let action = match position {
         Some(_) => "expand_position",
@@ -101,7 +109,10 @@ pub(crate) fn fill_position(
         ("action", action.to_string()),
         ("receiver", receiver.sender.to_string()),
         ("lp_asset", lp_asset.to_string()),
-        ("unlocking_duration", unlocking_duration.to_string()),
+        (
+            "unlocking_duration",
+            position_unlocking_duration.to_string(),
+        ),
     ]))
 }
 
