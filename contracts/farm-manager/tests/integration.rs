@@ -1990,6 +1990,110 @@ pub fn test_manage_position() {
 }
 
 #[test]
+#[allow(clippy::inconsistent_digit_grouping)]
+pub fn test_expand_position_unsuccessfully() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let another_lp = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+    let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, invalid_lp_denom.clone()),
+        coin(1_000_000_000u128, another_lp.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    suite
+        // open position
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, &lp_denom)],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let positions = result.unwrap();
+            assert_eq!(positions.positions.len(), 1);
+            assert_eq!(
+                positions.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.clone(),
+                        amount: Uint128::new(10_000),
+                    },
+                    unlocking_duration: 86400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .add_one_epoch()
+        // close position
+        .manage_position(
+            &creator,
+            PositionAction::Close {
+                identifier: "creator_position".to_string(),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let positions = result.unwrap();
+            assert_eq!(positions.positions.len(), 1);
+            assert_eq!(
+                positions.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.clone(),
+                        amount: Uint128::new(10_000),
+                    },
+                    unlocking_duration: 86400,
+                    open: false,
+                    expiring_at: Some(1_712_415_600),
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        // try refilling the closed position should err
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, &lp_denom)],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::PositionAlreadyClosed { .. } => {}
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::PositionAlreadyClosed"
+                    ),
+                }
+            },
+        );
+}
+
+#[test]
 fn claim_expired_farm_returns_nothing() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
