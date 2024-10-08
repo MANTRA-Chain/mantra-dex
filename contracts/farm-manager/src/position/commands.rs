@@ -1,6 +1,6 @@
 use amm::farm_manager::{Position, RewardsResponse};
 use cosmwasm_std::{
-    ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
+    coin, ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
     Uint128,
 };
 
@@ -153,7 +153,7 @@ pub(crate) fn close_position(
         .seconds();
 
     // check if it's going to be closed in full or partially
-    if let Some(lp_asset) = lp_asset {
+    let lp_amount_to_close = if let Some(lp_asset) = lp_asset {
         // close position partially
 
         // make sure the lp_asset requested to close matches the lp_asset of the position, and since
@@ -174,7 +174,7 @@ pub(crate) fn close_position(
 
         let partial_position = Position {
             identifier: identifier.to_string(),
-            lp_asset,
+            lp_asset: lp_asset.clone(),
             unlocking_duration: position.unlocking_duration,
             open: false,
             expiring_at: Some(expires_at),
@@ -182,11 +182,16 @@ pub(crate) fn close_position(
         };
 
         POSITIONS.save(deps.storage, &identifier.to_string(), &partial_position)?;
+        // partial amount
+        lp_asset.amount
     } else {
         // close position in full
         position.open = false;
         position.expiring_at = Some(expires_at);
-    }
+        // full amount
+        position.lp_asset.amount
+    };
+
     let close_in_full = !position.open;
     attributes.push(("close_in_full", close_in_full.to_string()));
 
@@ -194,7 +199,7 @@ pub(crate) fn close_position(
         deps.branch(),
         &env,
         &info,
-        &position.lp_asset,
+        &coin(lp_amount_to_close.u128(), &position.lp_asset.denom),
         position.unlocking_duration,
         false,
     )?;
