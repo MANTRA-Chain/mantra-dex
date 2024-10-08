@@ -51,6 +51,12 @@ impl TestingSuite {
 
         self
     }
+
+    pub(crate) fn get_time(&mut self, result: impl Fn(Timestamp)) -> &mut Self {
+        result(self.app.block_info().time);
+
+        self
+    }
     pub(crate) fn add_one_day(&mut self) -> &mut Self {
         let mut block_info = self.app.block_info();
         block_info.time = block_info.time.plus_days(1);
@@ -122,7 +128,7 @@ impl TestingSuite {
             2,
             14,
             86_400,
-            31_536_000,
+            31_556_926,
             Decimal::percent(10), //10% penalty
         );
 
@@ -479,6 +485,7 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn query_lp_weight(
         &mut self,
+        address: &Addr,
         denom: &str,
         epoch_id: u64,
         result: impl Fn(StdResult<LpWeightResponse>),
@@ -486,7 +493,7 @@ impl TestingSuite {
         let rewards_response: StdResult<LpWeightResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
             &amm::farm_manager::QueryMsg::LpWeight {
-                address: self.farm_manager_addr.to_string(),
+                address: address.to_string(),
                 denom: denom.to_string(),
                 epoch_id,
             },
