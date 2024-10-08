@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 
 use cosmwasm_std::{
     ensure, BankMsg, Coin, CosmosMsg, Decimal, MessageInfo, OverflowError, OverflowOperation,
@@ -6,7 +7,7 @@ use cosmwasm_std::{
 };
 
 use amm::coin::{get_factory_token_creator, is_factory_token};
-use amm::farm_manager::{Config, FarmParams, DEFAULT_FARM_DURATION};
+use amm::farm_manager::{Config, FarmParams, Position, DEFAULT_FARM_DURATION};
 
 use crate::ContractError;
 
@@ -194,4 +195,14 @@ pub(crate) fn validate_unlocking_duration(
     );
 
     Ok(())
+}
+
+/// Gets the unique LP asset denoms from a list of positions
+pub(crate) fn get_unique_lp_asset_denoms_from_positions(positions: Vec<Position>) -> Vec<String> {
+    positions
+        .iter()
+        .map(|position| position.lp_asset.denom.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect()
 }

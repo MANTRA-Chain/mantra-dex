@@ -6,6 +6,7 @@ use amm::farm_manager::{
 };
 
 use crate::farm::commands::calculate_rewards;
+use crate::helpers::get_unique_lp_asset_denoms_from_positions;
 use crate::state::{
     get_farm_by_identifier, get_farms, get_farms_by_farm_asset, get_farms_by_lp_denom,
     get_positions_by_receiver, CONFIG, LP_WEIGHT_HISTORY,
@@ -64,8 +65,7 @@ pub(crate) fn query_rewards(
 ) -> Result<RewardsResponse, ContractError> {
     let receiver = deps.api.addr_validate(&address)?;
     // check if the user has any open LP positions
-    let open_positions =
-        get_positions_by_receiver(deps.storage, receiver.into_string(), Some(true))?;
+    let open_positions = get_positions_by_receiver(deps.storage, receiver.to_string(), Some(true))?;
 
     if open_positions.is_empty() {
         // if the user has no open LP positions, return an empty rewards list
@@ -78,9 +78,12 @@ pub(crate) fn query_rewards(
 
     let mut total_rewards = vec![];
 
-    for position in &open_positions {
-        // calculate the rewards for the position
-        let rewards_response = calculate_rewards(deps, env, position, current_epoch.id, false)?;
+    let lp_denoms = get_unique_lp_asset_denoms_from_positions(open_positions);
+
+    for lp_denom in &lp_denoms {
+        // calculate the rewards for the lp denom
+        let rewards_response =
+            calculate_rewards(deps, env, lp_denom, &receiver, current_epoch.id, false)?;
         match rewards_response {
             RewardsResponse::RewardsResponse { rewards } => {
                 total_rewards.append(&mut rewards.clone())
