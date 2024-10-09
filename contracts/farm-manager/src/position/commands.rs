@@ -1,12 +1,14 @@
 use amm::farm_manager::{Position, RewardsResponse};
 use cosmwasm_std::{
-    coin, ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
-    Uint128,
+    coin, ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response,
+    StdError, Uint128,
 };
 
 use crate::helpers::validate_lp_denom;
-use crate::position::helpers::validate_unlocking_duration_for_position;
 use crate::position::helpers::{calculate_weight, get_latest_address_weight};
+use crate::position::helpers::{
+    validate_positions_limit, validate_unlocking_duration_for_position,
+};
 use crate::queries::query_rewards;
 use crate::state::{get_position, CONFIG, LP_WEIGHT_HISTORY, POSITIONS, POSITION_ID_COUNTER};
 use crate::ContractError;
@@ -29,15 +31,20 @@ pub(crate) fn fill_position(
     // validate unlocking duration
     validate_unlocking_duration_for_position(&config, unlocking_duration)?;
 
-    // if receiver was not specified, default to the sender of the message.
-    let receiver = receiver
-        .map(|r| deps.api.addr_validate(&r))
-        .transpose()?
-        .map(|receiver| MessageInfo {
-            funds: info.funds.clone(),
-            sender: receiver,
-        })
-        .unwrap_or_else(|| info.clone());
+    // if a receiver was specified, check that it was the pool manager who
+    // is sending the message, as it has the possibility to lock LP tokens on
+    // behalf of the user
+    let receiver = if let Some(ref receiver) = receiver {
+        let receiver = deps.api.addr_validate(receiver)?;
+        ensure!(
+            info.sender == config.pool_manager_addr || info.sender == receiver,
+            ContractError::Unauthorized
+        );
+
+        receiver
+    } else {
+        info.sender.clone()
+    };
 
     // check if there's an existing open position with the given `identifier`
     let mut position = get_position(deps.storage, identifier.clone())?;
@@ -56,6 +63,12 @@ pub(crate) fn fill_position(
             }
         );
 
+        // ensure only the receiver itself or the pool manager can refill the position
+        ensure!(
+            position.receiver == info.sender || info.sender == config.pool_manager_addr,
+            ContractError::Unauthorized
+        );
+
         // if the position is found, ignore if there's a change in the unlocking_duration as it is
         // considered the same position, so use the existing unlocking_duration and only update the
         // amount of the LP asset
@@ -65,6 +78,10 @@ pub(crate) fn fill_position(
         position.unlocking_duration
     } else {
         // No position found, create a new one
+
+        // ensure the user doesn't have more than the maximum allowed close positions
+        validate_positions_limit(deps.as_ref(), &receiver, true)?;
+
         let position_id_counter = POSITION_ID_COUNTER
             .may_load(deps.storage)?
             .unwrap_or_default()
@@ -84,7 +101,7 @@ pub(crate) fn fill_position(
                 unlocking_duration,
                 open: true,
                 expiring_at: None,
-                receiver: receiver.sender.clone(),
+                receiver: receiver.clone(),
             },
         )?;
         unlocking_duration
@@ -107,7 +124,7 @@ pub(crate) fn fill_position(
 
     Ok(Response::default().add_attributes(vec![
         ("action", action.to_string()),
-        ("receiver", receiver.sender.to_string()),
+        ("receiver", receiver.to_string()),
         ("lp_asset", lp_asset.to_string()),
         (
             "unlocking_duration",
@@ -163,6 +180,9 @@ pub(crate) fn close_position(
         .plus_seconds(position.unlocking_duration)
         .seconds();
 
+    // ensure the user doesn't have more than the maximum allowed close positions
+    validate_positions_limit(deps.as_ref(), &info.sender, false)?;
+
     // check if it's going to be closed in full or partially
     let lp_amount_to_close = if let Some(lp_asset) = lp_asset {
         // close position partially
@@ -209,7 +229,7 @@ pub(crate) fn close_position(
     update_weights(
         deps.branch(),
         &env,
-        &info,
+        &info.sender,
         &coin(lp_amount_to_close.u128(), &position.lp_asset.denom),
         position.unlocking_duration,
         false,
@@ -288,7 +308,7 @@ pub(crate) fn withdraw_position(
             update_weights(
                 deps.branch(),
                 &env,
-                &info,
+                &info.sender,
                 &position.lp_asset,
                 position.unlocking_duration,
                 false,
@@ -335,7 +355,7 @@ pub(crate) fn withdraw_position(
 fn update_weights(
     deps: DepsMut,
     env: &Env,
-    receiver: &MessageInfo,
+    receiver: &Addr,
     lp_asset: &Coin,
     unlocking_duration: u64,
     fill: bool,
@@ -373,7 +393,7 @@ fn update_weights(
 
     // update the user's weight for this LP
     let (_, mut address_lp_weight) =
-        get_latest_address_weight(deps.storage, &receiver.sender, &lp_asset.denom)?;
+        get_latest_address_weight(deps.storage, receiver, &lp_asset.denom)?;
 
     if fill {
         // filling position
@@ -386,7 +406,7 @@ fn update_weights(
     //todo if the address weight is zero, remove it from the storage?
     LP_WEIGHT_HISTORY.update::<_, StdError>(
         deps.storage,
-        (&receiver.sender, &lp_asset.denom, current_epoch.id + 1u64),
+        (receiver, &lp_asset.denom, current_epoch.id + 1u64),
         |_| Ok(address_lp_weight),
     )?;
 

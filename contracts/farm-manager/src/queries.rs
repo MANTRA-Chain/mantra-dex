@@ -52,7 +52,7 @@ pub(crate) fn query_positions(
     address: String,
     open_state: Option<bool>,
 ) -> Result<PositionsResponse, ContractError> {
-    let positions = get_positions_by_receiver(deps.storage, address, open_state)?;
+    let positions = get_positions_by_receiver(deps.storage, &address, open_state)?;
 
     Ok(PositionsResponse { positions })
 }
@@ -65,7 +65,7 @@ pub(crate) fn query_rewards(
 ) -> Result<RewardsResponse, ContractError> {
     let receiver = deps.api.addr_validate(&address)?;
     // check if the user has any open LP positions
-    let open_positions = get_positions_by_receiver(deps.storage, receiver.to_string(), Some(true))?;
+    let open_positions = get_positions_by_receiver(deps.storage, receiver.as_str(), Some(true))?;
 
     if open_positions.is_empty() {
         // if the user has no open LP positions, return an empty rewards list
