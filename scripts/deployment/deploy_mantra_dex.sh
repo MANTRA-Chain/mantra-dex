@@ -78,13 +78,10 @@ function append_contract_address_to_output() {
 
 function init_epoch_manager() {
 	init_msg='{
-    "start_epoch": {
-      "id": 0,
-      "start_time": "1727443200000000000"
-    },
+    "owner": "'$deployer_address'",
     "epoch_config": {
-      "duration": "3600000000000",
-      "genesis_epoch": "1727443200000000000"
+      "duration": "3600",
+      "genesis_epoch": "1728489307"
     }
   }'
 	init_artifact 'epoch_manager.wasm' "$init_msg" "MANTRA Epoch Manager"
@@ -118,6 +115,7 @@ function init_farm_manager() {
               "owner": "'$deployer_address'",
               "epoch_manager_addr": "'$epoch_manager_addr'",
               "fee_collector_addr": "'$fee_collector_addr'",
+              "pool_manager_addr": "",
               "create_farm_fee": {
                 "denom": "uom",
                 "amount": "1000"
