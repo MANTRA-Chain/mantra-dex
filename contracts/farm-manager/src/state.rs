@@ -24,16 +24,22 @@ pub const POSITIONS: IndexedMap<&str, Position, PositionIndexes> = IndexedMap::n
             "positions",
             "positions__receiver",
         ),
+        open_state_by_receiver: MultiIndex::new(
+            |_pk, p| (p.receiver.as_bytes().to_vec(), p.open.into()),
+            "positions",
+            "positions__open_state_by_receiver",
+        ),
     },
 );
 
 pub struct PositionIndexes<'a> {
     pub receiver: MultiIndex<'a, String, Position, String>,
+    pub open_state_by_receiver: MultiIndex<'a, (Vec<u8>, u8), Position, String>,
 }
 
 impl<'a> IndexList<Position> for PositionIndexes<'a> {
     fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Position>> + '_> {
-        let v: Vec<&dyn Index<Position>> = vec![&self.receiver];
+        let v: Vec<&dyn Index<Position>> = vec![&self.receiver, &self.open_state_by_receiver];
         Box::new(v.into_iter())
     }
 }
@@ -53,9 +59,9 @@ pub const FARM_COUNTER: Item<u64> = Item::new("farm_counter");
 pub const FARMS: IndexedMap<&str, Farm, FarmIndexes> = IndexedMap::new(
     "farms",
     FarmIndexes {
-        lp_denom: MultiIndex::new(|_pk, i| i.lp_denom.to_string(), "farms", "farms__lp_asset"),
+        lp_denom: MultiIndex::new(|_pk, f| f.lp_denom.to_string(), "farms", "farms__lp_asset"),
         farm_asset: MultiIndex::new(
-            |_pk, i| i.farm_asset.denom.clone(),
+            |_pk, f| f.farm_asset.denom.clone(),
             "farms",
             "farms__farm_asset",
         ),
@@ -75,7 +81,11 @@ impl<'a> IndexList<Farm> for FarmIndexes<'a> {
 }
 
 // settings for pagination
-pub(crate) const MAX_LIMIT: u32 = 100;
+// MAX_ITEMS_LIMIT in the case of positions, is the maximum number of positions that a user can have
+// open or closed at a given time, i.e. there can be at most MAX_ITEMS_LIMIT open positions and
+// MAX_POSITIONS_LIMIT closed positions.
+// For farms, the MAX_ITEMS_LIMIT is the maximum number of farms that can be queried at a given time.
+pub const MAX_ITEMS_LIMIT: u32 = 100;
 const DEFAULT_LIMIT: u32 = 10;
 
 /// Gets the farms in the contract
@@ -84,7 +94,7 @@ pub fn get_farms(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Farm>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     FARMS
@@ -105,7 +115,7 @@ pub fn get_farms_by_lp_denom(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Farm>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     FARMS
@@ -129,7 +139,7 @@ pub fn get_farms_by_farm_asset(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Farm>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     FARMS
@@ -173,16 +183,27 @@ pub fn get_position(
 /// Gets all the positions of the given receiver.
 pub fn get_positions_by_receiver(
     storage: &dyn Storage,
-    receiver: String,
+    receiver: &str,
     open_state: Option<bool>,
 ) -> StdResult<Vec<Position>> {
-    let limit = MAX_LIMIT as usize;
+    let limit = MAX_ITEMS_LIMIT as usize;
 
-    let mut positions_by_receiver = POSITIONS
-        .idx
-        .receiver
-        .prefix(receiver)
+    let index = if let Some(open_state) = open_state {
+        // if open_state is provided, filter by open state
+        POSITIONS
+            .idx
+            .open_state_by_receiver
+            .prefix((receiver.as_bytes().to_vec(), open_state.into()))
+    } else {
+        // otherwise get all positions, no matter if they are open or closed
+        POSITIONS.idx.receiver.prefix(receiver.to_string())
+    };
+
+    let mut positions_by_receiver = index
         .range(storage, None, None, Order::Ascending)
+        // take only the first `limit` positions. If filtering by open state, it means the user
+        // at most have MAX_POSITION_LIMIT open and MAX_POSITION_LIMIT close positions, as they
+        // are validated when creating/closing a position.
         .take(limit)
         .map(|item| {
             let (_, position) = item?;

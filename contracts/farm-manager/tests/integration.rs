@@ -1,14 +1,16 @@
 extern crate core;
 
 use amm::constants::LP_SYMBOL;
+use std::cell::RefCell;
+
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Timestamp, Uint128};
 use cw_utils::PaymentError;
-use std::cell::RefCell;
 
 use amm::farm_manager::{
     Config, Curve, Farm, FarmAction, FarmParams, FarmsBy, LpWeightResponse, Position,
     PositionAction, RewardsResponse,
 };
+use farm_manager::state::MAX_ITEMS_LIMIT;
 use farm_manager::ContractError;
 
 use crate::common::suite::TestingSuite;
@@ -1234,6 +1236,11 @@ pub fn test_manage_position() {
 
     let fee_collector = suite.fee_collector_addr.clone();
     let farm_manager = suite.farm_manager_addr.clone();
+    let pool_manager = suite.pool_manager_addr.clone();
+
+    // send some lp tokens to the pool manager, to simulate later the creation of a position
+    // on behalf of a user by the pool manager
+    suite.send_tokens(&creator, &pool_manager, &[coin(100_000, lp_denom.clone())]);
 
     suite
         .manage_farm(
@@ -1794,6 +1801,22 @@ pub fn test_manage_position() {
         })
         .manage_position(
             &creator,
+            PositionAction::Fill {
+                identifier: None,
+                unlocking_duration: 86_400,
+                receiver: Some(another.to_string()),
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        )
+        .manage_position(
+            &pool_manager,
             PositionAction::Fill {
                 identifier: None,
                 unlocking_duration: 86_400,
@@ -4261,5 +4284,367 @@ fn test_refill_position_uses_current_position_unlocking_period() {
             let response = result.unwrap();
             // the weight shouldn't be affected by the low unlocking period used in the refill
             assert_eq!(response.lp_weight, Uint128::new(31_998));
+        });
+}
+
+#[test]
+fn position_fill_attack_is_not_possible() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+
+    let creator = suite.creator();
+    let victim_not_victim = suite.senders[1].clone();
+    let attacker = suite.senders[2].clone();
+    suite.instantiate_default();
+
+    // Prepare the farm and victim's position
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &victim_not_victim,
+            PositionAction::Fill {
+                identifier: Some("nice_position".to_string()),
+                // 1 day unlocking duration
+                unlocking_duration: 86_400,
+                // No receiver means the user is the owner of the position receiver: None,
+                receiver: None,
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // Check that the position is created
+        .query_positions(&victim_not_victim, Some(true), |result| {
+            let positions = result.unwrap();
+            assert_eq!(positions.positions.len(), 1);
+            assert_eq!(
+                positions.positions[0],
+                Position {
+                    identifier: "nice_position".to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.clone(),
+                        amount: Uint128::new(5_000)
+                    },
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: victim_not_victim.clone(),
+                }
+            );
+        });
+
+    // The attacker tries to create 100 positions with minimal amounts
+    // and sets the receiver to the victim
+    for i in 0..100 {
+        suite.manage_position(
+            &attacker,
+            PositionAction::Fill {
+                identifier: Some(format!("nasty{}", i)),
+                // change to this line to see how sorting matters:
+                // identifier: Some(format!("nice_position{}", i)),
+                // Set unlocking duration to 1 year (maximum)
+                unlocking_duration: 31_556_926u64,
+                // Receiver is set to the user, making the user the owner of these positions
+                receiver: Some(victim_not_victim.to_string()),
+            },
+            vec![coin(1, lp_denom.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        );
+    }
+
+    // Query positions for the user again
+    suite.query_positions(&victim_not_victim, Some(true), |result| {
+        let positions = result.unwrap();
+        // the attacker couldn't create any positions for the user
+        assert_eq!(positions.positions.len(), 1);
+    });
+
+    suite.query_positions(&victim_not_victim, Some(true), |result| {
+        let positions = result.unwrap();
+        // The original position must be visible
+        assert!(positions
+            .positions
+            .iter()
+            .any(|p| p.identifier == "nice_position"));
+    });
+}
+
+/// creates a MAX_ITEMS_LIMIT number of positions and farms. A user will claim for all the farms.
+/// This shouldn't leave any unclaimed amount, as the user shouldn't be able to participate in more farms
+/// than what the rewards calculation function iterates over.
+#[test]
+fn test_positions_limits() {
+    let mut balances = vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+    ];
+
+    // prepare lp denoms
+    for i in 1..MAX_ITEMS_LIMIT * 2 {
+        let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
+        balances.push(coin(1_000_000_000u128, lp_denom.clone()));
+    }
+
+    let mut suite = TestingSuite::default_with_balances(balances);
+
+    let creator = suite.creator();
+    let alice = suite.senders[1].clone();
+    suite.instantiate_default();
+
+    // prepare farms, create more than the user could participate on
+    for i in 1..MAX_ITEMS_LIMIT * 2 {
+        suite.manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
+                    start_epoch: Some(1),
+                    preliminary_end_epoch: Some(2),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(1_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(1_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    // open positions
+    for i in 1..=MAX_ITEMS_LIMIT {
+        suite.manage_position(
+            &alice,
+            PositionAction::Fill {
+                identifier: Some(format!("position{}", i)),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(
+                1_000,
+                format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
+            )],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    suite.query_positions(&alice, Some(true), |result| {
+        let response = result.unwrap();
+        assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+    });
+
+    // alice can't create additional positions, as it hit the limit on open positions
+    suite.manage_position(
+        &alice,
+        PositionAction::Fill {
+            identifier: Some("aditional_position".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(
+            1_000,
+            format!("factory/{MOCK_CONTRACT_ADDR_1}/102.{LP_SYMBOL}"),
+        )],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::MaxPositionsPerUserExceeded { .. } => {}
+                _ => panic!(
+                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                ),
+            }
+        },
+    );
+
+    // move an epoch and claim
+    suite
+        .add_one_epoch()
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            // all the rewards were claimed, 1000 uusdy * 100
+            assert_eq!(balance, Uint128::new(1_000_100_000u128));
+        })
+        .query_positions(&alice, Some(true), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+
+    // now let's try closing positions
+    for i in 1..=MAX_ITEMS_LIMIT {
+        suite.manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: format!("position{}", i),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    // no open positions are left, instead there are MAX_ITEMS_LIMIT closed positions
+    suite
+        .query_positions(&alice, Some(true), |result| {
+            let response = result.unwrap();
+            assert!(response.positions.is_empty());
+        })
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+
+    // try opening more positions
+    for i in 1..=MAX_ITEMS_LIMIT {
+        suite.manage_position(
+            &alice,
+            PositionAction::Fill {
+                identifier: Some(format!("new_position{}", i)),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(
+                1_000,
+                format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
+            )],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    // alice has MAX_ITEMS_LIMIT open positions and MAX_ITEMS_LIMIT closed positions
+    suite
+        .query_positions(&alice, Some(true), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        })
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+
+    // trying to close another position should err
+    suite
+        .manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: "new_position1".to_string(),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::MaxPositionsPerUserExceeded { .. } => {}
+                    _ => panic!(
+                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                ),
+                }
+            },
+        )
+        // try closing partially
+        .manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: "new_position1".to_string(),
+                lp_asset: Some(coin(
+                    500,
+                    format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}"),
+                )),
+            },
+            vec![],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::MaxPositionsPerUserExceeded { .. } => {}
+                    _ => panic!(
+                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                ),
+                }
+            },
+        );
+
+    // let's move time so alice can withdraw a few positions and open some slots to close additional positions
+    suite
+        .add_one_epoch()
+        .manage_position(
+            &alice,
+            PositionAction::Withdraw {
+                identifier: "position1".to_string(),
+                emergency_unlock: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), (MAX_ITEMS_LIMIT - 1) as usize);
+        })
+        // try closing it a position partially
+        .manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: "new_position1".to_string(),
+                lp_asset: Some(coin(
+                    500,
+                    format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}"),
+                )),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
         });
 }

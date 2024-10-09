@@ -20,8 +20,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
     cw_utils::nonpayable(&info)?;
 
     // check if the user has any open LP positions
-    let open_positions =
-        get_positions_by_receiver(deps.storage, info.sender.clone().into_string(), Some(true))?;
+    let open_positions = get_positions_by_receiver(deps.storage, info.sender.as_str(), Some(true))?;
     ensure!(!open_positions.is_empty(), ContractError::NoOpenPositions);
 
     let config = CONFIG.load(deps.storage)?;

@@ -69,6 +69,18 @@ impl TestingSuite {
         self.add_one_day();
         self
     }
+
+    pub(crate) fn send_tokens(
+        &mut self,
+        sender: &Addr,
+        receiver: &Addr,
+        coins: &[Coin],
+    ) -> &mut Self {
+        self.app
+            .send_tokens(sender.clone(), receiver.clone(), coins)
+            .unwrap();
+        self
+    }
 }
 
 /// Instantiate
