@@ -641,28 +641,27 @@ fn compute_next_d(
 /// Computes the amount of lp tokens to mint after a deposit for a stableswap pool.
 /// Assumes the deposits have already been credited to the pool_assets.
 #[allow(clippy::unwrap_used, clippy::too_many_arguments)]
-pub fn compute_mint_amount_for_stableswap_deposit(
+pub fn compute_lp_mint_amount_for_stableswap_deposit(
     amp_factor: &u64,
-    deposits: &[Coin],
-    pool_assets: &[Coin],
+    old_pool_assets: &[Coin],
+    new_pool_assets: &[Coin],
     pool_lp_token_total_supply: Uint128,
-) -> Option<Uint128> {
+) -> Result<Option<Uint128>, ContractError> {
     // Initial invariant
-    let d_0 = compute_d(amp_factor, deposits)?;
+    let d_0 = compute_d(amp_factor, old_pool_assets).ok_or(ContractError::StableInvariantError)?;
 
-    // Invariant after change
-    // notice that pool_assets already added the new deposits to the pool
-    let d_1 = compute_d(amp_factor, pool_assets)?;
+    // Invariant after change, i.e. after deposit
+    // notice that new_pool_assets already added the new deposits to the pool
+    let d_1 = compute_d(amp_factor, new_pool_assets).ok_or(ContractError::StableInvariantError)?;
 
+    // If the invariant didn't change, return None
     if d_1 <= d_0 {
-        None
+        Ok(None)
     } else {
         let amount = Uint512::from(pool_lp_token_total_supply)
-            .checked_mul(d_1.checked_sub(d_0).unwrap())
-            .unwrap()
-            .checked_div(d_0)
-            .unwrap();
-        Some(Uint128::try_from(amount).unwrap())
+            .checked_mul(d_1.checked_sub(d_0)?)?
+            .checked_div(d_0)?;
+        Ok(Some(Uint128::try_from(amount)?))
     }
 }
 
@@ -887,14 +886,14 @@ mod tests {
 
         let pool_token_supply = MAX_TOKENS_IN;
 
-        let actual_mint_amount = compute_mint_amount_for_stableswap_deposit(
+        let actual_mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
             &MIN_AMP,
             &deposits,
             &pool_assets,
             pool_token_supply,
         )
         .unwrap();
-        let expected_mint_amount = MAX_TOKENS_IN;
+        let expected_mint_amount = Some(MAX_TOKENS_IN);
 
         assert_eq!(actual_mint_amount, expected_mint_amount);
     }
@@ -1123,12 +1122,12 @@ mod tests {
                 coin(pool_token_c_amount + deposit_amount_c, "denom3"),
             ];
 
-            let mint_amount = compute_mint_amount_for_stableswap_deposit(
+            let mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
                 &amp_factor,
                 &deposits,
                 &new_pool_assets,
                 Uint128::new(pool_token_supply),
-                );
+                ).unwrap();
 
             prop_assume!(mint_amount.is_some());
 

@@ -100,6 +100,9 @@ pub enum ContractError {
     #[error("Error computing the LP mint amount for the stable pool")]
     StableLpMintError,
 
+    #[error("Error computing the stableswap invariant")]
+    StableInvariantError,
+
     #[error("Failed to converge when performing newtons method")]
     ConvergeError,
 
