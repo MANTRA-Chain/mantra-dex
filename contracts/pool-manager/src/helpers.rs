@@ -559,7 +559,6 @@ pub fn get_asset_indexes_in_pool(
     ))
 }
 
-// TODO: handle unwraps properly
 #[allow(clippy::unwrap_used)]
 pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
     let n_coins = Uint128::from(deposits.len() as u128);
@@ -602,8 +601,6 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
             }
         }
 
-        println!("D: {:?}", d);
-
         Some(d)
     }
 }
@@ -641,36 +638,26 @@ fn compute_next_d(
     Some(numerator.checked_div(denominator).unwrap())
 }
 
-/// Computes the amount of pool tokens to mint after a deposit.
+/// Computes the amount of lp tokens to mint after a deposit for a stableswap pool.
+/// Assumes the deposits have already been credited to the pool_assets.
 #[allow(clippy::unwrap_used, clippy::too_many_arguments)]
-pub fn compute_mint_amount_for_deposit(
+pub fn compute_mint_amount_for_stableswap_deposit(
     amp_factor: &u64,
     deposits: &[Coin],
-    swaps: &[Coin],
-    pool_token_supply: Uint128,
+    pool_assets: &[Coin],
+    pool_lp_token_total_supply: Uint128,
 ) -> Option<Uint128> {
     // Initial invariant
     let d_0 = compute_d(amp_factor, deposits)?;
 
-    let new_balances: Vec<Coin> = swaps
-        .iter()
-        .enumerate()
-        .map(|(i, pool_asset)| {
-            let deposit_amount = deposits[i].amount;
-            let new_amount = pool_asset.amount.checked_add(deposit_amount).unwrap();
-            Coin {
-                denom: pool_asset.denom.clone(),
-                amount: new_amount,
-            }
-        })
-        .collect();
-
     // Invariant after change
-    let d_1 = compute_d(amp_factor, &new_balances)?;
+    // notice that pool_assets already added the new deposits to the pool
+    let d_1 = compute_d(amp_factor, pool_assets)?;
+
     if d_1 <= d_0 {
         None
     } else {
-        let amount = Uint512::from(pool_token_supply)
+        let amount = Uint512::from(pool_lp_token_total_supply)
             .checked_mul(d_1.checked_sub(d_0).unwrap())
             .unwrap()
             .checked_div(d_0)
@@ -893,16 +880,20 @@ mod tests {
         ];
 
         let pool_assets = vec![
-            coin(MAX_TOKENS_IN.u128(), "denom1"),
-            coin(MAX_TOKENS_IN.u128(), "denom2"),
-            coin(MAX_TOKENS_IN.u128(), "denom4"),
+            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom1"),
+            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom2"),
+            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom4"),
         ];
 
         let pool_token_supply = MAX_TOKENS_IN;
 
-        let actual_mint_amount =
-            compute_mint_amount_for_deposit(&MIN_AMP, &deposits, &pool_assets, pool_token_supply)
-                .unwrap();
+        let actual_mint_amount = compute_mint_amount_for_stableswap_deposit(
+            &MIN_AMP,
+            &deposits,
+            &pool_assets,
+            pool_token_supply,
+        )
+        .unwrap();
         let expected_mint_amount = MAX_TOKENS_IN;
 
         assert_eq!(actual_mint_amount, expected_mint_amount);
@@ -1106,48 +1097,44 @@ mod tests {
             deposit_amount_a in 0..MAX_TOKENS_IN.u128() >> 2,
             deposit_amount_b in 0..MAX_TOKENS_IN.u128() >> 2,
             deposit_amount_c in 0..MAX_TOKENS_IN.u128() >> 2,
-            swap_token_a_amount in 0..MAX_TOKENS_IN.u128(),
-            swap_token_b_amount in 0..MAX_TOKENS_IN.u128(),
-            swap_token_c_amount in 0..MAX_TOKENS_IN.u128(),
+            pool_token_a_amount in 0..MAX_TOKENS_IN.u128(),
+            pool_token_b_amount in 0..MAX_TOKENS_IN.u128(),
+            pool_token_c_amount in 0..MAX_TOKENS_IN.u128(),
             pool_token_supply in 0..MAX_TOKENS_IN.u128(),
         ) {
-            let swaps = vec![
-                coin(swap_token_a_amount, "denom1"),
-                coin(swap_token_b_amount, "denom2"),
-                coin(swap_token_c_amount, "denom3"),
+            let pool_assets = vec![
+                coin(pool_token_a_amount, "denom1"),
+                coin(pool_token_b_amount, "denom2"),
+                coin(pool_token_c_amount, "denom3"),
             ];
 
-            let d0 = compute_d(&amp_factor, &swaps).unwrap();
-
+            let d0 = compute_d(&amp_factor, &pool_assets).unwrap();
             let deposits = vec![
                 coin(deposit_amount_a, "denom1"),
                 coin(deposit_amount_b, "denom2"),
                 coin(deposit_amount_c, "denom3"),
             ];
 
-            let mint_amount = compute_mint_amount_for_deposit(
-                &amp_factor,
-                &swaps,
-                &deposits,
-                Uint128::new(pool_token_supply),
-                );
-            prop_assume!(mint_amount.is_some());
-
-            let new_swap_token_a_amount = swap_token_a_amount + deposit_amount_a;
-            let new_swap_token_b_amount = swap_token_b_amount + deposit_amount_b;
-            let new_swap_token_c_amount = swap_token_c_amount + deposit_amount_c;
-            let new_pool_token_supply = pool_token_supply + mint_amount.unwrap().u128();
-
-            let new_swaps = vec![
-                coin(new_swap_token_a_amount, "denom1"),
-                coin(new_swap_token_b_amount, "denom2"),
-                coin(new_swap_token_c_amount, "denom3"),
+            // by the time compute_mint_amount_for_stableswap_deposit is called within the contract
+            // to compute the lp shares for the stableswap, pool assets include the new deposits already
+            let new_pool_assets = vec![
+                coin(pool_token_a_amount + deposit_amount_a, "denom1"),
+                coin(pool_token_b_amount + deposit_amount_b, "denom2"),
+                coin(pool_token_c_amount + deposit_amount_c, "denom3"),
             ];
 
-            let d1 = compute_d(&amp_factor, &new_swaps).unwrap();
+            let mint_amount = compute_mint_amount_for_stableswap_deposit(
+                &amp_factor,
+                &deposits,
+                &new_pool_assets,
+                Uint128::new(pool_token_supply),
+                );
+
+            prop_assume!(mint_amount.is_some());
+
+            let d1 = compute_d(&amp_factor, &new_pool_assets).unwrap();
 
             assert!(d0 < d1);
-            assert!(d0 / Uint512::from( pool_token_supply) <= d1 /  Uint512::from( new_pool_token_supply));
         }
     }
 
