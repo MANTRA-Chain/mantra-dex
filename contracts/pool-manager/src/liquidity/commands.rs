@@ -180,7 +180,6 @@ pub fn provide_liquidity(
     } else {
         for asset in deposits.iter() {
             let asset_denom = &asset.denom;
-
             let pool_asset_index = pool_assets
                 .iter()
                 .position(|pool_asset| &pool_asset.denom == asset_denom)
@@ -237,14 +236,23 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    let amount = std::cmp::min(
-                        deposits[0]
-                            .amount
-                            .multiply_ratio(total_share, pool_assets[0].amount),
-                        deposits[1]
-                            .amount
-                            .multiply_ratio(total_share, pool_assets[1].amount),
-                    );
+                    let mut asset_shares = vec![];
+
+                    for asset in deposits.iter() {
+                        let asset_denom = &asset.denom;
+                        let pool_asset_index = pool_assets
+                            .iter()
+                            .position(|pool_asset| &pool_asset.denom == asset_denom)
+                            .ok_or(ContractError::AssetMismatch)?;
+
+                        asset_shares.push(
+                            asset
+                                .amount
+                                .multiply_ratio(total_share, pool_assets[pool_asset_index].amount),
+                        );
+                    }
+
+                    let amount = std::cmp::min(asset_shares[0], asset_shares[1]);
 
                     // assert slippage tolerance
                     helpers::assert_slippage_tolerance(
