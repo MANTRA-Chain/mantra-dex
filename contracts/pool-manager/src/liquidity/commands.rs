@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_std::{Decimal, OverflowError, Uint128};
 
-use amm::coin::aggregate_coins;
+use amm::coin::{aggregate_coins, deduct_coins};
 use amm::common::validate_addr_or_default;
 use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use amm::pool_manager::{get_total_share, ExecuteMsg, PoolType};
@@ -22,7 +22,7 @@ use crate::{
 // break it down into smaller modules which house some things like swap, liquidity etc
 use crate::contract::SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID;
 use crate::helpers::{
-    aggregate_outgoing_fees, compute_d, compute_mint_amount_for_stableswap_deposit,
+    aggregate_outgoing_fees, compute_d, compute_lp_mint_amount_for_stableswap_deposit,
 };
 use crate::queries::query_simulation;
 use crate::state::{
@@ -180,6 +180,7 @@ pub fn provide_liquidity(
             ))
             .add_attributes(vec![("action", "single_side_liquidity_provision")]))
     } else {
+        // Increment the pool asset amount by the amount sent
         for asset in deposits.iter() {
             let asset_denom = &asset.denom;
             let pool_asset_index = pool_assets
@@ -187,7 +188,6 @@ pub fn provide_liquidity(
                 .position(|pool_asset| &pool_asset.denom == asset_denom)
                 .ok_or(ContractError::AssetMismatch)?;
 
-            // Increment the pool asset amount by the amount sent
             pool_assets[pool_asset_index].amount = pool_assets[pool_asset_index]
                 .amount
                 .checked_add(asset.amount)?;
@@ -293,12 +293,15 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    let amount = compute_mint_amount_for_stableswap_deposit(
+                    let amount = compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
-                        &deposits,
+                        // Since pool_assets already added the new deposits to the pool above, it
+                        // needs to be subtracted as this function requires the original pool_assets
+                        // to calculate the invariant d_0 properly
+                        &deduct_coins(pool_assets.clone(), deposits.clone())?,
                         &pool_assets,
                         total_share,
-                    )
+                    )?
                     .ok_or(ContractError::StableLpMintError)?;
 
                     helpers::assert_slippage_tolerance(

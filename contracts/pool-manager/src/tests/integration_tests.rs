@@ -3356,7 +3356,7 @@ mod provide_liquidity {
     }
 
     #[test]
-    fn provide_liquidity_stable_swap_shouldnt_double_count_deposits() {
+    fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() {
         let mut suite = TestingSuite::default_with_balances(vec![
             coin(1_000_000_001u128, "uusd".to_string()),
             coin(1_000_000_001u128, "uusdc".to_string()),
@@ -3364,6 +3364,7 @@ mod provide_liquidity {
             coin(1_000_000_001u128, "uusdy".to_string()),
         ]);
         let creator = suite.creator();
+        let alice = suite.senders[1].clone();
 
         let asset_infos = vec![
             "uusdc".to_string(),
@@ -3678,6 +3679,73 @@ mod provide_liquidity {
                 assert_approx_eq!(1000u128, return_amount.parse::<u128>().unwrap(), "0.003");
             },
         );
+
+        // now creator provides even more liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(10_000_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(10_000_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(10_000_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&creator.to_string(), &lp_denom, |result| {
+                // assert_approx_eq!(
+                //     result.unwrap().amount,
+                //     Uint128::from(30_000_000u128 + 1_500_000u128 + 1_500_000u128 - 1_000u128),
+                //     "0.000001"
+                // );
+            });
+
+        // now alice provides liquidity
+        suite
+            .provide_liquidity(
+                &alice,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&alice.to_string(), &lp_denom, |result| {
+                // shares are not inflated, alice should have 30_000 LP shares
+                assert_eq!(result.unwrap().amount, Uint128::from(30_000u128));
+            });
     }
 
     // This test is to ensure that the edge case of providing liquidity with 3 assets
