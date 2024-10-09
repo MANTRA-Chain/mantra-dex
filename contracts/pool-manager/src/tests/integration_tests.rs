@@ -16,7 +16,6 @@ fn instantiate_normal() {
     suite.instantiate(suite.senders[0].to_string(), suite.senders[1].to_string());
 }
 
-// add features `token_factory` so tests are compiled using the correct flag
 #[test]
 fn deposit_and_withdraw_sanity_check() {
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -2917,6 +2916,123 @@ mod provide_liquidity {
                     result.unwrap();
                 },
             );
+    }
+
+    #[test]
+    fn provide_liquidity_emit_proportional_lp_shares() {
+        let mut suite = TestingSuite::default_with_balances(vec![
+            coin(10_000_000u128, "uwhale".to_string()),
+            coin(10_000_000u128, "uluna".to_string()),
+            coin(10_000_000u128, "uosmo".to_string()),
+            coin(10_000u128, "uusd".to_string()),
+        ]);
+        let creator = suite.creator();
+        let other = suite.senders[1].clone();
+
+        // Asset denoms with uwhale and uluna
+        let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(1),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(1),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_denoms,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            Some("whale.uluna".to_string()),
+            vec![coin(1000, "uusd")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let contract_addr = suite.pool_manager_addr.clone();
+        let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+
+        // let's provide liquidity with two assets
+        suite
+            .provide_liquidity(
+                &creator,
+                "whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&creator.to_string(), |result| {
+                let balances = result.unwrap();
+
+                // user should have 10_000u128 LP shares - MINIMUM_LIQUIDITY_AMOUNT
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom && coin.amount == Uint128::from(9_000u128)
+                }));
+            })
+            // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+            });
+
+        // other provides liquidity as well, half of the tokens the creator provided
+        // this should result in ~half LP tokens given to other
+        suite
+            .provide_liquidity(
+                &other,
+                "whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(5_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(5_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&other.to_string(), |result| {
+                let balances = result.unwrap();
+                // user should have 5_000*10_000/15_000
+                assert!(balances
+                    .iter()
+                    .any(|coin| { coin.denom == lp_denom && coin.amount == Uint128::new(3_333) }));
+            });
     }
 
     #[test]
