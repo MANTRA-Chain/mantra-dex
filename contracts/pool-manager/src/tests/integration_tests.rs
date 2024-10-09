@@ -3355,6 +3355,331 @@ mod provide_liquidity {
         );
     }
 
+    #[test]
+    fn provide_liquidity_stable_swap_shouldnt_double_count_deposits() {
+        let mut suite = TestingSuite::default_with_balances(vec![
+            coin(1_000_000_001u128, "uusd".to_string()),
+            coin(1_000_000_001u128, "uusdc".to_string()),
+            coin(1_000_000_000u128, "uusdt".to_string()),
+            coin(1_000_000_001u128, "uusdy".to_string()),
+        ]);
+        let creator = suite.creator();
+
+        let asset_infos = vec![
+            "uusdc".to_string(),
+            "uusdt".to_string(),
+            "uusdy".to_string(),
+        ];
+
+        // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::from_ratio(1u128, 1000u128),
+            },
+            swap_fee: Fee {
+                share: Decimal::from_ratio(1u128, 10_000_u128),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("uusdc.uusdt.uusdy".to_string()),
+            vec![coin(1000, "uusd")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let lp_denom = suite.get_lp_denom("uusdc.uusdt.uusdy".to_string());
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&creator.to_string(), &lp_denom, |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    // liquidity provided - MINIMUM_LIQUIDITY_AMOUNT
+                    Uint128::from(1_500_000u128 - 1_000u128)
+                );
+            });
+
+        // let's try providing liquidity again
+        suite
+            .provide_liquidity(
+                &creator,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&creator.to_string(), &lp_denom, |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    // we should expect another ~1_500_000
+                    Uint128::from(1_500_000u128 + 1_500_000u128 - 1_000u128)
+                );
+            });
+
+        let simulated_return_amount = RefCell::new(Uint128::zero());
+        suite.query_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::from(1_000u128),
+            },
+            "uusdt".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
+            },
+        );
+
+        // Now Let's try a swap
+        suite.swap(
+            &creator,
+            "uusdt".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(1_000u128, "uusdc".to_string())],
+            |result| {
+                // Find the key with 'offer_amount' and the key with 'return_amount'
+                // Ensure that the offer amount is 1000 and the return amount is greater than 0
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                // Because the Pool was created and 1_000_000 of each token has been provided as liquidity
+                // Assuming no fees we should expect a small swap of 1000 to result in not too much slippage
+                // Expect 1000 give or take 0.002 difference
+                // Once fees are added and being deducted properly only the "0.002" should be changed.
+                assert_approx_eq!(
+                    offer_amount.parse::<u128>().unwrap(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+                assert_approx_eq!(
+                    simulated_return_amount.borrow().u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+            },
+        );
+
+        let simulated_offer_amount = RefCell::new(Uint128::zero());
+        // Now Let's try a reverse simulation by swapping uluna to uwhale
+        suite.query_reverse_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uusdt".to_string(),
+            |result| {
+                *simulated_offer_amount.borrow_mut() = result.unwrap().offer_amount;
+            },
+        );
+
+        // Another swap but this time the other way around
+        suite.swap(
+            &creator,
+            "uusdc".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(
+                simulated_offer_amount.borrow().u128(),
+                "uusdt".to_string(),
+            )],
+            |result| {
+                // Find the key with 'offer_amount' and the key with 'return_amount'
+                // Ensure that the offer amount is 1000 and the return amount is greater than 0
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_offer_amount.borrow().u128(),
+                    offer_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+
+                assert_approx_eq!(1000u128, return_amount.parse::<u128>().unwrap(), "0.003");
+            },
+        );
+
+        // And now uusdc to uusdy
+        suite.query_reverse_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdy".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uusdc".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().offer_amount;
+            },
+        );
+        // Another swap but this time uusdc to uusdy
+        suite.swap(
+            &creator,
+            "uusdy".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(
+                simulated_return_amount.borrow().u128(),
+                "uusdc".to_string(),
+            )],
+            |result| {
+                // Find the key with 'offer_amount' and the key with 'return_amount'
+                // Ensure that the offer amount is 1000 and the return amount is greater than 0
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_return_amount.borrow().u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+                assert_approx_eq!(1000u128, offer_amount.parse::<u128>().unwrap(), "0.003");
+            },
+        );
+
+        // And now uusdy to uusdt
+        suite.query_reverse_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uusdy".to_string(),
+            |result| {
+                *simulated_offer_amount.borrow_mut() = result.unwrap().offer_amount;
+            },
+        );
+        // Another swap but this time uusdy to uusdt
+        suite.swap(
+            &creator,
+            "uusdt".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(
+                simulated_offer_amount.borrow().u128(),
+                "uusdy".to_string(),
+            )],
+            |result| {
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_offer_amount.borrow().u128(),
+                    offer_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+
+                assert_approx_eq!(1000u128, return_amount.parse::<u128>().unwrap(), "0.003");
+            },
+        );
+    }
+
     // This test is to ensure that the edge case of providing liquidity with 3 assets
     #[test]
     fn provide_liquidity_stable_swap_edge_case() {

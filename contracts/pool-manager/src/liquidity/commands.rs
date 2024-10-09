@@ -21,7 +21,9 @@ use crate::{
 // After writing create_pool I see this can get quite verbose so attempting to
 // break it down into smaller modules which house some things like swap, liquidity etc
 use crate::contract::SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID;
-use crate::helpers::{aggregate_outgoing_fees, compute_d, compute_mint_amount_for_deposit};
+use crate::helpers::{
+    aggregate_outgoing_fees, compute_d, compute_mint_amount_for_stableswap_deposit,
+};
 use crate::queries::query_simulation;
 use crate::state::{
     LiquidityProvisionData, SingleSideLiquidityProvisionBuffer,
@@ -291,7 +293,7 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    let amount = compute_mint_amount_for_deposit(
+                    let amount = compute_mint_amount_for_stableswap_deposit(
                         amp_factor,
                         &deposits,
                         &pool_assets,
