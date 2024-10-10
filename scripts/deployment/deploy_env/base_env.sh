@@ -10,10 +10,10 @@ case $chain in
 mantra | mantra-testnet)
 	if [ -n "$ZSH_VERSION" ]; then
 		# Using an array for TXFLAG
-		TXFLAG=(--node $RPC --chain-id $CHAIN_ID --gas-prices 0.35$DENOM --gas auto --gas-adjustment 1.2 -y -b $b_flag --output $output_flag)
+		TXFLAG=(--node $RPC --chain-id $CHAIN_ID --gas-prices 2$DENOM --gas auto --gas-adjustment 1.2 -y -b $b_flag --output $output_flag)
 	else
 		# Using a string for TXFLAG
-		TXFLAG="--node $RPC --chain-id $CHAIN_ID --gas-prices 0.35$DENOM --gas auto --gas-adjustment 1.2 -y -b $b_flag --output $output_flag"
+		TXFLAG="--node $RPC --chain-id $CHAIN_ID --gas-prices 2$DENOM --gas auto --gas-adjustment 1.2 -y -b $b_flag --output $output_flag"
 	fi
 	;;
 *)

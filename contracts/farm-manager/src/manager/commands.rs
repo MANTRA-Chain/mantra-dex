@@ -205,13 +205,15 @@ fn close_farms(
         // return the available asset, i.e. the amount that hasn't been claimed
         farm.farm_asset.amount = farm.farm_asset.amount.saturating_sub(farm.claimed_amount);
 
-        messages.push(
-            BankMsg::Send {
-                to_address: farm.owner.into_string(),
-                amount: vec![farm.farm_asset],
-            }
-            .into(),
-        );
+        if farm.farm_asset.amount > Uint128::zero() {
+            messages.push(
+                BankMsg::Send {
+                    to_address: farm.owner.into_string(),
+                    amount: vec![farm.farm_asset],
+                }
+                .into(),
+            );
+        }
     }
 
     Ok(messages)

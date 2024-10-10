@@ -309,5 +309,4 @@ while getopts $optstring arg; do
 		exit 2
 		;;
 	esac
-
 done
