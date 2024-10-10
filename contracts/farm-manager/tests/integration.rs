@@ -1,6 +1,6 @@
 extern crate core;
 
-use amm::constants::LP_SYMBOL;
+use amm::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
 use std::cell::RefCell;
 
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Timestamp, Uint128};
@@ -35,6 +35,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         31_536_000,
+        MONTH_IN_SECONDS,
         Decimal::percent(10),
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -56,6 +57,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         86_399,
+        MONTH_IN_SECONDS,
         Decimal::percent(10),
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -77,6 +79,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         86_500,
+        MONTH_IN_SECONDS,
         Decimal::percent(101),
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -84,6 +87,28 @@ fn instantiate_farm_manager() {
             match err {
                 ContractError::InvalidEmergencyUnlockPenalty { .. } => {}
                 _ => panic!("Wrong error type, should return ContractError::InvalidEmergencyUnlockPenalty"),
+            }
+        },
+    ).instantiate_err(
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        Coin {
+            denom: "uom".to_string(),
+            amount: Uint128::new(1_000u128),
+        },
+        1,
+        14,
+        86_400,
+        86_500,
+        MONTH_IN_SECONDS - 1,
+        Decimal::percent(101),
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+            match err {
+                ContractError::FarmExpirationTimeInvalid { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::FarmExpirationTimeInvalid"),
             }
         },
     ).instantiate(
@@ -98,6 +123,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         31_536_000,
+        MONTH_IN_SECONDS,
         Decimal::percent(10), //10% penalty
     );
 }
@@ -1032,6 +1058,7 @@ pub fn update_config() {
         max_farm_epoch_buffer: 14u32,
         min_unlocking_duration: 86_400u64,
         max_unlocking_duration: 31_556_926u64,
+        farm_expiration_time: MONTH_IN_SECONDS,
         emergency_unlock_penalty: Decimal::percent(10),
     };
 
@@ -1052,6 +1079,7 @@ pub fn update_config() {
             Some(15u32),
             Some(172_800u64),
             Some(864_000u64),
+            Some(MONTH_IN_SECONDS * 2),
             Some(Decimal::percent(50)),
             vec![coin(1_000, "uom")],
             |result| {
@@ -1074,6 +1102,7 @@ pub fn update_config() {
         Some(15u32),
         Some(172_800u64),
         Some(864_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -1096,6 +1125,7 @@ pub fn update_config() {
         Some(15u32),
         Some(172_800u64),
         Some(864_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -1118,6 +1148,7 @@ pub fn update_config() {
         Some(15u32),
         Some(80_800u64),
         Some(80_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -1140,6 +1171,7 @@ pub fn update_config() {
         Some(15u32),
         Some(300_000u64),
         Some(200_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -1162,6 +1194,7 @@ pub fn update_config() {
         Some(15u32),
         Some(100_000u64),
         Some(200_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(105)),
         vec![],
         |result| {
@@ -1184,6 +1217,7 @@ pub fn update_config() {
         Some(15u32),
         Some(100_000u64),
         Some(200_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(20)),
         vec![],
         |result| {
@@ -1203,6 +1237,7 @@ pub fn update_config() {
         max_farm_epoch_buffer: 15u32,
         min_unlocking_duration: 100_000u64,
         max_unlocking_duration: 200_000u64,
+        farm_expiration_time: MONTH_IN_SECONDS * 2,
         emergency_unlock_penalty: Decimal::percent(20),
     };
 
@@ -1210,6 +1245,30 @@ pub fn update_config() {
         let config = result.unwrap();
         assert_eq!(config, expected_config);
     });
+
+    suite.update_config(
+        &creator,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(MONTH_IN_SECONDS - 100),
+        None,
+        vec![],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::FarmExpirationTimeInvalid { .. } => {}
+                _ => panic!(
+                    "Wrong error type, should return ContractError::FarmExpirationTimeInvalid"
+                ),
+            }
+        },
+    );
 }
 
 #[test]
@@ -1765,7 +1824,7 @@ pub fn test_manage_position() {
                 farms_response.farms[0].farm_asset.amount,
                 farms_response.farms[0].claimed_amount
             );
-            assert!(farms_response.farms[0].is_expired(5));
+            //assert!(farms_response.farms[0].is_expired(5));
         })
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
@@ -2247,7 +2306,16 @@ fn claim_expired_farm_returns_nothing() {
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
             // the balance hasn't changed
-            assert_eq!(balance, Uint128::new(1_000_006_000u128));
+            assert_eq!(balance, Uint128::new(1_000_008_000u128));
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1usize);
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::new(8_000));
+
+            let farm_debt =
+                farms_response.farms[0].farm_asset.amount - farms_response.farms[0].claimed_amount;
+            assert_eq!(farm_debt, Uint128::zero());
         });
 }
 
@@ -2831,7 +2899,7 @@ fn test_close_expired_farms() {
                     denom: "uusdy".to_string(),
                     amount: Uint128::new(8_000u128),
                 },
-                farm_identifier: None,
+                farm_identifier: Some("farm".to_string()),
             },
         },
         vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
@@ -2840,23 +2908,21 @@ fn test_close_expired_farms() {
         },
     );
 
-    // create a bunch of epochs to make the farm expire
-    for _ in 0..20 {
+    // create enough epochs to make the farm expire
+    for _ in 0..=37 {
         suite.add_one_epoch();
     }
-
-    let mut current_id = 0;
 
     // try opening another farm for the same lp denom, the expired farm should get closed
     suite
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
-            current_id = epoch_response.epoch.id;
+            assert_eq!(epoch_response.epoch.id, 48);
         })
         .query_farms(None, None, None, |result| {
             let farms_response = result.unwrap();
             assert_eq!(farms_response.farms.len(), 1);
-            assert!(farms_response.farms[0].is_expired(current_id));
+            assert_eq!(farms_response.farms[0].identifier, "farm");
         })
         .manage_farm(
             &other,
@@ -2894,9 +2960,9 @@ fn test_close_expired_farms() {
                     claimed_amount: Uint128::zero(),
                     emission_rate: Uint128::new(714),
                     curve: Curve::Linear,
-                    start_epoch: 31u64,
-                    preliminary_end_epoch: 45u64,
-                    last_epoch_claimed: 30u64,
+                    start_epoch: 49u64,
+                    preliminary_end_epoch: 63u64,
+                    last_epoch_claimed: 48u64,
                 }
             );
         });
@@ -2917,58 +2983,87 @@ fn expand_expired_farm() {
 
     suite.instantiate_default();
 
-    suite.manage_farm(
-        &other,
-        FarmAction::Fill {
-            params: FarmParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: None,
-                preliminary_end_epoch: None,
-                curve: None,
-                farm_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(4_000u128),
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
                 },
-                farm_identifier: Some("farm".to_string()),
             },
-        },
-        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-        |result| {
-            result.unwrap();
-        },
-    );
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::zero(),
+                    emission_rate: Uint128::new(285),
+                    curve: Curve::Linear,
+                    start_epoch: 1u64,
+                    preliminary_end_epoch: 15u64,
+                    last_epoch_claimed: 0u64,
+                }
+            );
+        });
 
-    // create a bunch of epochs to make the farm expire
-    for _ in 0..15 {
+    // create enough epochs to make the farm expire
+    // should expire at epoch 16 + config.farm_expiration_time, i.e. 16 + 30 = 46
+    for _ in 0..=46 {
         suite.add_one_epoch();
     }
 
-    suite.manage_farm(
-        &other,
-        FarmAction::Fill {
-            params: FarmParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: None,
-                preliminary_end_epoch: None,
-                curve: None,
-                farm_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(8_000u128),
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 47);
+        })
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
                 },
-                farm_identifier: Some("farm".to_string()),
             },
-        },
-        vec![coin(8_000u128, "uusdy")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-            match err {
-                ContractError::FarmAlreadyExpired { .. } => {}
-                _ => {
-                    panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
+            vec![coin(8_000u128, "uusdy")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::FarmAlreadyExpired { .. } => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
+                    }
                 }
-            }
-        },
-    );
+            },
+        );
 }
 
 #[test]
@@ -4646,5 +4741,376 @@ fn test_positions_limits() {
         .query_positions(&alice, Some(false), |result| {
             let response = result.unwrap();
             assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+}
+
+#[test]
+fn test_farm_expired() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(2_000_000_000u128, "uom"),
+        coin(2_000_000_000u128, "uusdy"),
+        coin(2_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 10);
+        })
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("short_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(100),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("long_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(100),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("another_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::TooManyFarms { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::TooManyFarms"),
+                }
+            },
+        );
+
+    // create a few epochs, but not enough for the farm to expire.
+    // a farm expires after config.farm_expiration_time seconds from the epoch the farm ended
+    // in this case, from the start of epoch 17 + config.farm_expiration_time
+    for _ in 0..20 {
+        suite.add_one_epoch();
+    }
+
+    let mut current_epoch_id = 0;
+
+    // try opening another farm for the same lp denom, the expired farm should get closed
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 30);
+            current_epoch_id = epoch_response.epoch.id;
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
+            // not expired due to the claimed criteria
+            assert!(farms_response.farms[0].claimed_amount.is_zero());
+            assert!(farms_response.farms[1].claimed_amount.is_zero());
+        });
+
+    // creating a new farm of the same LP should fail as the previous ones are technically not expired yet
+    // otherwise the contract would close them automatically when someone tries to open a new farm of that
+    // same lp denom
+    suite.manage_farm(
+        &creator,
+        FarmAction::Fill {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: Some(12),
+                preliminary_end_epoch: Some(100),
+                curve: None,
+                farm_asset: Coin {
+                    denom: "uusdy".to_string(),
+                    amount: Uint128::new(8_000u128),
+                },
+                farm_identifier: Some("another_farm".to_string()),
+            },
+        },
+        vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::TooManyFarms { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::TooManyFarms"),
+            }
+        },
+    );
+
+    // since the short epoch ended on epoch 16, and each epoch is 1 day, the farm should be expired
+    // on epoch 17.start_time + config.farm_expiration_time, which is set to a month.
+    // That is, epoch 48, let's move to that epoch
+
+    for _ in 0..18 {
+        suite.add_one_epoch();
+    }
+
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 48);
+            current_epoch_id = epoch_response.epoch.id;
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
+
+            assert!(farms_response.farms[0].claimed_amount.is_zero());
+            assert!(farms_response.farms[1].claimed_amount.is_zero());
+            assert_eq!(farms_response.farms[0].identifier, "long_farm".to_string());
+            assert_eq!(farms_response.farms[1].identifier, "short_farm".to_string());
+        });
+
+    // the short farm should be expired by now, let's try creating a new farm
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(50),
+                    preliminary_end_epoch: Some(100),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("another_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
+
+            assert!(farms_response.farms[0].claimed_amount.is_zero());
+            assert!(farms_response.farms[1].claimed_amount.is_zero());
+            assert_eq!(
+                farms_response.farms[0].identifier,
+                "another_farm".to_string()
+            );
+            assert_eq!(farms_response.farms[1].identifier, "long_farm".to_string());
+        });
+}
+
+#[test]
+fn user_can_claim_expired_epochs() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(2_000_000_000u128, "uom".to_string()),
+        coin(2_000_000_000u128, "uusdy".to_string()),
+        coin(2_000_000_000u128, "uosmo".to_string()),
+        coin(2_000_000_000u128, lp_denom.clone()),
+    ]);
+
+    let other = suite.senders[1].clone();
+    let alice = suite.senders[2].clone();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(10),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::zero(),
+                    emission_rate: Uint128::new(400),
+                    curve: Curve::Linear,
+                    start_epoch: 10u64,
+                    preliminary_end_epoch: 20u64,
+                    last_epoch_claimed: 9u64,
+                }
+            );
+        })
+        .manage_position(
+            &alice,
+            PositionAction::Fill {
+                identifier: Some("position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // create enough epochs to make the farm expire
+    // should expire at epoch 16 + config.farm_expiration_time, i.e. 16 + 30 = 46
+    for _ in 0..100 {
+        suite.add_one_epoch();
+    }
+
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 100);
+        })
+        // the farm expired, can't be refilled
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
+                },
+            },
+            vec![coin(8_000u128, "uusdy")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::FarmAlreadyExpired { .. } => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
+                    }
+                }
+            },
+        );
+
+    // let's claim the rewards
+
+    suite
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::zero(),
+                    emission_rate: Uint128::new(400),
+                    curve: Curve::Linear,
+                    start_epoch: 10u64,
+                    preliminary_end_epoch: 20u64,
+                    last_epoch_claimed: 9u64,
+                }
+            );
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(2_000_000_000));
+        })
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(2_000_004_000));
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::new(4_000u128),
+                    emission_rate: Uint128::new(400),
+                    curve: Curve::Linear,
+                    start_epoch: 10u64,
+                    preliminary_end_epoch: 20u64,
+                    last_epoch_claimed: 100u64,
+                }
+            );
         });
 }

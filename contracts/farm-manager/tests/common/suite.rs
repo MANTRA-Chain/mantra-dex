@@ -1,3 +1,4 @@
+use amm::constants::MONTH_IN_SECONDS;
 use cosmwasm_std::testing::MockStorage;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
 use cw_multi_test::{
@@ -141,6 +142,7 @@ impl TestingSuite {
             14,
             86_400,
             31_556_926,
+            MONTH_IN_SECONDS,
             Decimal::percent(10), //10% penalty
         );
 
@@ -208,6 +210,7 @@ impl TestingSuite {
         max_farm_epoch_buffer: u32,
         min_unlocking_duration: u64,
         max_unlocking_duration: u64,
+        farm_expiration_time: u64,
         emergency_unlock_penalty: Decimal,
     ) -> &mut Self {
         let msg = InstantiateMsg {
@@ -220,6 +223,7 @@ impl TestingSuite {
             max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
+            farm_expiration_time,
             emergency_unlock_penalty,
         };
 
@@ -253,6 +257,7 @@ impl TestingSuite {
         max_farm_epoch_buffer: u32,
         min_unlocking_duration: u64,
         max_unlocking_duration: u64,
+        farm_expiration_time: u64,
         emergency_unlock_penalty: Decimal,
         result: impl Fn(anyhow::Result<Addr>),
     ) -> &mut Self {
@@ -266,6 +271,7 @@ impl TestingSuite {
             max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
+            farm_expiration_time,
             emergency_unlock_penalty,
         };
 
@@ -320,6 +326,7 @@ impl TestingSuite {
         max_farm_epoch_buffer: Option<u32>,
         min_unlocking_duration: Option<u64>,
         max_unlocking_duration: Option<u64>,
+        farm_expiration_time: Option<u64>,
         emergency_unlock_penalty: Option<Decimal>,
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
@@ -333,6 +340,7 @@ impl TestingSuite {
             max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
+            farm_expiration_time,
             emergency_unlock_penalty,
         };
 
