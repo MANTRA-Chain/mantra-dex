@@ -1,13 +1,16 @@
 extern crate core;
 
-use amm::constants::LP_SYMBOL;
-use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+use amm::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
+use std::cell::RefCell;
+
+use cosmwasm_std::{coin, Addr, Coin, Decimal, Timestamp, Uint128};
 use cw_utils::PaymentError;
 
 use amm::farm_manager::{
     Config, Curve, Farm, FarmAction, FarmParams, FarmsBy, LpWeightResponse, Position,
     PositionAction, RewardsResponse,
 };
+use farm_manager::state::MAX_ITEMS_LIMIT;
 use farm_manager::ContractError;
 
 use crate::common::suite::TestingSuite;
@@ -32,6 +35,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         31_536_000,
+        MONTH_IN_SECONDS,
         Decimal::percent(10),
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -53,6 +57,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         86_399,
+        MONTH_IN_SECONDS,
         Decimal::percent(10),
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -74,6 +79,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         86_500,
+        MONTH_IN_SECONDS,
         Decimal::percent(101),
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -81,6 +87,28 @@ fn instantiate_farm_manager() {
             match err {
                 ContractError::InvalidEmergencyUnlockPenalty { .. } => {}
                 _ => panic!("Wrong error type, should return ContractError::InvalidEmergencyUnlockPenalty"),
+            }
+        },
+    ).instantiate_err(
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        MOCK_CONTRACT_ADDR_1.to_string(),
+        Coin {
+            denom: "uom".to_string(),
+            amount: Uint128::new(1_000u128),
+        },
+        1,
+        14,
+        86_400,
+        86_500,
+        MONTH_IN_SECONDS - 1,
+        Decimal::percent(101),
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+            match err {
+                ContractError::FarmExpirationTimeInvalid { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::FarmExpirationTimeInvalid"),
             }
         },
     ).instantiate(
@@ -95,6 +123,7 @@ fn instantiate_farm_manager() {
         14,
         86_400,
         31_536_000,
+        MONTH_IN_SECONDS,
         Decimal::percent(10), //10% penalty
     );
 }
@@ -569,7 +598,7 @@ fn create_farms() {
             },
         )
         .query_farms(
-            Some(FarmsBy::LPDenom(lp_denom.clone())),
+            Some(FarmsBy::LpDenom(lp_denom.clone())),
             None,
             None,
             |result| {
@@ -1122,7 +1151,8 @@ pub fn update_config() {
         max_concurrent_farms: 2u32,
         max_farm_epoch_buffer: 14u32,
         min_unlocking_duration: 86_400u64,
-        max_unlocking_duration: 31_536_000u64,
+        max_unlocking_duration: 31_556_926u64,
+        farm_expiration_time: MONTH_IN_SECONDS,
         emergency_unlock_penalty: Decimal::percent(10),
     };
 
@@ -1143,6 +1173,7 @@ pub fn update_config() {
             Some(15u32),
             Some(172_800u64),
             Some(864_000u64),
+            Some(MONTH_IN_SECONDS * 2),
             Some(Decimal::percent(50)),
             vec![coin(1_000, "uom")],
             |result| {
@@ -1165,6 +1196,7 @@ pub fn update_config() {
         Some(15u32),
         Some(172_800u64),
         Some(864_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -1187,13 +1219,14 @@ pub fn update_config() {
         Some(15u32),
         Some(172_800u64),
         Some(864_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::UnspecifiedConcurrentFarms { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::UnspecifiedConcurrentFarms"),
+                ContractError::MaximumConcurrentFarmsDecreased => {}
+                _ => panic!("Wrong error type, should return ContractError::MaximumConcurrentFarmsDecreased"),
             }
         },
     ).update_config(
@@ -1209,6 +1242,7 @@ pub fn update_config() {
         Some(15u32),
         Some(80_800u64),
         Some(80_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -1231,6 +1265,7 @@ pub fn update_config() {
         Some(15u32),
         Some(300_000u64),
         Some(200_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -1253,6 +1288,7 @@ pub fn update_config() {
         Some(15u32),
         Some(100_000u64),
         Some(200_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(105)),
         vec![],
         |result| {
@@ -1275,6 +1311,7 @@ pub fn update_config() {
         Some(15u32),
         Some(100_000u64),
         Some(200_000u64),
+        Some(MONTH_IN_SECONDS * 2),
         Some(Decimal::percent(20)),
         vec![],
         |result| {
@@ -1294,6 +1331,7 @@ pub fn update_config() {
         max_farm_epoch_buffer: 15u32,
         min_unlocking_duration: 100_000u64,
         max_unlocking_duration: 200_000u64,
+        farm_expiration_time: MONTH_IN_SECONDS * 2,
         emergency_unlock_penalty: Decimal::percent(20),
     };
 
@@ -1301,6 +1339,30 @@ pub fn update_config() {
         let config = result.unwrap();
         assert_eq!(config, expected_config);
     });
+
+    suite.update_config(
+        &creator,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(MONTH_IN_SECONDS - 100),
+        None,
+        vec![],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::FarmExpirationTimeInvalid { .. } => {}
+                _ => panic!(
+                    "Wrong error type, should return ContractError::FarmExpirationTimeInvalid"
+                ),
+            }
+        },
+    );
 }
 
 #[test]
@@ -1326,6 +1388,12 @@ pub fn test_manage_position() {
     suite.instantiate_default();
 
     let fee_collector = suite.fee_collector_addr.clone();
+    let farm_manager = suite.farm_manager_addr.clone();
+    let pool_manager = suite.pool_manager_addr.clone();
+
+    // send some lp tokens to the pool manager, to simulate later the creation of a position
+    // on behalf of a user by the pool manager
+    suite.send_tokens(&creator, &pool_manager, &[coin(100_000, lp_denom.clone())]);
 
     suite
         .manage_farm(
@@ -1348,7 +1416,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 0, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 0, |result| {
             let err = result.unwrap_err().to_string();
 
             assert_eq!(
@@ -1421,7 +1489,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 1, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 1, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1494,7 +1562,7 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_lp_weight(&lp_denom, 1, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 1, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1522,7 +1590,7 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_lp_weight(&lp_denom, 1, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 1, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -1734,14 +1802,14 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_lp_weight(&lp_denom, 3, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 3, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
                     // should be the same for epoch 2, as the weight for new positions is added
                     // to the next epoch
-                    lp_weight: Uint128::new(5_000),
+                    lp_weight: Uint128::new(2_000),
                     epoch_id: 3,
                 }
             );
@@ -1850,7 +1918,7 @@ pub fn test_manage_position() {
                 farms_response.farms[0].farm_asset.amount,
                 farms_response.farms[0].claimed_amount
             );
-            assert!(farms_response.farms[0].is_expired(5));
+            //assert!(farms_response.farms[0].is_expired(5));
         })
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
@@ -1886,6 +1954,22 @@ pub fn test_manage_position() {
         })
         .manage_position(
             &creator,
+            PositionAction::Fill {
+                identifier: None,
+                unlocking_duration: 86_400,
+                receiver: Some(another.to_string()),
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        )
+        .manage_position(
+            &pool_manager,
             PositionAction::Fill {
                 identifier: None,
                 unlocking_duration: 86_400,
@@ -1985,12 +2069,12 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 9, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 9, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
-                    lp_weight: Uint128::new(10_002),
+                    lp_weight: Uint128::new(7_002),
                     epoch_id: 9,
                 }
             );
@@ -2014,13 +2098,13 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 10, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 10, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
                 LpWeightResponse {
                     // the weight went back to what it was before the position was opened
-                    lp_weight: Uint128::new(5_000),
+                    lp_weight: Uint128::new(2_000),
                     epoch_id: 10,
                 }
             );
@@ -2208,6 +2292,8 @@ fn claim_expired_farm_returns_nothing() {
         suite.add_one_epoch();
     }
 
+    let farm_manager = suite.farm_manager_addr.clone();
+
     suite
         .manage_farm(
             &creator,
@@ -2241,7 +2327,7 @@ fn claim_expired_farm_returns_nothing() {
                 result.unwrap();
             },
         )
-        .query_lp_weight(&lp_denom, 11, |result| {
+        .query_lp_weight(&farm_manager, &lp_denom, 11, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
                 lp_weight,
@@ -2314,7 +2400,563 @@ fn claim_expired_farm_returns_nothing() {
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
             // the balance hasn't changed
-            assert_eq!(balance, Uint128::new(1_000_006_000u128));
+            assert_eq!(balance, Uint128::new(1_000_008_000u128));
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1usize);
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::new(8_000));
+
+            let farm_debt =
+                farms_response.farms[0].farm_asset.amount - farms_response.farms[0].claimed_amount;
+            assert_eq!(farm_debt, Uint128::zero());
+        });
+}
+
+#[test]
+fn claiming_rewards_with_multiple_positions_arent_inflated() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator = suite.creator();
+    let other = suite.senders[1].clone();
+    let another = suite.senders[2].clone();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    let farm_manager = suite.farm_manager_addr.clone();
+
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(15),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(12_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(12_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position_3".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position_4".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position_5".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&other, &lp_denom, 11, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(5_000),
+                    epoch_id: 11,
+                }
+            );
+        })
+        .query_positions(&other, Some(true), |result| {
+            let positions = result.unwrap();
+            assert_eq!(positions.positions.len(), 5);
+            assert_eq!(
+                positions.positions,
+                vec![
+                    Position {
+                        identifier: "other_position_1".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    },
+                    Position {
+                        identifier: "other_position_2".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    },
+                    Position {
+                        identifier: "other_position_3".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    },
+                    Position {
+                        identifier: "other_position_4".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    },
+                    Position {
+                        identifier: "other_position_5".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    }
+                ]
+            );
+        })
+        .manage_position(
+            &another,
+            PositionAction::Fill {
+                identifier: Some("another_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&another, &lp_denom, 11, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(5_000),
+                    epoch_id: 11,
+                }
+            );
+        })
+        .query_positions(&another, Some(true), |result| {
+            let positions = result.unwrap();
+            assert_eq!(positions.positions.len(), 1);
+            assert_eq!(
+                positions.positions,
+                vec![Position {
+                    identifier: "another_position".to_string(),
+                    lp_asset: Coin {
+                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
+                        amount: Uint128::new(5_000),
+                    },
+                    unlocking_duration: 86400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: another.clone(),
+                },]
+            );
+        })
+        .query_lp_weight(&farm_manager, &lp_denom, 11, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    // 5k of other (with 5 positions) and 5k of another (with 1 position)
+                    lp_weight: Uint128::new(10_000),
+                    epoch_id: 11,
+                }
+            );
+        });
+
+    // create a couple of epochs to make the farm active
+    // claim rewards.
+    // other has 50% of the weight, distributed along 5 positions
+    // another has 50% of the weight, with only 1 position
+    // both should get an equal amount of rewards when claiming
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 13);
+        })
+        .query_balance("uusdy".to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .claim(&other, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_004_000u128));
+        })
+        .query_balance("uusdy".to_string(), &another, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .claim(&another, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &another, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_004_000u128));
+        });
+
+    // let's do two more farms for a different LP denom
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(15),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(11_000u128, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(14),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(16),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(10_000u128, "uosmo"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 4);
+            assert_eq!(
+                farms_response.farms,
+                vec![
+                    Farm {
+                        identifier: "1".to_string(),
+                        owner: creator.clone(),
+                        lp_denom: lp_denom.clone(),
+                        farm_asset: Coin {
+                            denom: "uusdy".to_string(),
+                            amount: Uint128::new(12_000u128),
+                        },
+                        claimed_amount: Uint128::new(8_000u128),
+                        emission_rate: Uint128::new(4_000u128),
+                        curve: Curve::Linear,
+                        start_epoch: 12u64,
+                        preliminary_end_epoch: 15u64,
+                        last_epoch_claimed: 13u64,
+                    },
+                    Farm {
+                        identifier: "2".to_string(),
+                        owner: creator.clone(),
+                        lp_denom: lp_denom.clone(),
+                        farm_asset: Coin {
+                            denom: "uom".to_string(),
+                            amount: Uint128::new(10_000u128),
+                        },
+                        claimed_amount: Uint128::zero(),
+                        emission_rate: Uint128::new(10_000),
+                        curve: Curve::Linear,
+                        start_epoch: 15u64,
+                        preliminary_end_epoch: 16u64,
+                        last_epoch_claimed: 14u64,
+                    },
+                    Farm {
+                        identifier: "3".to_string(),
+                        owner: creator.clone(),
+                        lp_denom: lp_denom_2.clone(),
+                        farm_asset: Coin {
+                            denom: "uusdy".to_string(),
+                            amount: Uint128::new(8_000u128),
+                        },
+                        claimed_amount: Uint128::zero(),
+                        emission_rate: Uint128::new(1_333),
+                        curve: Curve::Linear,
+                        start_epoch: 14u64,
+                        preliminary_end_epoch: 20u64,
+                        last_epoch_claimed: 13u64,
+                    },
+                    Farm {
+                        identifier: "4".to_string(),
+                        owner: creator.clone(),
+                        lp_denom: lp_denom_2.clone(),
+                        farm_asset: Coin {
+                            denom: "uosmo".to_string(),
+                            amount: Uint128::new(10_000u128),
+                        },
+                        claimed_amount: Uint128::zero(),
+                        emission_rate: Uint128::new(2_500),
+                        curve: Curve::Linear,
+                        start_epoch: 16u64,
+                        preliminary_end_epoch: 20u64,
+                        last_epoch_claimed: 15u64,
+                    }
+                ]
+            );
+        });
+
+    // other will have 75% of the weight for lp_denom_2, distributed along 2 positions
+    // another will have the remaining 25%
+    suite
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position_6".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(5_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Fill {
+                identifier: Some("other_position_7".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(2_500, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &another,
+            PositionAction::Fill {
+                identifier: Some("another_position_lp_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(2_500, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&other, &lp_denom_2, 14, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(7_500),
+                    epoch_id: 14,
+                }
+            );
+        })
+        .query_lp_weight(&another, &lp_denom_2, 14, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(2_500),
+                    epoch_id: 14,
+                }
+            );
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 16);
+        });
+
+    // other claims
+    suite
+        .query_balance("uusdy".to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_004_000u128));
+        })
+        .query_balance("uom".to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance("uosmo".to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .claim(&other, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &other, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_004_000u128) + Uint128::new(4_000) + Uint128::new(997) // + Uint128::new(1_333)
+                                                                                          //     .checked_multiply_ratio(75u128, 100u128)
+                                                                                          //     .unwrap()
+            );
+        })
+        .query_balance("uom".to_string(), &other, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_000_000u128) + Uint128::new(5_000)
+            );
+        })
+        .query_balance("uosmo".to_string(), &other, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_000_000u128)
+                    + Uint128::new(2_500)
+                        .checked_multiply_ratio(75u128, 100u128)
+                        .unwrap()
+            );
+        });
+
+    // another claims the rest
+    suite
+        .query_balance("uusdy".to_string(), &another, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_004_000u128));
+        })
+        .query_balance("uom".to_string(), &another, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance("uosmo".to_string(), &another, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .claim(&another, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &another, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_004_000u128) + Uint128::new(2_000) + Uint128::new(999) // + Uint128::new(1_333)
+                                                                                          //     .checked_multiply_ratio(25u128, 100u128)
+                                                                                          //     .unwrap()
+            );
+        })
+        .query_balance("uom".to_string(), &another, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_000_000u128) + Uint128::new(5_000)
+            );
+        })
+        .query_balance("uosmo".to_string(), &another, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_000_000u128)
+                    + Uint128::new(2_500)
+                        .checked_multiply_ratio(25u128, 100u128)
+                        .unwrap()
+            );
         });
 }
 
@@ -2351,7 +2993,7 @@ fn test_close_expired_farms() {
                     denom: "uusdy".to_string(),
                     amount: Uint128::new(8_000u128),
                 },
-                farm_identifier: None,
+                farm_identifier: Some("farm".to_string()),
             },
         },
         vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
@@ -2360,23 +3002,21 @@ fn test_close_expired_farms() {
         },
     );
 
-    // create a bunch of epochs to make the farm expire
-    for _ in 0..20 {
+    // create enough epochs to make the farm expire
+    for _ in 0..=37 {
         suite.add_one_epoch();
     }
-
-    let mut current_id = 0;
 
     // try opening another farm for the same lp denom, the expired farm should get closed
     suite
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
-            current_id = epoch_response.epoch.id;
+            assert_eq!(epoch_response.epoch.id, 48);
         })
         .query_farms(None, None, None, |result| {
             let farms_response = result.unwrap();
             assert_eq!(farms_response.farms.len(), 1);
-            assert!(farms_response.farms[0].is_expired(current_id));
+            assert_eq!(farms_response.farms[0].identifier, "farm");
         })
         .manage_farm(
             &other,
@@ -2414,9 +3054,9 @@ fn test_close_expired_farms() {
                     claimed_amount: Uint128::zero(),
                     emission_rate: Uint128::new(714),
                     curve: Curve::Linear,
-                    start_epoch: 31u64,
-                    preliminary_end_epoch: 45u64,
-                    last_epoch_claimed: 30u64,
+                    start_epoch: 49u64,
+                    preliminary_end_epoch: 63u64,
+                    last_epoch_claimed: 48u64,
                 }
             );
         });
@@ -2437,58 +3077,87 @@ fn expand_expired_farm() {
 
     suite.instantiate_default();
 
-    suite.manage_farm(
-        &other,
-        FarmAction::Fill {
-            params: FarmParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: None,
-                preliminary_end_epoch: None,
-                curve: None,
-                farm_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(4_000u128),
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
                 },
-                farm_identifier: Some("farm".to_string()),
             },
-        },
-        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
-        |result| {
-            result.unwrap();
-        },
-    );
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::zero(),
+                    emission_rate: Uint128::new(285),
+                    curve: Curve::Linear,
+                    start_epoch: 1u64,
+                    preliminary_end_epoch: 15u64,
+                    last_epoch_claimed: 0u64,
+                }
+            );
+        });
 
-    // create a bunch of epochs to make the farm expire
-    for _ in 0..15 {
+    // create enough epochs to make the farm expire
+    // should expire at epoch 16 + config.farm_expiration_time, i.e. 16 + 30 = 46
+    for _ in 0..=46 {
         suite.add_one_epoch();
     }
 
-    suite.manage_farm(
-        &other,
-        FarmAction::Fill {
-            params: FarmParams {
-                lp_denom: lp_denom.clone(),
-                start_epoch: None,
-                preliminary_end_epoch: None,
-                curve: None,
-                farm_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(8_000u128),
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 47);
+        })
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
                 },
-                farm_identifier: Some("farm".to_string()),
             },
-        },
-        vec![coin(8_000u128, "uusdy")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-            match err {
-                ContractError::FarmAlreadyExpired { .. } => {}
-                _ => {
-                    panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
+            vec![coin(8_000u128, "uusdy")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::FarmAlreadyExpired { .. } => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
+                    }
                 }
-            }
-        },
-    );
+            },
+        );
 }
 
 #[test]
@@ -3384,4 +4053,1158 @@ fn test_multiple_farms_and_positions() {
             result.unwrap();
         },
     );
+}
+
+#[test]
+fn test_fill_closed_position() {
+    let lp_denom_1 =
+        format!("factory/{MOCK_CONTRACT_ADDR_1}/pool.identifier.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom_1.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    let farm_manager_addr = suite.farm_manager_addr.clone();
+
+    suite.query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 10);
+    });
+
+    let time = RefCell::new(Timestamp::default());
+    let time2 = RefCell::new(Timestamp::default());
+
+    // open a position
+    // close a position (partially and fully)
+    // try to top up the same (closed) position, should err
+    suite
+        .query_balance(lp_denom_1.to_string(), &farm_manager_addr, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 1);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(1_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .get_time(|result| {
+            *time.borrow_mut() = result;
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Close {
+                identifier: "creator_position".to_string(),
+                lp_asset: Some(coin(600, lp_denom_1.clone())),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 2);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "2".to_string(),
+                    lp_asset: coin(600, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: false,
+                    expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                response.positions[1],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(400, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        // try to refill the closed position, i.e. "2"
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom_1.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::PositionAlreadyClosed { identifier } => {
+                        assert_eq!(identifier, "2".to_string())
+                    }
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::PositionAlreadyClosed"
+                    ),
+                }
+            },
+        )
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.lp_weight, Uint128::new(400));
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 2);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "2".to_string(),
+                    lp_asset: coin(600, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: false,
+                    expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                response.positions[1],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(10_400, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.lp_weight, Uint128::new(10_400));
+        })
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 11);
+        })
+        .get_time(|result| {
+            *time2.borrow_mut() = result;
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Close {
+                identifier: "creator_position".to_string(),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 2);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "2".to_string(),
+                    lp_asset: coin(600, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: false,
+                    expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                response.positions[1],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(10_400, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: false,
+                    expiring_at: Some(time2.borrow().plus_seconds(86_400).seconds()),
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 12, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.lp_weight, Uint128::zero());
+        });
+}
+
+#[test]
+fn test_refill_position_uses_current_position_unlocking_period() {
+    let lp_denom_1 =
+        format!("factory/{MOCK_CONTRACT_ADDR_1}/pool.identifier.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom_1.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    let farm_manager_addr = suite.farm_manager_addr.clone();
+
+    suite.query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 10);
+    });
+
+    // open a position with the minimum unlocking period
+    // try to refill the same position with the maximum unlocking period
+    // the weight should remain unaffected, i.e. the refilling should use the
+    // unlocking period of the current position
+    suite
+        .query_balance(lp_denom_1.to_string(), &farm_manager_addr, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 1);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(1_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.lp_weight, Uint128::new(1_000));
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("creator_position".to_string()),
+                // this shouldn't inflate the lp weight
+                unlocking_duration: 31_556_926,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 1);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            let response = result.unwrap();
+            // the weight shouldn't be affected by the large unlocking period used in the refill
+            assert_eq!(response.lp_weight, Uint128::new(2_000));
+        });
+
+    // let's do the reverse, using the maximum unlocking period
+    // and then refilling with the minimum unlocking period
+    suite
+        .query_balance(lp_denom_2.to_string(), &farm_manager_addr, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("lp_denom_2_position".to_string()),
+                unlocking_duration: 31_556_926,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 2);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                response.positions[1],
+                Position {
+                    identifier: "lp_denom_2_position".to_string(),
+                    lp_asset: coin(1_000, lp_denom_2.clone()),
+                    unlocking_duration: 31_556_926,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_2, 11, |result| {
+            let response = result.unwrap();
+            // ~16x multiplier for the large unlocking period with an 1_000 lp position
+            assert_eq!(response.lp_weight, Uint128::new(15_999));
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Fill {
+                identifier: Some("lp_denom_2_position".to_string()),
+                // this shouldn't deflate the lp weight
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&creator, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), 2);
+            assert_eq!(
+                response.positions[0],
+                Position {
+                    identifier: "creator_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_1.clone()),
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                response.positions[1],
+                Position {
+                    identifier: "lp_denom_2_position".to_string(),
+                    lp_asset: coin(2_000, lp_denom_2.clone()),
+                    unlocking_duration: 31_556_926,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        })
+        .query_lp_weight(&creator, &lp_denom_2, 11, |result| {
+            let response = result.unwrap();
+            // the weight shouldn't be affected by the low unlocking period used in the refill
+            assert_eq!(response.lp_weight, Uint128::new(31_998));
+        });
+}
+
+#[test]
+fn position_fill_attack_is_not_possible() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+
+    let creator = suite.creator();
+    let victim_not_victim = suite.senders[1].clone();
+    let attacker = suite.senders[2].clone();
+    suite.instantiate_default();
+
+    // Prepare the farm and victim's position
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &victim_not_victim,
+            PositionAction::Fill {
+                identifier: Some("nice_position".to_string()),
+                // 1 day unlocking duration
+                unlocking_duration: 86_400,
+                // No receiver means the user is the owner of the position receiver: None,
+                receiver: None,
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // Check that the position is created
+        .query_positions(&victim_not_victim, Some(true), |result| {
+            let positions = result.unwrap();
+            assert_eq!(positions.positions.len(), 1);
+            assert_eq!(
+                positions.positions[0],
+                Position {
+                    identifier: "nice_position".to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.clone(),
+                        amount: Uint128::new(5_000)
+                    },
+                    unlocking_duration: 86_400,
+                    open: true,
+                    expiring_at: None,
+                    receiver: victim_not_victim.clone(),
+                }
+            );
+        });
+
+    // The attacker tries to create 100 positions with minimal amounts
+    // and sets the receiver to the victim
+    for i in 0..100 {
+        suite.manage_position(
+            &attacker,
+            PositionAction::Fill {
+                identifier: Some(format!("nasty{}", i)),
+                // change to this line to see how sorting matters:
+                // identifier: Some(format!("nice_position{}", i)),
+                // Set unlocking duration to 1 year (maximum)
+                unlocking_duration: 31_556_926u64,
+                // Receiver is set to the user, making the user the owner of these positions
+                receiver: Some(victim_not_victim.to_string()),
+            },
+            vec![coin(1, lp_denom.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        );
+    }
+
+    // Query positions for the user again
+    suite.query_positions(&victim_not_victim, Some(true), |result| {
+        let positions = result.unwrap();
+        // the attacker couldn't create any positions for the user
+        assert_eq!(positions.positions.len(), 1);
+    });
+
+    suite.query_positions(&victim_not_victim, Some(true), |result| {
+        let positions = result.unwrap();
+        // The original position must be visible
+        assert!(positions
+            .positions
+            .iter()
+            .any(|p| p.identifier == "nice_position"));
+    });
+}
+
+/// creates a MAX_ITEMS_LIMIT number of positions and farms. A user will claim for all the farms.
+/// This shouldn't leave any unclaimed amount, as the user shouldn't be able to participate in more farms
+/// than what the rewards calculation function iterates over.
+#[test]
+fn test_positions_limits() {
+    let mut balances = vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+    ];
+
+    // prepare lp denoms
+    for i in 1..MAX_ITEMS_LIMIT * 2 {
+        let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
+        balances.push(coin(1_000_000_000u128, lp_denom.clone()));
+    }
+
+    let mut suite = TestingSuite::default_with_balances(balances);
+
+    let creator = suite.creator();
+    let alice = suite.senders[1].clone();
+    suite.instantiate_default();
+
+    // prepare farms, create more than the user could participate on
+    for i in 1..MAX_ITEMS_LIMIT * 2 {
+        suite.manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
+                    start_epoch: Some(1),
+                    preliminary_end_epoch: Some(2),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(1_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(1_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    // open positions
+    for i in 1..=MAX_ITEMS_LIMIT {
+        suite.manage_position(
+            &alice,
+            PositionAction::Fill {
+                identifier: Some(format!("position{}", i)),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(
+                1_000,
+                format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
+            )],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    suite.query_positions(&alice, Some(true), |result| {
+        let response = result.unwrap();
+        assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+    });
+
+    // alice can't create additional positions, as it hit the limit on open positions
+    suite.manage_position(
+        &alice,
+        PositionAction::Fill {
+            identifier: Some("aditional_position".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(
+            1_000,
+            format!("factory/{MOCK_CONTRACT_ADDR_1}/102.{LP_SYMBOL}"),
+        )],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::MaxPositionsPerUserExceeded { .. } => {}
+                _ => panic!(
+                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                ),
+            }
+        },
+    );
+
+    // move an epoch and claim
+    suite
+        .add_one_epoch()
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            // all the rewards were claimed, 1000 uusdy * 100
+            assert_eq!(balance, Uint128::new(1_000_100_000u128));
+        })
+        .query_positions(&alice, Some(true), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+
+    // now let's try closing positions
+    for i in 1..=MAX_ITEMS_LIMIT {
+        suite.manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: format!("position{}", i),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    // no open positions are left, instead there are MAX_ITEMS_LIMIT closed positions
+    suite
+        .query_positions(&alice, Some(true), |result| {
+            let response = result.unwrap();
+            assert!(response.positions.is_empty());
+        })
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+
+    // try opening more positions
+    for i in 1..=MAX_ITEMS_LIMIT {
+        suite.manage_position(
+            &alice,
+            PositionAction::Fill {
+                identifier: Some(format!("new_position{}", i)),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(
+                1_000,
+                format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
+            )],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    // alice has MAX_ITEMS_LIMIT open positions and MAX_ITEMS_LIMIT closed positions
+    suite
+        .query_positions(&alice, Some(true), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        })
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+
+    // trying to close another position should err
+    suite
+        .manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: "new_position1".to_string(),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::MaxPositionsPerUserExceeded { .. } => {}
+                    _ => panic!(
+                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                ),
+                }
+            },
+        )
+        // try closing partially
+        .manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: "new_position1".to_string(),
+                lp_asset: Some(coin(
+                    500,
+                    format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}"),
+                )),
+            },
+            vec![],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::MaxPositionsPerUserExceeded { .. } => {}
+                    _ => panic!(
+                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                ),
+                }
+            },
+        );
+
+    // let's move time so alice can withdraw a few positions and open some slots to close additional positions
+    suite
+        .add_one_epoch()
+        .manage_position(
+            &alice,
+            PositionAction::Withdraw {
+                identifier: "position1".to_string(),
+                emergency_unlock: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), (MAX_ITEMS_LIMIT - 1) as usize);
+        })
+        // try closing it a position partially
+        .manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: "new_position1".to_string(),
+                lp_asset: Some(coin(
+                    500,
+                    format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}"),
+                )),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(&alice, Some(false), |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        });
+}
+
+#[test]
+fn test_farm_expired() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(2_000_000_000u128, "uom"),
+        coin(2_000_000_000u128, "uusdy"),
+        coin(2_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 10);
+        })
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("short_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(100),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("long_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(100),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("another_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::TooManyFarms { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::TooManyFarms"),
+                }
+            },
+        );
+
+    // create a few epochs, but not enough for the farm to expire.
+    // a farm expires after config.farm_expiration_time seconds from the epoch the farm ended
+    // in this case, from the start of epoch 17 + config.farm_expiration_time
+    for _ in 0..20 {
+        suite.add_one_epoch();
+    }
+
+    let mut current_epoch_id = 0;
+
+    // try opening another farm for the same lp denom, the expired farm should get closed
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 30);
+            current_epoch_id = epoch_response.epoch.id;
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
+            // not expired due to the claimed criteria
+            assert!(farms_response.farms[0].claimed_amount.is_zero());
+            assert!(farms_response.farms[1].claimed_amount.is_zero());
+        });
+
+    // creating a new farm of the same LP should fail as the previous ones are technically not expired yet
+    // otherwise the contract would close them automatically when someone tries to open a new farm of that
+    // same lp denom
+    suite.manage_farm(
+        &creator,
+        FarmAction::Fill {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: Some(12),
+                preliminary_end_epoch: Some(100),
+                curve: None,
+                farm_asset: Coin {
+                    denom: "uusdy".to_string(),
+                    amount: Uint128::new(8_000u128),
+                },
+                farm_identifier: Some("another_farm".to_string()),
+            },
+        },
+        vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::TooManyFarms { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::TooManyFarms"),
+            }
+        },
+    );
+
+    // since the short epoch ended on epoch 16, and each epoch is 1 day, the farm should be expired
+    // on epoch 17.start_time + config.farm_expiration_time, which is set to a month.
+    // That is, epoch 48, let's move to that epoch
+
+    for _ in 0..18 {
+        suite.add_one_epoch();
+    }
+
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 48);
+            current_epoch_id = epoch_response.epoch.id;
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
+
+            assert!(farms_response.farms[0].claimed_amount.is_zero());
+            assert!(farms_response.farms[1].claimed_amount.is_zero());
+            assert_eq!(farms_response.farms[0].identifier, "long_farm".to_string());
+            assert_eq!(farms_response.farms[1].identifier, "short_farm".to_string());
+        });
+
+    // the short farm should be expired by now, let's try creating a new farm
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(50),
+                    preliminary_end_epoch: Some(100),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("another_farm".to_string()),
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
+
+            assert!(farms_response.farms[0].claimed_amount.is_zero());
+            assert!(farms_response.farms[1].claimed_amount.is_zero());
+            assert_eq!(
+                farms_response.farms[0].identifier,
+                "another_farm".to_string()
+            );
+            assert_eq!(farms_response.farms[1].identifier, "long_farm".to_string());
+        });
+}
+
+#[test]
+fn user_can_claim_expired_epochs() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(2_000_000_000u128, "uom".to_string()),
+        coin(2_000_000_000u128, "uusdy".to_string()),
+        coin(2_000_000_000u128, "uosmo".to_string()),
+        coin(2_000_000_000u128, lp_denom.clone()),
+    ]);
+
+    let other = suite.senders[1].clone();
+    let alice = suite.senders[2].clone();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(10),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::zero(),
+                    emission_rate: Uint128::new(400),
+                    curve: Curve::Linear,
+                    start_epoch: 10u64,
+                    preliminary_end_epoch: 20u64,
+                    last_epoch_claimed: 9u64,
+                }
+            );
+        })
+        .manage_position(
+            &alice,
+            PositionAction::Fill {
+                identifier: Some("position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // create enough epochs to make the farm expire
+    // should expire at epoch 16 + config.farm_expiration_time, i.e. 16 + 30 = 46
+    for _ in 0..100 {
+        suite.add_one_epoch();
+    }
+
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 100);
+        })
+        // the farm expired, can't be refilled
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
+                },
+            },
+            vec![coin(8_000u128, "uusdy")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::FarmAlreadyExpired { .. } => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
+                    }
+                }
+            },
+        );
+
+    // let's claim the rewards
+
+    suite
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::zero(),
+                    emission_rate: Uint128::new(400),
+                    curve: Curve::Linear,
+                    start_epoch: 10u64,
+                    preliminary_end_epoch: 20u64,
+                    last_epoch_claimed: 9u64,
+                }
+            );
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(2_000_000_000));
+        })
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(2_000_004_000));
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(
+                farms_response.farms[0],
+                Farm {
+                    identifier: "farm".to_string(),
+                    owner: other.clone(),
+                    lp_denom: lp_denom.clone(),
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    claimed_amount: Uint128::new(4_000u128),
+                    emission_rate: Uint128::new(400),
+                    curve: Curve::Linear,
+                    start_epoch: 10u64,
+                    preliminary_end_epoch: 20u64,
+                    last_epoch_claimed: 100u64,
+                }
+            );
+        });
 }

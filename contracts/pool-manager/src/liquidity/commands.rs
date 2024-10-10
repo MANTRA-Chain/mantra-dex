@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_std::{Decimal, OverflowError, Uint128};
 
-use amm::coin::aggregate_coins;
+use amm::coin::{aggregate_coins, deduct_coins};
 use amm::common::validate_addr_or_default;
 use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use amm::pool_manager::{get_total_share, ExecuteMsg, PoolType};
@@ -21,7 +21,9 @@ use crate::{
 // After writing create_pool I see this can get quite verbose so attempting to
 // break it down into smaller modules which house some things like swap, liquidity etc
 use crate::contract::SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID;
-use crate::helpers::{aggregate_outgoing_fees, compute_d, compute_mint_amount_for_deposit};
+use crate::helpers::{
+    aggregate_outgoing_fees, compute_d, compute_lp_mint_amount_for_stableswap_deposit,
+};
 use crate::queries::query_simulation;
 use crate::state::{
     LiquidityProvisionData, SingleSideLiquidityProvisionBuffer,
@@ -178,15 +180,14 @@ pub fn provide_liquidity(
             ))
             .add_attributes(vec![("action", "single_side_liquidity_provision")]))
     } else {
+        // Increment the pool asset amount by the amount sent
         for asset in deposits.iter() {
             let asset_denom = &asset.denom;
-
             let pool_asset_index = pool_assets
                 .iter()
                 .position(|pool_asset| &pool_asset.denom == asset_denom)
                 .ok_or(ContractError::AssetMismatch)?;
 
-            // Increment the pool asset amount by the amount sent
             pool_assets[pool_asset_index].amount = pool_assets[pool_asset_index]
                 .amount
                 .checked_add(asset.amount)?;
@@ -211,8 +212,8 @@ pub fn provide_liquidity(
                     // Make sure at least MINIMUM_LIQUIDITY_AMOUNT is deposited to mitigate the risk of the first
                     // depositor preventing small liquidity providers from joining the pool
                     let share = Uint128::new(
-                        (U256::from(pool_assets[0].amount.u128())
-                            .checked_mul(U256::from(pool_assets[1].amount.u128()))
+                        (U256::from(deposits[0].amount.u128())
+                            .checked_mul(U256::from(deposits[1].amount.u128()))
                             .ok_or::<ContractError>(
                                 ContractError::LiquidityShareComputationFailed,
                             ))?
@@ -237,14 +238,23 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    let amount = std::cmp::min(
-                        pool_assets[0]
-                            .amount
-                            .multiply_ratio(total_share, pool_assets[0].amount),
-                        pool_assets[1]
-                            .amount
-                            .multiply_ratio(total_share, pool_assets[1].amount),
-                    );
+                    let mut asset_shares = vec![];
+
+                    for asset in deposits.iter() {
+                        let asset_denom = &asset.denom;
+                        let pool_asset_index = pool_assets
+                            .iter()
+                            .position(|pool_asset| &pool_asset.denom == asset_denom)
+                            .ok_or(ContractError::AssetMismatch)?;
+
+                        asset_shares.push(
+                            asset
+                                .amount
+                                .multiply_ratio(total_share, pool_assets[pool_asset_index].amount),
+                        );
+                    }
+
+                    let amount = std::cmp::min(asset_shares[0], asset_shares[1]);
 
                     // assert slippage tolerance
                     helpers::assert_slippage_tolerance(
@@ -283,13 +293,17 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    let amount = compute_mint_amount_for_deposit(
+                    let amount = compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
-                        &deposits,
+                        // Since pool_assets already added the new deposits to the pool above, it
+                        // needs to be subtracted as this function requires the original pool_assets
+                        // to calculate the invariant d_0 properly
+                        &deduct_coins(pool_assets.clone(), deposits.clone())?,
                         &pool_assets,
                         total_share,
-                    )
-                    .unwrap();
+                    )?
+                    .ok_or(ContractError::StableLpMintError)?;
+
                     helpers::assert_slippage_tolerance(
                         &slippage_tolerance,
                         &deposits,
@@ -388,7 +402,10 @@ pub fn withdraw_liquidity(
     let share_ratio: Decimal = Decimal::from_ratio(amount, total_share);
 
     // sanity check, the share_ratio cannot possibly be greater than 1
-    ensure!(share_ratio <= Decimal::one(), ContractError::InvalidLpShare);
+    ensure!(
+        share_ratio <= Decimal::one(),
+        ContractError::InvalidLpShareToWithdraw
+    );
 
     // Use the ratio to calculate the amount of each pool asset to refund
     let refund_assets: Vec<Coin> = pool

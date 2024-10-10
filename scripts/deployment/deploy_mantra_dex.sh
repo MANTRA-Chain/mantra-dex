@@ -81,7 +81,7 @@ function init_epoch_manager() {
     "owner": "'$deployer_address'",
     "epoch_config": {
       "duration": "3600",
-      "genesis_epoch": "1728379829"
+      "genesis_epoch": "1728489307"
     }
   }'
 	init_artifact 'epoch_manager.wasm' "$init_msg" "MANTRA Epoch Manager"
@@ -309,5 +309,4 @@ while getopts $optstring arg; do
 		exit 2
 		;;
 	esac
-
 done

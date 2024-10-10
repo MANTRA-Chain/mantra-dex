@@ -16,7 +16,6 @@ fn instantiate_normal() {
     suite.instantiate(suite.senders[0].to_string(), suite.senders[1].to_string());
 }
 
-// add features `token_factory` so tests are compiled using the correct flag
 #[test]
 fn deposit_and_withdraw_sanity_check() {
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -2001,6 +2000,7 @@ mod ownership {
 
 mod locking_lp {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
+    use std::cell::RefCell;
 
     use amm::farm_manager::Position;
     use amm::fee::{Fee, PoolFee};
@@ -2122,7 +2122,14 @@ mod locking_lp {
 
         // let's do it again, it should create another position on the farm manager
 
+        let farm_manager_lp_amount = RefCell::new(Uint128::zero());
+
         suite
+            .query_all_balances(&farm_manager_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                let lp_balance = balances.iter().find(|coin| coin.denom == lp_denom).unwrap();
+                *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
+            })
             .provide_liquidity(
                 &creator,
                 "whale.uluna".to_string(),
@@ -2133,11 +2140,11 @@ mod locking_lp {
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
-                        amount: Uint128::from(1_000_000u128),
+                        amount: Uint128::from(2_000u128),
                     },
                     Coin {
                         denom: "uluna".to_string(),
-                        amount: Uint128::from(1_000_000u128),
+                        amount: Uint128::from(2_000u128),
                     },
                 ],
                 |result| {
@@ -2154,9 +2161,19 @@ mod locking_lp {
             // check the LP went to the farm manager
             .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
+                // the LP tokens should have gone to the farm manager
+                // the new minted LP tokens should be 2_000 * 1_000_000 / 1_002_000 = 1_996
                 assert!(balances.iter().any(|coin| {
-                    coin.denom == lp_denom && coin.amount == Uint128::from(1_999_000u128)
+                    coin.denom == lp_denom
+                        && coin.amount
+                            == farm_manager_lp_amount
+                                .borrow()
+                                .checked_add(Uint128::from(1_996u128))
+                                .unwrap()
                 }));
+
+                let lp_balance = balances.iter().find(|coin| coin.denom == lp_denom).unwrap();
+                *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
             });
 
         suite.query_farm_positions(&creator, None, |result| {
@@ -2172,7 +2189,7 @@ mod locking_lp {
             });
             assert_eq!(positions[1], Position {
                 identifier: "2".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(1_000_000u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(1_996u128) },
                 unlocking_duration: 200_000,
                 open: true,
                 expiring_at: None,
@@ -2294,7 +2311,14 @@ mod locking_lp {
 
         // let's do it again, reusing the same farm identifier
 
+        let farm_manager_lp_amount = RefCell::new(Uint128::zero());
+
         suite
+            .query_all_balances(&farm_manager_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                let lp_balance = balances.iter().find(|coin| coin.denom == lp_denom).unwrap();
+                *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
+            })
             .provide_liquidity(
                 &creator,
                 "whale.uluna".to_string(),
@@ -2305,11 +2329,11 @@ mod locking_lp {
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
-                        amount: Uint128::from(1_000_000u128),
+                        amount: Uint128::from(2_000u128),
                     },
                     Coin {
                         denom: "uluna".to_string(),
-                        amount: Uint128::from(1_000_000u128),
+                        amount: Uint128::from(2_000u128),
                     },
                 ],
                 |result| {
@@ -2326,9 +2350,19 @@ mod locking_lp {
             // check the LP went to the farm manager
             .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
+                // the LP tokens should have gone to the farm manager
+                // the new minted LP tokens should be 2_000 * 1_000_000 / 1_002_000 = 1_996
                 assert!(balances.iter().any(|coin| {
-                    coin.denom == lp_denom && coin.amount == Uint128::from(1_999_000u128)
+                    coin.denom == lp_denom
+                        && coin.amount
+                            == farm_manager_lp_amount
+                                .borrow()
+                                .checked_add(Uint128::from(1_996u128))
+                                .unwrap()
                 }));
+
+                let lp_balance = balances.iter().find(|coin| coin.denom == lp_denom).unwrap();
+                *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
             });
 
         suite.query_farm_positions(&creator, None, |result| {
@@ -2337,7 +2371,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "farm_identifier".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(1_999_000u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: farm_manager_lp_amount.borrow().clone() },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -2549,7 +2583,6 @@ mod provide_liquidity {
                 ],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
                     assert_eq!(
                         err,
                         ContractError::Std(StdError::generic_err("Spread limit exceeded"))
@@ -2566,11 +2599,11 @@ mod provide_liquidity {
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
-                        amount: Uint128::from(500_000u128),
+                        amount: Uint128::from(10_000u128),
                     },
                     Coin {
                         denom: "uwhale".to_string(),
-                        amount: Uint128::from(500_000u128),
+                        amount: Uint128::from(10_000u128),
                     },
                 ],
                 |result| {
@@ -2579,8 +2612,10 @@ mod provide_liquidity {
             )
             .query_all_balances(&other.to_string(), |result| {
                 let balances = result.unwrap();
+                // the new minted LP tokens should be 10_000 * 1_000_000 / 1_010_000 = ~9_900 lp shares - slippage
+                // of swapping half of one asset to the other
                 assert!(balances.iter().any(|coin| {
-                    coin.denom == lp_denom && coin.amount == Uint128::from(1_000_000u128)
+                    coin.denom == lp_denom && coin.amount == Uint128::from(9_702u128)
                 }));
             })
             .query_all_balances(&contract_addr.to_string(), |result| {
@@ -2593,9 +2628,9 @@ mod provide_liquidity {
 
         suite
             .query_lp_supply("whale.uluna".to_string(), |res| {
-                // total amount of LP tokens issued should be 2_000_000 = 999_000 to the first LP,
-                // 1_000 to the contract, and 1_000_000 to the second, single-side LP
-                assert_eq!(res.unwrap().amount, Uint128::from(2_000_000u128));
+                // total amount of LP tokens issued should be 1_009_511 = 999_000 to the first LP,
+                // 1_000 to the contract, and 9_511 to the second, single-side LP
+                assert_eq!(res.unwrap().amount, Uint128::from(1_009_702u128));
             })
             .query_pools(Some("whale.uluna".to_string()), None, None, |res| {
                 let response = res.unwrap();
@@ -2613,8 +2648,8 @@ mod provide_liquidity {
                     .find(|coin| coin.denom == "uluna".to_string())
                     .unwrap();
 
-                assert_eq!(whale.amount, Uint128::from(2_000_000u128));
-                assert_eq!(luna.amount, Uint128::from(996_667u128));
+                assert_eq!(whale.amount, Uint128::from(1_020_000u128));
+                assert_eq!(luna.amount, Uint128::from(999_901u128));
             });
 
         let pool_manager = suite.pool_manager_addr.clone();
@@ -2631,11 +2666,11 @@ mod provide_liquidity {
                         },
                         Coin {
                             denom: "uluna".to_string(),
-                            amount: Uint128::from(996_667u128),
+                            amount: Uint128::from(999_901u128),
                         },
                         Coin {
                             denom: "uwhale".to_string(),
-                            amount: Uint128::from(2_000_000u128),
+                            amount: Uint128::from(1_020_000u128),
                         },
                     ]
                 );
@@ -2686,7 +2721,7 @@ mod provide_liquidity {
                     vec![
                         Coin {
                             denom: "uluna".to_string(),
-                            amount: Uint128::from(9_497_835u128),
+                            amount: Uint128::from(9_989_302u128),
                         },
                         Coin {
                             denom: "uosmo".to_string(),
@@ -2698,7 +2733,7 @@ mod provide_liquidity {
                         },
                         Coin {
                             denom: "uwhale".to_string(),
-                            amount: Uint128::from(9_999_000u128),
+                            amount: Uint128::from(10_009_188u128),
                         },
                     ]
                 );
@@ -2714,7 +2749,7 @@ mod provide_liquidity {
                     vec![
                         Coin {
                             denom: lp_denom.clone(),
-                            amount: Uint128::from(1_000_000u128),
+                            amount: Uint128::from(9_702u128),
                         },
                         Coin {
                             denom: "uluna".to_string(),
@@ -2730,7 +2765,7 @@ mod provide_liquidity {
                         },
                         Coin {
                             denom: "uwhale".to_string(),
-                            amount: Uint128::from(9_000_000u128),
+                            amount: Uint128::from(9_980_000u128),
                         },
                     ]
                 );
@@ -2740,7 +2775,7 @@ mod provide_liquidity {
                 "whale.uluna".to_string(),
                 vec![Coin {
                     denom: lp_denom.clone(),
-                    amount: Uint128::from(1_000_000u128),
+                    amount: Uint128::from(9_702u128),
                 }],
                 |result| {
                     result.unwrap();
@@ -2753,7 +2788,7 @@ mod provide_liquidity {
                     vec![
                         Coin {
                             denom: "uluna".to_string(),
-                            amount: Uint128::from(10_498_333u128),
+                            amount: Uint128::from(10_009_608u128),
                         },
                         Coin {
                             denom: "uosmo".to_string(),
@@ -2765,7 +2800,7 @@ mod provide_liquidity {
                         },
                         Coin {
                             denom: "uwhale".to_string(),
-                            amount: Uint128::from(9_999_999u128),
+                            amount: Uint128::from(9_989_801u128),
                         },
                     ]
                 );
@@ -2779,7 +2814,7 @@ mod provide_liquidity {
                     vec![
                         Coin {
                             denom: "uluna".to_string(),
-                            amount: Uint128::from(3_333u128),
+                            amount: Uint128::from(99u128),
                         },
                         Coin {
                             denom: "uusd".to_string(),
@@ -2917,6 +2952,123 @@ mod provide_liquidity {
                     result.unwrap();
                 },
             );
+    }
+
+    #[test]
+    fn provide_liquidity_emit_proportional_lp_shares() {
+        let mut suite = TestingSuite::default_with_balances(vec![
+            coin(10_000_000u128, "uwhale".to_string()),
+            coin(10_000_000u128, "uluna".to_string()),
+            coin(10_000_000u128, "uosmo".to_string()),
+            coin(10_000u128, "uusd".to_string()),
+        ]);
+        let creator = suite.creator();
+        let other = suite.senders[1].clone();
+
+        // Asset denoms with uwhale and uluna
+        let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(1),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(1),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_denoms,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            Some("whale.uluna".to_string()),
+            vec![coin(1000, "uusd")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let contract_addr = suite.pool_manager_addr.clone();
+        let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+
+        // let's provide liquidity with two assets
+        suite
+            .provide_liquidity(
+                &creator,
+                "whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&creator.to_string(), |result| {
+                let balances = result.unwrap();
+
+                // user should have 10_000u128 LP shares - MINIMUM_LIQUIDITY_AMOUNT
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom && coin.amount == Uint128::from(9_000u128)
+                }));
+            })
+            // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+            });
+
+        // other provides liquidity as well, half of the tokens the creator provided
+        // this should result in ~half LP tokens given to other
+        suite
+            .provide_liquidity(
+                &other,
+                "whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(5_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(5_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&other.to_string(), |result| {
+                let balances = result.unwrap();
+                // user should have 5_000 * 10_000 / 15_000 = 3_333 LP shares
+                assert!(balances
+                    .iter()
+                    .any(|coin| { coin.denom == lp_denom && coin.amount == Uint128::new(3_333) }));
+            });
     }
 
     #[test]
@@ -3201,6 +3353,399 @@ mod provide_liquidity {
                 assert_approx_eq!(1000u128, return_amount.parse::<u128>().unwrap(), "0.003");
             },
         );
+    }
+
+    #[test]
+    fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() {
+        let mut suite = TestingSuite::default_with_balances(vec![
+            coin(1_000_000_001u128, "uusd".to_string()),
+            coin(1_000_000_001u128, "uusdc".to_string()),
+            coin(1_000_000_000u128, "uusdt".to_string()),
+            coin(1_000_000_001u128, "uusdy".to_string()),
+        ]);
+        let creator = suite.creator();
+        let alice = suite.senders[1].clone();
+
+        let asset_infos = vec![
+            "uusdc".to_string(),
+            "uusdt".to_string(),
+            "uusdy".to_string(),
+        ];
+
+        // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::from_ratio(1u128, 1000u128),
+            },
+            swap_fee: Fee {
+                share: Decimal::from_ratio(1u128, 10_000_u128),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("uusdc.uusdt.uusdy".to_string()),
+            vec![coin(1000, "uusd")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let lp_denom = suite.get_lp_denom("uusdc.uusdt.uusdy".to_string());
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&creator.to_string(), &lp_denom, |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    // liquidity provided - MINIMUM_LIQUIDITY_AMOUNT
+                    Uint128::from(1_500_000u128 - 1_000u128)
+                );
+            });
+
+        // let's try providing liquidity again
+        suite
+            .provide_liquidity(
+                &creator,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(500_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&creator.to_string(), &lp_denom, |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    // we should expect another ~1_500_000
+                    Uint128::from(1_500_000u128 + 1_500_000u128 - 1_000u128)
+                );
+            });
+
+        let simulated_return_amount = RefCell::new(Uint128::zero());
+        suite.query_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::from(1_000u128),
+            },
+            "uusdt".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
+            },
+        );
+
+        // Now Let's try a swap
+        suite.swap(
+            &creator,
+            "uusdt".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(1_000u128, "uusdc".to_string())],
+            |result| {
+                // Find the key with 'offer_amount' and the key with 'return_amount'
+                // Ensure that the offer amount is 1000 and the return amount is greater than 0
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                // Because the Pool was created and 1_000_000 of each token has been provided as liquidity
+                // Assuming no fees we should expect a small swap of 1000 to result in not too much slippage
+                // Expect 1000 give or take 0.002 difference
+                // Once fees are added and being deducted properly only the "0.002" should be changed.
+                assert_approx_eq!(
+                    offer_amount.parse::<u128>().unwrap(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+                assert_approx_eq!(
+                    simulated_return_amount.borrow().u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+            },
+        );
+
+        let simulated_offer_amount = RefCell::new(Uint128::zero());
+        // Now Let's try a reverse simulation by swapping uluna to uwhale
+        suite.query_reverse_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uusdt".to_string(),
+            |result| {
+                *simulated_offer_amount.borrow_mut() = result.unwrap().offer_amount;
+            },
+        );
+
+        // Another swap but this time the other way around
+        suite.swap(
+            &creator,
+            "uusdc".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(
+                simulated_offer_amount.borrow().u128(),
+                "uusdt".to_string(),
+            )],
+            |result| {
+                // Find the key with 'offer_amount' and the key with 'return_amount'
+                // Ensure that the offer amount is 1000 and the return amount is greater than 0
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_offer_amount.borrow().u128(),
+                    offer_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+
+                assert_approx_eq!(1000u128, return_amount.parse::<u128>().unwrap(), "0.003");
+            },
+        );
+
+        // And now uusdc to uusdy
+        suite.query_reverse_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdy".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uusdc".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().offer_amount;
+            },
+        );
+        // Another swap but this time uusdc to uusdy
+        suite.swap(
+            &creator,
+            "uusdy".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(
+                simulated_return_amount.borrow().u128(),
+                "uusdc".to_string(),
+            )],
+            |result| {
+                // Find the key with 'offer_amount' and the key with 'return_amount'
+                // Ensure that the offer amount is 1000 and the return amount is greater than 0
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_return_amount.borrow().u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+                assert_approx_eq!(1000u128, offer_amount.parse::<u128>().unwrap(), "0.003");
+            },
+        );
+
+        // And now uusdy to uusdt
+        suite.query_reverse_simulation(
+            "uusdc.uusdt.uusdy".to_string(),
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uusdy".to_string(),
+            |result| {
+                *simulated_offer_amount.borrow_mut() = result.unwrap().offer_amount;
+            },
+        );
+        // Another swap but this time uusdy to uusdt
+        suite.swap(
+            &creator,
+            "uusdt".to_string(),
+            None,
+            None,
+            None,
+            "uusdc.uusdt.uusdy".to_string(),
+            vec![coin(
+                simulated_offer_amount.borrow().u128(),
+                "uusdy".to_string(),
+            )],
+            |result| {
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_offer_amount.borrow().u128(),
+                    offer_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+
+                assert_approx_eq!(1000u128, return_amount.parse::<u128>().unwrap(), "0.003");
+            },
+        );
+
+        // now creator provides even more liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(10_000_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(10_000_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(10_000_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&creator.to_string(), &lp_denom, |result| {
+                assert_approx_eq!(
+                    result.unwrap().amount,
+                    Uint128::from(30_000_000u128 + 1_500_000u128 + 1_500_000u128 - 1_000u128),
+                    "0.000001"
+                );
+            });
+
+        // now alice provides liquidity
+        suite
+            .provide_liquidity(
+                &alice,
+                "uusdc.uusdt.uusdy".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                    Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::from(10_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&alice.to_string(), &lp_denom, |result| {
+                // shares are not inflated, alice should have 30_000 LP shares
+                assert_eq!(result.unwrap().amount, Uint128::from(30_000u128));
+            });
     }
 
     // This test is to ensure that the edge case of providing liquidity with 3 assets

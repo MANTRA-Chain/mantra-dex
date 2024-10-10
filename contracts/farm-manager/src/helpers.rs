@@ -1,12 +1,15 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 
 use cosmwasm_std::{
-    ensure, BankMsg, Coin, CosmosMsg, Decimal, MessageInfo, OverflowError, OverflowOperation,
-    Uint128,
+    ensure, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, MessageInfo, OverflowError,
+    OverflowOperation, Uint128,
 };
 
 use amm::coin::{get_factory_token_creator, is_factory_token};
-use amm::farm_manager::{Config, FarmParams, DEFAULT_FARM_DURATION};
+use amm::constants::MONTH_IN_SECONDS;
+use amm::epoch_manager::{EpochResponse, QueryMsg};
+use amm::farm_manager::{Config, Farm, FarmParams, Position, DEFAULT_FARM_DURATION};
 
 use crate::ContractError;
 
@@ -178,4 +181,70 @@ pub(crate) fn validate_lp_denom(
     );
 
     Ok(())
+}
+
+/// Validates the unlocking duration range
+pub(crate) fn validate_unlocking_duration(
+    min_unlocking_duration: u64,
+    max_unlocking_duration: u64,
+) -> Result<(), ContractError> {
+    ensure!(
+        max_unlocking_duration >= min_unlocking_duration,
+        ContractError::InvalidUnlockingRange {
+            min: min_unlocking_duration,
+            max: max_unlocking_duration,
+        }
+    );
+
+    Ok(())
+}
+
+/// Validates the farm expiration time
+pub(crate) fn validate_farm_expiration_time(
+    farm_expiration_time: u64,
+) -> Result<(), ContractError> {
+    ensure!(
+        farm_expiration_time >= MONTH_IN_SECONDS,
+        ContractError::FarmExpirationTimeInvalid {
+            min: MONTH_IN_SECONDS
+        }
+    );
+
+    Ok(())
+}
+
+/// Gets the unique LP asset denoms from a list of positions
+pub(crate) fn get_unique_lp_asset_denoms_from_positions(positions: Vec<Position>) -> Vec<String> {
+    positions
+        .iter()
+        .map(|position| position.lp_asset.denom.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect()
+}
+
+/// Checks if the farm is expired. A farm is considered to be expired if there's no more assets to claim
+/// or if there has passed the config.farm_expiration_time since the farm ended.
+pub(crate) fn is_farm_expired(
+    farm: &Farm,
+    deps: Deps,
+    env: &Env,
+    config: &Config,
+) -> Result<bool, ContractError> {
+    let epoch_response: EpochResponse = deps
+        .querier
+        // query preliminary_end_epoch + 1 because the farm is preliminary ending at that epoch, including it.
+        .query_wasm_smart(
+            config.epoch_manager_addr.to_string(),
+            &QueryMsg::Epoch {
+                id: farm.preliminary_end_epoch + 1u64,
+            },
+        )?;
+
+    let farm_ending_at = epoch_response.epoch.start_time;
+
+    Ok(
+        farm.farm_asset.amount.saturating_sub(farm.claimed_amount) == Uint128::zero()
+            || farm_ending_at.plus_seconds(config.farm_expiration_time) < env.block.time,
+    )
 }

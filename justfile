@@ -72,7 +72,7 @@ install-env-loader:
 
 # Deploys MANTRA Dex on the given CHAIN, default is mantra-testnet.
 deploy CHAIN='mantra-testnet' CONTRACT='all':
-    ./scripts/deployment/deploy_mantra_dex.sh -c {{CHAIN}} -f 1 -d {{CONTRACT}}
+    ./scripts/deployment/deploy_mantra_dex.sh -c {{CHAIN}} -d {{CONTRACT}}
 
 # Stores the MANTRA Dex contracts on the given CHAIN, default is mantra-testnet.
 store CHAIN='mantra-testnet' CONTRACT='all':

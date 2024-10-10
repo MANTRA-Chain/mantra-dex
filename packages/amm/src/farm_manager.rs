@@ -25,6 +25,9 @@ pub struct InstantiateMsg {
     pub min_unlocking_duration: u64,
     /// The maximum amount of time that a user can lock their tokens for. In seconds.
     pub max_unlocking_duration: u64,
+    /// The amount of time after which a farm is considered to be expired after it ended. In seconds.
+    /// Once a farm is expired it cannot be expanded, and expired farms can be closed
+    pub farm_expiration_time: u64,
     /// The penalty for unlocking a position before the unlocking duration finishes. In percentage.
     pub emergency_unlock_penalty: Decimal,
 }
@@ -61,6 +64,9 @@ pub enum ExecuteMsg {
         min_unlocking_duration: Option<u64>,
         /// The maximum amount of time that a user can lock their tokens for. In seconds.
         max_unlocking_duration: Option<u64>,
+        /// The amount of time after which a farm is considered to be expired after it ended. In seconds.
+        /// Once a farm is expired it cannot be expanded, and expired farms can be closed
+        farm_expiration_time: Option<u64>,
         /// The penalty for unlocking a position before the unlocking duration finishes. In percentage.
         emergency_unlock_penalty: Option<Decimal>,
     },
@@ -107,7 +113,7 @@ pub enum QueryMsg {
     },
     /// Retrieves the total LP weight in the contract for a given denom on a given epoch.
     #[returns(LpWeightResponse)]
-    LPWeight {
+    LpWeight {
         /// The address to get the LP weight for.
         address: String,
         /// The denom to get the total LP weight for.
@@ -121,7 +127,7 @@ pub enum QueryMsg {
 #[cw_serde]
 pub enum FarmsBy {
     Identifier(String),
-    LPDenom(String),
+    LpDenom(String),
     FarmAsset(String),
 }
 
@@ -144,6 +150,9 @@ pub struct Config {
     pub min_unlocking_duration: u64,
     /// The maximum amount of time that a user can lock their tokens for. In seconds.
     pub max_unlocking_duration: u64,
+    /// The amount of time after which a farm is considered to be expired after it ended. In seconds.
+    /// Once a farm is expired it cannot be expanded, and expired farms can be closed
+    pub farm_expiration_time: u64,
     /// The penalty for unlocking a position before the unlocking duration finishes. In percentage.
     pub emergency_unlock_penalty: Decimal,
 }
@@ -238,15 +247,6 @@ pub struct Farm {
     pub preliminary_end_epoch: EpochId,
     /// The last epoch this farm was claimed.
     pub last_epoch_claimed: EpochId,
-}
-
-impl Farm {
-    /// Returns true if the farm is expired
-    pub fn is_expired(&self, epoch_id: EpochId) -> bool {
-        self.farm_asset.amount.saturating_sub(self.claimed_amount) < MIN_FARM_AMOUNT
-            || (epoch_id > self.start_epoch
-                && epoch_id >= self.last_epoch_claimed + DEFAULT_FARM_DURATION)
-    }
 }
 
 #[cw_serde]

@@ -1,8 +1,8 @@
-use cosmwasm_std::{Addr, Coin, Decimal256, Order, StdError, Storage, Uint128};
+use cosmwasm_std::{ensure, Addr, Coin, Decimal256, Deps, Order, StdError, Storage, Uint128};
 
 use amm::farm_manager::{Config, EpochId};
 
-use crate::state::LP_WEIGHT_HISTORY;
+use crate::state::{get_positions_by_receiver, LP_WEIGHT_HISTORY, MAX_ITEMS_LIMIT};
 use crate::ContractError;
 
 const SECONDS_IN_DAY: u64 = 86400;
@@ -87,7 +87,7 @@ fn return_latest_weight(
 
 /// Validates the `unlocking_duration` specified in the position params is within the range specified
 /// in the config.
-pub(crate) fn validate_unlocking_duration(
+pub(crate) fn validate_unlocking_duration_for_position(
     config: &Config,
     unlocking_duration: u64,
 ) -> Result<(), ContractError> {
@@ -100,6 +100,25 @@ pub(crate) fn validate_unlocking_duration(
             specified: unlocking_duration,
         });
     }
+
+    Ok(())
+}
+
+/// Validates the amount of positions a user can have either open or closed at a given time.
+pub(crate) fn validate_positions_limit(
+    deps: Deps,
+    receiver: &Addr,
+    open_state: bool,
+) -> Result<(), ContractError> {
+    let existing_user_positions =
+        get_positions_by_receiver(deps.storage, receiver.as_str(), Some(open_state))?;
+
+    ensure!(
+        existing_user_positions.len() < MAX_ITEMS_LIMIT as usize,
+        ContractError::MaxPositionsPerUserExceeded {
+            max: MAX_ITEMS_LIMIT
+        }
+    );
 
     Ok(())
 }

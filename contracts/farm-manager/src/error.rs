@@ -83,6 +83,9 @@ pub enum ContractError {
     #[error("The farm has already expired, can't be expanded")]
     FarmAlreadyExpired,
 
+    #[error("The expiration time for the farm is invalid, must be at least {min} seconds")]
+    FarmExpirationTimeInvalid { min: u64 },
+
     #[error("The farm doesn't have enough funds to pay out the reward")]
     FarmExhausted,
 
@@ -94,6 +97,9 @@ pub enum ContractError {
         /// The maximum amount of farms that can exist
         max: u32,
     },
+
+    #[error("Attempt to decrease the max concurrent farms to a value that is less than the current amount of concurrent farms")]
+    MaximumConcurrentFarmsDecreased,
 
     #[error("The end epoch for this farm is invalid")]
     InvalidEndEpoch,
@@ -109,6 +115,9 @@ pub enum ContractError {
 
     #[error("The position with the identifier {identifier} is already closed")]
     PositionAlreadyClosed { identifier: String },
+
+    #[error("Maximum number of open/close positions per user exceeded, max is {max}. If you are trying to open a position, close some and try again. If you are trying to close a position, withdraw some and try again.")]
+    MaxPositionsPerUserExceeded { max: u32 },
 
     #[error(
         "Invalid unlocking duration of {specified} specified, must be between {min} and {max}"

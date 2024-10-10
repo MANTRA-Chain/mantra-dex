@@ -1,3 +1,4 @@
+use amm::constants::MONTH_IN_SECONDS;
 use cosmwasm_std::testing::MockStorage;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
 use cw_multi_test::{
@@ -51,6 +52,12 @@ impl TestingSuite {
 
         self
     }
+
+    pub(crate) fn get_time(&mut self, result: impl Fn(Timestamp)) -> &mut Self {
+        result(self.app.block_info().time);
+
+        self
+    }
     pub(crate) fn add_one_day(&mut self) -> &mut Self {
         let mut block_info = self.app.block_info();
         block_info.time = block_info.time.plus_days(1);
@@ -61,6 +68,18 @@ impl TestingSuite {
 
     pub(crate) fn add_one_epoch(&mut self) -> &mut Self {
         self.add_one_day();
+        self
+    }
+
+    pub(crate) fn send_tokens(
+        &mut self,
+        sender: &Addr,
+        receiver: &Addr,
+        coins: &[Coin],
+    ) -> &mut Self {
+        self.app
+            .send_tokens(sender.clone(), receiver.clone(), coins)
+            .unwrap();
         self
     }
 }
@@ -122,7 +141,8 @@ impl TestingSuite {
             2,
             14,
             86_400,
-            31_536_000,
+            31_556_926,
+            MONTH_IN_SECONDS,
             Decimal::percent(10), //10% penalty
         );
 
@@ -190,6 +210,7 @@ impl TestingSuite {
         max_farm_epoch_buffer: u32,
         min_unlocking_duration: u64,
         max_unlocking_duration: u64,
+        farm_expiration_time: u64,
         emergency_unlock_penalty: Decimal,
     ) -> &mut Self {
         let msg = InstantiateMsg {
@@ -202,6 +223,7 @@ impl TestingSuite {
             max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
+            farm_expiration_time,
             emergency_unlock_penalty,
         };
 
@@ -235,6 +257,7 @@ impl TestingSuite {
         max_farm_epoch_buffer: u32,
         min_unlocking_duration: u64,
         max_unlocking_duration: u64,
+        farm_expiration_time: u64,
         emergency_unlock_penalty: Decimal,
         result: impl Fn(anyhow::Result<Addr>),
     ) -> &mut Self {
@@ -248,6 +271,7 @@ impl TestingSuite {
             max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
+            farm_expiration_time,
             emergency_unlock_penalty,
         };
 
@@ -302,6 +326,7 @@ impl TestingSuite {
         max_farm_epoch_buffer: Option<u32>,
         min_unlocking_duration: Option<u64>,
         max_unlocking_duration: Option<u64>,
+        farm_expiration_time: Option<u64>,
         emergency_unlock_penalty: Option<Decimal>,
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
@@ -315,6 +340,7 @@ impl TestingSuite {
             max_farm_epoch_buffer,
             min_unlocking_duration,
             max_unlocking_duration,
+            farm_expiration_time,
             emergency_unlock_penalty,
         };
 
@@ -479,14 +505,15 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn query_lp_weight(
         &mut self,
+        address: &Addr,
         denom: &str,
         epoch_id: u64,
         result: impl Fn(StdResult<LpWeightResponse>),
     ) -> &mut Self {
         let rewards_response: StdResult<LpWeightResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::LPWeight {
-                address: self.farm_manager_addr.to_string(),
+            &amm::farm_manager::QueryMsg::LpWeight {
+                address: address.to_string(),
                 denom: denom.to_string(),
                 epoch_id,
             },

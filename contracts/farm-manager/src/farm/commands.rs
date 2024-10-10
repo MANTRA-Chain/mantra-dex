@@ -6,8 +6,9 @@ use cosmwasm_std::{
 };
 
 use amm::coin::aggregate_coins;
-use amm::farm_manager::{EpochId, Farm, Position, RewardsResponse};
+use amm::farm_manager::{EpochId, Farm, RewardsResponse};
 
+use crate::helpers::get_unique_lp_asset_denoms_from_positions;
 use crate::state::{
     get_earliest_address_lp_weight, get_farms_by_lp_denom, get_latest_address_lp_weight,
     get_positions_by_receiver, CONFIG, FARMS, LAST_CLAIMED_EPOCH, LP_WEIGHT_HISTORY,
@@ -19,8 +20,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
     cw_utils::nonpayable(&info)?;
 
     // check if the user has any open LP positions
-    let open_positions =
-        get_positions_by_receiver(deps.storage, info.sender.clone().into_string(), Some(true))?;
+    let open_positions = get_positions_by_receiver(deps.storage, info.sender.as_str(), Some(true))?;
     ensure!(!open_positions.is_empty(), ContractError::NoOpenPositions);
 
     let config = CONFIG.load(deps.storage)?;
@@ -31,10 +31,18 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
 
     let mut total_rewards = vec![];
 
-    for position in &open_positions {
-        // calculate the rewards for the position
-        let rewards_response =
-            calculate_rewards(deps.as_ref(), &env, position, current_epoch.id, true)?;
+    let lp_denoms = get_unique_lp_asset_denoms_from_positions(open_positions);
+
+    for lp_denom in &lp_denoms {
+        // calculate the rewards for the lp denom
+        let rewards_response = calculate_rewards(
+            deps.as_ref(),
+            &env,
+            lp_denom,
+            &info.sender,
+            current_epoch.id,
+            true,
+        )?;
 
         match rewards_response {
             RewardsResponse::ClaimRewards {
@@ -69,7 +77,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
                 sync_address_lp_weight_history(
                     deps.storage,
                     &info.sender,
-                    &position.lp_asset.denom,
+                    lp_denom,
                     &current_epoch.id,
                 )?;
             }
@@ -104,7 +112,8 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
 pub(crate) fn calculate_rewards(
     deps: Deps,
     env: &Env,
-    position: &Position,
+    lp_denom: &str,
+    receiver: &Addr,
     current_epoch_id: EpochId,
     is_claim: bool,
 ) -> Result<RewardsResponse, ContractError> {
@@ -112,13 +121,12 @@ pub(crate) fn calculate_rewards(
 
     let farms = get_farms_by_lp_denom(
         deps.storage,
-        &position.lp_asset.denom,
+        lp_denom,
         None,
         Some(config.max_concurrent_farms),
     )?;
 
-    let last_claimed_epoch_for_user =
-        LAST_CLAIMED_EPOCH.may_load(deps.storage, &position.receiver)?;
+    let last_claimed_epoch_for_user = LAST_CLAIMED_EPOCH.may_load(deps.storage, receiver)?;
 
     // Check if the user ever claimed before
     if let Some(last_claimed_epoch) = last_claimed_epoch_for_user {
@@ -140,8 +148,8 @@ pub(crate) fn calculate_rewards(
     let mut modified_farms: HashMap<String, Uint128> = HashMap::new();
 
     for farm in farms {
-        // skip expired farms
-        if farm.is_expired(current_epoch_id) || farm.start_epoch > current_epoch_id {
+        // skip farms that have not started
+        if farm.start_epoch > current_epoch_id {
             continue;
         }
 
@@ -150,14 +158,14 @@ pub(crate) fn calculate_rewards(
             deps.storage,
             &farm.lp_denom,
             last_claimed_epoch_for_user,
-            &position.receiver,
+            receiver,
         )?;
 
         // compute the weights of the user for the epochs between start_from_epoch and current_epoch_id
         let user_weights = compute_address_weights(
             deps.storage,
-            &position.receiver,
-            &position.lp_asset.denom,
+            receiver,
+            lp_denom,
             &start_from_epoch,
             &current_epoch_id,
         )?;
@@ -166,7 +174,7 @@ pub(crate) fn calculate_rewards(
         let contract_weights = compute_contract_weights(
             deps.storage,
             &env.contract.address,
-            &position.lp_asset.denom,
+            lp_denom,
             &start_from_epoch,
             &current_epoch_id,
         )?;

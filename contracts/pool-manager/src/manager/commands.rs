@@ -145,7 +145,7 @@ pub fn create_pool(
     // sanity check for LP asset
     ensure!(
         is_factory_token(&lp_asset),
-        ContractError::InvalidLPAsset {
+        ContractError::InvalidLpAsset {
             lp_asset: lp_asset.clone()
         }
     );

@@ -86,7 +86,7 @@ pub enum ContractError {
     LiquidityShareComputationFailed,
 
     #[error("The amount of LP shares to withdraw is invalid")]
-    InvalidLpShare,
+    InvalidLpShareToWithdraw,
 
     #[error("Spread limit exceeded")]
     MaxSpreadAssertion,
@@ -96,6 +96,12 @@ pub enum ContractError {
 
     #[error("The asset doesn't match the assets stored in contract")]
     AssetMismatch,
+
+    #[error("Error computing the LP mint amount for the stable pool")]
+    StableLpMintError,
+
+    #[error("Error computing the stableswap invariant")]
+    StableInvariantError,
 
     #[error("Failed to converge when performing newtons method")]
     ConvergeError,
@@ -146,7 +152,7 @@ pub enum ContractError {
     PoolHasNoAssets,
 
     #[error("Invalid LP asset {lp_asset}. This probably happened because the length of the subdenom was too long. Try to shorten the pool identifier.")]
-    InvalidLPAsset { lp_asset: String },
+    InvalidLpAsset { lp_asset: String },
 
     #[error("Invalid pool identifier {identifier}. Either too long or malformed, only alphanumeric characters, . and / are allowed.")]
     InvalidPoolIdentifier { identifier: String },
