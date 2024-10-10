@@ -93,7 +93,7 @@ pub fn get_farms(
     storage: &dyn Storage,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<Farm>> {
+) -> Result<Vec<Farm>, ContractError> {
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
@@ -166,6 +166,26 @@ pub fn get_farm_by_identifier(
         .ok_or(ContractError::NonExistentFarm)
 }
 
+/// Gets positions
+pub(crate) fn get_positions(
+    storage: &dyn Storage,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<Position>, ContractError> {
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
+    let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
+
+    POSITIONS
+        .range(storage, start, None, Order::Ascending)
+        .take(limit)
+        .map(|item| {
+            let (_, farm) = item?;
+
+            Ok(farm)
+        })
+        .collect()
+}
+
 /// Gets a position given its identifier. If the position is not found with the given identifier, it returns None.
 pub fn get_position(
     storage: &dyn Storage,
@@ -185,8 +205,11 @@ pub fn get_positions_by_receiver(
     storage: &dyn Storage,
     receiver: &str,
     open_state: Option<bool>,
+    start_after: Option<String>,
+    limit: Option<u32>,
 ) -> StdResult<Vec<Position>> {
-    let limit = MAX_ITEMS_LIMIT as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
+    let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     let index = if let Some(open_state) = open_state {
         // if open_state is provided, filter by open state
@@ -199,8 +222,8 @@ pub fn get_positions_by_receiver(
         POSITIONS.idx.receiver.prefix(receiver.to_string())
     };
 
-    let mut positions_by_receiver = index
-        .range(storage, None, None, Order::Ascending)
+    let positions_by_receiver = index
+        .range(storage, start, None, Order::Ascending)
         // take only the first `limit` positions. If filtering by open state, it means the user
         // at most have MAX_POSITION_LIMIT open and MAX_POSITION_LIMIT close positions, as they
         // are validated when creating/closing a position.
@@ -210,13 +233,6 @@ pub fn get_positions_by_receiver(
             Ok(position)
         })
         .collect::<StdResult<Vec<Position>>>()?;
-
-    if let Some(open) = open_state {
-        positions_by_receiver = positions_by_receiver
-            .into_iter()
-            .filter(|position| position.open == open)
-            .collect::<Vec<Position>>();
-    }
 
     Ok(positions_by_receiver)
 }

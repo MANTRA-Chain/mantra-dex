@@ -8,7 +8,7 @@ use cw_utils::PaymentError;
 
 use amm::farm_manager::{
     Config, Curve, Farm, FarmAction, FarmParams, FarmsBy, LpWeightResponse, Position,
-    PositionAction, RewardsResponse,
+    PositionAction, PositionsBy, RewardsResponse,
 };
 use farm_manager::state::MAX_ITEMS_LIMIT;
 use farm_manager::ContractError;
@@ -981,7 +981,7 @@ fn close_farms() {
         })
         .manage_position(
             &another,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: None,
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -1026,8 +1026,6 @@ fn close_farms() {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
         .claim(&another, vec![], |result| {
-            println!("{:?}", result);
-
             result.unwrap();
         })
         .query_farms(
@@ -1427,7 +1425,7 @@ pub fn test_manage_position() {
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 80_400,
                 receiver: None,
@@ -1445,7 +1443,7 @@ pub fn test_manage_position() {
         )
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 32_536_000,
                 receiver: None,
@@ -1463,7 +1461,7 @@ pub fn test_manage_position() {
         )
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 32_536_000,
                 receiver: None,
@@ -1479,7 +1477,7 @@ pub fn test_manage_position() {
         )
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -1502,10 +1500,8 @@ pub fn test_manage_position() {
         // refilling the position with a different LP asset should fail
         .manage_position(
             &creator,
-            PositionAction::Fill {
-                identifier: Some("creator_position".to_string()),
-                unlocking_duration: 86_400,
-                receiver: None,
+            PositionAction::Expand {
+                identifier: "creator_position".to_string(),
             },
             vec![coin(1_000, another_lp.clone())],
             |result| {
@@ -1516,30 +1512,35 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .query_positions(&creator, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: Coin {
-                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
-                        amount: Uint128::new(1_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .manage_position(
             &creator,
-            PositionAction::Fill {
-                identifier: Some("creator_position".to_string()),
-                unlocking_duration: 86_400,
-                receiver: None,
+            PositionAction::Expand {
+                identifier: "creator_position".to_string(),
             },
             vec![coin(5_000, lp_denom.clone())],
             |result| {
@@ -1572,24 +1573,31 @@ pub fn test_manage_position() {
                 }
             );
         })
-        .query_positions(&creator, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: Coin {
-                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
-                        amount: Uint128::new(6_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(6_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .query_lp_weight(&farm_manager, &lp_denom, 1, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
@@ -1615,11 +1623,9 @@ pub fn test_manage_position() {
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Expand {
                 //refill position
-                identifier: Some("creator_position".to_string()),
-                unlocking_duration: 86_400,
-                receiver: None,
+                identifier: "creator_position".to_string(),
             },
             vec![coin(1_000, lp_denom.clone())],
             |result| {
@@ -1948,13 +1954,19 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_positions(&other, Some(false), |result| {
-            let positions = result.unwrap();
-            assert!(positions.positions.is_empty());
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(other.to_string())),
+            Some(false),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert!(positions.positions.is_empty());
+            },
+        )
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: None,
                 unlocking_duration: 86_400,
                 receiver: Some(another.to_string()),
@@ -1970,7 +1982,7 @@ pub fn test_manage_position() {
         )
         .manage_position(
             &pool_manager,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: None,
                 unlocking_duration: 86_400,
                 receiver: Some(another.to_string()),
@@ -1980,24 +1992,31 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_positions(&another, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "3".to_string(),
-                    lp_asset: Coin {
-                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
-                        amount: Uint128::new(5_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: another.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(another.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "3".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(5_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: another.clone(),
+                    }
+                );
+            },
+        )
         .manage_position(
             &creator,
             PositionAction::Close {
@@ -2024,28 +2043,41 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_positions(&another, Some(true), |result| {
-            let positions = result.unwrap();
-            assert!(positions.positions.is_empty());
-        })
-        .query_positions(&another, Some(false), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "3".to_string(),
-                    lp_asset: Coin {
-                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
-                        amount: Uint128::new(5_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: false,
-                    expiring_at: Some(1712847600),
-                    receiver: another.clone(),
-                }
-            );
-        });
+        .query_positions(
+            Some(PositionsBy::Receiver(another.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert!(positions.positions.is_empty());
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(another.to_string())),
+            Some(false),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "3".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(5_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: false,
+                        expiring_at: Some(1712847600),
+                        receiver: another.clone(),
+                    }
+                );
+            },
+        );
 
     suite
         .add_one_epoch()
@@ -2059,7 +2091,7 @@ pub fn test_manage_position() {
     suite
         .manage_position(
             &another,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("special_position".to_string()),
                 unlocking_duration: 100_000,
                 receiver: None,
@@ -2151,7 +2183,7 @@ pub fn test_manage_position() {
     // should fail
     suite.manage_position(
         &other,
-        PositionAction::Fill {
+        PositionAction::Create {
             identifier: Some("a_new_position_with_invalid_lp".to_string()),
             unlocking_duration: 86_400,
             receiver: None,
@@ -2191,7 +2223,7 @@ pub fn test_expand_position_unsuccessfully() {
         // open position
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2201,24 +2233,30 @@ pub fn test_expand_position_unsuccessfully() {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: Coin {
-                        denom: lp_denom.clone(),
-                        amount: Uint128::new(10_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::new(10_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .add_one_epoch()
         // close position
         .manage_position(
@@ -2232,31 +2270,35 @@ pub fn test_expand_position_unsuccessfully() {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: Coin {
-                        denom: lp_denom.clone(),
-                        amount: Uint128::new(10_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: false,
-                    expiring_at: Some(1_712_415_600),
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::new(10_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: false,
+                        expiring_at: Some(1_712_415_600),
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         // try refilling the closed position should err
         .manage_position(
             &creator,
-            PositionAction::Fill {
-                identifier: Some("creator_position".to_string()),
-                unlocking_duration: 86_400,
-                receiver: None,
+            PositionAction::Expand {
+                identifier: "creator_position".to_string(),
             },
             vec![coin(10_000, &lp_denom)],
             |result| {
@@ -2265,6 +2307,89 @@ pub fn test_expand_position_unsuccessfully() {
                     ContractError::PositionAlreadyClosed { .. } => {}
                     _ => panic!(
                         "Wrong error type, should return ContractError::PositionAlreadyClosed"
+                    ),
+                }
+            },
+        );
+}
+
+#[test]
+#[allow(clippy::inconsistent_digit_grouping)]
+pub fn cant_create_position_with_overlapping_identifier() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let another_lp = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+    let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, invalid_lp_denom.clone()),
+        coin(1_000_000_000u128, another_lp.clone()),
+    ]);
+
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+
+    suite.instantiate_default();
+
+    suite
+        // open position
+        .manage_position(
+            &alice,
+            PositionAction::Create {
+                identifier: Some("2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, &lp_denom)],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "2".to_string(),
+                        lp_asset: Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::new(10_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: alice.clone(),
+                    }
+                );
+            },
+        )
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                // this would overlap with the previous position, as the identifier the contract will
+                // assign would be "2"
+                identifier: None,
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, &lp_denom)],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::PositionAlreadyExists { identifier } => {
+                        assert_eq!(identifier, "2");
+                    }
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::PositionAlreadyExists"
                     ),
                 }
             },
@@ -2317,7 +2442,7 @@ fn claim_expired_farm_returns_nothing() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2337,24 +2462,31 @@ fn claim_expired_farm_returns_nothing() {
                 }
             );
         })
-        .query_positions(&other, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: Coin {
-                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
-                        amount: Uint128::new(5_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: other.clone(),
-                }
-            );
-        });
+        .query_positions(
+            Some(PositionsBy::Receiver(other.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(5_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    }
+                );
+            },
+        );
 
     // create a couple of epochs to make the farm active
 
@@ -2461,7 +2593,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position_1".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2473,7 +2605,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position_2".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2485,7 +2617,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position_3".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2497,7 +2629,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position_4".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2509,7 +2641,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position_5".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2529,78 +2661,84 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                 }
             );
         })
-        .query_positions(&other, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 5);
-            assert_eq!(
-                positions.positions,
-                vec![
-                    Position {
-                        identifier: "other_position_1".to_string(),
-                        lp_asset: Coin {
-                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
-                                .to_string(),
-                            amount: Uint128::new(1_000),
+        .query_positions(
+            Some(PositionsBy::Receiver(other.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 5);
+                assert_eq!(
+                    positions.positions,
+                    vec![
+                        Position {
+                            identifier: "other_position_1".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: other.clone(),
                         },
-                        unlocking_duration: 86400,
-                        open: true,
-                        expiring_at: None,
-                        receiver: other.clone(),
-                    },
-                    Position {
-                        identifier: "other_position_2".to_string(),
-                        lp_asset: Coin {
-                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
-                                .to_string(),
-                            amount: Uint128::new(1_000),
+                        Position {
+                            identifier: "other_position_2".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: other.clone(),
                         },
-                        unlocking_duration: 86400,
-                        open: true,
-                        expiring_at: None,
-                        receiver: other.clone(),
-                    },
-                    Position {
-                        identifier: "other_position_3".to_string(),
-                        lp_asset: Coin {
-                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
-                                .to_string(),
-                            amount: Uint128::new(1_000),
+                        Position {
+                            identifier: "other_position_3".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: other.clone(),
                         },
-                        unlocking_duration: 86400,
-                        open: true,
-                        expiring_at: None,
-                        receiver: other.clone(),
-                    },
-                    Position {
-                        identifier: "other_position_4".to_string(),
-                        lp_asset: Coin {
-                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
-                                .to_string(),
-                            amount: Uint128::new(1_000),
+                        Position {
+                            identifier: "other_position_4".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: other.clone(),
                         },
-                        unlocking_duration: 86400,
-                        open: true,
-                        expiring_at: None,
-                        receiver: other.clone(),
-                    },
-                    Position {
-                        identifier: "other_position_5".to_string(),
-                        lp_asset: Coin {
-                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
-                                .to_string(),
-                            amount: Uint128::new(1_000),
-                        },
-                        unlocking_duration: 86400,
-                        open: true,
-                        expiring_at: None,
-                        receiver: other.clone(),
-                    }
-                ]
-            );
-        })
+                        Position {
+                            identifier: "other_position_5".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: other.clone(),
+                        }
+                    ]
+                );
+            },
+        )
         .manage_position(
             &another,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("another_position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2620,24 +2758,31 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                 }
             );
         })
-        .query_positions(&another, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions,
-                vec![Position {
-                    identifier: "another_position".to_string(),
-                    lp_asset: Coin {
-                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
-                        amount: Uint128::new(5_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: another.clone(),
-                },]
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(another.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions,
+                    vec![Position {
+                        identifier: "another_position".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(5_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: another.clone(),
+                    },]
+                );
+            },
+        )
         .query_lp_weight(&farm_manager, &lp_denom, 11, |result| {
             let lp_weight = result.unwrap();
             assert_eq!(
@@ -2819,7 +2964,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
     suite
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position_6".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2831,7 +2976,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position_7".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -2843,7 +2988,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_position(
             &another,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("another_position_lp_2".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -3200,7 +3345,7 @@ fn test_emergency_withdrawal() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -3210,24 +3355,31 @@ fn test_emergency_withdrawal() {
                 result.unwrap();
             },
         )
-        .query_positions(&other, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "other_position".to_string(),
-                    lp_asset: Coin {
-                        denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string(),
-                        amount: Uint128::new(1_000),
-                    },
-                    unlocking_duration: 86400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: other.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(other.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "other_position".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    }
+                );
+            },
+        )
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_999_000));
         })
@@ -3503,7 +3655,7 @@ fn test_multiple_farms_and_positions() {
     suite
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_pos_1".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -3515,7 +3667,7 @@ fn test_multiple_farms_and_positions() {
         )
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_pos_2".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -3539,7 +3691,7 @@ fn test_multiple_farms_and_positions() {
     suite
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_pos_1".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -3551,7 +3703,7 @@ fn test_multiple_farms_and_positions() {
         )
         .manage_position(
             &other,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("other_pos_2".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -3761,7 +3913,7 @@ fn test_multiple_farms_and_positions() {
     // another fills a position
     suite.manage_position(
         &another,
-        PositionAction::Fill {
+        PositionAction::Create {
             identifier: Some("another_pos_1".to_string()),
             unlocking_duration: 15_778_476, // 6 months, should give him 5x multiplier
             receiver: None,
@@ -4096,7 +4248,7 @@ fn test_fill_closed_position() {
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -4106,21 +4258,27 @@ fn test_fill_closed_position() {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 1);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(1_000, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 1);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(1_000, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .get_time(|result| {
             *time.borrow_mut() = result;
         })
@@ -4135,39 +4293,43 @@ fn test_fill_closed_position() {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 2);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "2".to_string(),
-                    lp_asset: coin(600, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: false,
-                    expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
-                    receiver: creator.clone(),
-                }
-            );
-            assert_eq!(
-                response.positions[1],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(400, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 2);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "2".to_string(),
+                        lp_asset: coin(600, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: false,
+                        expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
+                        receiver: creator.clone(),
+                    }
+                );
+                assert_eq!(
+                    response.positions[1],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(400, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         // try to refill the closed position, i.e. "2"
         .manage_position(
             &creator,
-            PositionAction::Fill {
-                identifier: Some("2".to_string()),
-                unlocking_duration: 86_400,
-                receiver: None,
+            PositionAction::Expand {
+                identifier: "2".to_string(),
             },
             vec![coin(10_000, lp_denom_1.clone())],
             |result| {
@@ -4188,42 +4350,46 @@ fn test_fill_closed_position() {
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
-                identifier: Some("creator_position".to_string()),
-                unlocking_duration: 86_400,
-                receiver: None,
+            PositionAction::Expand {
+                identifier: "creator_position".to_string(),
             },
             vec![coin(10_000, lp_denom_1.clone())],
             |result| {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 2);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "2".to_string(),
-                    lp_asset: coin(600, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: false,
-                    expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
-                    receiver: creator.clone(),
-                }
-            );
-            assert_eq!(
-                response.positions[1],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(10_400, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 2);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "2".to_string(),
+                        lp_asset: coin(600, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: false,
+                        expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
+                        receiver: creator.clone(),
+                    }
+                );
+                assert_eq!(
+                    response.positions[1],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(10_400, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
             let response = result.unwrap();
             assert_eq!(response.lp_weight, Uint128::new(10_400));
@@ -4247,32 +4413,38 @@ fn test_fill_closed_position() {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 2);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "2".to_string(),
-                    lp_asset: coin(600, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: false,
-                    expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
-                    receiver: creator.clone(),
-                }
-            );
-            assert_eq!(
-                response.positions[1],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(10_400, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: false,
-                    expiring_at: Some(time2.borrow().plus_seconds(86_400).seconds()),
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 2);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "2".to_string(),
+                        lp_asset: coin(600, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: false,
+                        expiring_at: Some(time.borrow().plus_seconds(86_400).seconds()),
+                        receiver: creator.clone(),
+                    }
+                );
+                assert_eq!(
+                    response.positions[1],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(10_400, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: false,
+                        expiring_at: Some(time2.borrow().plus_seconds(86_400).seconds()),
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .query_lp_weight(&creator, &lp_denom_1, 12, |result| {
             let response = result.unwrap();
             assert_eq!(response.lp_weight, Uint128::zero());
@@ -4318,7 +4490,7 @@ fn test_refill_position_uses_current_position_unlocking_period() {
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("creator_position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -4328,53 +4500,63 @@ fn test_refill_position_uses_current_position_unlocking_period() {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 1);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(1_000, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 1);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(1_000, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
             let response = result.unwrap();
             assert_eq!(response.lp_weight, Uint128::new(1_000));
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
-                identifier: Some("creator_position".to_string()),
+            PositionAction::Expand {
                 // this shouldn't inflate the lp weight
-                unlocking_duration: 31_556_926,
-                receiver: None,
+                identifier: "creator_position".to_string(),
             },
             vec![coin(1_000, lp_denom_1.clone())],
             |result| {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 1);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(2_000, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 1);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(2_000, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
             let response = result.unwrap();
             // the weight shouldn't be affected by the large unlocking period used in the refill
@@ -4389,7 +4571,7 @@ fn test_refill_position_uses_current_position_unlocking_period() {
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("lp_denom_2_position".to_string()),
                 unlocking_duration: 31_556_926,
                 receiver: None,
@@ -4399,32 +4581,38 @@ fn test_refill_position_uses_current_position_unlocking_period() {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 2);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(2_000, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-            assert_eq!(
-                response.positions[1],
-                Position {
-                    identifier: "lp_denom_2_position".to_string(),
-                    lp_asset: coin(1_000, lp_denom_2.clone()),
-                    unlocking_duration: 31_556_926,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 2);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(2_000, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+                assert_eq!(
+                    response.positions[1],
+                    Position {
+                        identifier: "lp_denom_2_position".to_string(),
+                        lp_asset: coin(1_000, lp_denom_2.clone()),
+                        unlocking_duration: 31_556_926,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .query_lp_weight(&creator, &lp_denom_2, 11, |result| {
             let response = result.unwrap();
             // ~16x multiplier for the large unlocking period with an 1_000 lp position
@@ -4432,43 +4620,47 @@ fn test_refill_position_uses_current_position_unlocking_period() {
         })
         .manage_position(
             &creator,
-            PositionAction::Fill {
-                identifier: Some("lp_denom_2_position".to_string()),
+            PositionAction::Expand {
                 // this shouldn't deflate the lp weight
-                unlocking_duration: 86_400,
-                receiver: None,
+                identifier: "lp_denom_2_position".to_string(),
             },
             vec![coin(1_000, lp_denom_2.clone())],
             |result| {
                 result.unwrap();
             },
         )
-        .query_positions(&creator, None, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), 2);
-            assert_eq!(
-                response.positions[0],
-                Position {
-                    identifier: "creator_position".to_string(),
-                    lp_asset: coin(2_000, lp_denom_1.clone()),
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-            assert_eq!(
-                response.positions[1],
-                Position {
-                    identifier: "lp_denom_2_position".to_string(),
-                    lp_asset: coin(2_000, lp_denom_2.clone()),
-                    unlocking_duration: 31_556_926,
-                    open: true,
-                    expiring_at: None,
-                    receiver: creator.clone(),
-                }
-            );
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 2);
+                assert_eq!(
+                    response.positions[0],
+                    Position {
+                        identifier: "creator_position".to_string(),
+                        lp_asset: coin(2_000, lp_denom_1.clone()),
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+                assert_eq!(
+                    response.positions[1],
+                    Position {
+                        identifier: "lp_denom_2_position".to_string(),
+                        lp_asset: coin(2_000, lp_denom_2.clone()),
+                        unlocking_duration: 31_556_926,
+                        open: true,
+                        expiring_at: None,
+                        receiver: creator.clone(),
+                    }
+                );
+            },
+        )
         .query_lp_weight(&creator, &lp_denom_2, 11, |result| {
             let response = result.unwrap();
             // the weight shouldn't be affected by the low unlocking period used in the refill
@@ -4516,7 +4708,7 @@ fn position_fill_attack_is_not_possible() {
         )
         .manage_position(
             &victim_not_victim,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("nice_position".to_string()),
                 // 1 day unlocking duration
                 unlocking_duration: 86_400,
@@ -4529,31 +4721,37 @@ fn position_fill_attack_is_not_possible() {
             },
         )
         // Check that the position is created
-        .query_positions(&victim_not_victim, Some(true), |result| {
-            let positions = result.unwrap();
-            assert_eq!(positions.positions.len(), 1);
-            assert_eq!(
-                positions.positions[0],
-                Position {
-                    identifier: "nice_position".to_string(),
-                    lp_asset: Coin {
-                        denom: lp_denom.clone(),
-                        amount: Uint128::new(5_000)
-                    },
-                    unlocking_duration: 86_400,
-                    open: true,
-                    expiring_at: None,
-                    receiver: victim_not_victim.clone(),
-                }
-            );
-        });
+        .query_positions(
+            Some(PositionsBy::Receiver(victim_not_victim.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "nice_position".to_string(),
+                        lp_asset: Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::new(5_000)
+                        },
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: victim_not_victim.clone(),
+                    }
+                );
+            },
+        );
 
     // The attacker tries to create 100 positions with minimal amounts
     // and sets the receiver to the victim
     for i in 0..100 {
         suite.manage_position(
             &attacker,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some(format!("nasty{}", i)),
                 // change to this line to see how sorting matters:
                 // identifier: Some(format!("nice_position{}", i)),
@@ -4574,20 +4772,194 @@ fn position_fill_attack_is_not_possible() {
     }
 
     // Query positions for the user again
-    suite.query_positions(&victim_not_victim, Some(true), |result| {
-        let positions = result.unwrap();
-        // the attacker couldn't create any positions for the user
-        assert_eq!(positions.positions.len(), 1);
-    });
+    suite.query_positions(
+        Some(PositionsBy::Receiver(victim_not_victim.to_string())),
+        Some(true),
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap();
+            // the attacker couldn't create any positions for the user
+            assert_eq!(positions.positions.len(), 1);
+        },
+    );
 
-    suite.query_positions(&victim_not_victim, Some(true), |result| {
-        let positions = result.unwrap();
-        // The original position must be visible
-        assert!(positions
-            .positions
-            .iter()
-            .any(|p| p.identifier == "nice_position"));
-    });
+    suite.query_positions(
+        Some(PositionsBy::Receiver(victim_not_victim.to_string())),
+        Some(true),
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap();
+            // The original position must be visible
+            assert!(positions
+                .positions
+                .iter()
+                .any(|p| p.identifier == "nice_position"));
+        },
+    );
+}
+
+#[test]
+fn positions_can_handled_by_pool_manager_for_the_user() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+
+    let creator = suite.creator();
+    let alice = suite.senders[1].clone();
+    let attacker = suite.senders[2].clone();
+    suite.instantiate_default();
+
+    let pool_manager = suite.pool_manager_addr.clone();
+
+    // send some lp tokens to the pool manager
+    suite.send_tokens(
+        &creator,
+        &pool_manager,
+        &[coin(1_000_000, lp_denom.clone())],
+    );
+
+    // the pool manager creates a position on behalf of alice
+    suite
+        .manage_position(
+            &pool_manager,
+            PositionAction::Create {
+                identifier: Some("nice_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: Some(alice.to_string()),
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // Check that the position is created
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "nice_position".to_string(),
+                        lp_asset: Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::new(5_000)
+                        },
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: alice.clone(),
+                    }
+                );
+            },
+        );
+
+    // the pool manager refills that position
+    suite
+        .manage_position(
+            &pool_manager,
+            PositionAction::Expand {
+                identifier: "nice_position".to_string(),
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // Check that the position was expanded
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "nice_position".to_string(),
+                        lp_asset: Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::new(10_000)
+                        },
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: alice.clone(),
+                    }
+                );
+            },
+        );
+
+    // an attacker tries to do the same
+    suite
+        .manage_position(
+            &attacker,
+            PositionAction::Create {
+                identifier: Some("spam_position_for_alice".to_string()),
+                unlocking_duration: 86_400,
+                receiver: Some(alice.to_string()),
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        )
+        .manage_position(
+            &attacker,
+            PositionAction::Expand {
+                identifier: "nice_position".to_string(),
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        )
+        // Check that alice has still the same position
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "nice_position".to_string(),
+                        lp_asset: Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::new(10_000)
+                        },
+                        unlocking_duration: 86_400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: alice.clone(),
+                    }
+                );
+            },
+        );
 }
 
 /// creates a MAX_ITEMS_LIMIT number of positions and farms. A user will claim for all the farms.
@@ -4641,7 +5013,7 @@ fn test_positions_limits() {
     for i in 1..=MAX_ITEMS_LIMIT {
         suite.manage_position(
             &alice,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some(format!("position{}", i)),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -4656,15 +5028,21 @@ fn test_positions_limits() {
         );
     }
 
-    suite.query_positions(&alice, Some(true), |result| {
-        let response = result.unwrap();
-        assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
-    });
+    suite.query_positions(
+        Some(PositionsBy::Receiver(alice.to_string())),
+        Some(true),
+        None,
+        Some(MAX_ITEMS_LIMIT),
+        |result| {
+            let response = result.unwrap();
+            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+        },
+    );
 
     // alice can't create additional positions, as it hit the limit on open positions
     suite.manage_position(
         &alice,
-        PositionAction::Fill {
+        PositionAction::Create {
             identifier: Some("aditional_position".to_string()),
             unlocking_duration: 86_400,
             receiver: None,
@@ -4697,10 +5075,16 @@ fn test_positions_limits() {
             // all the rewards were claimed, 1000 uusdy * 100
             assert_eq!(balance, Uint128::new(1_000_100_000u128));
         })
-        .query_positions(&alice, Some(true), |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
-        });
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            },
+        );
 
     // now let's try closing positions
     for i in 1..=MAX_ITEMS_LIMIT {
@@ -4719,20 +5103,32 @@ fn test_positions_limits() {
 
     // no open positions are left, instead there are MAX_ITEMS_LIMIT closed positions
     suite
-        .query_positions(&alice, Some(true), |result| {
-            let response = result.unwrap();
-            assert!(response.positions.is_empty());
-        })
-        .query_positions(&alice, Some(false), |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
-        });
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert!(response.positions.is_empty());
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(false),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            },
+        );
 
     // try opening more positions
     for i in 1..=MAX_ITEMS_LIMIT {
         suite.manage_position(
             &alice,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some(format!("new_position{}", i)),
                 unlocking_duration: 86_400,
                 receiver: None,
@@ -4749,14 +5145,26 @@ fn test_positions_limits() {
 
     // alice has MAX_ITEMS_LIMIT open positions and MAX_ITEMS_LIMIT closed positions
     suite
-        .query_positions(&alice, Some(true), |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
-        })
-        .query_positions(&alice, Some(false), |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
-        });
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(false),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            },
+        );
 
     // trying to close another position should err
     suite
@@ -4813,10 +5221,16 @@ fn test_positions_limits() {
                 result.unwrap();
             },
         )
-        .query_positions(&alice, Some(false), |result| {
-            let response = result.unwrap();
-            assert_eq!(response.positions.len(), (MAX_ITEMS_LIMIT - 1) as usize);
-        })
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(false),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), (MAX_ITEMS_LIMIT - 1) as usize);
+            },
+        )
         // try closing it a position partially
         .manage_position(
             &alice,
@@ -4832,10 +5246,127 @@ fn test_positions_limits() {
                 result.unwrap();
             },
         )
-        .query_positions(&alice, Some(false), |result| {
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(false),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            },
+        );
+}
+
+#[test]
+fn test_positions_query_filters_and_pagination() {
+    let mut balances = vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+    ];
+
+    // prepare lp denoms
+    for i in 1..MAX_ITEMS_LIMIT * 2 {
+        let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
+        balances.push(coin(1_000_000_000u128, lp_denom.clone()));
+    }
+
+    let mut suite = TestingSuite::default_with_balances(balances);
+
+    let alice = suite.senders[1].clone();
+    suite.instantiate_default();
+
+    // open positions
+    for i in 1..=MAX_ITEMS_LIMIT {
+        suite.manage_position(
+            &alice,
+            PositionAction::Create {
+                identifier: Some(format!("position{}", i)),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(
+                1_000,
+                format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
+            )],
+            |result| {
+                result.unwrap();
+            },
+        );
+    }
+
+    let position_a_id = RefCell::new("".to_string());
+    let position_b_id = RefCell::new("".to_string());
+
+    suite
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            Some(10),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 10usize);
+
+                position_a_id.replace(response.positions[9].identifier.clone());
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            Some(position_a_id.borrow().clone()),
+            Some(10),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 10usize);
+                position_b_id.replace(response.positions[9].identifier.clone());
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(alice.to_string())),
+            Some(true),
+            None,
+            Some(20),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 20usize);
+                assert_eq!(
+                    response.positions[9].identifier,
+                    position_a_id.borrow().clone()
+                );
+                assert_eq!(
+                    response.positions[19].identifier,
+                    position_b_id.borrow().clone()
+                );
+            },
+        );
+
+    // query with filters
+    suite.query_positions(
+        Some(PositionsBy::Identifier(position_b_id.borrow().clone())),
+        None,
+        None,
+        None,
+        |result| {
             let response = result.unwrap();
-            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
-        });
+            assert_eq!(response.positions.len(), 1usize);
+            assert_eq!(
+                response.positions[0].identifier,
+                position_b_id.borrow().clone()
+            );
+        },
+    );
 }
 
 #[test]
@@ -5101,7 +5632,7 @@ fn user_can_claim_expired_epochs() {
         })
         .manage_position(
             &alice,
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier: Some("position".to_string()),
                 unlocking_duration: 86_400,
                 receiver: None,

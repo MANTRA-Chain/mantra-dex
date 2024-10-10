@@ -13,8 +13,8 @@ use crate::queries::query_rewards;
 use crate::state::{get_position, CONFIG, LP_WEIGHT_HISTORY, POSITIONS, POSITION_ID_COUNTER};
 use crate::ContractError;
 
-/// Fills a position. If the position already exists, it will be expanded. Otherwise, a new position is created.
-pub(crate) fn fill_position(
+/// Creates a position
+pub(crate) fn create_position(
     deps: DepsMut,
     env: &Env,
     info: MessageInfo,
@@ -46,89 +46,114 @@ pub(crate) fn fill_position(
         info.sender.clone()
     };
 
-    // check if there's an existing open position with the given `identifier`
-    let mut position = get_position(deps.storage, identifier.clone())?;
+    // computes the position identifier
+    let position_id_counter = POSITION_ID_COUNTER
+        .may_load(deps.storage)?
+        .unwrap_or_default()
+        + 1u64;
 
-    let position_unlocking_duration = if let Some(ref mut position) = position {
-        // there is a position, refill it
-        ensure!(
-            position.lp_asset.denom == lp_asset.denom,
-            ContractError::AssetMismatch
-        );
+    // if no identifier was provided, use the counter as the identifier
+    let identifier = identifier.unwrap_or(position_id_counter.to_string());
 
-        ensure!(
-            position.open,
-            ContractError::PositionAlreadyClosed {
-                identifier: position.identifier.clone(),
-            }
-        );
+    // check if there's an existing position with the computed identifier
+    let position = get_position(deps.storage, Some(identifier.clone()))?;
 
-        // ensure only the receiver itself or the pool manager can refill the position
-        ensure!(
-            position.receiver == info.sender || info.sender == config.pool_manager_addr,
-            ContractError::Unauthorized
-        );
+    ensure!(
+        position.is_none(),
+        ContractError::PositionAlreadyExists {
+            identifier: identifier.clone(),
+        }
+    );
 
-        // if the position is found, ignore if there's a change in the unlocking_duration as it is
-        // considered the same position, so use the existing unlocking_duration and only update the
-        // amount of the LP asset
+    // No position found, create a new one
 
-        position.lp_asset.amount = position.lp_asset.amount.checked_add(lp_asset.amount)?;
-        POSITIONS.save(deps.storage, &position.identifier, position)?;
-        position.unlocking_duration
-    } else {
-        // No position found, create a new one
+    // ensure the user doesn't have more than the maximum allowed close positions
+    validate_positions_limit(deps.as_ref(), &receiver, true)?;
 
-        // ensure the user doesn't have more than the maximum allowed close positions
-        validate_positions_limit(deps.as_ref(), &receiver, true)?;
+    POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
 
-        let position_id_counter = POSITION_ID_COUNTER
-            .may_load(deps.storage)?
-            .unwrap_or_default()
-            + 1u64;
+    POSITIONS.save(
+        deps.storage,
+        &identifier,
+        &Position {
+            identifier: identifier.clone(),
+            lp_asset: lp_asset.clone(),
+            unlocking_duration,
+            open: true,
+            expiring_at: None,
+            receiver: receiver.clone(),
+        },
+    )?;
 
-        POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
+    // Update weights for the LP and the user
+    update_weights(deps, env, &receiver, &lp_asset, unlocking_duration, true)?;
 
-        // if no identifier was provided, use the counter as the identifier
-        let identifier = identifier.unwrap_or(position_id_counter.to_string());
+    Ok(Response::default().add_attributes(vec![
+        ("action", "open_position".to_string()),
+        ("receiver", receiver.to_string()),
+        ("lp_asset", lp_asset.to_string()),
+        ("unlocking_duration", unlocking_duration.to_string()),
+    ]))
+}
 
-        POSITIONS.save(
-            deps.storage,
-            &identifier,
-            &Position {
-                identifier: identifier.clone(),
-                lp_asset: lp_asset.clone(),
-                unlocking_duration,
-                open: true,
-                expiring_at: None,
-                receiver: receiver.clone(),
-            },
-        )?;
-        unlocking_duration
-    };
+/// Expands an existing position
+pub(crate) fn expand_position(
+    deps: DepsMut,
+    env: &Env,
+    info: MessageInfo,
+    identifier: String,
+) -> Result<Response, ContractError> {
+    let mut position = get_position(deps.storage, Some(identifier.clone()))?.ok_or(
+        ContractError::NoPositionFound {
+            identifier: identifier.clone(),
+        },
+    )?;
+
+    let lp_asset = cw_utils::one_coin(&info)?;
+
+    // ensure the lp denom is valid and was created by the pool manager
+    let config = CONFIG.load(deps.storage)?;
+    validate_lp_denom(&lp_asset.denom, config.pool_manager_addr.as_str())?;
+
+    // make sure the lp asset sent matches the lp asset of the position
+    ensure!(
+        position.lp_asset.denom == lp_asset.denom,
+        ContractError::AssetMismatch
+    );
+
+    ensure!(
+        position.open,
+        ContractError::PositionAlreadyClosed {
+            identifier: position.identifier.clone(),
+        }
+    );
+
+    // ensure only the receiver itself or the pool manager can refill the position
+    ensure!(
+        position.receiver == info.sender || info.sender == config.pool_manager_addr,
+        ContractError::Unauthorized
+    );
+
+    position.lp_asset.amount = position.lp_asset.amount.checked_add(lp_asset.amount)?;
+    POSITIONS.save(deps.storage, &position.identifier, &position)?;
 
     // Update weights for the LP and the user
     update_weights(
         deps,
         env,
-        &receiver,
+        &position.receiver,
         &lp_asset,
-        position_unlocking_duration,
+        position.unlocking_duration,
         true,
     )?;
 
-    let action = match position {
-        Some(_) => "expand_position",
-        None => "open_position",
-    };
-
     Ok(Response::default().add_attributes(vec![
-        ("action", action.to_string()),
-        ("receiver", receiver.to_string()),
+        ("action", "expand_position".to_string()),
+        ("receiver", position.receiver.to_string()),
         ("lp_asset", lp_asset.to_string()),
         (
             "unlocking_duration",
-            position_unlocking_duration.to_string(),
+            position.unlocking_duration.to_string(),
         ),
     ]))
 }

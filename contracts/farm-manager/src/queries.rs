@@ -2,14 +2,16 @@ use cosmwasm_std::{Deps, Env};
 
 use amm::coin::aggregate_coins;
 use amm::farm_manager::{
-    Config, EpochId, FarmsBy, FarmsResponse, LpWeightResponse, PositionsResponse, RewardsResponse,
+    Config, EpochId, FarmsBy, FarmsResponse, LpWeightResponse, PositionsBy, PositionsResponse,
+    RewardsResponse,
 };
 
 use crate::farm::commands::calculate_rewards;
 use crate::helpers::get_unique_lp_asset_denoms_from_positions;
 use crate::state::{
     get_farm_by_identifier, get_farms, get_farms_by_farm_asset, get_farms_by_lp_denom,
-    get_positions_by_receiver, CONFIG, LP_WEIGHT_HISTORY,
+    get_position, get_positions, get_positions_by_receiver, CONFIG, LP_WEIGHT_HISTORY,
+    MAX_ITEMS_LIMIT,
 };
 use crate::ContractError;
 
@@ -49,10 +51,24 @@ pub(crate) fn query_farms(
 /// open state, i.e. open positions if true, closed positions if false.
 pub(crate) fn query_positions(
     deps: Deps,
-    address: String,
+    filter_by: Option<PositionsBy>,
     open_state: Option<bool>,
+    start_after: Option<String>,
+    limit: Option<u32>,
 ) -> Result<PositionsResponse, ContractError> {
-    let positions = get_positions_by_receiver(deps.storage, &address, open_state)?;
+    let positions = if let Some(filter_by) = filter_by {
+        match filter_by {
+            PositionsBy::Identifier(identifier) => {
+                vec![get_position(deps.storage, Some(identifier.clone()))?
+                    .ok_or(ContractError::NoPositionFound { identifier })?]
+            }
+            PositionsBy::Receiver(receiver) => {
+                get_positions_by_receiver(deps.storage, &receiver, open_state, start_after, limit)?
+            }
+        }
+    } else {
+        get_positions(deps.storage, start_after, limit)?
+    };
 
     Ok(PositionsResponse { positions })
 }
@@ -65,7 +81,13 @@ pub(crate) fn query_rewards(
 ) -> Result<RewardsResponse, ContractError> {
     let receiver = deps.api.addr_validate(&address)?;
     // check if the user has any open LP positions
-    let open_positions = get_positions_by_receiver(deps.storage, receiver.as_str(), Some(true))?;
+    let open_positions = get_positions_by_receiver(
+        deps.storage,
+        receiver.as_str(),
+        Some(true),
+        None,
+        Some(MAX_ITEMS_LIMIT),
+    )?;
 
     if open_positions.is_empty() {
         // if the user has no open LP positions, return an empty rewards list

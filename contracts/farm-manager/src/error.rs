@@ -119,6 +119,9 @@ pub enum ContractError {
     #[error("Maximum number of open/close positions per user exceeded, max is {max}. If you are trying to open a position, close some and try again. If you are trying to close a position, withdraw some and try again.")]
     MaxPositionsPerUserExceeded { max: u32 },
 
+    #[error("The position with the identifier {identifier} already exists")]
+    PositionAlreadyExists { identifier: String },
+
     #[error(
         "Invalid unlocking duration of {specified} specified, must be between {min} and {max}"
     )]

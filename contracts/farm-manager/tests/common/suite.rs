@@ -468,15 +468,19 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn query_positions(
         &mut self,
-        address: &Addr,
+        filter_by: Option<amm::farm_manager::PositionsBy>,
         open_state: Option<bool>,
+        start_after: Option<String>,
+        limit: Option<u32>,
         result: impl Fn(StdResult<PositionsResponse>),
     ) -> &mut Self {
         let positions_response: StdResult<PositionsResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
             &amm::farm_manager::QueryMsg::Positions {
-                address: address.to_string(),
+                filter_by,
                 open_state,
+                start_after,
+                limit,
             },
         );
 

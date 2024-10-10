@@ -108,11 +108,11 @@ pub fn execute(
         }
         ExecuteMsg::Claim {} => farm::commands::claim(deps, env, info),
         ExecuteMsg::ManagePosition { action } => match action {
-            PositionAction::Fill {
+            PositionAction::Create {
                 identifier,
                 unlocking_duration,
                 receiver,
-            } => position::commands::fill_position(
+            } => position::commands::create_position(
                 deps,
                 &env,
                 info,
@@ -120,6 +120,9 @@ pub fn execute(
                 unlocking_duration,
                 receiver,
             ),
+            PositionAction::Expand { identifier } => {
+                position::commands::expand_position(deps, &env, info, identifier)
+            }
             PositionAction::Close {
                 identifier,
                 lp_asset,
@@ -178,10 +181,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             limit,
         )?)?),
         QueryMsg::Positions {
-            address,
+            filter_by,
             open_state,
+            start_after,
+            limit,
         } => Ok(to_json_binary(&queries::query_positions(
-            deps, address, open_state,
+            deps,
+            filter_by,
+            open_state,
+            start_after,
+            limit,
         )?)?),
         QueryMsg::Rewards { address } => Ok(to_json_binary(&queries::query_rewards(
             deps, &env, address,

@@ -99,11 +99,16 @@ pub enum QueryMsg {
     /// Retrieves the positions for an address.
     #[returns(PositionsResponse)]
     Positions {
-        /// The address to get positions for.
-        address: String,
+        /// An optional parameter specifying what to filter positions by.
+        filter_by: Option<PositionsBy>,
         /// An optional parameter specifying to return only positions that match the given open state.
         /// if true, it will return open positions. If false, it will return closed positions.
         open_state: Option<bool>,
+        /// An optional parameter specifying what position (identifier) to start searching after.
+        start_after: Option<String>,
+        /// The amount of positions to return.
+        /// If unspecified, will default to a value specified by the contract.
+        limit: Option<u32>,
     },
     /// Retrieves the rewards for an address.
     #[returns(RewardsResponse)]
@@ -129,6 +134,13 @@ pub enum FarmsBy {
     Identifier(String),
     LpDenom(String),
     FarmAsset(String),
+}
+
+/// Enum to filter positions by identifier or receiver. Used in the positions query.
+#[cw_serde]
+pub enum PositionsBy {
+    Identifier(String),
+    Receiver(String),
 }
 
 /// Configuration for the contract (manager)
@@ -194,9 +206,8 @@ pub enum FarmAction {
 
 #[cw_serde]
 pub enum PositionAction {
-    /// Fills a position. If the position doesn't exist, it opens it. If it exists already,
-    /// it expands it given the sender opened the original position and the params are correct.
-    Fill {
+    /// Creates a position.
+    Create {
         /// The identifier of the position.
         identifier: Option<String>,
         /// The time it takes in seconds to unlock this position. This is used to identify the position to fill.
@@ -204,6 +215,11 @@ pub enum PositionAction {
         /// The receiver for the position.
         /// If left empty, defaults to the message sender.
         receiver: Option<String>,
+    },
+    /// Expands a position.
+    Expand {
+        /// The identifier of the position.
+        identifier: String,
     },
     /// Closes an existing position. The position stops earning farm rewards.
     Close {

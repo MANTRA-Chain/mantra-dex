@@ -12,6 +12,7 @@ use crate::helpers::get_unique_lp_asset_denoms_from_positions;
 use crate::state::{
     get_earliest_address_lp_weight, get_farms_by_lp_denom, get_latest_address_lp_weight,
     get_positions_by_receiver, CONFIG, FARMS, LAST_CLAIMED_EPOCH, LP_WEIGHT_HISTORY,
+    MAX_ITEMS_LIMIT,
 };
 use crate::ContractError;
 
@@ -20,7 +21,13 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
     cw_utils::nonpayable(&info)?;
 
     // check if the user has any open LP positions
-    let open_positions = get_positions_by_receiver(deps.storage, info.sender.as_str(), Some(true))?;
+    let open_positions = get_positions_by_receiver(
+        deps.storage,
+        info.sender.as_str(),
+        Some(true),
+        None,
+        Some(MAX_ITEMS_LIMIT),
+    )?;
     ensure!(!open_positions.is_empty(), ContractError::NoOpenPositions);
 
     let config = CONFIG.load(deps.storage)?;

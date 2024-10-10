@@ -110,8 +110,13 @@ pub(crate) fn validate_positions_limit(
     receiver: &Addr,
     open_state: bool,
 ) -> Result<(), ContractError> {
-    let existing_user_positions =
-        get_positions_by_receiver(deps.storage, receiver.as_str(), Some(open_state))?;
+    let existing_user_positions = get_positions_by_receiver(
+        deps.storage,
+        receiver.as_str(),
+        Some(open_state),
+        None,
+        Some(MAX_ITEMS_LIMIT),
+    )?;
 
     ensure!(
         existing_user_positions.len() < MAX_ITEMS_LIMIT as usize,
