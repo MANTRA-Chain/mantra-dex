@@ -5,19 +5,18 @@ set -e
 deployment_script_dir=$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 project_root_path=$(realpath "$0" | sed 's|\(.*\)/.*|\1|' | cd ../ | pwd)
 artifacts_path=$project_root_path/artifacts
-
-source $deployment_script_dir/ibc_denoms.sh
+instantiate2=0
 
 # Displays tool usage
 function display_usage() {
-	echo "WW V2 Deployer"
-	echo -e "\nUsage:./deploy_v2.sh [flags]. Two flags should be used, -c to specify the chain and then either -d or -s."
-	echo -e "To deploy V2, the contracts need to be stored first, running -s. With the code_ids in place, the contracts can be deployed with -d.\n"
+	echo "MANTRA Dex Deployer"
+	echo -e "\nUsage:./deploy_mantra_dex.sh [flags]. Two flags should be used, -c to specify the chain and then either -d or -s."
+	echo -e "To deploy MANTRA dex, the contracts need to be stored first, running -s. With the code_ids in place, the contracts can be deployed with -d.\n"
 	echo -e "Available flags:\n"
 	echo -e "  -h \thelp"
-	echo -e "  -c \tThe chain where you want to deploy (juno|juno-testnet|terra|terra-testnet|... check chain_env.sh for the complete list of supported chains)"
-	echo -e "  -d \tWhat to deploy (all|pool-manager|vault-manager|epoch-manager|bonding-manager|farm-manager)"
-	echo -e "  -s \tStore artifacts on chain (all|pool-manager|vault-manager|epoch-manager|bonding-manager|farm-manager)"
+	echo -e "  -c \tThe chain where you want to deploy (mantra|mantra-testnet|... check chain_env.sh for the complete list of supported chains)"
+	echo -e "  -d \tWhat to deploy (all|pool-manager|epoch-manager|fee-collector|farm-manager)"
+	echo -e "  -s \tStore artifacts on chain (all|pool-manager|epoch-manager|fee-collector|farm-manager)"
 	echo -e "  -a \tArtifacts folder path (default: $project_root_path/artifacts)"
 }
 
@@ -38,7 +37,7 @@ function store_artifact_on_chain() {
 
 	local res=$($BINARY tx wasm store $artifact $TXFLAG --from $deployer | jq -r '.txhash')
 	sleep $tx_delay
-	local code_id=$($BINARY q tx $res --node $RPC -o json | jq -r '.logs[0].events[] | select(.type == "store_code").attributes[] | select(.key == "code_id").value')
+	local code_id=$($BINARY q tx $res --node $RPC -o json | jq -r '.events[] | select(.type == "store_code").attributes[] | select(.key == "code_id").value')
 
 	# Download the wasm binary from the chain and compare it to the original one
 	echo -e "Verifying integrity of wasm artifact on chain...\n"
@@ -79,93 +78,64 @@ function append_contract_address_to_output() {
 
 function init_epoch_manager() {
 	init_msg='{
-    "start_epoch": {
-      "id": 0,
-      "start_time": "1571797419879305533"
-    },
+    "owner": "'$deployer_address'",
     "epoch_config": {
-      "duration": "86400000000000",
-      "genesis_epoch": "1571797419879305533"
+      "duration": "3600",
+      "genesis_epoch": "1728489307"
     }
   }'
-	init_artifact 'epoch_manager.wasm' "$init_msg" "White Whale Epoch Manager"
+	init_artifact 'epoch_manager.wasm' "$init_msg" "MANTRA Epoch Manager"
 }
 
 function init_pool_manager() {
-	bonding_manager_addr=$(jq '.contracts[] | select (.wasm == "bonding_manager.wasm") | .contract_address' $output_file)
-	farm_manager_addr=$(jq '.contracts[] | select (.wasm == "farm_manager.wasm") | .contract_address' $output_file)
+	fee_collector_addr=$(jq -r '.contracts[] | select (.wasm == "fee_collector.wasm") | .contract_address' $output_file)
+	farm_manager_addr=$(jq -r '.contracts[] | select (.wasm == "farm_manager.wasm") | .contract_address' $output_file)
 
 	init_msg='{
-              "bonding_manager_addr": "'$bonding_manager_addr'",
+              "fee_collector_addr": "'$fee_collector_addr'",
               "farm_manager_addr": "'$farm_manager_addr'",
               "pool_creation_fee": {
-                "denom": "uwhale",
-                "amount": "1000000000"
-              }
-            }'
-	init_artifact 'pool_manager.wasm' "$init_msg" "White Whale Pool Manager"
-}
-
-function init_vault_manager() {
-	bonding_manager_addr=$(jq '.contracts[] | select (.wasm == "bonding_manager.wasm") | .contract_address' $output_file)
-
-	init_msg='{
-              "owner": "migaloo1...",
-              "bonding_manager_addr": "'$bonding_manager_addr'",
-              "vault_creation_fee": {
-                "denom": "uwhale",
+                "denom": "uom",
                 "amount": "1000"
               }
             }'
-	init_artifact 'vault_manager.wasm' "$init_msg" "White Whale Vault Manager"
+	init_artifact 'pool_manager.wasm' "$init_msg" "MANTRA Pool Manager"
 }
 
-function init_bonding_manager() {
-	epoch_manager_addr=$(jq '.contracts[] | select (.wasm == "epoch_manager.wasm") | .contract_address' $output_file)
-
-	init_msg='{
-              "distribution_denom": "uwhale",
-              "unbonding_period": 1,
-              "growth_rate": "0.1",
-              "bonding_assets": [
-                "ampWHALE",
-                "bWHALE"
-              ],
-              "grace_period": 21,
-              "epoch_manager_addr": "'$epoch_manager_addr'"
-            }'
-	init_artifact 'bonding_manager.wasm' "$init_msg" "White Whale Bonding Manager"
+function init_fee_collector() {
+	init_msg='{}'
+	init_artifact 'fee_collector.wasm' "$init_msg" "MANTRA Fee Collector"
 }
 
 function init_farm_manager() {
-	epoch_manager_addr=$(jq '.contracts[] | select (.wasm == "epoch_manager.wasm") | .contract_address' $output_file)
-	bonding_manager_addr=$(jq '.contracts[] | select (.wasm == "bonding_manager.wasm") | .contract_address' $output_file)
+	epoch_manager_addr=$(jq -r '.contracts[] | select (.wasm == "epoch_manager.wasm") | .contract_address' $output_file)
+	fee_collector_addr=$(jq -r '.contracts[] | select (.wasm == "fee_collector.wasm") | .contract_address' $output_file)
 
 	init_msg='{
-              "owner": "migaloo1...",
+              "owner": "'$deployer_address'",
               "epoch_manager_addr": "'$epoch_manager_addr'",
-              "bonding_manager_addr": "'$bonding_manager_addr'",
+              "fee_collector_addr": "'$fee_collector_addr'",
+              "pool_manager_addr": "",
               "create_farm_fee": {
-                "denom": "uwhale",
-                "amount": "1000000000"
+                "denom": "uom",
+                "amount": "1000"
               },
               "max_concurrent_farms": 7,
               "max_farm_epoch_buffer": 14,
               "min_unlocking_duration": 86400,
-              "max_unlocking_duration": 31536000,
+              "max_unlocking_duration": 86400,
               "emergency_unlock_penalty": "0.01"
             }'
-	init_artifact 'farm_manager.wasm' "$init_msg" "White Whale Farm Manager"
+	init_artifact 'farm_manager.wasm' "$init_msg" "MANTRA Farm Manager"
 }
 
-function init_v2() {
-	echo -e "\nInitializing WW V2 on $CHAIN_ID..."
+function init_mantra_dex() {
+	echo -e "\nInitializing MANTRA Dex on $CHAIN_ID..."
 
+	init_fee_collector
 	init_epoch_manager
-	init_bonding_manager
 	init_farm_manager
 	init_pool_manager
-	init_vault_manager
 }
 
 function init_artifact() {
@@ -182,7 +152,13 @@ function init_artifact() {
 
 	# Instantiate the contract
 	code_id=$(jq -r '.contracts[] | select (.wasm == "'$artifact'") | .code_id' $output_file)
-	$BINARY tx wasm instantiate $code_id "$init_msg" --from $deployer --label "$label" $TXFLAG --admin $deployer_address
+
+	if [ $instantiate2 -eq 1 ]; then
+		$BINARY tx wasm instantiate2 $code_id "$init_msg" $salt --from $deployer --label "$label" $TXFLAG --admin $deployer_address --fix-msg
+	else
+		$BINARY tx wasm instantiate $code_id "$init_msg" --from $deployer --label "$label" $TXFLAG --admin $deployer_address
+	fi
+
 	sleep $tx_delay
 	# Get contract address
 	contract_address=$($BINARY query wasm list-contract-by-code $code_id --node $RPC --output json | jq -r '.contracts[-1]')
@@ -194,7 +170,7 @@ function init_artifact() {
 
 function deploy() {
 	mkdir -p $project_root_path/scripts/deployment/output
-	output_file=$project_root_path/scripts/deployment/output/"$CHAIN_ID"_v2_contracts.json
+	output_file=$project_root_path/scripts/deployment/output/"$CHAIN_ID"_mantra_dex_contracts.json
 
 	if [[ ! -f "$output_file" ]]; then
 		# create file to dump results into
@@ -225,17 +201,14 @@ function deploy() {
 	pool-manager)
 		init_pool_manager
 		;;
-	vault-manager)
-		init_vault_manager
-		;;
-	bonding-manager)
-		init_bonding_manager
+	fee-collector)
+		init_fee_collector
 		;;
 	farm-manager)
 		init_farm_manager
 		;;
 	*) # store all
-		init_v2
+		init_mantra_dex
 		;;
 	esac
 
@@ -253,7 +226,7 @@ function deploy() {
 
 function store() {
 	mkdir -p $project_root_path/scripts/deployment/output
-	output_file=$project_root_path/scripts/deployment/output/"$CHAIN_ID"_v2_contracts.json
+	output_file=$project_root_path/scripts/deployment/output/"$CHAIN_ID"_mantra_dex_contracts.json
 
 	if [[ ! -f "$output_file" ]]; then
 		# create file to dump results into
@@ -267,11 +240,8 @@ function store() {
 	pool-manager)
 		store_artifact_on_chain $artifacts_path/pool_manager.wasm
 		;;
-	vault-manager)
-		store_artifact_on_chain $artifacts_path/vault_manager.wasm
-		;;
-	bonding-manager)
-		store_artifact_on_chain $artifacts_path/bonding_manager.wasm
+	fee-collector)
+		store_artifact_on_chain $artifacts_path/fee_collector.wasm
 		;;
 	farm-manager)
 		store_artifact_on_chain $artifacts_path/farm_manager.wasm
@@ -287,11 +257,10 @@ if [ -z $1 ]; then
 	exit 0
 fi
 
-# get args
-optstring=':c:d:s:a:h'
-while getopts $optstring arg; do
-	source $deployment_script_dir/wallet_importer.sh
+source $deployment_script_dir/wallet_importer.sh
 
+optstring=':f:c:d:s:a:h'
+while getopts $optstring arg; do
 	case "$arg" in
 	c)
 		chain=$OPTARG
@@ -300,14 +269,26 @@ while getopts $optstring arg; do
 		if [[ "$chain" = "local" ]]; then
 			tx_delay=0.5
 		else
-			tx_delay=8
+			tx_delay=12
 		fi
 		;;
 	d)
+		if [ -z "$chain" ]; then
+			echo "Must supply chain (-c) before deployer wallet (-d)"
+			exit 1
+		fi
 		import_deployer_wallet $chain
 		deploy $OPTARG
 		;;
+	f)
+		instantiate2=$OPTARG
+		salt=$(echo -n "mantradex" | xxd -ps)
+		;;
 	s)
+		if [ -z "$chain" ]; then
+			echo "Must supply chain (-c) before deployer wallet (-s)"
+			exit 1
+		fi
 		import_deployer_wallet $chain
 		store $OPTARG
 		;;
@@ -328,4 +309,5 @@ while getopts $optstring arg; do
 		exit 2
 		;;
 	esac
+
 done

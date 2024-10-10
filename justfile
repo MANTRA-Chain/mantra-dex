@@ -69,3 +69,11 @@ get-artifacts-size:
 # Installs the env loader locally.
 install-env-loader:
     scripts/deployment/deploy_env/add_load_chain_env_alias.sh
+
+# Deploys MANTRA Dex on the given CHAIN, default is mantra-testnet.
+deploy CHAIN='mantra-testnet' CONTRACT='all':
+    ./scripts/deployment/deploy_mantra_dex.sh -c {{CHAIN}} -d {{CONTRACT}}
+
+# Stores the MANTRA Dex contracts on the given CHAIN, default is mantra-testnet.
+store CHAIN='mantra-testnet' CONTRACT='all':
+    ./scripts/deployment/deploy_mantra_dex.sh -c {{CHAIN}} -s {{CONTRACT}}
