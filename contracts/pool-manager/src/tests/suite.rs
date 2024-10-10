@@ -13,7 +13,7 @@ use cw_multi_test::{
     WasmKeeper,
 };
 
-use amm::constants::LP_SYMBOL;
+use amm::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
 use amm::epoch_manager::EpochConfig;
 use amm::farm_manager::PositionsResponse;
 use amm::fee::PoolFee;
@@ -282,6 +282,7 @@ impl TestingSuite {
             max_farm_epoch_buffer: 014,
             min_unlocking_duration: 86_400,
             max_unlocking_duration: 31_536_000,
+            farm_expiration_time: MONTH_IN_SECONDS,
             emergency_unlock_penalty: Decimal::percent(10),
         };
 
@@ -512,6 +513,7 @@ impl TestingSuite {
                 max_farm_epoch_buffer: None,
                 min_unlocking_duration: None,
                 max_unlocking_duration: None,
+                farm_expiration_time: None,
                 emergency_unlock_penalty: None,
             },
             &[],

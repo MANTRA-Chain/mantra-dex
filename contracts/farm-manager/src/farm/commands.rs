@@ -148,8 +148,8 @@ pub(crate) fn calculate_rewards(
     let mut modified_farms: HashMap<String, Uint128> = HashMap::new();
 
     for farm in farms {
-        // skip expired farms
-        if farm.is_expired(current_epoch_id) || farm.start_epoch > current_epoch_id {
+        // skip farms that have not started
+        if farm.start_epoch > current_epoch_id {
             continue;
         }
 

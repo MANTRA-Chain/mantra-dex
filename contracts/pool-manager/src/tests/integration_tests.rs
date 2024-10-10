@@ -3708,11 +3708,11 @@ mod provide_liquidity {
                 },
             )
             .query_balance(&creator.to_string(), &lp_denom, |result| {
-                // assert_approx_eq!(
-                //     result.unwrap().amount,
-                //     Uint128::from(30_000_000u128 + 1_500_000u128 + 1_500_000u128 - 1_000u128),
-                //     "0.000001"
-                // );
+                assert_approx_eq!(
+                    result.unwrap().amount,
+                    Uint128::from(30_000_000u128 + 1_500_000u128 + 1_500_000u128 - 1_000u128),
+                    "0.000001"
+                );
             });
 
         // now alice provides liquidity

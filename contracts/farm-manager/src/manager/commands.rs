@@ -1,42 +1,45 @@
 use cosmwasm_std::{
-    ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, MessageInfo, Response, StdError, Storage,
-    Uint128, Uint64,
+    ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
+    Storage, Uint128, Uint64,
 };
 
 use amm::farm_manager::MIN_FARM_AMOUNT;
 use amm::farm_manager::{Curve, Farm, FarmParams};
 
 use crate::helpers::{
-    assert_farm_asset, process_farm_creation_fee, validate_emergency_unlock_penalty,
-    validate_farm_epochs, validate_lp_denom, validate_unlocking_duration,
+    assert_farm_asset, is_farm_expired, process_farm_creation_fee,
+    validate_emergency_unlock_penalty, validate_farm_epochs, validate_farm_expiration_time,
+    validate_lp_denom, validate_unlocking_duration,
 };
 use crate::state::{get_farm_by_identifier, get_farms_by_lp_denom, CONFIG, FARMS, FARM_COUNTER};
 use crate::ContractError;
 
 pub(crate) fn fill_farm(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     params: FarmParams,
 ) -> Result<Response, ContractError> {
     // if a farm_identifier was passed in the params, check if a farm with such identifier
-    // exists and if the sender is allow to refill it, otherwise create a new farm
-    if let Some(farm_indentifier) = params.clone().farm_identifier {
-        let farm_result = get_farm_by_identifier(deps.storage, &farm_indentifier);
+    // exists and if the sender is allowed to refill it, otherwise create a new farm
+    if let Some(farm_identifier) = params.clone().farm_identifier {
+        let farm_result = get_farm_by_identifier(deps.storage, &farm_identifier);
 
         if let Ok(farm) = farm_result {
             // the farm exists, try to expand it
-            return expand_farm(deps, info, farm, params);
+            return expand_farm(deps, env, info, farm, params);
         }
         // the farm does not exist, try to create it
     }
 
     // if no identifier was passed in the params or if the farm does not exist, try to create the farm
-    create_farm(deps, info, params)
+    create_farm(deps, env, info, params)
 }
 
 /// Creates a farm with the given params
 fn create_farm(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     params: FarmParams,
 ) -> Result<Response, ContractError> {
@@ -60,7 +63,7 @@ fn create_farm(
 
     let (expired_farms, farms): (Vec<_>, Vec<_>) = farms
         .into_iter()
-        .partition(|farm| farm.is_expired(current_epoch.id));
+        .partition(|farm| is_farm_expired(farm, deps.as_ref(), &env, &config).unwrap_or(false));
 
     let mut messages: Vec<CosmosMsg> = vec![];
 
@@ -217,6 +220,7 @@ fn close_farms(
 /// Expands a farm with the given params
 fn expand_farm(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     mut farm: Farm,
     params: FarmParams,
@@ -225,14 +229,10 @@ fn expand_farm(
     ensure!(farm.owner == info.sender, ContractError::Unauthorized);
 
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = amm::epoch_manager::get_current_epoch(
-        deps.as_ref(),
-        config.epoch_manager_addr.into_string(),
-    )?;
 
     // check if the farm has already expired, can't be expanded
     ensure!(
-        !farm.is_expired(current_epoch.id),
+        !is_farm_expired(&farm, deps.as_ref(), &env, &config)?,
         ContractError::FarmAlreadyExpired
     );
 
@@ -292,6 +292,7 @@ pub(crate) fn update_config(
     max_farm_epoch_buffer: Option<u32>,
     min_unlocking_duration: Option<u64>,
     max_unlocking_duration: Option<u64>,
+    farm_expiration_time: Option<u64>,
     emergency_unlock_penalty: Option<Decimal>,
 ) -> Result<Response, ContractError> {
     cw_ownable::assert_owner(deps.storage, &info.sender)?;
@@ -337,6 +338,11 @@ pub(crate) fn update_config(
         config.min_unlocking_duration = min_unlocking_duration;
     }
 
+    if let Some(farm_expiration_time) = farm_expiration_time {
+        validate_farm_expiration_time(farm_expiration_time)?;
+        config.farm_expiration_time = farm_expiration_time;
+    }
+
     if let Some(emergency_unlock_penalty) = emergency_unlock_penalty {
         config.emergency_unlock_penalty =
             validate_emergency_unlock_penalty(emergency_unlock_penalty)?;
@@ -365,6 +371,10 @@ pub(crate) fn update_config(
         (
             "max_unlocking_duration",
             config.max_unlocking_duration.to_string(),
+        ),
+        (
+            "farm_expiration_time",
+            config.farm_expiration_time.to_string(),
         ),
         (
             "emergency_unlock_penalty",

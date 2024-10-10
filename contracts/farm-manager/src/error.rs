@@ -83,6 +83,9 @@ pub enum ContractError {
     #[error("The farm has already expired, can't be expanded")]
     FarmAlreadyExpired,
 
+    #[error("The expiration time for the farm is invalid, must be at least {min} seconds")]
+    FarmExpirationTimeInvalid { min: u64 },
+
     #[error("The farm doesn't have enough funds to pay out the reward")]
     FarmExhausted,
 
