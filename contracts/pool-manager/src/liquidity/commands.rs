@@ -1,11 +1,12 @@
 use cosmwasm_std::{
     coin, coins, ensure, to_json_binary, wasm_execute, BankMsg, Coin, CosmosMsg, DepsMut, Env,
-    MessageInfo, Response, SubMsg,
+    MessageInfo, Response, StdResult, SubMsg,
 };
 use cosmwasm_std::{Decimal, OverflowError, Uint128};
 
 use amm::coin::{aggregate_coins, deduct_coins};
 use amm::common::validate_addr_or_default;
+use amm::farm_manager::{PositionsBy, PositionsResponse};
 use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use amm::pool_manager::{get_total_share, ExecuteMsg, PoolType};
 use amm::U256;
@@ -327,23 +328,77 @@ pub fn provide_liquidity(
                 share,
             )?);
 
-            // lock the lp tokens in the farm manager on behalf of the receiver
-            messages.push(
-                wasm_execute(
-                    config.farm_manager_addr,
-                    &amm::farm_manager::ExecuteMsg::ManagePosition {
-                        action: amm::farm_manager::PositionAction::Fill {
-                            identifier: lock_position_identifier,
-                            unlocking_duration,
-                            receiver: Some(receiver.clone()),
-                        },
+            // if the lock_position_identifier is set
+            if let Some(position_identifier) = lock_position_identifier {
+                let positions_result: StdResult<PositionsResponse> = deps.querier.query_wasm_smart(
+                    config.farm_manager_addr.to_string(),
+                    &amm::farm_manager::QueryMsg::Positions {
+                        filter_by: Some(PositionsBy::Identifier(position_identifier.clone())),
+                        open_state: None,
+                        start_after: None,
+                        limit: None,
                     },
-                    coins(share.u128(), liquidity_token),
-                )?
-                .into(),
-            );
+                );
+
+                // a position with the given identifier exists
+                if let Ok(positions_response) = positions_result {
+                    // if the position exists, check if the receiver is the same as the sender
+                    // if so, expand the position
+                    ensure!(
+                        positions_response.positions[0].identifier == position_identifier
+                            && positions_response.positions[0].receiver.to_string() == receiver,
+                        ContractError::Unauthorized
+                    );
+
+                    messages.push(
+                        wasm_execute(
+                            config.farm_manager_addr,
+                            &amm::farm_manager::ExecuteMsg::ManagePosition {
+                                action: amm::farm_manager::PositionAction::Expand {
+                                    identifier: position_identifier,
+                                },
+                            },
+                            coins(share.u128(), liquidity_token),
+                        )?
+                        .into(),
+                    );
+                } else {
+                    // a position with the given identifier does not exist, create a new position
+                    // for the user
+                    messages.push(
+                        wasm_execute(
+                            config.farm_manager_addr,
+                            &amm::farm_manager::ExecuteMsg::ManagePosition {
+                                action: amm::farm_manager::PositionAction::Create {
+                                    identifier: Some(position_identifier),
+                                    unlocking_duration,
+                                    receiver: Some(receiver.clone()),
+                                },
+                            },
+                            coins(share.u128(), liquidity_token),
+                        )?
+                        .into(),
+                    );
+                }
+            } else {
+                // no lock_position_identifier was set, create a new position for the user
+                messages.push(
+                    wasm_execute(
+                        config.farm_manager_addr,
+                        &amm::farm_manager::ExecuteMsg::ManagePosition {
+                            action: amm::farm_manager::PositionAction::Create {
+                                identifier: lock_position_identifier,
+                                unlocking_duration,
+                                receiver: Some(receiver.clone()),
+                            },
+                        },
+                        coins(share.u128(), liquidity_token),
+                    )?
+                    .into(),
+                );
+            }
         } else {
-            // if not, just mint the LP tokens to the receiver
+            // if no unlocking duration is set, just mint the LP tokens to the receiver
             messages.push(amm::lp_common::mint_lp_token_msg(
                 liquidity_token,
                 &deps.api.addr_validate(&receiver)?,
