@@ -294,13 +294,15 @@ pub(crate) fn withdraw_position(
         let fee_collector_addr = CONFIG.load(deps.storage)?.fee_collector_addr;
 
         // send penalty to the fee collector
-        messages.push(
-            BankMsg::Send {
-                to_address: fee_collector_addr.to_string(),
-                amount: vec![penalty],
-            }
-            .into(),
-        );
+        if penalty.amount > Uint128::zero() {
+            messages.push(
+                BankMsg::Send {
+                    to_address: fee_collector_addr.to_string(),
+                    amount: vec![penalty],
+                }
+                .into(),
+            );
+        }
 
         // if the position is open, update the weights when doing the emergency withdrawal
         // otherwise not, as the weights have already being updated when the position was closed

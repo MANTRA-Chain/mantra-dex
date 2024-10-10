@@ -419,7 +419,11 @@ pub fn withdraw_liquidity(
                     .to_uint_floor(),
             })
         })
-        .collect::<Result<Vec<Coin>, OverflowError>>()?;
+        .collect::<Result<Vec<Coin>, OverflowError>>()?
+        .into_iter()
+        // filter out assets with zero amount
+        .filter(|coin| coin.amount > Uint128::zero())
+        .collect();
 
     let mut messages: Vec<CosmosMsg> = vec![];
 

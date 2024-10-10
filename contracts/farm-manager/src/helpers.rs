@@ -75,13 +75,15 @@ pub(crate) fn process_farm_creation_fee(
     }
 
     // send farm creation fee to fee collector
-    messages.push(
-        BankMsg::Send {
-            to_address: config.fee_collector_addr.to_string(),
-            amount: vec![farm_creation_fee.to_owned()],
-        }
-        .into(),
-    );
+    if farm_creation_fee.amount > Uint128::zero() {
+        messages.push(
+            BankMsg::Send {
+                to_address: config.fee_collector_addr.to_string(),
+                amount: vec![farm_creation_fee.to_owned()],
+            }
+            .into(),
+        );
+    }
 
     Ok(messages)
 }
