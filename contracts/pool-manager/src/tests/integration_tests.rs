@@ -5170,4 +5170,125 @@ mod multiple_pools {
                 },
             );
     }
+
+    #[test]
+    fn cant_create_pool_with_large_number_of_assets() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uusdy".to_string()),
+                coin(1_000_000_000u128, "uusdc".to_string()),
+                coin(1_000_000_000u128, "uusdt".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        // Asset denoms with uwhale and uluna
+        let asset_denoms = vec![
+            "uusdy".to_string(),
+            "uusdc".to_string(),
+            "uusdt".to_string(),
+            "uusd".to_string(),
+        ];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(10),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(7),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create pools
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::StableSwap { amp: 80 },
+                Some("stableswap".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::AssetMismatch { .. } => {}
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::AssetMismatch")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::StableSwap { amp: 80 },
+                Some("stableswap".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::AssetMismatch { .. } => {}
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::AssetMismatch")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                vec![
+                    "uusdy".to_string(),
+                    "uusdc".to_string(),
+                    "uusdt".to_string(),
+                    "uusd".to_string(),
+                    "uom".to_string(),
+                ],
+                vec![6u8, 6u8, 6u8, 6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::StableSwap { amp: 80 },
+                Some("stableswap".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::AssetMismatch { .. } => {}
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::AssetMismatch")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                vec![
+                    "uusdy".to_string(),
+                    "uusdc".to_string(),
+                    "uusdt".to_string(),
+                    "uusd".to_string(),
+                ],
+                vec![6u8, 6u8, 6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::StableSwap { amp: 80 },
+                Some("stableswap".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+    }
 }
