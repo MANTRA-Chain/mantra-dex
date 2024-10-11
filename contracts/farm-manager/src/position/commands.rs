@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 use amm::farm_manager::{Position, RewardsResponse};
 
-use crate::helpers::validate_lp_denom;
+use crate::helpers::{validate_identifier, validate_lp_denom};
 use crate::position::helpers::{
     calculate_weight, create_penalty_share_msg, get_latest_address_weight, AUTO_POSITION_ID_PREFIX,
     EXPLICIT_POSITION_ID_PREFIX, PENALTY_FEE_SHARE,
@@ -68,6 +68,8 @@ pub(crate) fn create_position(
         // prepend AUTO_POSITION_ID_PREFIX to the position_id_counter
         format!("{AUTO_POSITION_ID_PREFIX}{position_id_counter}")
     };
+
+    validate_identifier(&identifier)?;
 
     // check if there's an existing position with the computed identifier
     let position = get_position(deps.storage, Some(identifier.clone()))?;

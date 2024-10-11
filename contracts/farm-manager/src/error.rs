@@ -159,6 +159,9 @@ pub enum ContractError {
 
     #[error("There's no snapshot of the LP weight in the contract for the epoch {epoch_id}")]
     LpWeightNotFound { epoch_id: EpochId },
+
+    #[error("Invalid identifier provided: {identifier}.")]
+    InvalidIdentifier { identifier: String },
 }
 
 impl From<semver::Error> for ContractError {

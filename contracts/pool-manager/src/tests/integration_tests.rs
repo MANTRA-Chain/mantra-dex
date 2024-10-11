@@ -170,15 +170,16 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uwhale".to_string()),
                 coin(1_000_000_000u128, "uluna".to_string()),
                 coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
             ],
             StargateMock::new("uom".to_string(), "8888".to_string()),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
-        // Asset infos with uwhale and cw20
+        // Asset infos with uwhale
 
-        let asset_infos = vec!["uwhale".to_string()];
+        let asset_infos = vec!["uwhale".to_string(), "uom".to_string()];
 
         let pool_fees = PoolFee {
             protocol_fee: Fee {
@@ -240,7 +241,7 @@ mod pool_creation_failures {
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
-        // Asset infos with uwhale and cw20
+        // Asset infos with uwhale
 
         let asset_infos = vec![
             "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A".to_string(),
@@ -316,9 +317,9 @@ mod pool_creation_failures {
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
-        // Asset infos with uwhale and cw20
+        // Asset infos with uwhale
 
-        let asset_infos = vec!["uwhale".to_string()];
+        let asset_infos = vec!["uwhale".to_string(), "uom".to_string()];
 
         let pool_fees = PoolFee {
             protocol_fee: Fee {
@@ -343,7 +344,7 @@ mod pool_creation_failures {
                 vec![6u8, 6u8],
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
-                Some("mycoolpoo".to_string()),
+                Some("mycoolpool".to_string()),
                 vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
@@ -355,7 +356,7 @@ mod pool_creation_failures {
                 vec![6u8, 6u8],
                 pool_fees,
                 PoolType::ConstantProduct,
-                Some("mycoolpoo".to_string()),
+                Some("mycoolpool".to_string()),
                 vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
