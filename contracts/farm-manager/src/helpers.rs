@@ -250,3 +250,19 @@ pub(crate) fn is_farm_expired(
             || farm_ending_at.plus_seconds(config.farm_expiration_time) < env.block.time,
     )
 }
+
+/// Validates that farms and positions identifiers are correct, ensuring the identifier doesn't
+/// exceed 64 characters, it's alphanumeric, and can contain '.', '-' and '_'.
+pub fn validate_identifier(identifier: &str) -> Result<(), ContractError> {
+    ensure!(
+        identifier.len() <= 64usize
+            && identifier
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_'),
+        ContractError::InvalidIdentifier {
+            identifier: identifier.to_string()
+        }
+    );
+
+    Ok(())
+}

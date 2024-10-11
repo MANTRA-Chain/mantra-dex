@@ -9,7 +9,7 @@ use amm::farm_manager::{Curve, Farm, FarmParams};
 use crate::helpers::{
     assert_farm_asset, is_farm_expired, process_farm_creation_fee,
     validate_emergency_unlock_penalty, validate_farm_epochs, validate_farm_expiration_time,
-    validate_lp_denom, validate_unlocking_duration,
+    validate_identifier, validate_lp_denom, validate_unlocking_duration,
 };
 use crate::state::{get_farm_by_identifier, get_farms_by_lp_denom, CONFIG, FARMS, FARM_COUNTER};
 use crate::ContractError;
@@ -114,6 +114,7 @@ fn create_farm(
     let farm_id =
         FARM_COUNTER.update::<_, StdError>(deps.storage, |current_id| Ok(current_id + 1u64))?;
     let farm_identifier = params.farm_identifier.unwrap_or(farm_id.to_string());
+    validate_identifier(&farm_identifier)?;
 
     // sanity check. Make sure another farm with the same identifier doesn't exist. Theoretically this should
     // never happen, since the fill_farm function would try to expand the farm if a user tries
