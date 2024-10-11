@@ -5,7 +5,10 @@ use cosmwasm_std::{
 };
 
 use crate::helpers::validate_lp_denom;
-use crate::position::helpers::{calculate_weight, get_latest_address_weight};
+use crate::position::helpers::{
+    calculate_weight, get_latest_address_weight, AUTO_POSITION_ID_PREFIX,
+    EXPLICIT_POSITION_ID_PREFIX,
+};
 use crate::position::helpers::{
     validate_positions_limit, validate_unlocking_duration_for_position,
 };
@@ -52,8 +55,14 @@ pub(crate) fn create_position(
         .unwrap_or_default()
         + 1u64;
 
-    // if no identifier was provided, use the counter as the identifier
-    let identifier = identifier.unwrap_or(position_id_counter.to_string());
+    // compute the identifier for this position
+    let identifier = if let Some(identifier) = identifier {
+        // prepend EXPLICIT_POSITION_ID_PREFIX to identifier
+        format!("{EXPLICIT_POSITION_ID_PREFIX}{identifier}")
+    } else {
+        // prepend AUTO_POSITION_ID_PREFIX to the position_id_counter
+        format!("{AUTO_POSITION_ID_PREFIX}{position_id_counter}")
+    };
 
     // check if there's an existing position with the computed identifier
     let position = get_position(deps.storage, Some(identifier.clone()))?;
@@ -72,27 +81,23 @@ pub(crate) fn create_position(
 
     POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
 
-    POSITIONS.save(
-        deps.storage,
-        &identifier,
-        &Position {
-            identifier: identifier.clone(),
-            lp_asset: lp_asset.clone(),
-            unlocking_duration,
-            open: true,
-            expiring_at: None,
-            receiver: receiver.clone(),
-        },
-    )?;
+    let position = Position {
+        identifier: identifier.clone(),
+        lp_asset: lp_asset.clone(),
+        unlocking_duration,
+        open: true,
+        expiring_at: None,
+        receiver: receiver.clone(),
+    };
+
+    POSITIONS.save(deps.storage, &identifier, &position)?;
 
     // Update weights for the LP and the user
     update_weights(deps, env, &receiver, &lp_asset, unlocking_duration, true)?;
 
     Ok(Response::default().add_attributes(vec![
         ("action", "open_position".to_string()),
-        ("receiver", receiver.to_string()),
-        ("lp_asset", lp_asset.to_string()),
-        ("unlocking_duration", unlocking_duration.to_string()),
+        ("position", position.to_string()),
     ]))
 }
 
@@ -222,11 +227,13 @@ pub(crate) fn close_position(
         position.lp_asset.amount = position.lp_asset.amount.saturating_sub(lp_asset.amount);
 
         // add the partial closing position to the storage
-        let identifier = POSITION_ID_COUNTER
+        let position_id_counter = POSITION_ID_COUNTER
             .may_load(deps.storage)?
             .unwrap_or_default()
             + 1u64;
-        POSITION_ID_COUNTER.save(deps.storage, &identifier)?;
+        POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
+
+        let identifier = format!("{AUTO_POSITION_ID_PREFIX}{position_id_counter}");
 
         let partial_position = Position {
             identifier: identifier.to_string(),
