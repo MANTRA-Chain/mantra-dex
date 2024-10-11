@@ -1,4 +1,7 @@
-use cosmwasm_std::{ensure, Addr, Coin, Decimal256, Deps, Order, StdError, Storage, Uint128};
+use cosmwasm_std::{
+    ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, Deps, Order, StdError, Storage,
+    Uint128,
+};
 
 use amm::farm_manager::{Config, EpochId};
 
@@ -8,8 +11,14 @@ use crate::ContractError;
 const SECONDS_IN_DAY: u64 = 86400;
 const SECONDS_IN_YEAR: u64 = 31556926;
 
+/// The prefix used when creation a position with an auto-generated ID
 pub const AUTO_POSITION_ID_PREFIX: &str = "p-";
+
+/// The prefix used when creation a position with an explicitly provided ID
 pub const EXPLICIT_POSITION_ID_PREFIX: &str = "u-";
+
+/// The penalty fee share that is given to the owner of the farm if someone does an emergency withdraw
+pub const PENALTY_FEE_SHARE: Decimal = Decimal::percent(50);
 
 /// Calculates the weight size for a user filling a position
 pub fn calculate_weight(
@@ -129,4 +138,22 @@ pub(crate) fn validate_positions_limit(
     );
 
     Ok(())
+}
+
+/// Validates the amount of positions a user can have either open or closed at a given time.
+pub(crate) fn create_penalty_share_msg(
+    lp_asset_denom: String,
+    comission: Uint128,
+    receiver: &Addr,
+) -> CosmosMsg {
+    let penalty = Coin {
+        denom: lp_asset_denom,
+        amount: comission,
+    };
+
+    BankMsg::Send {
+        to_address: receiver.to_string(),
+        amount: vec![penalty],
+    }
+    .into()
 }
