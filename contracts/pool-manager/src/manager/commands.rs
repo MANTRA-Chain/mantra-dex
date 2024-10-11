@@ -6,8 +6,9 @@ use amm::coin::is_factory_token;
 use amm::constants::LP_SYMBOL;
 use amm::fee::PoolFee;
 use amm::pool_manager::{PoolInfo, PoolType};
+use amm::tokenfactory::utils::get_factory_denom_creation_fee;
 
-use crate::helpers::validate_pool_identifier;
+use crate::helpers::{validate_fees_are_paid, validate_pool_identifier};
 use crate::state::{get_pool_by_identifier, POOL_COUNTER};
 use crate::{
     state::{Config, CONFIG, POOLS},
@@ -74,17 +75,12 @@ pub fn create_pool(
     // Load config for pool creation fee
     let config: Config = CONFIG.load(deps.storage)?;
 
-    // Check if fee was provided and is sufficient
-    if !config.pool_creation_fee.amount.is_zero() {
-        // verify fee payment
-        let amount = cw_utils::must_pay(&info, &config.pool_creation_fee.denom)?;
-        if amount != config.pool_creation_fee.amount {
-            return Err(ContractError::InvalidPoolCreationFee {
-                amount,
-                expected: config.pool_creation_fee.amount,
-            });
-        }
-    }
+    // check if the pool and token factory fees were paid
+    validate_fees_are_paid(
+        &config.pool_creation_fee,
+        get_factory_denom_creation_fee(deps.as_ref())?,
+        &info,
+    )?;
 
     // Prepare the sending of pool creation fee
     let mut messages: Vec<CosmosMsg> = vec![];

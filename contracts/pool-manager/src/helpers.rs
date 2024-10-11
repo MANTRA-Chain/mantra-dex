@@ -6,8 +6,8 @@ use amm::fee::PoolFee;
 use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, StdError, StdResult,
-    Uint128, Uint256, Uint512,
+    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, StdError,
+    StdResult, Uint128, Uint256, Uint512,
 };
 
 use crate::error::ContractError;
@@ -519,6 +519,99 @@ pub fn aggregate_outgoing_fees(
         .checked_add(simulation_response.burn_fee_amount)?;
 
     Ok(fees)
+}
+
+/// Validates that the pool creation and token factory fees are paid with the transaction.
+pub fn validate_fees_are_paid(
+    pool_creation_fee: &Coin,
+    denom_creation_fee: Vec<Coin>,
+    info: &MessageInfo,
+) -> Result<(), ContractError> {
+    let pool_fee_denom = &pool_creation_fee.denom;
+
+    // Check if the pool fee denom is found in the vector of the token factory possible fee denoms
+    if let Some(tf_fee) = denom_creation_fee
+        .iter()
+        .find(|fee| &fee.denom == pool_fee_denom)
+    {
+        // If the token factory fee has only one option, check if the user paid the sum of the fees
+        if denom_creation_fee.len() == 1 {
+            let total_fee_amount = tf_fee.amount.checked_add(pool_creation_fee.amount)?;
+            let paid_fee_amount = cw_utils::must_pay(info, pool_fee_denom)?;
+
+            ensure!(
+                paid_fee_amount == total_fee_amount,
+                ContractError::InvalidPoolCreationFee {
+                    amount: paid_fee_amount,
+                    expected: total_fee_amount,
+                }
+            );
+        } else {
+            // If the token factory fee has multiple options besides pool_fee_denom, check if the user paid the pool creation fee
+            let paid_pool_fee_amount = info
+                .funds
+                .iter()
+                .filter(|fund| &fund.denom == pool_fee_denom)
+                .map(|fund| fund.amount)
+                .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))?;
+
+            ensure!(
+                paid_pool_fee_amount == pool_creation_fee.amount,
+                ContractError::InvalidPoolCreationFee {
+                    amount: paid_pool_fee_amount,
+                    expected: pool_creation_fee.amount,
+                }
+            );
+
+            // Check if the user paid the token factory fee in any other of the allowed denoms
+            let tf_fee_paid = denom_creation_fee.iter().any(|fee| {
+                let paid_fee_amount = info
+                    .funds
+                    .iter()
+                    .filter(|fund| fund.denom == fee.denom)
+                    .map(|fund| fund.amount)
+                    .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))
+                    .unwrap_or(Uint128::zero());
+
+                paid_fee_amount == fee.amount
+            });
+
+            ensure!(tf_fee_paid, ContractError::TokenFactoryFeeNotPaid);
+        }
+    } else {
+        // If the pool fee denom is not found in the vector of the token factory possible fee denoms,
+        // check if the user paid the pool creation fee and the token factory fee separately
+        let paid_fee_amount = info
+            .funds
+            .iter()
+            .filter(|fund| &fund.denom == pool_fee_denom)
+            .map(|fund| fund.amount)
+            .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))?;
+
+        ensure!(
+            paid_fee_amount == pool_creation_fee.amount,
+            ContractError::InvalidPoolCreationFee {
+                amount: paid_fee_amount,
+                expected: pool_creation_fee.amount,
+            }
+        );
+
+        let tf_fee_paid = denom_creation_fee.iter().all(|fee| {
+            let paid_fee_amount = info
+                .funds
+                .iter()
+                .filter(|fund| fund.denom == fee.denom)
+                .map(|fund| fund.amount)
+                .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))
+                .unwrap_or(Uint128::zero());
+
+            paid_fee_amount == fee.amount
+        });
+
+        ensure!(tf_fee_paid, ContractError::TokenFactoryFeeNotPaid);
+    }
+
+    Ok(())
 }
 
 /// Gets the offer and ask asset indexes in a pool, together with their decimals.

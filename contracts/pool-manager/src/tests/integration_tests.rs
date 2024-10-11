@@ -4,6 +4,7 @@ use amm::fee::Fee;
 use amm::fee::PoolFee;
 use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use amm::pool_manager::PoolType;
+use common_testing::multi_test::stargate_mock::StargateMock;
 
 use crate::ContractError;
 
@@ -11,18 +12,25 @@ use super::suite::TestingSuite;
 
 #[test]
 fn instantiate_normal() {
-    let mut suite = TestingSuite::default_with_balances(vec![]);
+    let mut suite = TestingSuite::default_with_balances(
+        vec![],
+        StargateMock::new("uom".to_string(), "8888".to_string()),
+    );
 
     suite.instantiate(suite.senders[0].to_string(), suite.senders[1].to_string());
 }
 
 #[test]
 fn deposit_and_withdraw_sanity_check() {
-    let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000u128, "uwhale".to_string()),
-        coin(1_000_000u128, "uluna".to_string()),
-        coin(1_000u128, "uusd".to_string()),
-    ]);
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(1_000_000u128, "uwhale".to_string()),
+            coin(1_000_000u128, "uluna".to_string()),
+            coin(1_000u128, "uusd".to_string()),
+            coin(10_000u128, "uom".to_string()),
+        ],
+        StargateMock::new("uom".to_string(), "8888".to_string()),
+    );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
@@ -51,7 +59,7 @@ fn deposit_and_withdraw_sanity_check() {
         pool_fees,
         PoolType::ConstantProduct,
         Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd")],
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
         |result| {
             result.unwrap();
         },
@@ -152,15 +160,19 @@ fn deposit_and_withdraw_sanity_check() {
 
 mod pool_creation_failures {
     use super::*;
+    use common_testing::multi_test::stargate_mock::StargateMock;
 
     // Insufficient fee to create pool; 90 instead of 100
     #[test]
     fn insufficient_pool_creation_fee() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -204,21 +216,27 @@ mod pool_creation_failures {
 
     #[test]
     fn wrong_pool_label() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(
-                1_000_000_001u128,
-                "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A".to_string(),
-            ),
-            coin(
-                1_000_000_000u128,
-                "ibc/A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2".to_string(),
-            ),
-            coin(
-                1_000_000_001u128,
-                "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom".to_string(),
-            ),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(
+                    1_000_000_001u128,
+                    "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A"
+                        .to_string(),
+                ),
+                coin(
+                    1_000_000_000u128,
+                    "ibc/A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2"
+                        .to_string(),
+                ),
+                coin(
+                    1_000_000_001u128,
+                    "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom".to_string(),
+                ),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -252,7 +270,7 @@ mod pool_creation_failures {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("invalid-identifier".to_string()),
-                vec![coin(1_000, "uusd")],
+                vec![coin(1_000, "uusd"), coin(8888, "uom")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                     match err {
@@ -271,7 +289,7 @@ mod pool_creation_failures {
                 PoolType::ConstantProduct,
                 //42 chars long
                 Some("this.is.a.loooooooooooooooooong.identifier".to_string()),
-                vec![coin(1_000, "uusd")],
+                vec![coin(1_000, "uusd"), coin(8888, "uom")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                     match err {
@@ -286,11 +304,15 @@ mod pool_creation_failures {
 
     #[test]
     fn cant_recreate_existing_pool() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -311,7 +333,7 @@ mod pool_creation_failures {
             extra_fees: vec![],
         };
 
-        // Create a poo
+        // Create a pool
         suite
             .instantiate_default()
             .add_one_epoch()
@@ -322,7 +344,7 @@ mod pool_creation_failures {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("mycoolpoo".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -334,13 +356,209 @@ mod pool_creation_failures {
                 pool_fees,
                 PoolType::ConstantProduct,
                 Some("mycoolpoo".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                     match err {
                         ContractError::PoolExists { .. } => {}
                         _ => panic!("Wrong error type, should return ContractError::PoolExists"),
                     }
+                },
+            );
+    }
+
+    #[test]
+    fn cant_create_pool_without_paying_tf_fees() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(10),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(7),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool without paying the pool creation fee
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna.pool.1".to_string()),
+                vec![coin(900, "uusd"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidPoolCreationFee { .. } => {}
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
+                        ),
+                    }
+                },
+            )
+            // add enough to cover the pool creation fee, but not token factory
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna.pool.1".to_string()),
+                vec![coin(1000, "uusd"), coin(8887, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::TokenFactoryFeeNotPaid => {}
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::TokenFactoryFeeNotPaid"
+                        ),
+                    }
+                },
+            )
+            // add enough to cover for the pool creation fee and token factory
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna.pool.1".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+    }
+
+    #[test]
+    fn cant_create_pool_without_paying_tf_fees_same_denom() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uusd".to_string(), "1000".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(10),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(7),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool without paying the pool creation fee
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna.pool.1".to_string()),
+                vec![coin(900, "uusd")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidPoolCreationFee { .. } => {}
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
+                        ),
+                    }
+                },
+            )
+            // add enough to cover the pool creation fee, but not token factory
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna.pool.1".to_string()),
+                vec![coin(1999, "uusd")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    println!("----");
+                    match err {
+                        ContractError::InvalidPoolCreationFee { amount, expected } => {
+                            assert_eq!(amount.u128(), 1999);
+                            assert_eq!(expected.u128(), 2000);
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
+                        ),
+                    }
+                },
+            )
+            // overpay
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna.pool.1".to_string()),
+                vec![coin(3000, "uusd")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::InvalidPoolCreationFee { amount, expected } => {
+                            assert_eq!(amount.u128(), 3000);
+                            assert_eq!(expected.u128(), 2000);
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
+                        ),
+                    }
+                },
+            )
+            // add enough to cover for the pool creation fee and token factory
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna.pool.1".to_string()),
+                vec![coin(2000, "uusd")],
+                |result| {
+                    result.unwrap();
                 },
             );
     }
@@ -353,11 +571,15 @@ mod router {
 
     #[test]
     fn basic_swap_operations_test() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -390,7 +612,7 @@ mod router {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -402,7 +624,7 @@ mod router {
                 pool_fees,
                 PoolType::ConstantProduct,
                 Some("uluna.uusd".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -529,11 +751,15 @@ mod router {
 
     #[test]
     fn rejects_empty_swaps() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -567,7 +793,7 @@ mod router {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -579,7 +805,7 @@ mod router {
                 pool_fees,
                 PoolType::ConstantProduct,
                 Some("uluna.uusd".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -656,11 +882,15 @@ mod router {
 
     #[test]
     fn rejects_non_consecutive_swaps() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -694,7 +924,7 @@ mod router {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -706,7 +936,7 @@ mod router {
                 pool_fees,
                 PoolType::ConstantProduct,
                 Some("uluna.uusd".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -799,11 +1029,15 @@ mod router {
 
     #[test]
     fn sends_to_correct_receiver() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
         let unauthorized = suite.senders[2].clone();
@@ -837,7 +1071,7 @@ mod router {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -849,7 +1083,7 @@ mod router {
                 pool_fees,
                 PoolType::ConstantProduct,
                 Some("uluna.uusd".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -1013,11 +1247,15 @@ mod router {
 
     #[test]
     fn checks_minimum_receive() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -1050,7 +1288,7 @@ mod router {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -1062,7 +1300,7 @@ mod router {
                 pool_fees,
                 PoolType::ConstantProduct,
                 Some("uluna.uusd".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -1165,11 +1403,15 @@ mod router {
 
     #[test]
     fn query_swap_operations() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -1202,7 +1444,7 @@ mod router {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna".to_string()),
-                vec![coin(1_000, "uusd")],
+                vec![coin(1_000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -1214,7 +1456,7 @@ mod router {
                 pool_fees,
                 PoolType::ConstantProduct,
                 Some("uluna.uusd".to_string()),
-                vec![coin(1_000, "uusd")],
+                vec![coin(1_000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -1370,11 +1612,15 @@ mod swapping {
 
     #[test]
     fn basic_swapping_test() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -1404,7 +1650,7 @@ mod swapping {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1576,11 +1822,15 @@ mod swapping {
 
     #[test]
     fn basic_swapping_test_stable_swap_two_assets() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -1610,7 +1860,7 @@ mod swapping {
             pool_fees,
             PoolType::StableSwap { amp: 100 },
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1752,11 +2002,15 @@ mod swapping {
 
     #[test]
     fn swap_with_fees() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -1786,7 +2040,7 @@ mod swapping {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1887,7 +2141,10 @@ mod ownership {
 
     #[test]
     fn verify_ownership() {
-        let mut suite = TestingSuite::default_with_balances(vec![]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
         let unauthorized = suite.senders[2].clone();
@@ -1943,7 +2200,10 @@ mod ownership {
 
     #[test]
     fn checks_ownership_when_updating_config() {
-        let mut suite = TestingSuite::default_with_balances(vec![]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let unauthorized = suite.senders[2].clone();
 
         suite
@@ -1962,7 +2222,10 @@ mod ownership {
 
     #[test]
     fn updates_config_fields() {
-        let mut suite = TestingSuite::default_with_balances(vec![]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
 
@@ -2006,16 +2269,21 @@ mod locking_lp {
     use amm::fee::{Fee, PoolFee};
     use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
     use amm::pool_manager::PoolType;
+    use common_testing::multi_test::stargate_mock::StargateMock;
 
     use crate::tests::suite::TestingSuite;
 
     #[test]
     fn provide_liquidity_locking_lp_no_lock_position_identifier() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(10_000_000u128, "uwhale".to_string()),
+                coin(10_000_000u128, "uluna".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -2044,7 +2312,7 @@ mod locking_lp {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2200,11 +2468,15 @@ mod locking_lp {
 
     #[test]
     fn provide_liquidity_locking_lp_reusing_position_identifier() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(10_000_000u128, "uwhale".to_string()),
+                coin(10_000_000u128, "uluna".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -2233,7 +2505,7 @@ mod locking_lp {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2382,11 +2654,15 @@ mod locking_lp {
 
     #[test]
     fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(10_000_000u128, "uwhale".to_string()),
+                coin(10_000_000u128, "uluna".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -2415,7 +2691,7 @@ mod locking_lp {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2579,18 +2855,23 @@ mod provide_liquidity {
     use amm::fee::{Fee, PoolFee};
     use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
     use amm::pool_manager::PoolType;
+    use common_testing::multi_test::stargate_mock::StargateMock;
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
 
     #[test]
     fn provide_liquidity_with_single_asset() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000_000u128, "uosmo".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(10_000_000u128, "uwhale".to_string()),
+                coin(10_000_000u128, "uluna".to_string()),
+                coin(10_000_000u128, "uosmo".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -2619,7 +2900,7 @@ mod provide_liquidity {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2879,6 +3160,10 @@ mod provide_liquidity {
                             amount: Uint128::from(9_000_000u128),
                         },
                         Coin {
+                            denom: "uom".to_string(),
+                            amount: Uint128::from(10_000u128 - 8_888u128),
+                        },
+                        Coin {
                             denom: "uosmo".to_string(),
                             amount: Uint128::from(10_000_000u128),
                         },
@@ -2914,6 +3199,10 @@ mod provide_liquidity {
                             amount: Uint128::from(9_989_302u128),
                         },
                         Coin {
+                            denom: "uom".to_string(),
+                            amount: Uint128::from(10_000u128 - 8_888u128),
+                        },
+                        Coin {
                             denom: "uosmo".to_string(),
                             amount: Uint128::from(10_000_000u128),
                         },
@@ -2944,6 +3233,10 @@ mod provide_liquidity {
                         Coin {
                             denom: "uluna".to_string(),
                             amount: Uint128::from(10_000_000u128),
+                        },
+                        Coin {
+                            denom: "uom".to_string(),
+                            amount: Uint128::from(10_000u128),
                         },
                         Coin {
                             denom: "uosmo".to_string(),
@@ -2979,6 +3272,10 @@ mod provide_liquidity {
                         Coin {
                             denom: "uluna".to_string(),
                             amount: Uint128::from(10_009_608u128),
+                        },
+                        Coin {
+                            denom: "uom".to_string(),
+                            amount: Uint128::from(10_000u128),
                         },
                         Coin {
                             denom: "uosmo".to_string(),
@@ -3017,12 +3314,16 @@ mod provide_liquidity {
 
     #[test]
     fn provide_liquidity_with_single_asset_edge_case() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000u128, "uwhale".to_string()),
-            coin(1_000_000u128, "uluna".to_string()),
-            coin(1_000_000u128, "uosmo".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000u128, "uwhale".to_string()),
+                coin(1_000_000u128, "uluna".to_string()),
+                coin(1_000_000u128, "uosmo".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -3051,7 +3352,7 @@ mod provide_liquidity {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -3146,12 +3447,16 @@ mod provide_liquidity {
 
     #[test]
     fn provide_liquidity_emit_proportional_lp_shares() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000_000u128, "uosmo".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(10_000_000u128, "uwhale".to_string()),
+                coin(10_000_000u128, "uluna".to_string()),
+                coin(10_000_000u128, "uosmo".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
 
@@ -3179,7 +3484,7 @@ mod provide_liquidity {
             pool_fees,
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -3263,11 +3568,15 @@ mod provide_liquidity {
 
     #[test]
     fn provide_liquidity_stable_swap() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -3301,7 +3610,7 @@ mod provide_liquidity {
             pool_fees,
             PoolType::StableSwap { amp: 100 },
             Some("whale.uluna.uusd".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -3547,12 +3856,16 @@ mod provide_liquidity {
 
     #[test]
     fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uusdc".to_string()),
-            coin(1_000_000_000u128, "uusdt".to_string()),
-            coin(1_000_000_001u128, "uusdy".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uusdc".to_string()),
+                coin(1_000_000_000u128, "uusdt".to_string()),
+                coin(1_000_000_001u128, "uusdy".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let alice = suite.senders[1].clone();
 
@@ -3584,7 +3897,7 @@ mod provide_liquidity {
             pool_fees,
             PoolType::StableSwap { amp: 100 },
             Some("uusdc.uusdt.uusdy".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -3941,11 +4254,15 @@ mod provide_liquidity {
     // This test is to ensure that the edge case of providing liquidity with 3 assets
     #[test]
     fn provide_liquidity_stable_swap_edge_case() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
         let _unauthorized = suite.senders[2].clone();
@@ -3979,7 +4296,7 @@ mod provide_liquidity {
             pool_fees,
             PoolType::StableSwap { amp: 100 },
             Some("whale.uluna.uusd".to_string()),
-            vec![coin(1000, "uusd")],
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -4124,18 +4441,23 @@ mod multiple_pools {
 
     use amm::fee::{Fee, PoolFee};
     use amm::pool_manager::{PoolInfo, PoolType};
+    use common_testing::multi_test::stargate_mock::StargateMock;
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
 
     #[test]
     fn provide_liquidity_to_multiple_pools_check_fees() {
-        let mut suite = TestingSuite::default_with_balances(vec![
-            coin(1_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000u128, "uosmo".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-        ]);
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
 
@@ -4180,7 +4502,7 @@ mod multiple_pools {
                 pool_fees_1.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -4192,7 +4514,7 @@ mod multiple_pools {
                 pool_fees_2.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna.pool.2".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },
@@ -4204,7 +4526,7 @@ mod multiple_pools {
                 pool_fees_1.clone(),
                 PoolType::ConstantProduct,
                 Some("uluna.uusd.pool.1".to_string()),
-                vec![coin(1000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
                 },

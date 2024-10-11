@@ -125,7 +125,10 @@ impl TestingSuite {
 
 /// Instantiate
 impl TestingSuite {
-    pub(crate) fn default_with_balances(initial_balance: Vec<Coin>) -> Self {
+    pub(crate) fn default_with_balances(
+        initial_balance: Vec<Coin>,
+        startgate_mock: StargateMock,
+    ) -> Self {
         let sender_1 = Addr::unchecked("mantra15n2dapfyf7mzz70y0srycnduw5skp0s9u9g74e");
         let sender_2 = Addr::unchecked("mantra13cxr0w5tvczvte29r5n0mauejmrg83m4zxj4l2");
         let sender_3 = Addr::unchecked("mantra150qvkpleat9spklzs3mtwdxszjpeyjcssce49d");
@@ -142,7 +145,7 @@ impl TestingSuite {
             .with_api(MockApiBech32::new("mantra"))
             .with_wasm(WasmKeeper::default())
             .with_bank(bank)
-            .with_stargate(StargateMock {})
+            .with_stargate(startgate_mock)
             .build(|router, _api, storage| {
                 balances.into_iter().for_each(|(account, amount)| {
                     router.bank.init_balance(storage, &account, amount).unwrap()
