@@ -298,13 +298,17 @@ pub(crate) fn withdraw_position(
         ContractError::Unauthorized
     );
 
-    // check if the user has pending rewards. Can't withdraw a position without claiming pending rewards first
-    let rewards_response = query_rewards(deps.as_ref(), &env, info.sender.clone().into_string())?;
-    match rewards_response {
-        RewardsResponse::RewardsResponse { rewards } => {
-            ensure!(rewards.is_empty(), ContractError::PendingRewards)
+    if emergency_unlock.is_none() || emergency_unlock.is_some() && !emergency_unlock.unwrap() {
+        // check if the user has pending rewards. Can't withdraw a position without claiming pending rewards first.
+        // if the user wants to perform an emergency withdrawal, this is not checked
+        let rewards_response =
+            query_rewards(deps.as_ref(), &env, info.sender.clone().into_string())?;
+        match rewards_response {
+            RewardsResponse::RewardsResponse { rewards } => {
+                ensure!(rewards.is_empty(), ContractError::PendingRewards)
+            }
+            _ => return Err(ContractError::Unauthorized),
         }
-        _ => return Err(ContractError::Unauthorized),
     }
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -317,6 +321,7 @@ pub(crate) fn withdraw_position(
             .checked_mul(emergency_unlock_penalty)?
             .to_uint_floor();
 
+        println!("total_penalty_fee: {:?}", total_penalty_fee);
         // sanity check
         ensure!(
             total_penalty_fee < position.lp_asset.amount,

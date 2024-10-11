@@ -2176,7 +2176,7 @@ pub fn test_manage_position() {
             },
         )
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(500));
+            assert_eq!(balance, Uint128::new(250));
         });
 
     // trying to open a position with an invalid lp which has not been created by the pool manager
@@ -3415,11 +3415,123 @@ fn test_emergency_withdrawal() {
             },
         )
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
-            //emergency unlock penalty is 10% of the position amount, so the user gets 1000 - 100 = 900
-            assert_eq!(balance, Uint128::new(999_999_900));
+            //emergency unlock penalty is 10% of the position amount, so the user gets 1000 - 100 = 900 + 50
+            // (as he was the owner of the farm, he got 50% of the penalty fee`
+            assert_eq!(balance, Uint128::new(999_999_950));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(100));
+            assert_eq!(balance, Uint128::new(50));
+        });
+}
+
+#[test]
+fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom.clone()),
+    ]);
+
+    let other = suite.senders[1].clone();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Create {
+                identifier: Some("other_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(other.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "u-other_position".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(1_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: other.clone(),
+                    }
+                );
+            },
+        )
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        // rewards are pending to be claimed
+        .query_rewards(&other, |result| {
+            let response = result.unwrap();
+
+            match response {
+                RewardsResponse::RewardsResponse { rewards } => {
+                    assert_eq!(rewards.len(), 1);
+                    assert_eq!(rewards[0], coin(855, "uusdy"));
+                }
+                RewardsResponse::ClaimRewards { .. } => {
+                    panic!("Expected RewardsResponse, got ClaimRewards")
+                }
+            }
+        })
+        .query_balance("uusdy".to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_996_000));
+        })
+        // the user emergency withdraws the position
+        .manage_position(
+            &other,
+            PositionAction::Withdraw {
+                identifier: "u-other_position".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // rewards were not claimed
+        .query_balance("uusdy".to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_996_000));
         });
 }
 
@@ -4043,7 +4155,7 @@ fn test_multiple_farms_and_positions() {
             &fee_collector_addr,
             |balance| {
                 // 10% of the lp the user input initially
-                assert_eq!(balance, Uint128::new(4_000));
+                assert_eq!(balance, Uint128::new(2_000));
             },
         )
         .query_balance(
@@ -4051,7 +4163,7 @@ fn test_multiple_farms_and_positions() {
             &fee_collector_addr,
             |balance| {
                 // 10% of the lp the user input initially
-                assert_eq!(balance, Uint128::new(8_000));
+                assert_eq!(balance, Uint128::new(4_000));
             },
         );
 
