@@ -35,6 +35,7 @@ serde_json = { version = "1.0.127" }
 thiserror = { version = "1.0.43" }
 amm = { path = "packages/amm" }
 mantra-utils = { path = "packages/utils" }
+osmosis-std = { version = "0.26.0" }
 common-testing = { path = "packages/common-testing" }
 cw-multi-test = { version = "2.1.1", features = [
   "cosmwasm_2_0",

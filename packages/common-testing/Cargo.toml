@@ -20,3 +20,4 @@ cosmwasm-schema.workspace = true
 cw-multi-test.workspace = true
 amm.workspace = true
 epoch-manager.workspace = true
+osmosis-std.workspace = true

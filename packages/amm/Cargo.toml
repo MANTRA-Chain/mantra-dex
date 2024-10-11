@@ -16,6 +16,7 @@ cw-ownable.workspace = true
 cw-storage-plus.workspace = true
 uint.workspace = true
 anybuf.workspace = true
+osmosis-std.workspace = true
 
 [dev-dependencies]
 test-case.workspace = true
