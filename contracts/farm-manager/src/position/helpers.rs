@@ -8,6 +8,9 @@ use crate::ContractError;
 const SECONDS_IN_DAY: u64 = 86400;
 const SECONDS_IN_YEAR: u64 = 31556926;
 
+pub const AUTO_POSITION_ID_PREFIX: &str = "p-";
+pub const EXPLICIT_POSITION_ID_PREFIX: &str = "u-";
+
 /// Calculates the weight size for a user filling a position
 pub fn calculate_weight(
     lp_asset: &Coin,

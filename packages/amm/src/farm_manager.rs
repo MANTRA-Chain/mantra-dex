@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
@@ -294,6 +295,16 @@ pub struct Position {
     pub expiring_at: Option<u64>,
     /// The owner of the position.
     pub receiver: Addr,
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Position: {} - LP Asset: {} - Unlocking Duration: {} - Open: {} - Receiver: {} - Expiring At: {}",
+            self.identifier, self.lp_asset, self.unlocking_duration, self.open, self.receiver, self.expiring_at.unwrap_or(u64::MAX)
+        )
+    }
 }
 
 #[cw_serde]

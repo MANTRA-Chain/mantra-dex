@@ -345,7 +345,8 @@ pub fn provide_liquidity(
                     // if the position exists, check if the receiver is the same as the sender
                     // if so, expand the position
                     ensure!(
-                        positions_response.positions[0].identifier == position_identifier
+                        positions_response.positions.len() == 1
+                            && positions_response.positions[0].identifier == position_identifier
                             && positions_response.positions[0].receiver.to_string() == receiver,
                         ContractError::Unauthorized
                     );

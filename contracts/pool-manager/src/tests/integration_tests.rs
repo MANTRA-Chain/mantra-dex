@@ -2111,7 +2111,7 @@ mod locking_lp {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
-                identifier: "1".to_string(),
+                identifier: "p-1".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
@@ -2180,7 +2180,7 @@ mod locking_lp {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
-                identifier: "1".to_string(),
+                identifier: "p-1".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
@@ -2188,7 +2188,7 @@ mod locking_lp {
                 receiver: creator.clone(),
             });
             assert_eq!(positions[1], Position {
-                identifier: "2".to_string(),
+                identifier: "p-2".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(1_996u128) },
                 unlocking_duration: 200_000,
                 open: true,
@@ -2300,7 +2300,7 @@ mod locking_lp {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
-                identifier: "farm_identifier".to_string(),
+                identifier: "u-farm_identifier".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
@@ -2323,7 +2323,7 @@ mod locking_lp {
                 &creator,
                 "whale.uluna".to_string(),
                 Some(200_000u64),
-                Some("farm_identifier".to_string()),
+                Some("u-farm_identifier".to_string()),
                 None,
                 None,
                 vec![
@@ -2370,7 +2370,7 @@ mod locking_lp {
             // the position should be updated
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
-                identifier: "farm_identifier".to_string(),
+                identifier: "u-farm_identifier".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: farm_manager_lp_amount.borrow().clone() },
                 unlocking_duration: 86_400,
                 open: true,
@@ -2482,7 +2482,7 @@ mod locking_lp {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
-                identifier: "farm_identifier".to_string(),
+                identifier: "u-farm_identifier".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
@@ -2552,7 +2552,7 @@ mod locking_lp {
             // the position should be updated
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
-                identifier: "2".to_string(),
+                identifier: "p-2".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::new(1_996u128)},
                 unlocking_duration: 200_000,
                 open: true,
@@ -2560,7 +2560,7 @@ mod locking_lp {
                 receiver: creator.clone(),
             });
             assert_eq!(positions[1], Position {
-                identifier: "farm_identifier".to_string(),
+                identifier: "u-farm_identifier".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::new(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
