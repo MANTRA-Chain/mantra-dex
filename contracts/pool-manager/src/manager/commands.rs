@@ -75,6 +75,12 @@ pub fn create_pool(
     // Load config for pool creation fee
     let config: Config = CONFIG.load(deps.storage)?;
 
+    // Ensure that the number of assets and decimals match, and that the number of assets is within the allowed range
+    ensure!(
+        asset_denoms.len() == asset_decimals.len() && asset_denoms.len() <= MAX_ASSETS_PER_POOL,
+        ContractError::AssetMismatch
+    );
+
     // check if the pool and token factory fees were paid
     validate_fees_are_paid(
         &config.pool_creation_fee,
