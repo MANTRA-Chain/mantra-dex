@@ -1,19 +1,24 @@
-use amm::farm_manager::{Position, RewardsResponse};
 use cosmwasm_std::{
     coin, ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response,
     StdError, Uint128,
 };
+use std::collections::HashSet;
+
+use amm::farm_manager::{Position, RewardsResponse};
 
 use crate::helpers::validate_lp_denom;
 use crate::position::helpers::{
-    calculate_weight, get_latest_address_weight, AUTO_POSITION_ID_PREFIX,
-    EXPLICIT_POSITION_ID_PREFIX,
+    calculate_weight, create_penalty_share_msg, get_latest_address_weight, AUTO_POSITION_ID_PREFIX,
+    EXPLICIT_POSITION_ID_PREFIX, PENALTY_FEE_SHARE,
 };
 use crate::position::helpers::{
     validate_positions_limit, validate_unlocking_duration_for_position,
 };
 use crate::queries::query_rewards;
-use crate::state::{get_position, CONFIG, LP_WEIGHT_HISTORY, POSITIONS, POSITION_ID_COUNTER};
+use crate::state::{
+    get_farms_by_lp_denom, get_position, CONFIG, LP_WEIGHT_HISTORY, MAX_ITEMS_LIMIT, POSITIONS,
+    POSITION_ID_COUNTER,
+};
 use crate::ContractError;
 
 /// Creates a position
@@ -308,32 +313,66 @@ pub(crate) fn withdraw_position(
     if emergency_unlock.is_some() && emergency_unlock.unwrap() {
         let emergency_unlock_penalty = CONFIG.load(deps.storage)?.emergency_unlock_penalty;
 
-        let penalty_fee = Decimal::from_ratio(position.lp_asset.amount, Uint128::one())
+        let total_penalty_fee = Decimal::from_ratio(position.lp_asset.amount, Uint128::one())
             .checked_mul(emergency_unlock_penalty)?
             .to_uint_floor();
 
         // sanity check
         ensure!(
-            penalty_fee < position.lp_asset.amount,
+            total_penalty_fee < position.lp_asset.amount,
             ContractError::InvalidEmergencyUnlockPenalty
         );
 
-        let penalty = Coin {
-            denom: position.lp_asset.denom.to_string(),
-            amount: penalty_fee,
-        };
+        // calculate the penalty fee that goes to the owner of the farm
+        let owner_penalty_fee_comission = Decimal::from_ratio(total_penalty_fee, Uint128::one())
+            .checked_mul(PENALTY_FEE_SHARE)?
+            .to_uint_floor();
+
+        let penalty_fee_fee_collector =
+            total_penalty_fee.saturating_sub(owner_penalty_fee_comission);
 
         let fee_collector_addr = CONFIG.load(deps.storage)?.fee_collector_addr;
 
-        // send penalty to the fee collector
-        if penalty.amount > Uint128::zero() {
-            messages.push(
-                BankMsg::Send {
-                    to_address: fee_collector_addr.to_string(),
-                    amount: vec![penalty],
+        // send penalty to farm owners
+        if owner_penalty_fee_comission > Uint128::zero() {
+            let farms = get_farms_by_lp_denom(
+                deps.storage,
+                &position.lp_asset.denom,
+                None,
+                Some(MAX_ITEMS_LIMIT),
+            )?;
+
+            let unique_farm_owners: Vec<Addr> = farms
+                .iter()
+                .map(|farm| farm.owner.clone())
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect();
+
+            let penalty_fee_share_per_farm_owner = Decimal::from_ratio(
+                owner_penalty_fee_comission,
+                unique_farm_owners.len() as u128,
+            )
+            .to_uint_floor();
+
+            if penalty_fee_share_per_farm_owner > Uint128::zero() {
+                for farm_owner in unique_farm_owners {
+                    messages.push(create_penalty_share_msg(
+                        position.lp_asset.denom.to_string(),
+                        penalty_fee_share_per_farm_owner,
+                        &farm_owner,
+                    ));
                 }
-                .into(),
-            );
+            }
+        }
+
+        // send penalty to the fee collector
+        if penalty_fee_fee_collector > Uint128::zero() {
+            messages.push(create_penalty_share_msg(
+                position.lp_asset.denom.to_string(),
+                penalty_fee_fee_collector,
+                &fee_collector_addr,
+            ));
         }
 
         // if the position is open, update the weights when doing the emergency withdrawal
@@ -350,7 +389,7 @@ pub(crate) fn withdraw_position(
         }
 
         // subtract the penalty from the original position
-        position.lp_asset.amount = position.lp_asset.amount.saturating_sub(penalty_fee);
+        position.lp_asset.amount = position.lp_asset.amount.saturating_sub(total_penalty_fee);
     } else {
         // check if this position is eligible for withdrawal
         if position.open || position.expiring_at.is_none() {

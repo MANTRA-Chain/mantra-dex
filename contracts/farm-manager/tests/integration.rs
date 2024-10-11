@@ -3424,6 +3424,141 @@ fn test_emergency_withdrawal() {
 }
 
 #[test]
+fn emergency_withdrawal_shares_penalty_with_farm_owners() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom.clone()),
+    ]);
+
+    let other = suite.senders[0].clone();
+    let alice = suite.senders[1].clone();
+    let bob = suite.senders[2].clone();
+
+    suite.instantiate_default();
+
+    let fee_collector = suite.fee_collector_addr.clone();
+    let farm_manager = suite.farm_manager_addr.clone();
+
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm_2".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("bob_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(6_000_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(bob.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "u-bob_position".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(6_000_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: bob.clone(),
+                    }
+                );
+            },
+        )
+        .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        })
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .query_balance(lp_denom.clone().to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        })
+        .query_balance(lp_denom.clone().to_string(), &farm_manager, |balance| {
+            assert_eq!(balance, Uint128::new(6_000_000));
+        })
+        .manage_position(
+            &bob,
+            PositionAction::Withdraw {
+                identifier: "u-bob_position".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_150_000));
+        })
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(300_000));
+        })
+        .query_balance(lp_denom.clone().to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_150_000));
+        })
+        .query_balance(lp_denom.clone().to_string(), &farm_manager, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        });
+}
+
+#[test]
 fn test_farm_helper() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
