@@ -1,5 +1,4 @@
 use std::fmt::{Display, Formatter};
-use std::ops::Mul;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Decimal256, StdError, StdResult, Uint128, Uint256};
@@ -11,11 +10,11 @@ pub struct Fee {
 
 impl Fee {
     /// Computes the fee for the given amount
-    pub fn compute(&self, amount: Uint256) -> Uint256 {
-        //todo change to checked_mul
-        Decimal256::from_ratio(amount, Uint256::one())
-            .mul(self.to_decimal_256())
-            .to_uint_floor()
+    pub fn compute(&self, amount: Uint256) -> StdResult<Uint256> {
+        Ok(Decimal256::from_ratio(amount, Uint256::one())
+            .checked_mul(self.to_decimal_256())
+            .map_err(|e| StdError::generic_err(e.to_string()))?
+            .to_uint_floor())
     }
 
     /// Converts a Fee to a Decimal256
@@ -104,21 +103,21 @@ impl PoolFee {
         let mut total_fee_amount = Uint256::zero();
 
         // Compute protocol fee
-        let protocol_fee_amount = self.protocol_fee.compute(amount);
-        total_fee_amount += protocol_fee_amount;
+        let protocol_fee_amount = self.protocol_fee.compute(amount)?;
+        total_fee_amount = total_fee_amount.checked_add(protocol_fee_amount)?;
 
         // Compute swap fee
-        let swap_fee_amount = self.swap_fee.compute(amount);
-        total_fee_amount += swap_fee_amount;
+        let swap_fee_amount = self.swap_fee.compute(amount)?;
+        total_fee_amount = total_fee_amount.checked_add(swap_fee_amount)?;
 
         // Compute burn fee
-        let burn_fee_amount = self.burn_fee.compute(amount);
-        total_fee_amount += burn_fee_amount;
+        let burn_fee_amount = self.burn_fee.compute(amount)?;
+        total_fee_amount = total_fee_amount.checked_add(burn_fee_amount)?;
 
         // Compute extra fees
         for extra_fee in &self.extra_fees {
-            let extra_fee_amount = extra_fee.compute(amount);
-            total_fee_amount += extra_fee_amount;
+            let extra_fee_amount = extra_fee.compute(amount)?;
+            total_fee_amount = total_fee_amount.checked_add(extra_fee_amount)?;
         }
 
         // Convert the total fee amount to Uint128 (or handle potential conversion failure)

@@ -91,7 +91,6 @@ pub fn query_reverse_simulation(
 
     let pool_fees = pool_info.pool_fees;
 
-    //todo clean this up
     match pool_info.pool_type {
         PoolType::ConstantProduct => {
             let offer_amount_computation = helpers::compute_offer_amount(
@@ -158,9 +157,9 @@ pub fn query_reverse_simulation(
             };
 
             let spread_amount = offer_amount.saturating_sub(Uint128::try_from(before_fees_offer)?);
-            let swap_fee_amount = pool_fees.swap_fee.compute(before_fees_ask);
-            let protocol_fee_amount = pool_fees.protocol_fee.compute(before_fees_ask);
-            let burn_fee_amount = pool_fees.burn_fee.compute(before_fees_ask);
+            let swap_fee_amount = pool_fees.swap_fee.compute(before_fees_ask)?;
+            let protocol_fee_amount = pool_fees.protocol_fee.compute(before_fees_ask)?;
+            let burn_fee_amount = pool_fees.burn_fee.compute(before_fees_ask)?;
 
             Ok(ReverseSimulationResponse {
                 offer_amount,
