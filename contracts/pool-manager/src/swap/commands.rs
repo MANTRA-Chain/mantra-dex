@@ -9,8 +9,6 @@ use crate::{state::CONFIG, ContractError};
 
 use super::perform_swap::perform_swap;
 
-pub const MAX_ASSETS_PER_POOL: usize = 4;
-
 #[allow(clippy::too_many_arguments)]
 pub fn swap(
     mut deps: DepsMut,

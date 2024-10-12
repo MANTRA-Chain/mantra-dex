@@ -5267,9 +5267,9 @@ mod multiple_pools {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                     match err {
-                        ContractError::AssetMismatch { .. } => {}
+                        ContractError::TooManyAssets { .. } => {}
                         _ => {
-                            panic!("Wrong error type, should return ContractError::AssetMismatch")
+                            panic!("Wrong error type, should return ContractError::TooManyAssets")
                         }
                     }
                 },
