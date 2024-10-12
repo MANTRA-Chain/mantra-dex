@@ -6,6 +6,7 @@ use amm::epoch_manager::{
     ConfigResponse, Epoch, EpochConfig, EpochResponse, InstantiateMsg, QueryMsg,
 };
 use epoch_manager::contract::{instantiate, query};
+use epoch_manager::ContractError;
 
 use crate::common::mock_instantiation;
 
@@ -143,9 +144,10 @@ fn get_new_epoch_unsuccessfully() {
 
     let query_res = query(deps.as_ref(), env.clone(), QueryMsg::CurrentEpoch {}).unwrap_err();
 
-    assert!(query_res
-        .to_string()
-        .contains("Genesis epoch has not started"));
+    match query_res {
+        ContractError::GenesisEpochHasNotStarted => {}
+        _ => panic!("should return ContractError::GenesisEpochHasNotStarted"),
+    }
 
     // move time a bit ahead of the genesis epoch
     env.block.time = env.block.time.plus_seconds(100);

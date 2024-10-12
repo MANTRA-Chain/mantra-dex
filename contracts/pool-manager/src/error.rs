@@ -1,4 +1,4 @@
-use crate::liquidity::commands::MAX_ASSETS_PER_POOL;
+use crate::manager::commands::MAX_ASSETS_PER_POOL;
 use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError,
     ConversionOverflowError, DivideByZeroError, Instantiate2AddressError, OverflowError, StdError,
@@ -52,7 +52,7 @@ pub enum ContractError {
         identifier: String,
     },
 
-    #[error("More assets provided than is supported the max is currently {MAX_ASSETS_PER_POOL}, you provided {assets_provided}")]
+    #[error("More assets provided than it is supported. The max is currently {MAX_ASSETS_PER_POOL}, you provided {assets_provided}")]
     TooManyAssets { assets_provided: usize },
 
     #[error("{asset} is invalid")]

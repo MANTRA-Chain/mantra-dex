@@ -13,29 +13,17 @@ pub enum ContractError {
     #[error("{0}")]
     OwnershipError(#[from] OwnershipError),
 
-    #[error("The epoch id has overflowed.")]
-    EpochOverflow,
-
     #[error("{0}")]
     PaymentError(#[from] PaymentError),
 
     #[error("Semver parsing error: {0}")]
     SemVer(String),
 
-    #[error("The current epoch epoch has not expired yet.")]
-    CurrentEpochNotExpired,
-
     #[error("The genesis epoch has not started yet.")]
     GenesisEpochHasNotStarted,
 
     #[error("start_time must be in the future.")]
     InvalidStartTime,
-
-    #[error("genesis_epoch must be equal to start_epoch.start_time.")]
-    EpochConfigMismatch,
-
-    #[error("No epoch found with id {0}.")]
-    NoEpochFound(u64),
 }
 
 impl From<semver::Error> for ContractError {

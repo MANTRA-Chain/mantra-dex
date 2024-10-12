@@ -31,8 +31,6 @@ use crate::state::{
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
 
-pub const MAX_ASSETS_PER_POOL: usize = 4;
-
 #[allow(clippy::too_many_arguments)]
 pub fn provide_liquidity(
     deps: DepsMut,
