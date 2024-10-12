@@ -230,15 +230,15 @@ pub fn compute_swap(
 
 /// Computes the pool fees for a given (return) amount
 fn compute_fees(pool_fees: PoolFee, amount: Uint256) -> Result<FeesComputation, ContractError> {
-    let swap_fee_amount: Uint256 = pool_fees.swap_fee.compute(amount);
-    let protocol_fee_amount: Uint256 = pool_fees.protocol_fee.compute(amount);
-    let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(amount);
+    let swap_fee_amount: Uint256 = pool_fees.swap_fee.compute(amount)?;
+    let protocol_fee_amount: Uint256 = pool_fees.protocol_fee.compute(amount)?;
+    let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(amount)?;
 
     let extra_fees_amount: Uint256 = if !pool_fees.extra_fees.is_empty() {
         let mut extra_fees_amount: Uint256 = Uint256::zero();
 
         for extra_fee in pool_fees.extra_fees {
-            extra_fees_amount = extra_fees_amount.checked_add(extra_fee.compute(amount))?;
+            extra_fees_amount = extra_fees_amount.checked_add(extra_fee.compute(amount)?)?;
         }
 
         extra_fees_amount
@@ -371,9 +371,11 @@ pub fn compute_offer_amount(
 
     let spread_amount = before_spread_deduction.saturating_sub(before_commission_deduction);
 
-    let swap_fee_amount: Uint256 = pool_fees.swap_fee.compute(before_commission_deduction);
-    let protocol_fee_amount: Uint256 = pool_fees.protocol_fee.compute(before_commission_deduction);
-    let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(before_commission_deduction);
+    let swap_fee_amount: Uint256 = pool_fees.swap_fee.compute(before_commission_deduction)?;
+    let protocol_fee_amount: Uint256 = pool_fees
+        .protocol_fee
+        .compute(before_commission_deduction)?;
+    let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(before_commission_deduction)?;
 
     Ok(OfferAmountComputation {
         offer_amount: offer_amount.try_into()?,
@@ -394,8 +396,6 @@ pub struct OfferAmountComputation {
     pub burn_fee_amount: Uint128,
 }
 
-// TODO: make this work with n_coins being dynamic
-
 pub fn assert_slippage_tolerance(
     slippage_tolerance: &Option<Decimal>,
     deposits: &[Coin],
@@ -414,10 +414,9 @@ pub fn assert_slippage_tolerance(
         let deposits: Vec<Uint256> = deposits.iter().map(|coin| coin.amount.into()).collect();
         let pools: Vec<Uint256> = pools.iter().map(|coin| coin.amount.into()).collect();
 
-        // Ensure each prices are not dropped as much as slippage tolerance rate
+        // Ensure prices are not dropped as much as slippage tolerance rate
         match pool_type {
             PoolType::StableSwap { .. } => {
-                // TODO: shouldn't be necessary to handle unwraps properly as they come from Uint128, but doublecheck!
                 let pools_total: Uint256 = pools
                     .into_iter()
                     .fold(Uint256::zero(), |acc, x| acc.checked_add(x).unwrap());
@@ -698,7 +697,6 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
     }
 }
 
-// TODO: handle unwraps properly
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
     amp_factor: &u64,

@@ -61,21 +61,6 @@ impl fmt::Display for SwapOperation {
     }
 }
 
-/// Params for the stable swap, used when changing the amplification factor
-#[cw_serde]
-pub struct StableSwapParams {
-    /// Initial amplification factor
-    pub initial_amp: String,
-    /// Future amplification factor, i.e. target
-    pub future_amp: String,
-    /// Block height when the initial amplification factor kicks in. It goes gradually from the
-    /// initial to the future amplification factor between the given blocks.
-    pub initial_amp_block: String,
-    /// Block height when the future amplification factor will be set.  It goes gradually from the
-    /// initial to the future amplification factor between the given blocks.
-    pub future_amp_block: String,
-}
-
 /// Contains the pool information
 #[cw_serde]
 pub struct PoolInfo {
@@ -93,7 +78,6 @@ pub struct PoolInfo {
     pub pool_type: PoolType,
     /// The fees for the pool.
     pub pool_fees: PoolFee,
-    //pub stable_swap_params: Option<StableSwapParams>
 }
 
 /// Possible pool types, it can be either a constant product (xyk) pool or a stable swap pool.
@@ -393,6 +377,5 @@ pub fn get_total_share(deps: &Deps, liquidity_asset: String) -> StdResult<Uint12
         return Ok(deps.querier.query_supply(&liquidity_asset)?.amount);
     }
 
-    //todo revise this, cw20 support?
     Err(StdError::generic_err("Invalid LP token"))
 }

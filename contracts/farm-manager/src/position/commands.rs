@@ -483,7 +483,6 @@ fn update_weights(
         address_lp_weight = address_lp_weight.saturating_sub(weight);
     }
 
-    //todo if the address weight is zero, remove it from the storage?
     LP_WEIGHT_HISTORY.update::<_, StdError>(
         deps.storage,
         (receiver, &lp_asset.denom, current_epoch.id + 1u64),
