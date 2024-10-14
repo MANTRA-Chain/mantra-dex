@@ -145,7 +145,7 @@ pub(crate) fn calculate_rewards(
                     modified_farms: HashMap::new(),
                 })
             } else {
-                Ok(RewardsResponse::RewardsResponse { rewards: vec![] })
+                Ok(RewardsResponse::QueryRewardsResponse { rewards: vec![] })
             };
         }
     }
@@ -242,7 +242,7 @@ pub(crate) fn calculate_rewards(
             modified_farms,
         })
     } else {
-        Ok(RewardsResponse::RewardsResponse { rewards })
+        Ok(RewardsResponse::QueryRewardsResponse { rewards })
     }
 }
 

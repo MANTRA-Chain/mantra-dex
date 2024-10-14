@@ -316,10 +316,19 @@ impl Display for Position {
 
 #[cw_serde]
 pub enum RewardsResponse {
+    /// The rewards response
     RewardsResponse {
+        /// The rewards that is available to a user if they executed the `claim` function at this point.
+        total_rewards: Vec<Coin>,
+        /// The rewards per LP denom that is available to a user if they executed the `claim` function at this point.
+        rewards_per_lp_denom: Vec<(String, Vec<Coin>)>,
+    },
+    /// Rewards response used internally when querying the rewards
+    QueryRewardsResponse {
         /// The rewards that is available to a user if they executed the `claim` function at this point.
         rewards: Vec<Coin>,
     },
+    /// Returned when claiming rewards
     ClaimRewards {
         /// The rewards that is available to a user if they executed the `claim` function at this point.
         rewards: Vec<Coin>,

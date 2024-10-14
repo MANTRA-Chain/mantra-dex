@@ -109,6 +109,9 @@ pub fn aggregate_coins(coins: Vec<Coin>) -> StdResult<Vec<Coin>> {
         aggregated_coins.push(Coin { denom, amount });
     }
 
+    // sort coins by denom
+    aggregated_coins.sort_by(|a, b| a.denom.cmp(&b.denom));
+
     Ok(aggregated_coins)
 }
 

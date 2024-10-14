@@ -166,9 +166,10 @@ pub fn validate_no_pending_rewards(
     info: &MessageInfo,
 ) -> Result<(), ContractError> {
     let rewards_response = query_rewards(deps, env, info.sender.clone().into_string())?;
+
     match rewards_response {
-        RewardsResponse::RewardsResponse { rewards } => {
-            ensure!(rewards.is_empty(), ContractError::PendingRewards)
+        RewardsResponse::RewardsResponse { total_rewards, .. } => {
+            ensure!(total_rewards.is_empty(), ContractError::PendingRewards)
         }
         _ => return Err(ContractError::Unauthorized),
     }

@@ -1881,19 +1881,17 @@ pub fn test_manage_position() {
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
-                RewardsResponse::RewardsResponse { rewards } => {
-                    assert_eq!(rewards.len(), 1);
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
                     assert_eq!(
-                        rewards[0],
+                        total_rewards[0],
                         Coin {
                             denom: "uusdy".to_string(),
                             amount: Uint128::new(6_000),
                         }
                     );
                 }
-                RewardsResponse::ClaimRewards { .. } => {
-                    panic!("shouldn't return this but RewardsResponse")
-                }
+                _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
         .query_farms(None, None, None, |result| {
@@ -1932,12 +1930,10 @@ pub fn test_manage_position() {
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
-                RewardsResponse::RewardsResponse { rewards } => {
-                    assert!(rewards.is_empty());
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
                 }
-                RewardsResponse::ClaimRewards { .. } => {
-                    panic!("shouldn't return this but RewardsResponse")
-                }
+                _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
         .claim(&creator, vec![], |result| {
@@ -2640,12 +2636,10 @@ fn claim_expired_farm_returns_nothing() {
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
-                RewardsResponse::RewardsResponse { rewards } => {
-                    assert!(rewards.is_empty());
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
                 }
-                RewardsResponse::ClaimRewards { .. } => {
-                    panic!("shouldn't return this but RewardsResponse")
-                }
+                _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
         .claim(&other, vec![], |result| {
@@ -3609,13 +3603,11 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
             let response = result.unwrap();
 
             match response {
-                RewardsResponse::RewardsResponse { rewards } => {
-                    assert_eq!(rewards.len(), 1);
-                    assert_eq!(rewards[0], coin(855, "uusdy"));
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
+                    assert_eq!(total_rewards[0], coin(855, "uusdy"));
                 }
-                RewardsResponse::ClaimRewards { .. } => {
-                    panic!("Expected RewardsResponse, got ClaimRewards")
-                }
+                _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
@@ -4573,6 +4565,177 @@ fn test_multiple_farms_and_positions() {
             result.unwrap();
         },
     );
+}
+
+#[test]
+fn test_rewards_query_overlapping_farms() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom_1.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator = suite.creator();
+    let other = suite.senders[1].clone();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    // create 4 farms with 2 different LPs
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 10);
+        })
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(80_000u128),
+                    },
+                    farm_identifier: Some("farm_1".to_string()),
+                },
+            },
+            vec![coin(80_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: Some("farm_2".to_string()),
+                },
+            },
+            vec![coin(10_000u128, "uosmo"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(30_000u128),
+                    },
+                    farm_identifier: Some("farm_3".to_string()),
+                },
+            },
+            vec![coin(31_000u128, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(70_000u128),
+                    },
+                    farm_identifier: Some("farm_4".to_string()),
+                },
+            },
+            vec![coin(70_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // creator fills a position
+    suite
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: Some("creator_pos_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(35_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: Some("creator_pos_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(70_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 13);
+        });
+
+    suite.query_rewards(&creator, |result| {
+        let rewards_response = result.unwrap();
+
+        assert_eq!(
+            rewards_response,
+            RewardsResponse::RewardsResponse {
+                total_rewards: vec![
+                    coin(15000, "uom"),
+                    coin(5000, "uosmo"),
+                    coin(75000, "uusdy"),
+                ],
+                rewards_per_lp_denom: vec![
+                    (
+                        lp_denom_1.clone(),
+                        vec![coin(5000, "uosmo"), coin(40000, "uusdy")]
+                    ),
+                    (
+                        lp_denom_2.clone(),
+                        vec![coin(15000, "uom"), coin(35000, "uusdy")]
+                    ),
+                ]
+            }
+        );
+    });
 }
 
 #[test]
