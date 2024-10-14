@@ -92,12 +92,7 @@ fn create_farm(
 
     if farm_creation_fee.amount != Uint128::zero() {
         // verify the fee to create a farm is being paid
-        messages.append(&mut process_farm_creation_fee(
-            &config,
-            &info,
-            &farm_creation_fee,
-            &params,
-        )?);
+        messages.append(&mut process_farm_creation_fee(&config, &info, &params)?);
     }
 
     // verify the farm asset was sent
@@ -111,9 +106,14 @@ fn create_farm(
     )?;
 
     // create farm identifier
-    let farm_id =
-        FARM_COUNTER.update::<_, StdError>(deps.storage, |current_id| Ok(current_id + 1u64))?;
-    let farm_identifier = params.farm_identifier.unwrap_or(farm_id.to_string());
+    let farm_identifier = if let Some(id) = params.farm_identifier {
+        id
+    } else {
+        let farm_id =
+            FARM_COUNTER.update::<_, StdError>(deps.storage, |current_id| Ok(current_id + 1u64))?;
+        farm_id.to_string()
+    };
+
     validate_identifier(&farm_identifier)?;
 
     // sanity check. Make sure another farm with the same identifier doesn't exist. Theoretically this should

@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coin, ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response,
-    StdError, Uint128,
+    Uint128,
 };
 use std::collections::HashSet;
 
@@ -65,6 +65,7 @@ pub(crate) fn create_position(
         // prepend EXPLICIT_POSITION_ID_PREFIX to identifier
         format!("{EXPLICIT_POSITION_ID_PREFIX}{identifier}")
     } else {
+        POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
         // prepend AUTO_POSITION_ID_PREFIX to the position_id_counter
         format!("{AUTO_POSITION_ID_PREFIX}{position_id_counter}")
     };
@@ -85,8 +86,6 @@ pub(crate) fn create_position(
 
     // ensure the user doesn't have more than the maximum allowed close positions
     validate_positions_limit(deps.as_ref(), &receiver, true)?;
-
-    POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
 
     let position = Position {
         identifier: identifier.clone(),
@@ -414,9 +413,7 @@ pub(crate) fn withdraw_position(
         position.lp_asset.amount = position.lp_asset.amount.saturating_sub(total_penalty_fee);
     } else {
         // check if this position is eligible for withdrawal
-        if position.open || position.expiring_at.is_none() {
-            return Err(ContractError::Unauthorized);
-        }
+        ensure!(position.expiring_at.is_some(), ContractError::Unauthorized);
 
         ensure!(
             position.is_expired(current_time),
@@ -477,14 +474,14 @@ fn update_weights(
     }
 
     // update the LP weight for the contract
-    LP_WEIGHT_HISTORY.update::<_, StdError>(
+    LP_WEIGHT_HISTORY.save(
         deps.storage,
         (
             &env.contract.address,
             &lp_asset.denom,
             current_epoch.id + 1u64,
         ),
-        |_| Ok(lp_weight),
+        &lp_weight,
     )?;
 
     // update the user's weight for this LP
@@ -499,10 +496,10 @@ fn update_weights(
         address_lp_weight = address_lp_weight.saturating_sub(weight);
     }
 
-    LP_WEIGHT_HISTORY.update::<_, StdError>(
+    LP_WEIGHT_HISTORY.save(
         deps.storage,
         (receiver, &lp_asset.denom, current_epoch.id + 1u64),
-        |_| Ok(address_lp_weight),
+        &address_lp_weight,
     )?;
 
     Ok(())

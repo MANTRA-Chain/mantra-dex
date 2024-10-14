@@ -17,10 +17,11 @@ use crate::ContractError;
 pub(crate) fn process_farm_creation_fee(
     config: &Config,
     info: &MessageInfo,
-    farm_creation_fee: &Coin,
     params: &FarmParams,
 ) -> Result<Vec<CosmosMsg>, ContractError> {
     let mut messages: Vec<CosmosMsg> = vec![];
+
+    let farm_creation_fee = &config.create_farm_fee;
 
     // verify the fee to create a farm is being paid
     let paid_fee_amount = info
@@ -58,18 +59,16 @@ pub(crate) fn process_farm_creation_fee(
             } else {
                 let refund_amount = paid_fee_amount.saturating_sub(farm_creation_fee.amount);
 
-                if refund_amount > Uint128::zero() {
-                    messages.push(
-                        BankMsg::Send {
-                            to_address: info.sender.clone().into_string(),
-                            amount: vec![Coin {
-                                amount: refund_amount,
-                                denom: farm_creation_fee.denom.clone(),
-                            }],
-                        }
-                        .into(),
-                    );
-                }
+                messages.push(
+                    BankMsg::Send {
+                        to_address: info.sender.clone().into_string(),
+                        amount: vec![Coin {
+                            amount: refund_amount,
+                            denom: farm_creation_fee.denom.clone(),
+                        }],
+                    }
+                    .into(),
+                );
             }
         }
     }
