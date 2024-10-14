@@ -2972,7 +2972,7 @@ mod locking_lp {
             // the position should be updated
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
-                identifier: "p-2".to_string(),
+                identifier: "p-1".to_string(),
                 lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::new(1_996u128)},
                 unlocking_duration: 200_000,
                 open: true,
@@ -4590,6 +4590,83 @@ mod multiple_pools {
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
 
+    #[test]
+    fn providing_custom_pool_id_doesnt_increment_pool_counter() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_denoms = vec!["uom".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(10),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(7),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create pools
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("pool.1".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("pool.2".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_denoms,
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_pools(None, None, None, |result| {
+                let response = result.unwrap();
+                assert_eq!(response.pools.len(), 3);
+                assert_eq!(response.pools[0].pool_info.pool_identifier, "1");
+                assert_eq!(response.pools[1].pool_info.pool_identifier, "pool.1");
+                assert_eq!(response.pools[2].pool_info.pool_identifier, "pool.2");
+            });
+    }
     #[test]
     fn provide_liquidity_to_multiple_pools_check_fees() {
         let mut suite = TestingSuite::default_with_balances(

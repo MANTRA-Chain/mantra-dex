@@ -129,9 +129,17 @@ pub fn create_pool(
     // Verify pool fees
     pool_fees.is_valid()?;
 
-    let pool_id = POOL_COUNTER.load(deps.storage)?;
-    // if no identifier is provided, use the pool counter (id) as identifier
-    let identifier = pool_identifier.unwrap_or(pool_id.to_string());
+    let identifier = if let Some(id) = pool_identifier {
+        id
+    } else {
+        // if no identifier is provided, use the pool counter (id) as identifier
+        POOL_COUNTER.update(deps.storage, |mut counter| -> Result<_, ContractError> {
+            counter += 1;
+            Ok(counter)
+        })?;
+        POOL_COUNTER.load(deps.storage)?.to_string()
+    };
+
     validate_pool_identifier(&identifier)?;
 
     // check if there is an existing pool with the given identifier
@@ -190,12 +198,6 @@ pub fn create_pool(
         env.contract.address,
         lp_symbol,
     ));
-
-    // increase pool counter
-    POOL_COUNTER.update(deps.storage, |mut counter| -> Result<_, ContractError> {
-        counter += 1;
-        Ok(counter)
-    })?;
 
     attributes.push(attr("action", "create_pool"));
     attributes.push(attr("pool_identifier", identifier.as_str()));

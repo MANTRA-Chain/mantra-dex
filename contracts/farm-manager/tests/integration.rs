@@ -573,7 +573,7 @@ fn create_farms() {
             },
         )
         .query_farms(
-            Some(FarmsBy::Identifier("2".to_string())),
+            Some(FarmsBy::Identifier("1".to_string())),
             None,
             None,
             |result| {
@@ -1797,7 +1797,7 @@ pub fn test_manage_position() {
         .manage_position(
             &creator,
             PositionAction::Withdraw {
-                identifier: "p-2".to_string(),
+                identifier: "p-1".to_string(),
                 emergency_unlock: None,
             },
             vec![],
@@ -1859,7 +1859,7 @@ pub fn test_manage_position() {
         .manage_position(
             &other,
             PositionAction::Withdraw {
-                identifier: "p-2".to_string(),
+                identifier: "p-1".to_string(),
                 emergency_unlock: None,
             },
             vec![],
@@ -1903,7 +1903,7 @@ pub fn test_manage_position() {
         .manage_position(
             &creator,
             PositionAction::Withdraw {
-                identifier: "p-2".to_string(),
+                identifier: "p-1".to_string(),
                 emergency_unlock: None,
             },
             vec![],
@@ -1949,7 +1949,7 @@ pub fn test_manage_position() {
         .manage_position(
             &creator,
             PositionAction::Withdraw {
-                identifier: "p-2".to_string(),
+                identifier: "p-1".to_string(),
                 emergency_unlock: None,
             },
             vec![],
@@ -2006,7 +2006,7 @@ pub fn test_manage_position() {
                 assert_eq!(
                     positions.positions[0],
                     Position {
-                        identifier: "p-3".to_string(),
+                        identifier: "p-2".to_string(),
                         lp_asset: Coin {
                             denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
                                 .to_string(),
@@ -2023,7 +2023,7 @@ pub fn test_manage_position() {
         .manage_position(
             &creator,
             PositionAction::Close {
-                identifier: "p-3".to_string(),
+                identifier: "p-2".to_string(),
                 lp_asset: None,
             },
             vec![],
@@ -2038,7 +2038,7 @@ pub fn test_manage_position() {
         .manage_position(
             &another,
             PositionAction::Close {
-                identifier: "p-3".to_string(),
+                identifier: "p-2".to_string(),
                 lp_asset: None, //close in full
             },
             vec![],
@@ -2067,7 +2067,7 @@ pub fn test_manage_position() {
                 assert_eq!(
                     positions.positions[0],
                     Position {
-                        identifier: "p-3".to_string(),
+                        identifier: "p-2".to_string(),
                         lp_asset: Coin {
                             denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
                                 .to_string(),
@@ -2204,7 +2204,7 @@ pub fn test_manage_position() {
     suite.manage_position(
         &another,
         PositionAction::Withdraw {
-            identifier: "p-3".to_string(),
+            identifier: "p-2".to_string(),
             emergency_unlock: None,
         },
         vec![],
@@ -2502,7 +2502,7 @@ pub fn cant_create_position_with_overlapping_identifier() {
                 assert_eq!(
                     positions.positions[0],
                     Position {
-                        identifier: "p-2".to_string(),
+                        identifier: "p-1".to_string(),
                         lp_asset: Coin {
                             denom: lp_denom.clone(),
                             amount: Uint128::new(10_000),
@@ -4672,7 +4672,7 @@ fn test_fill_closed_position() {
                 assert_eq!(
                     response.positions[0],
                     Position {
-                        identifier: "p-2".to_string(),
+                        identifier: "p-1".to_string(),
                         lp_asset: coin(600, lp_denom_1.clone()),
                         unlocking_duration: 86_400,
                         open: false,
@@ -4697,14 +4697,14 @@ fn test_fill_closed_position() {
         .manage_position(
             &creator,
             PositionAction::Expand {
-                identifier: "p-2".to_string(),
+                identifier: "p-1".to_string(),
             },
             vec![coin(10_000, lp_denom_1.clone())],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
                     ContractError::PositionAlreadyClosed { identifier } => {
-                        assert_eq!(identifier, "p-2".to_string())
+                        assert_eq!(identifier, "p-1".to_string())
                     }
                     _ => panic!(
                         "Wrong error type, should return ContractError::PositionAlreadyClosed"
@@ -4737,7 +4737,7 @@ fn test_fill_closed_position() {
                 assert_eq!(
                     response.positions[0],
                     Position {
-                        identifier: "p-2".to_string(),
+                        identifier: "p-1".to_string(),
                         lp_asset: coin(600, lp_denom_1.clone()),
                         unlocking_duration: 86_400,
                         open: false,
@@ -4792,7 +4792,7 @@ fn test_fill_closed_position() {
                 assert_eq!(
                     response.positions[0],
                     Position {
-                        identifier: "p-2".to_string(),
+                        identifier: "p-1".to_string(),
                         lp_asset: coin(600, lp_denom_1.clone()),
                         unlocking_duration: 86_400,
                         open: false,
@@ -6669,5 +6669,134 @@ fn closing_expired_farm_wont_pay_penalty() {
         })
         .query_balance(lp_denom.clone(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
+        });
+}
+
+#[test]
+fn providing_custom_position_id_doesnt_increment_position_counter() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: Some("custom_id_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: Some("custom_id_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: None,
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 3);
+                assert_eq!(response.positions[0].identifier, "p-1");
+                assert_eq!(response.positions[1].identifier, "u-custom_id_1");
+                assert_eq!(response.positions[2].identifier, "u-custom_id_2");
+            },
+        );
+}
+
+#[test]
+fn providing_custom_farm_id_doesnt_increment_farm_counter() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: Some("custom_id_1".to_string()),
+                },
+            },
+            vec![coin(9_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(9_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let response = result.unwrap();
+            assert_eq!(response.farms.len(), 2);
+            assert_eq!(response.farms[0].identifier, "1");
+            assert_eq!(response.farms[1].identifier, "custom_id_1");
         });
 }
