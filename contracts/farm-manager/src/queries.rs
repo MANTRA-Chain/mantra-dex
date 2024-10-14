@@ -1,4 +1,4 @@
-use cosmwasm_std::{Deps, Env};
+use cosmwasm_std::{Coin, Deps, Env};
 
 use amm::coin::aggregate_coins;
 use amm::farm_manager::{
@@ -91,7 +91,10 @@ pub(crate) fn query_rewards(
 
     if open_positions.is_empty() {
         // if the user has no open LP positions, return an empty rewards list
-        return Ok(RewardsResponse::RewardsResponse { rewards: vec![] });
+        return Ok(RewardsResponse::RewardsResponse {
+            total_rewards: vec![],
+            rewards_per_lp_denom: vec![],
+        });
     }
 
     let config = CONFIG.load(deps.storage)?;
@@ -99,6 +102,7 @@ pub(crate) fn query_rewards(
         amm::epoch_manager::get_current_epoch(deps, config.epoch_manager_addr.into_string())?;
 
     let mut total_rewards = vec![];
+    let mut rewards_per_lp: Vec<(String, Vec<Coin>)> = vec![];
 
     let lp_denoms = get_unique_lp_asset_denoms_from_positions(open_positions);
 
@@ -107,15 +111,21 @@ pub(crate) fn query_rewards(
         let rewards_response =
             calculate_rewards(deps, env, lp_denom, &receiver, current_epoch.id, false)?;
         match rewards_response {
-            RewardsResponse::RewardsResponse { rewards } => {
-                total_rewards.append(&mut rewards.clone())
+            RewardsResponse::QueryRewardsResponse { rewards } => {
+                total_rewards.append(&mut rewards.clone());
+                //append to rewards_per_lp
+                rewards_per_lp.push((lp_denom.clone(), rewards));
             }
             _ => return Err(ContractError::Unauthorized),
         }
     }
 
+    //sort rewards_per_lp by lp denom
+    rewards_per_lp.sort_by(|a, b| a.0.cmp(&b.0));
+
     Ok(RewardsResponse::RewardsResponse {
-        rewards: aggregate_coins(total_rewards)?,
+        total_rewards: aggregate_coins(total_rewards)?,
+        rewards_per_lp_denom: rewards_per_lp,
     })
 }
 
