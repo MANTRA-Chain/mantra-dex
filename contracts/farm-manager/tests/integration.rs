@@ -6111,7 +6111,6 @@ fn test_overwriting_position_is_not_possible() {
 }
 
 #[test]
-// fails until the issue is fixed
 fn test_farm_and_position_id_validation() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -6330,6 +6329,119 @@ fn test_farm_and_position_id_validation() {
                         panic!("Wrong error type, should return ContractError::InvalidIdentifier")
                     }
                 }
+            },
+        );
+}
+
+#[test]
+fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![
+                coin(4_000, "uusdy"),
+                coin(1_000, "uom"),
+                coin(1_000, "uosmo"),
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::AssetMismatch { .. } => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::AssetMismatch")
+                    }
+                }
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(5_000, "uom"), coin(1_000, "uosmo")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::AssetMismatch { .. } => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::AssetMismatch")
+                    }
+                }
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(12),
+                    preliminary_end_epoch: Some(16),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(9_000, "uom")],
+            |result| {
+                result.unwrap();
             },
         );
 }

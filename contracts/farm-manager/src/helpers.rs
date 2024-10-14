@@ -105,6 +105,9 @@ pub(crate) fn assert_farm_asset(
             coin_sent.amount == params.farm_asset.amount,
             ContractError::AssetMismatch
         );
+        // if the farm creation denom and the farm asset denom are different,
+        // ensure only those two assets were sent
+        ensure!(info.funds.len() == 2usize, ContractError::AssetMismatch);
     } else {
         ensure!(
             params
@@ -114,6 +117,9 @@ pub(crate) fn assert_farm_asset(
                 == coin_sent.amount,
             ContractError::AssetMismatch
         );
+        // if the farm creation denom and the farm asset denom are the same,
+        // then make sure only that asset was sent in the transaction
+        ensure!(info.funds.len() == 1usize, ContractError::AssetMismatch);
     }
 
     Ok(())
