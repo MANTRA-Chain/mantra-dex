@@ -222,44 +222,49 @@ pub(crate) fn close_position(
 
     // check if it's going to be closed in full or partially
     let lp_amount_to_close = if let Some(lp_asset) = lp_asset {
-        // close position partially
-
-        // make sure the lp_asset requested to close matches the lp_asset of the position, and since
-        // this is a partial close, the amount requested to close should be less than the amount in the position
+        // make sure the lp_asset requested to close matches the lp_asset of the position
         ensure!(
-            lp_asset.denom == position.lp_asset.denom && lp_asset.amount < position.lp_asset.amount,
+            lp_asset.denom == position.lp_asset.denom,
             ContractError::AssetMismatch
         );
 
-        position.lp_asset.amount = position.lp_asset.amount.saturating_sub(lp_asset.amount);
+        match lp_asset.amount.cmp(&position.lp_asset.amount) {
+            std::cmp::Ordering::Equal => close_position_in_full(&mut position, expires_at),
+            std::cmp::Ordering::Less => {
+                // close position partially
+                position.lp_asset.amount = position.lp_asset.amount.saturating_sub(lp_asset.amount);
 
-        // add the partial closing position to the storage
-        let position_id_counter = POSITION_ID_COUNTER
-            .may_load(deps.storage)?
-            .unwrap_or_default()
-            + 1u64;
-        POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
+                // add the partial closing position to the storage
+                let position_id_counter = POSITION_ID_COUNTER
+                    .may_load(deps.storage)?
+                    .unwrap_or_default()
+                    + 1u64;
+                POSITION_ID_COUNTER.save(deps.storage, &position_id_counter)?;
 
-        let identifier = format!("{AUTO_POSITION_ID_PREFIX}{position_id_counter}");
+                let identifier = format!("{AUTO_POSITION_ID_PREFIX}{position_id_counter}");
 
-        let partial_position = Position {
-            identifier: identifier.to_string(),
-            lp_asset: lp_asset.clone(),
-            unlocking_duration: position.unlocking_duration,
-            open: false,
-            expiring_at: Some(expires_at),
-            receiver: position.receiver.clone(),
-        };
+                let partial_position = Position {
+                    identifier: identifier.to_string(),
+                    lp_asset: lp_asset.clone(),
+                    unlocking_duration: position.unlocking_duration,
+                    open: false,
+                    expiring_at: Some(expires_at),
+                    receiver: position.receiver.clone(),
+                };
 
-        POSITIONS.save(deps.storage, &identifier.to_string(), &partial_position)?;
-        // partial amount
-        lp_asset.amount
+                POSITIONS.save(deps.storage, &identifier.to_string(), &partial_position)?;
+                // partial amount
+                lp_asset.amount
+            }
+            std::cmp::Ordering::Greater => {
+                return Err(ContractError::InvalidLpAmount {
+                    expected: position.lp_asset.amount,
+                    actual: lp_asset.amount,
+                });
+            }
+        }
     } else {
-        // close position in full
-        position.open = false;
-        position.expiring_at = Some(expires_at);
-        // full amount
-        position.lp_asset.amount
+        close_position_in_full(&mut position, expires_at)
     };
 
     let close_in_full = !position.open;
@@ -277,6 +282,15 @@ pub(crate) fn close_position(
     POSITIONS.save(deps.storage, &identifier, &position)?;
 
     Ok(Response::default().add_attributes(attributes))
+}
+
+/// Modifies the position to be closed in full, returning the total amount of lp for this position.
+fn close_position_in_full(position: &mut Position, expires_at: u64) -> Uint128 {
+    // close position in full
+    position.open = false;
+    position.expiring_at = Some(expires_at);
+    // returns full amount to be closed
+    position.lp_asset.amount
 }
 
 /// Withdraws the given position. The position needs to have expired.
@@ -313,10 +327,12 @@ pub(crate) fn withdraw_position(
         }
     }
 
+    let current_time = env.block.time.seconds();
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // check if the emergency unlock is requested, will pull the whole position out whether it's open, closed or expired, paying the penalty
-    if emergency_unlock.is_some() && emergency_unlock.unwrap() {
+    if emergency_unlock.is_some() && emergency_unlock.unwrap() && !position.is_expired(current_time)
+    {
         let emergency_unlock_penalty = CONFIG.load(deps.storage)?.emergency_unlock_penalty;
 
         let total_penalty_fee = Decimal::from_ratio(position.lp_asset.amount, Uint128::one())
@@ -403,9 +419,10 @@ pub(crate) fn withdraw_position(
             return Err(ContractError::Unauthorized);
         }
 
-        if position.expiring_at.unwrap() > env.block.time.seconds() {
-            return Err(ContractError::PositionNotExpired);
-        }
+        ensure!(
+            position.is_expired(current_time),
+            ContractError::PositionNotExpired
+        );
     }
 
     // sanity check

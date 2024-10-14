@@ -116,6 +116,9 @@ pub enum ContractError {
     #[error("The position with the identifier {identifier} is already closed")]
     PositionAlreadyClosed { identifier: String },
 
+    #[error("The amount of LP specified when closing the position is invalid. Expected at most {expected}, actual {actual}.")]
+    InvalidLpAmount { expected: Uint128, actual: Uint128 },
+
     #[error("Maximum number of open/close positions per user exceeded, max is {max}. If you are trying to open a position, close some and try again. If you are trying to close a position, withdraw some and try again.")]
     MaxPositionsPerUserExceeded { max: u32 },
 

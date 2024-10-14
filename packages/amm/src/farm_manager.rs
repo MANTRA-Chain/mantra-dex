@@ -297,6 +297,12 @@ pub struct Position {
     pub receiver: Addr,
 }
 
+impl Position {
+    pub fn is_expired(&self, current_time: u64) -> bool {
+        self.expiring_at.is_some() && self.expiring_at.unwrap() <= current_time
+    }
+}
+
 impl Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
