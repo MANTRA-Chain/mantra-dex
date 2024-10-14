@@ -45,7 +45,7 @@ pub enum ContractError {
     #[error("A farm with the given identifier already exists")]
     FarmAlreadyExists,
 
-    #[error("max_concurrent_flows cannot be set to zero")]
+    #[error("max_concurrent_farms cannot be set to zero")]
     UnspecifiedConcurrentFarms,
 
     #[error("Farm doesn't exist")]

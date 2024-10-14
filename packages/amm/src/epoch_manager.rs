@@ -28,7 +28,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// Returns the current epoch, which is the last on the EPOCHS map.
+    /// Returns the configuration of the contract.
     #[returns(ConfigResponse)]
     Config {},
     /// Returns the current epoch, which is the last on the EPOCHS map.

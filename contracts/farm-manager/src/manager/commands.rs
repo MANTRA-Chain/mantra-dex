@@ -166,8 +166,8 @@ fn create_farm(
         ]))
 }
 
-/// Closes a farm. If the farm has expired, anyone can close it. Otherwise, only the
-/// farm creator or the owner of the contract can close a farm.
+/// Closes a farm. Only the farm creator or the owner of the contract can close a farm, except if
+/// the farm has expired, in which case anyone can close it while creating a new farm.
 pub(crate) fn close_farm(
     deps: DepsMut,
     info: MessageInfo,
@@ -360,13 +360,13 @@ pub(crate) fn update_config(
         ("fee_collector_addr", config.fee_collector_addr.to_string()),
         ("epoch_manager_addr", config.epoch_manager_addr.to_string()),
         ("pool_manager_addr", config.pool_manager_addr.to_string()),
-        ("create_flow_fee", config.create_farm_fee.to_string()),
+        ("create_farm_fee", config.create_farm_fee.to_string()),
         (
-            "max_concurrent_flows",
+            "max_concurrent_farms",
             config.max_concurrent_farms.to_string(),
         ),
         (
-            "max_flow_epoch_buffer",
+            "max_farm_epoch_buffer",
             config.max_farm_epoch_buffer.to_string(),
         ),
         (

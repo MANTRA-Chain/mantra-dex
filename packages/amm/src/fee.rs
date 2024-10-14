@@ -70,8 +70,7 @@ pub struct PoolFee {
 }
 
 impl PoolFee {
-    /// Validates the PoolFee structure to ensure no individual fee is zero or negative
-    /// and the sum of all fees does not exceed 20%.
+    /// Validates the PoolFee structure to ensure the sum of all fees does not exceed 20%.
     pub fn is_valid(&self) -> StdResult<()> {
         let mut total_share = Decimal::zero();
 
