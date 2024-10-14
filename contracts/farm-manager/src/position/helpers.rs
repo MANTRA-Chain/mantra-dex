@@ -59,7 +59,7 @@ pub fn calculate_weight(
                 .checked_add(final_part)?,
         )?
         .atomics()
-        .checked_div(10u128.pow(18).into())?
+        .checked_div(10u128.pow(Decimal::DECIMAL_PLACES).into())?
         .try_into()?;
 
     // we must clamp it to max(computed_value, amount) as
