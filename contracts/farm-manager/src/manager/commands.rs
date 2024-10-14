@@ -270,7 +270,9 @@ fn expand_farm(
     farm.preliminary_end_epoch = farm
         .preliminary_end_epoch
         .checked_add(Uint64::try_from(additional_epochs)?.u64())
-        .ok_or(ContractError::InvalidEndEpoch)?;
+        .ok_or(ContractError::InvalidEpoch {
+            which: "end".to_string(),
+        })?;
 
     FARMS.save(deps.storage, &farm.identifier, &farm)?;
 

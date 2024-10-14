@@ -134,10 +134,19 @@ pub(crate) fn validate_farm_epochs(
     // assert epoch params are correctly set
     let start_epoch = params.start_epoch.unwrap_or(current_epoch + 1u64);
 
+    ensure!(
+        start_epoch > 0u64,
+        ContractError::InvalidEpoch {
+            which: "start".to_string()
+        }
+    );
+
     let preliminary_end_epoch = params.preliminary_end_epoch.unwrap_or(
         start_epoch
             .checked_add(DEFAULT_FARM_DURATION)
-            .ok_or(ContractError::InvalidEndEpoch)?,
+            .ok_or(ContractError::InvalidEpoch {
+                which: "end".to_string(),
+            })?,
     );
 
     // ensure that start date is before end date
