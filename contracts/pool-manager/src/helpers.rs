@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use amm::coin::FACTORY_MAX_SUBDENOM_SIZE;
+use amm::coin::{aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
 use amm::constants::LP_SYMBOL;
 use amm::fee::PoolFee;
 use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
@@ -396,6 +396,8 @@ pub struct OfferAmountComputation {
     pub burn_fee_amount: Uint128,
 }
 
+// TODO: make this work with n_coins being dynamic
+
 pub fn assert_slippage_tolerance(
     slippage_tolerance: &Option<Decimal>,
     deposits: &[Coin],
@@ -414,9 +416,10 @@ pub fn assert_slippage_tolerance(
         let deposits: Vec<Uint256> = deposits.iter().map(|coin| coin.amount.into()).collect();
         let pools: Vec<Uint256> = pools.iter().map(|coin| coin.amount.into()).collect();
 
-        // Ensure prices are not dropped as much as slippage tolerance rate
+        // Ensure each prices are not dropped as much as slippage tolerance rate
         match pool_type {
             PoolType::StableSwap { .. } => {
+                // TODO: shouldn't be necessary to handle unwraps properly as they come from Uint128, but doublecheck!
                 let pools_total: Uint256 = pools
                     .into_iter()
                     .fold(Uint256::zero(), |acc, x| acc.checked_add(x).unwrap());
@@ -521,20 +524,22 @@ pub fn aggregate_outgoing_fees(
 }
 
 /// Validates that the pool creation and token factory fees are paid with the transaction.
+/// Returns the total amount of fees paid.
 pub fn validate_fees_are_paid(
     pool_creation_fee: &Coin,
     denom_creation_fee: Vec<Coin>,
     info: &MessageInfo,
-) -> Result<(), ContractError> {
-    let pool_fee_denom = &pool_creation_fee.denom;
+) -> Result<Vec<Coin>, ContractError> {
+    let mut total_fees = vec![];
 
+    let pool_fee_denom = &pool_creation_fee.denom;
     // Check if the pool fee denom is found in the vector of the token factory possible fee denoms
     if let Some(tf_fee) = denom_creation_fee
         .iter()
         .find(|fee| &fee.denom == pool_fee_denom)
     {
         // If the token factory fee has only one option, check if the user paid the sum of the fees
-        if denom_creation_fee.len() == 1 {
+        if denom_creation_fee.len() == 1usize {
             let total_fee_amount = tf_fee.amount.checked_add(pool_creation_fee.amount)?;
             let paid_fee_amount = cw_utils::must_pay(info, pool_fee_denom)?;
 
@@ -545,6 +550,11 @@ pub fn validate_fees_are_paid(
                     expected: total_fee_amount,
                 }
             );
+
+            total_fees.push(Coin {
+                denom: pool_fee_denom.clone(),
+                amount: total_fee_amount,
+            });
         } else {
             // If the token factory fee has multiple options besides pool_fee_denom, check if the user paid the pool creation fee
             let paid_pool_fee_amount = info
@@ -562,6 +572,11 @@ pub fn validate_fees_are_paid(
                 }
             );
 
+            total_fees.push(Coin {
+                denom: pool_fee_denom.clone(),
+                amount: paid_pool_fee_amount,
+            });
+
             // Check if the user paid the token factory fee in any other of the allowed denoms
             let tf_fee_paid = denom_creation_fee.iter().any(|fee| {
                 let paid_fee_amount = info
@@ -572,15 +587,22 @@ pub fn validate_fees_are_paid(
                     .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))
                     .unwrap_or(Uint128::zero());
 
+                total_fees.push(Coin {
+                    denom: fee.denom.clone(),
+                    amount: paid_fee_amount,
+                });
+
                 paid_fee_amount == fee.amount
             });
 
             ensure!(tf_fee_paid, ContractError::TokenFactoryFeeNotPaid);
+
+            total_fees = aggregate_coins(total_fees)?;
         }
     } else {
         // If the pool fee denom is not found in the vector of the token factory possible fee denoms,
         // check if the user paid the pool creation fee and the token factory fee separately
-        let paid_fee_amount = info
+        let paid_pool_fee_amount = info
             .funds
             .iter()
             .filter(|fund| &fund.denom == pool_fee_denom)
@@ -588,12 +610,17 @@ pub fn validate_fees_are_paid(
             .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))?;
 
         ensure!(
-            paid_fee_amount == pool_creation_fee.amount,
+            paid_pool_fee_amount == pool_creation_fee.amount,
             ContractError::InvalidPoolCreationFee {
-                amount: paid_fee_amount,
+                amount: paid_pool_fee_amount,
                 expected: pool_creation_fee.amount,
             }
         );
+
+        total_fees.push(Coin {
+            denom: pool_fee_denom.clone(),
+            amount: paid_pool_fee_amount,
+        });
 
         let tf_fee_paid = denom_creation_fee.iter().all(|fee| {
             let paid_fee_amount = info
@@ -604,11 +631,35 @@ pub fn validate_fees_are_paid(
                 .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))
                 .unwrap_or(Uint128::zero());
 
+            total_fees.push(Coin {
+                denom: fee.denom.clone(),
+                amount: paid_fee_amount,
+            });
+
             paid_fee_amount == fee.amount
         });
 
         ensure!(tf_fee_paid, ContractError::TokenFactoryFeeNotPaid);
     }
+
+    Ok(aggregate_coins(total_fees)?)
+}
+
+/// Validates that no additional funds besides the fees for the pool creation were sent with the transaction.
+pub(crate) fn validate_no_additional_funds_sent_with_pool_creation(
+    info: &MessageInfo,
+    total_fees: Vec<Coin>,
+) -> Result<(), ContractError> {
+    // check that the user didn't send more tokens in info.funds than the ones in total_fees
+
+    // check if there's any coins in info.funds that are not in total_fees
+    let extra_funds = info
+        .funds
+        .iter()
+        .filter(|fund| !total_fees.iter().any(|fee| fee.denom == fund.denom))
+        .collect::<Vec<_>>();
+
+    ensure!(extra_funds.is_empty(), ContractError::ExtraFundsSent);
 
     Ok(())
 }
@@ -697,6 +748,7 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
     }
 }
 
+// TODO: handle unwraps properly
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
     amp_factor: &u64,

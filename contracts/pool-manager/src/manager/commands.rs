@@ -8,7 +8,10 @@ use amm::fee::PoolFee;
 use amm::pool_manager::{PoolInfo, PoolType};
 use amm::tokenfactory::utils::get_factory_denom_creation_fee;
 
-use crate::helpers::{validate_fees_are_paid, validate_pool_identifier};
+use crate::helpers::{
+    validate_fees_are_paid, validate_no_additional_funds_sent_with_pool_creation,
+    validate_pool_identifier,
+};
 use crate::state::{get_pool_by_identifier, POOL_COUNTER};
 use crate::{
     state::{Config, CONFIG, POOLS},
@@ -90,11 +93,14 @@ pub fn create_pool(
     );
 
     // check if the pool and token factory fees were paid
-    validate_fees_are_paid(
+    let total_fees = validate_fees_are_paid(
         &config.pool_creation_fee,
         get_factory_denom_creation_fee(deps.as_ref())?,
         &info,
     )?;
+
+    // make sure the user doesn't accidentally send more tokens than needed
+    validate_no_additional_funds_sent_with_pool_creation(&info, total_fees)?;
 
     // Prepare the sending of pool creation fee
     let mut messages: Vec<CosmosMsg> = vec![];
