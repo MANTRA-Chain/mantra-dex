@@ -1,10 +1,11 @@
 use cosmwasm_std::{
-    ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, Deps, Order, StdError, Storage,
-    Uint128,
+    ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, Deps, Env, MessageInfo, Order,
+    StdError, Storage, Uint128,
 };
 
-use amm::farm_manager::{Config, EpochId};
+use amm::farm_manager::{Config, EpochId, RewardsResponse};
 
+use crate::queries::query_rewards;
 use crate::state::{get_positions_by_receiver, LP_WEIGHT_HISTORY, MAX_ITEMS_LIMIT};
 use crate::ContractError;
 
@@ -143,12 +144,12 @@ pub(crate) fn validate_positions_limit(
 /// Validates the amount of positions a user can have either open or closed at a given time.
 pub(crate) fn create_penalty_share_msg(
     lp_asset_denom: String,
-    comission: Uint128,
+    commission: Uint128,
     receiver: &Addr,
 ) -> CosmosMsg {
     let penalty = Coin {
         denom: lp_asset_denom,
-        amount: comission,
+        amount: commission,
     };
 
     BankMsg::Send {
@@ -156,4 +157,21 @@ pub(crate) fn create_penalty_share_msg(
         amount: vec![penalty],
     }
     .into()
+}
+
+/// Validates that the user has no pending rewards before performing an operation.
+pub fn validate_no_pending_rewards(
+    deps: Deps,
+    env: &Env,
+    info: &MessageInfo,
+) -> Result<(), ContractError> {
+    let rewards_response = query_rewards(deps, env, info.sender.clone().into_string())?;
+    match rewards_response {
+        RewardsResponse::RewardsResponse { rewards } => {
+            ensure!(rewards.is_empty(), ContractError::PendingRewards)
+        }
+        _ => return Err(ContractError::Unauthorized),
+    }
+
+    Ok(())
 }
