@@ -339,7 +339,6 @@ pub(crate) fn withdraw_position(
             .checked_mul(emergency_unlock_penalty)?
             .to_uint_floor();
 
-        println!("total_penalty_fee: {:?}", total_penalty_fee);
         // sanity check
         ensure!(
             total_penalty_fee < position.lp_asset.amount,

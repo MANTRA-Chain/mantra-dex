@@ -46,7 +46,7 @@ pub(crate) fn query_current_epoch(deps: Deps, env: Env) -> Result<EpochResponse,
     Ok(EpochResponse { epoch })
 }
 
-/// Queries the current epoch. Returns an [EpochResponse].
+/// Queries the epoch with the given id. Returns an [EpochResponse].
 pub(crate) fn query_epoch(deps: Deps, id: u64) -> Result<EpochResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 

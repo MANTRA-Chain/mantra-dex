@@ -658,7 +658,6 @@ mod pool_creation_failures {
                 vec![coin(1999, "uusd")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                    println!("----");
                     match err {
                         ContractError::InvalidPoolCreationFee { amount, expected } => {
                             assert_eq!(amount.u128(), 1999);

@@ -85,7 +85,7 @@ pub enum QueryMsg {
     /// Retrieves the configuration of the manager.
     #[returns(Config)]
     Config {},
-    /// Retrieves the configuration of the manager.
+    /// Retrieves farms in the contract. It is possible to filter by [FarmsBy] and to paginate the results.
     #[returns(FarmsResponse)]
     Farms {
         /// An optional parameter specifying what to filter farms by.
@@ -233,7 +233,8 @@ pub enum PositionAction {
     Withdraw {
         /// The identifier of the position.
         identifier: String,
-        /// Whether to unlock the position in an emergency. If set to true, the position will be unlocked immediately, but with a penalty.
+        /// Whether to unlock the position in an emergency. If set to true, the position will be
+        /// unlocked immediately. If the position has not expired, it will pay a penalty.
         emergency_unlock: Option<bool>,
     },
 }

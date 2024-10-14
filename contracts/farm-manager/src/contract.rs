@@ -64,13 +64,13 @@ pub fn instantiate(
         ("owner", msg.owner),
         ("epoch_manager_addr", config.epoch_manager_addr.to_string()),
         ("fee_collector_addr", config.fee_collector_addr.to_string()),
-        ("create_flow_fee", config.create_farm_fee.to_string()),
+        ("create_farm_fee", config.create_farm_fee.to_string()),
         (
-            "max_concurrent_flows",
+            "max_concurrent_farms",
             config.max_concurrent_farms.to_string(),
         ),
         (
-            "max_flow_epoch_buffer",
+            "max_farm_epoch_buffer",
             config.max_farm_epoch_buffer.to_string(),
         ),
         (
