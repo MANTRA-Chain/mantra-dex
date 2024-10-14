@@ -215,6 +215,70 @@ mod pool_creation_failures {
         );
     }
 
+    // Insufficient fee to create pool; 90 instead of 100
+    #[test]
+    fn sends_more_funds_than_needed() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_infos = vec!["uom".to_string(), "uusd".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(8888, "uom"), coin(1000, "uusd"), coin(1000, "uluna")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::ExtraFundsSent { .. } => {}
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::ExtraFundsSent")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos,
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(8888, "uom"), coin(1000, "uusd")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+    }
+
     #[test]
     fn wrong_pool_label() {
         let mut suite = TestingSuite::default_with_balances(

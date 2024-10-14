@@ -145,6 +145,9 @@ pub enum ContractError {
     #[error("Pool creation fee was not included")]
     PoolCreationFeeMissing,
 
+    #[error("Additional funds were sent with pool creation, expected pool creation and token factory fees only")]
+    ExtraFundsSent,
+
     #[error("Funds for {denom} were missing when performing swap")]
     MissingNativeSwapFunds { denom: String },
 
