@@ -6593,3 +6593,81 @@ fn fails_to_create_farm_if_start_epoch_is_zero() {
         },
     );
 }
+
+#[test]
+fn closing_expired_farm_wont_pay_penalty() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    let fee_collector = suite.fee_collector_addr.clone();
+
+    suite
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: None,
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(creator.to_string())),
+            None,
+            None,
+            Some(MAX_ITEMS_LIMIT),
+            |result| {
+                let response = result.unwrap();
+                assert_eq!(response.positions.len(), 1);
+                assert_eq!(response.positions[0].identifier, "p-1");
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Close {
+                identifier: "p-1".to_string(),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .add_one_epoch()
+        .query_balance(lp_denom.clone(), &creator, |balance| {
+            assert_eq!(balance, Uint128::new(999_990_000));
+        })
+        .query_balance(lp_denom.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Withdraw {
+                identifier: "p-1".to_string(),
+                // shouldn't pay emergency fee
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom.clone(), &creator, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        })
+        .query_balance(lp_denom.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        });
+}

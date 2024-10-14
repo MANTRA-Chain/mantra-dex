@@ -327,10 +327,12 @@ pub(crate) fn withdraw_position(
         }
     }
 
+    let current_time = env.block.time.seconds();
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // check if the emergency unlock is requested, will pull the whole position out whether it's open, closed or expired, paying the penalty
-    if emergency_unlock.is_some() && emergency_unlock.unwrap() {
+    if emergency_unlock.is_some() && emergency_unlock.unwrap() && !position.is_expired(current_time)
+    {
         let emergency_unlock_penalty = CONFIG.load(deps.storage)?.emergency_unlock_penalty;
 
         let total_penalty_fee = Decimal::from_ratio(position.lp_asset.amount, Uint128::one())
@@ -417,9 +419,10 @@ pub(crate) fn withdraw_position(
             return Err(ContractError::Unauthorized);
         }
 
-        if position.expiring_at.unwrap() > env.block.time.seconds() {
-            return Err(ContractError::PositionNotExpired);
-        }
+        ensure!(
+            position.is_expired(current_time),
+            ContractError::PositionNotExpired
+        );
     }
 
     // sanity check
