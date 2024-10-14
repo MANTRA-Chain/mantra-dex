@@ -1771,8 +1771,11 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+                    ContractError::InvalidLpAmount { expected, actual } => {
+                        assert_eq!(expected, Uint128::new(7_000));
+                        assert_eq!(actual, Uint128::new(10_000));
+                    }
+                    _ => panic!("Wrong error type, should return ContractError::InvalidLpAmount"),
                 }
             },
         )
@@ -2197,6 +2200,107 @@ pub fn test_manage_position() {
             }
         },
     );
+
+    suite.manage_position(
+        &another,
+        PositionAction::Withdraw {
+            identifier: "p-3".to_string(),
+            emergency_unlock: None,
+        },
+        vec![],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // create a position and close it in full by specifying the total amount of LP to close
+    suite
+        .manage_position(
+            &another,
+            PositionAction::Create {
+                identifier: Some("to_be_closed_in_full".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(5_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(another.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "u-to_be_closed_in_full".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(5_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: true,
+                        expiring_at: None,
+                        receiver: another.clone(),
+                    }
+                );
+            },
+        )
+        .manage_position(
+            &another,
+            PositionAction::Close {
+                identifier: "u-to_be_closed_in_full".to_string(),
+                lp_asset: Some(Coin {
+                    denom: lp_denom.clone(),
+                    amount: Uint128::new(5_000),
+                }),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(another.to_string())),
+            Some(false),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 1);
+                assert_eq!(
+                    positions.positions[0],
+                    Position {
+                        identifier: "u-to_be_closed_in_full".to_string(),
+                        lp_asset: Coin {
+                            denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}")
+                                .to_string(),
+                            amount: Uint128::new(5_000),
+                        },
+                        unlocking_duration: 86400,
+                        open: false,
+                        expiring_at: Some(1_713_106_800),
+                        receiver: another.clone(),
+                    }
+                );
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(another.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert!(positions.positions.is_empty());
+            },
+        );
 }
 
 #[test]
