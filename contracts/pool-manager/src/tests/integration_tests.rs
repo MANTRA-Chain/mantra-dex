@@ -215,7 +215,87 @@ mod pool_creation_failures {
         );
     }
 
-    // Insufficient fee to create pool; 90 instead of 100
+    // Only 1 asset provided, or none
+    #[test]
+    fn invalid_assets_on_pool_creation() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                vec![],
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::AssetMismatch { .. } => {}
+                        _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uom".to_string()],
+                vec![6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::AssetMismatch { .. } => {}
+                        _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uom".to_string(), "uom".to_string()],
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::SameAsset { .. } => {}
+                        _ => panic!("Wrong error type, should return ContractError::SameAsset"),
+                    }
+                },
+            );
+    }
+
     #[test]
     fn sends_more_funds_than_needed() {
         let mut suite = TestingSuite::default_with_balances(

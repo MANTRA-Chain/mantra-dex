@@ -24,6 +24,9 @@ pub enum ContractError {
 
     #[error("start_time must be in the future.")]
     InvalidStartTime,
+
+    #[error("Invalid epoch duration, must be at least {min}.")]
+    InvalidEpochDuration { min: u64 },
 }
 
 impl From<semver::Error> for ContractError {

@@ -1,3 +1,4 @@
+use amm::constants::DAY_IN_SECONDS;
 use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
 use cosmwasm_std::{from_json, Uint64};
 use cw_multi_test::IntoBech32;
@@ -55,5 +56,33 @@ fn instantiation_unsuccessful() {
     match err {
         ContractError::InvalidStartTime => {}
         _ => panic!("should return ContractError::InvalidStartTime"),
+    }
+
+    let msg = InstantiateMsg {
+        owner: "owner".into_bech32().to_string(),
+        epoch_config: EpochConfig {
+            duration: Uint64::zero(),
+            genesis_epoch: Uint64::new(current_time.seconds()),
+        },
+    };
+
+    let err = instantiate(deps.as_mut(), mock_env(), info.clone(), msg).unwrap_err();
+    match err {
+        ContractError::InvalidEpochDuration { .. } => {}
+        _ => panic!("should return ContractError::InvalidEpochDuration"),
+    }
+
+    let msg = InstantiateMsg {
+        owner: "owner".into_bech32().to_string(),
+        epoch_config: EpochConfig {
+            duration: Uint64::new(DAY_IN_SECONDS - 1u64),
+            genesis_epoch: Uint64::new(current_time.seconds()),
+        },
+    };
+
+    let err = instantiate(deps.as_mut(), mock_env(), info.clone(), msg).unwrap_err();
+    match err {
+        ContractError::InvalidEpochDuration { .. } => {}
+        _ => panic!("should return ContractError::InvalidEpochDuration"),
     }
 }

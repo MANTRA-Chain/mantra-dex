@@ -18,7 +18,8 @@ use crate::{
     ContractError,
 };
 
-pub const MAX_ASSETS_PER_POOL: usize = 4;
+pub const MAX_ASSETS_PER_POOL: usize = 4usize;
+pub const MIN_ASSETS_PER_POOL: usize = 2usize;
 
 /// Creates a pool with 2, 3, or N assets. The function dynamically handles different numbers of assets,
 /// allowing for the creation of pools with varying configurations. The maximum number of assets per pool is defined by
@@ -78,9 +79,11 @@ pub fn create_pool(
     // Load config for pool creation fee
     let config: Config = CONFIG.load(deps.storage)?;
 
-    // Ensure that the number of assets and decimals match
+    // Ensure that the number of assets and decimals match, and that they are not empty
     ensure!(
-        asset_denoms.len() == asset_decimals.len(),
+        !asset_denoms.is_empty()
+            && asset_denoms.len() >= MIN_ASSETS_PER_POOL
+            && asset_denoms.len() == asset_decimals.len(),
         ContractError::AssetMismatch
     );
 

@@ -101,8 +101,8 @@ pub enum ContractError {
     #[error("Attempt to decrease the max concurrent farms to a value that is less than the current amount of concurrent farms")]
     MaximumConcurrentFarmsDecreased,
 
-    #[error("The end epoch for this farm is invalid")]
-    InvalidEndEpoch,
+    #[error("The {which} epoch for this farm is invalid")]
+    InvalidEpoch { which: String },
 
     #[error("The sender doesn't have open positions")]
     NoOpenPositions,

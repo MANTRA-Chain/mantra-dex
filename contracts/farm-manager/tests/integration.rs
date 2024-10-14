@@ -6445,3 +6445,47 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
             },
         );
 }
+
+#[test]
+fn fails_to_create_farm_if_start_epoch_is_zero() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    suite.manage_farm(
+        &creator,
+        FarmAction::Fill {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: Some(0),
+                preliminary_end_epoch: Some(28),
+                curve: None,
+                farm_asset: Coin {
+                    denom: "uusdy".to_string(),
+                    amount: Uint128::new(4_000u128),
+                },
+                farm_identifier: Some("farm_1".to_string()),
+            },
+        },
+        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::InvalidEpoch { which } => {
+                    assert_eq!(which, "start".to_string())
+                }
+                _ => {
+                    panic!("Wrong error type, should return ContractError::InvalidEpoch")
+                }
+            }
+        },
+    );
+}
