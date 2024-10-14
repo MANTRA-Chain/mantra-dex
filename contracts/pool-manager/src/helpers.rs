@@ -557,12 +557,7 @@ pub fn validate_fees_are_paid(
             });
         } else {
             // If the token factory fee has multiple options besides pool_fee_denom, check if the user paid the pool creation fee
-            let paid_pool_fee_amount = info
-                .funds
-                .iter()
-                .filter(|fund| &fund.denom == pool_fee_denom)
-                .map(|fund| fund.amount)
-                .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))?;
+            let paid_pool_fee_amount = get_paid_pool_fee_amount(info, pool_fee_denom)?;
 
             ensure!(
                 paid_pool_fee_amount == pool_creation_fee.amount,
@@ -602,12 +597,7 @@ pub fn validate_fees_are_paid(
     } else {
         // If the pool fee denom is not found in the vector of the token factory possible fee denoms,
         // check if the user paid the pool creation fee and the token factory fee separately
-        let paid_pool_fee_amount = info
-            .funds
-            .iter()
-            .filter(|fund| &fund.denom == pool_fee_denom)
-            .map(|fund| fund.amount)
-            .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))?;
+        let paid_pool_fee_amount = get_paid_pool_fee_amount(info, pool_fee_denom)?;
 
         ensure!(
             paid_pool_fee_amount == pool_creation_fee.amount,
@@ -643,6 +633,19 @@ pub fn validate_fees_are_paid(
     }
 
     Ok(aggregate_coins(total_fees)?)
+}
+
+/// gets the pool creation fee paid by the user
+fn get_paid_pool_fee_amount(
+    info: &MessageInfo,
+    pool_fee_denom: &String,
+) -> Result<Uint128, ContractError> {
+    Ok(info
+        .funds
+        .iter()
+        .filter(|fund| &fund.denom == pool_fee_denom)
+        .map(|fund| fund.amount)
+        .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))?)
 }
 
 /// Validates that no additional funds besides the fees for the pool creation were sent with the transaction.
