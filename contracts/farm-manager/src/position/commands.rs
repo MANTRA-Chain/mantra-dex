@@ -1,20 +1,20 @@
 use cosmwasm_std::{
-    coin, ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response,
-    Uint128,
+    coin, ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo,
+    Response, Uint128,
 };
 use std::collections::HashSet;
 
-use amm::farm_manager::{Position, RewardsResponse};
+use amm::farm_manager::Position;
 
 use crate::helpers::{validate_identifier, validate_lp_denom};
 use crate::position::helpers::{
-    calculate_weight, create_penalty_share_msg, get_latest_address_weight, AUTO_POSITION_ID_PREFIX,
-    EXPLICIT_POSITION_ID_PREFIX, PENALTY_FEE_SHARE,
+    calculate_weight, create_penalty_share_msg, get_latest_address_weight,
+    validate_no_pending_rewards, AUTO_POSITION_ID_PREFIX, EXPLICIT_POSITION_ID_PREFIX,
+    PENALTY_FEE_SHARE,
 };
 use crate::position::helpers::{
     validate_positions_limit, validate_unlocking_duration_for_position,
 };
-use crate::queries::query_rewards;
 use crate::state::{
     get_farms_by_lp_denom, get_position, CONFIG, LP_WEIGHT_HISTORY, MAX_ITEMS_LIMIT, POSITIONS,
     POSITION_ID_COUNTER,
@@ -180,13 +180,7 @@ pub(crate) fn close_position(
     cw_utils::nonpayable(&info)?;
 
     // check if the user has pending rewards. Can't close a position without claiming pending rewards first
-    let rewards_response = query_rewards(deps.as_ref(), &env, info.sender.clone().into_string())?;
-    match rewards_response {
-        RewardsResponse::RewardsResponse { rewards } => {
-            ensure!(rewards.is_empty(), ContractError::PendingRewards)
-        }
-        _ => return Err(ContractError::Unauthorized),
-    }
+    validate_no_pending_rewards(deps.as_ref(), &env, &info)?;
 
     let mut position = get_position(deps.storage, Some(identifier.clone()))?.ok_or(
         ContractError::NoPositionFound {
@@ -316,14 +310,7 @@ pub(crate) fn withdraw_position(
     if emergency_unlock.is_none() || emergency_unlock.is_some() && !emergency_unlock.unwrap() {
         // check if the user has pending rewards. Can't withdraw a position without claiming pending rewards first.
         // if the user wants to perform an emergency withdrawal, this is not checked
-        let rewards_response =
-            query_rewards(deps.as_ref(), &env, info.sender.clone().into_string())?;
-        match rewards_response {
-            RewardsResponse::RewardsResponse { rewards } => {
-                ensure!(rewards.is_empty(), ContractError::PendingRewards)
-            }
-            _ => return Err(ContractError::Unauthorized),
-        }
+        validate_no_pending_rewards(deps.as_ref(), &env, &info)?;
     }
 
     let current_time = env.block.time.seconds();

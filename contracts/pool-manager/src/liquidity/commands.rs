@@ -103,16 +103,9 @@ pub fn provide_liquidity(
         let swap_simulation_response = query_simulation(
             deps.as_ref(),
             swap_half.clone(),
-            ask_asset_denom,
+            ask_asset_denom.clone(),
             pool_identifier.clone(),
         )?;
-
-        let ask_denom = pool_assets
-            .iter()
-            .find(|pool_asset| pool_asset.denom != deposit.denom)
-            .ok_or(ContractError::AssetMismatch)?
-            .denom
-            .clone();
 
         // let's compute the expected offer asset balance in the contract after the swap and liquidity
         // provision takes place. This should be the same value as of now. Even though half of it
@@ -127,7 +120,7 @@ pub fn provide_liquidity(
         // off the contract.
         let mut expected_ask_asset_balance_in_contract = deps
             .querier
-            .query_balance(&env.contract.address, ask_denom.clone())?;
+            .query_balance(&env.contract.address, ask_asset_denom.clone())?;
 
         expected_ask_asset_balance_in_contract.amount = expected_ask_asset_balance_in_contract
             .amount
@@ -150,7 +143,7 @@ pub fn provide_liquidity(
                 offer_asset_half: swap_half.clone(),
                 expected_ask_asset: coin(
                     swap_simulation_response.return_amount.u128(),
-                    ask_denom.clone(),
+                    ask_asset_denom.clone(),
                 ),
                 liquidity_provision_data: LiquidityProvisionData {
                     max_spread,
@@ -167,7 +160,7 @@ pub fn provide_liquidity(
                 wasm_execute(
                     env.contract.address.into_string(),
                     &ExecuteMsg::Swap {
-                        ask_asset_denom: ask_denom,
+                        ask_asset_denom,
                         belief_price: None,
                         max_spread,
                         receiver: None,
