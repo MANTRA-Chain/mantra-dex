@@ -2409,6 +2409,7 @@ mod locking_lp {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
     use std::cell::RefCell;
 
+    use crate::ContractError;
     use amm::farm_manager::{Position, PositionsBy};
     use amm::fee::{Fee, PoolFee};
     use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
@@ -2988,6 +2989,154 @@ mod locking_lp {
                 receiver: creator.clone(),
             });
         });
+    }
+
+    #[test]
+    fn attacker_creates_farm_positions_through_pool_manager() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(10_000_000u128, "uwhale".to_string()),
+                coin(10_000_000u128, "uluna".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+        let attacker = suite.senders[1].clone();
+        let victim = suite.senders[2].clone();
+
+        println!("Creator: {}", creator);
+        println!("Attacker: {}", attacker);
+        println!("Victim: {}", victim);
+
+        let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_denoms,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            Some("whale.uluna".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    // Ensure we got 999_000 in the response which is 1_000_000 less the initial liquidity amount
+                    assert!(result.unwrap().events.iter().any(|event| {
+                        event.attributes.iter().any(|attr| {
+                            attr.key == "share"
+                                && attr.value
+                                    == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
+                                        .to_string()
+                        })
+                    }));
+                },
+            )
+            .provide_liquidity(
+                &attacker,
+                "whale.uluna".to_string(),
+                Some(86_400u64),
+                Some("spam_position".to_string()),
+                None,
+                Some(victim.to_string()),
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::Unauthorized => {}
+                        _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                    }
+                },
+            )
+            // user can only create positions in farm for himself
+            .provide_liquidity(
+                &attacker,
+                "whale.uluna".to_string(),
+                Some(86_400u64),
+                Some("legit_position".to_string()),
+                None,
+                Some(attacker.to_string()),
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        suite.query_farm_positions(Some(PositionsBy::Receiver(attacker.to_string())), None, None, None,|result| {
+            let positions = result.unwrap().positions;
+            // the position should be updated
+            assert_eq!(positions.len(), 1);
+            assert_eq!(positions[0], Position {
+                identifier: "u-legit_position".to_string(),
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::new(500_000u128)},
+                unlocking_duration: 86_400,
+                open: true,
+                expiring_at: None,
+                receiver: attacker.clone(),
+            });
+
+        })
+            .query_farm_positions(Some(PositionsBy::Receiver(victim.to_string())), None, None, None,|result| {
+                let positions = result.unwrap().positions;
+                assert!(positions.is_empty());
+            })
+        ;
     }
 }
 
