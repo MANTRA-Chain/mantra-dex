@@ -21,6 +21,12 @@ use crate::{
 pub const MAX_ASSETS_PER_POOL: usize = 4usize;
 pub const MIN_ASSETS_PER_POOL: usize = 2usize;
 
+/// The prefix used when creation a pool with an explicitly provided ID
+pub const EXPLICIT_POOL_ID_PREFIX: &str = "o.";
+
+/// The prefix used when creation a pool with an auto-generated ID
+pub const AUTO_POOL_ID_PREFIX: &str = "p.";
+
 /// Creates a pool with 2, 3, or N assets. The function dynamically handles different numbers of assets,
 /// allowing for the creation of pools with varying configurations. The maximum number of assets per pool is defined by
 /// the constant `MAX_ASSETS_PER_POOL`.
@@ -130,14 +136,15 @@ pub fn create_pool(
     pool_fees.is_valid()?;
 
     let identifier = if let Some(id) = pool_identifier {
-        id
+        format!("{EXPLICIT_POOL_ID_PREFIX}{id}")
     } else {
         // if no identifier is provided, use the pool counter (id) as identifier
-        POOL_COUNTER.update(deps.storage, |mut counter| -> Result<_, ContractError> {
-            counter += 1;
-            Ok(counter)
-        })?;
-        POOL_COUNTER.load(deps.storage)?.to_string()
+        let pool_counter =
+            POOL_COUNTER.update(deps.storage, |mut counter| -> Result<_, ContractError> {
+                counter += 1;
+                Ok(counter)
+            })?;
+        format!("{AUTO_POOL_ID_PREFIX}{pool_counter}")
     };
 
     validate_pool_identifier(&identifier)?;
