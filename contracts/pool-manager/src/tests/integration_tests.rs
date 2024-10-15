@@ -66,13 +66,13 @@ fn deposit_and_withdraw_sanity_check() {
     );
 
     let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+    let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
 
     // Let's try to add liquidity
     suite
         .provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -110,7 +110,7 @@ fn deposit_and_withdraw_sanity_check() {
         // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
         .query_all_balances(&contract_addr.to_string(), |result| {
             let balances = result.unwrap();
-            // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP
+            // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP
             assert!(balances.iter().any(|coin| {
                 coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
             }));
@@ -120,7 +120,7 @@ fn deposit_and_withdraw_sanity_check() {
     suite
         .withdraw_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             vec![Coin {
                 denom: lp_denom.clone(),
                 amount: Uint128::from(999_000u128),
@@ -138,9 +138,13 @@ fn deposit_and_withdraw_sanity_check() {
             },
         )
         // creator should have 0 LP shares in the contract and 0 LP shares in their account balance
-        .query_amount_of_lp_token("whale.uluna".to_string(), &creator.to_string(), |result| {
-            assert_eq!(result.unwrap(), Uint128::zero());
-        })
+        .query_amount_of_lp_token(
+            "o.whale.uluna".to_string(),
+            &creator.to_string(),
+            |result| {
+                assert_eq!(result.unwrap(), Uint128::zero());
+            },
+        )
         .query_balance(&creator.to_string(), lp_denom, |result| {
             assert_eq!(result.unwrap().amount, Uint128::zero());
         })
@@ -569,7 +573,7 @@ mod pool_creation_failures {
                 vec![6u8, 6u8],
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
-                Some("whale.uluna.pool.1".to_string()),
+                Some("o.whale.uluna.pool.1".to_string()),
                 vec![coin(1000, "uusd"), coin(8887, "uom")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -589,7 +593,7 @@ mod pool_creation_failures {
                 vec![6u8, 6u8],
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
-                Some("whale.uluna.pool.1".to_string()),
+                Some("o.whale.uluna.pool.1".to_string()),
                 vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     result.unwrap();
@@ -777,7 +781,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -802,7 +806,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "uluna.uusd".to_string(),
+            "o.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -825,18 +829,18 @@ mod router {
         );
 
         // Prepare the swap operations, we want to go from WHALE -> UUSD
-        // We will use the uluna.uusd pool as the intermediary pool
+        // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
-                pool_identifier: "whale.uluna".to_string(),
+                pool_identifier: "o.whale.uluna".to_string(),
             },
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
-                pool_identifier: "uluna.uusd".to_string(),
+                pool_identifier: "o.uluna.uusd".to_string(),
             },
         ];
 
@@ -958,7 +962,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -983,7 +987,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "uluna.uusd".to_string(),
+            "o.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -1089,7 +1093,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -1114,7 +1118,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "uluna.uusd".to_string(),
+            "o.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -1137,18 +1141,18 @@ mod router {
         );
 
         // Prepare the swap operations, we want to go from WHALE -> UUSD
-        // We will use the uluna.uusd pool as the intermediary pool
+        // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
-                pool_identifier: "whale.uluna".to_string(),
+                pool_identifier: "o.whale.uluna".to_string(),
             },
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
-                pool_identifier: "whale.uluna".to_string(),
+                pool_identifier: "o.whale.uluna".to_string(),
             },
         ];
 
@@ -1237,7 +1241,7 @@ mod router {
         let liquidity_amount = 1_000_000u128;
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -1262,7 +1266,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "uluna.uusd".to_string(),
+            "o.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -1285,18 +1289,18 @@ mod router {
         );
 
         // Prepare the swap operations, we want to go from WHALE -> UUSD
-        // We will use the uluna.uusd pool as the intermediary pool
+        // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
-                pool_identifier: "whale.uluna".to_string(),
+                pool_identifier: "o.whale.uluna".to_string(),
             },
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
-                pool_identifier: "uluna.uusd".to_string(),
+                pool_identifier: "o.uluna.uusd".to_string(),
             },
         ];
 
@@ -1453,7 +1457,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -1478,7 +1482,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "uluna.uusd".to_string(),
+            "o.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -1501,18 +1505,18 @@ mod router {
         );
 
         // Prepare the swap operations, we want to go from WHALE -> UUSD
-        // We will use the uluna.uusd pool as the intermediary pool
+        // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
-                pool_identifier: "whale.uluna".to_string(),
+                pool_identifier: "o.whale.uluna".to_string(),
             },
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
-                pool_identifier: "uluna.uusd".to_string(),
+                pool_identifier: "o.uluna.uusd".to_string(),
             },
         ];
 
@@ -1609,7 +1613,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -1634,7 +1638,7 @@ mod router {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "uluna.uusd".to_string(),
+            "o.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -1657,18 +1661,18 @@ mod router {
         );
 
         // Prepare the swap operations, we want to go from WHALE -> UUSD
-        // We will use the uluna.uusd pool as the intermediary pool
+        // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
-                pool_identifier: "whale.uluna".to_string(),
+                pool_identifier: "o.whale.uluna".to_string(),
             },
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
-                pool_identifier: "uluna.uusd".to_string(),
+                pool_identifier: "o.uluna.uusd".to_string(),
             },
         ];
 
@@ -1801,7 +1805,7 @@ mod swapping {
         );
 
         // Query pool info to ensure the query is working fine
-        suite.query_pools(Some("whale.uluna".to_string()), None, None, |result| {
+        suite.query_pools(Some("o.whale.uluna".to_string()), None, None, |result| {
             assert_eq!(
                 result.unwrap().pools[0].pool_info.asset_decimals,
                 vec![6u8, 6u8]
@@ -1812,7 +1816,7 @@ mod swapping {
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -1839,7 +1843,7 @@ mod swapping {
                     }));
                 },
             )
-            .query_pools(Some("whale.uluna".to_string()), None, None, |result| {
+            .query_pools(Some("o.whale.uluna".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 assert_eq!(
                     response.pools[0].total_share,
@@ -1852,7 +1856,7 @@ mod swapping {
 
         let simulated_return_amount = RefCell::new(Uint128::zero());
         suite.query_simulation(
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::from(1000u128),
@@ -1875,7 +1879,7 @@ mod swapping {
             None,
             None,
             None,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             vec![coin(1000u128, "uwhale".to_string())],
             |result| {
                 // Find the key with 'offer_amount' and the key with 'return_amount'
@@ -1913,7 +1917,7 @@ mod swapping {
 
         let simulated_offer_amount = RefCell::new(Uint128::zero());
         suite.query_reverse_simulation(
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::from(1000u128),
@@ -1931,7 +1935,7 @@ mod swapping {
             None,
             None,
             None,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             vec![coin(
                 simulated_offer_amount.borrow().u128(),
                 "uluna".to_string(),
@@ -2013,7 +2017,7 @@ mod swapping {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -2037,7 +2041,7 @@ mod swapping {
         );
         let simulated_return_amount = RefCell::new(Uint128::zero());
         suite.query_simulation(
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::from(1000u128),
@@ -2055,7 +2059,7 @@ mod swapping {
             None,
             None,
             None,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             vec![coin(1000u128, "uwhale".to_string())],
             |result| {
                 // Find the key with 'offer_amount' and the key with 'return_amount'
@@ -2093,7 +2097,7 @@ mod swapping {
 
         let simulated_offer_amount = RefCell::new(Uint128::zero());
         suite.query_reverse_simulation(
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::from(1000u128),
@@ -2111,7 +2115,7 @@ mod swapping {
             None,
             None,
             None,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             vec![coin(
                 simulated_offer_amount.borrow().u128(),
                 "uluna".to_string(),
@@ -2193,7 +2197,7 @@ mod swapping {
         // Let's try to add liquidity, 1000 of each token.
         suite.provide_liquidity(
             &creator,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             None,
             None,
             None,
@@ -2235,7 +2239,7 @@ mod swapping {
             None,
             Some(Decimal::percent(1)),
             None,
-            "whale.uluna".to_string(),
+            "o.whale.uluna".to_string(),
             vec![coin(10000000u128, "uwhale".to_string())],
             |result| {
                 // Find the key with 'offer_amount' and the key with 'return_amount'
@@ -2465,13 +2469,13 @@ mod locking_lp {
 
         let contract_addr = suite.pool_manager_addr.clone();
         let farm_manager_addr = suite.farm_manager_addr.clone();
-        let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+        let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
 
         // Let's try to add liquidity
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(86_400u64),
                 None,
                 None,
@@ -2525,7 +2529,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "p-1".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -2545,7 +2549,7 @@ mod locking_lp {
             })
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(200_000u64),
                 None,
                 None,
@@ -2594,7 +2598,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
                 identifier: "p-1".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -2602,7 +2606,7 @@ mod locking_lp {
             });
             assert_eq!(positions[1], Position {
                 identifier: "p-2".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(1_996u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(1_996u128) },
                 unlocking_duration: 200_000,
                 open: true,
                 expiring_at: None,
@@ -2658,13 +2662,13 @@ mod locking_lp {
 
         let contract_addr = suite.pool_manager_addr.clone();
         let farm_manager_addr = suite.farm_manager_addr.clone();
-        let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+        let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
 
         // Let's try to add liquidity
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(86_400u64),
                 Some("farm_identifier".to_string()),
                 None,
@@ -2718,7 +2722,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "u-farm_identifier".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -2738,7 +2742,7 @@ mod locking_lp {
             })
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(200_000u64),
                 Some("u-farm_identifier".to_string()),
                 None,
@@ -2788,7 +2792,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "u-farm_identifier".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: farm_manager_lp_amount.borrow().clone() },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: farm_manager_lp_amount.borrow().clone() },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -2844,13 +2848,13 @@ mod locking_lp {
 
         let contract_addr = suite.pool_manager_addr.clone();
         let farm_manager_addr = suite.farm_manager_addr.clone();
-        let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+        let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
 
         // Let's try to add liquidity
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(86_400u64),
                 Some("farm_identifier".to_string()),
                 None,
@@ -2904,7 +2908,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "u-farm_identifier".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -2924,7 +2928,7 @@ mod locking_lp {
             })
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(200_000u64),
                 None,
                 None,
@@ -2974,7 +2978,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
                 identifier: "p-1".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::new(1_996u128)},
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(1_996u128)},
                 unlocking_duration: 200_000,
                 open: true,
                 expiring_at: None,
@@ -2982,7 +2986,7 @@ mod locking_lp {
             });
             assert_eq!(positions[1], Position {
                 identifier: "u-farm_identifier".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::new(999_000u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(999_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -3005,10 +3009,6 @@ mod locking_lp {
         let creator = suite.creator();
         let attacker = suite.senders[1].clone();
         let victim = suite.senders[2].clone();
-
-        println!("Creator: {}", creator);
-        println!("Attacker: {}", attacker);
-        println!("Victim: {}", victim);
 
         let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
 
@@ -3043,7 +3043,7 @@ mod locking_lp {
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -3072,7 +3072,7 @@ mod locking_lp {
             )
             .provide_liquidity(
                 &attacker,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(86_400u64),
                 Some("spam_position".to_string()),
                 None,
@@ -3098,7 +3098,7 @@ mod locking_lp {
             // user can only create positions in farm for himself
             .provide_liquidity(
                 &attacker,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 Some(86_400u64),
                 Some("legit_position".to_string()),
                 None,
@@ -3124,7 +3124,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "u-legit_position".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP".to_string(), amount: Uint128::new(500_000u128)},
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(500_000u128)},
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -3200,13 +3200,13 @@ mod provide_liquidity {
         );
 
         let contract_addr = suite.pool_manager_addr.clone();
-        let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+        let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
 
         // Let's try to add liquidity
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None, None,
                 None,
@@ -3222,7 +3222,7 @@ mod provide_liquidity {
             )
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None, None,
                 None,
@@ -3241,7 +3241,7 @@ mod provide_liquidity {
             )
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None, None,
                 None,
@@ -3265,7 +3265,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -3291,7 +3291,7 @@ mod provide_liquidity {
             )
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -3320,7 +3320,7 @@ mod provide_liquidity {
             // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
             .query_all_balances(&contract_addr.to_string(), |result| {
                 let balances = result.unwrap();
-                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP
+                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
                 }));
@@ -3330,7 +3330,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &other,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -3355,7 +3355,7 @@ mod provide_liquidity {
             )
             .provide_liquidity(
                 &other,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 Some(Decimal::percent(50)),
@@ -3384,19 +3384,19 @@ mod provide_liquidity {
             })
             .query_all_balances(&contract_addr.to_string(), |result| {
                 let balances = result.unwrap();
-                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP
+                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
                 }));
             });
 
         suite
-            .query_lp_supply("whale.uluna".to_string(), |res| {
+            .query_lp_supply("o.whale.uluna".to_string(), |res| {
                 // total amount of LP tokens issued should be 1_009_511 = 999_000 to the first LP,
                 // 1_000 to the contract, and 9_511 to the second, single-side LP
                 assert_eq!(res.unwrap().amount, Uint128::from(1_009_702u128));
             })
-            .query_pools(Some("whale.uluna".to_string()), None, None, |res| {
+            .query_pools(Some("o.whale.uluna".to_string()), None, None, |res| {
                 let response = res.unwrap();
 
                 let whale = response.pools[0]
@@ -3473,7 +3473,7 @@ mod provide_liquidity {
             })
             .withdraw_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 vec![Coin {
                     denom: lp_denom.clone(),
                     amount: Uint128::from(999_000u128),
@@ -3548,7 +3548,7 @@ mod provide_liquidity {
             })
             .withdraw_liquidity(
                 &other,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 vec![Coin {
                     denom: lp_denom.clone(),
                     amount: Uint128::from(9_702u128),
@@ -3657,7 +3657,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -3685,7 +3685,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &other,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 Some(Decimal::percent(50)),
@@ -3704,7 +3704,7 @@ mod provide_liquidity {
             )
             .provide_liquidity(
                 &other,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 Some(Decimal::percent(50)),
@@ -3723,7 +3723,7 @@ mod provide_liquidity {
             )
             .provide_liquidity(
                 &other,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 Some(Decimal::percent(50)),
@@ -3784,13 +3784,13 @@ mod provide_liquidity {
         );
 
         let contract_addr = suite.pool_manager_addr.clone();
-        let lp_denom = suite.get_lp_denom("whale.uluna".to_string());
+        let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
 
         // let's provide liquidity with two assets
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -3820,7 +3820,7 @@ mod provide_liquidity {
             // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
             .query_all_balances(&contract_addr.to_string(), |result| {
                 let balances = result.unwrap();
-                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.LP
+                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
                 }));
@@ -3831,7 +3831,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &other,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -3912,7 +3912,7 @@ mod provide_liquidity {
         // Let's try to add liquidity
         suite.provide_liquidity(
             &creator,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -3940,7 +3940,7 @@ mod provide_liquidity {
         );
         let simulated_return_amount = RefCell::new(Uint128::zero());
         suite.query_simulation(
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::from(1_000u128),
@@ -3958,7 +3958,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             vec![coin(1_000u128, "uwhale".to_string())],
             |result| {
                 // Find the key with 'offer_amount' and the key with 'return_amount'
@@ -3997,7 +3997,7 @@ mod provide_liquidity {
         let simulated_offer_amount = RefCell::new(Uint128::zero());
         // Now Let's try a reverse simulation by swapping uluna to uwhale
         suite.query_reverse_simulation(
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::from(1000u128),
@@ -4015,7 +4015,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             vec![coin(
                 simulated_offer_amount.borrow().u128(),
                 "uluna".to_string(),
@@ -4049,7 +4049,7 @@ mod provide_liquidity {
 
         // And now uwhale to uusd
         suite.query_reverse_simulation(
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             Coin {
                 denom: "uusd".to_string(),
                 amount: Uint128::from(1000u128),
@@ -4066,7 +4066,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             vec![coin(
                 simulated_return_amount.borrow().u128(),
                 "uwhale".to_string(),
@@ -4099,7 +4099,7 @@ mod provide_liquidity {
 
         // And now uusd to uluna
         suite.query_reverse_simulation(
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             Coin {
                 denom: "uluna".to_string(),
                 amount: Uint128::from(1000u128),
@@ -4116,7 +4116,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             vec![coin(
                 simulated_offer_amount.borrow().u128(),
                 "uusd".to_string(),
@@ -4196,13 +4196,13 @@ mod provide_liquidity {
             },
         );
 
-        let lp_denom = suite.get_lp_denom("uusdc.uusdt.uusdy".to_string());
+        let lp_denom = suite.get_lp_denom("o.uusdc.uusdt.uusdy".to_string());
 
         // Let's try to add liquidity
         suite
             .provide_liquidity(
                 &creator,
-                "uusdc.uusdt.uusdy".to_string(),
+                "o.uusdc.uusdt.uusdy".to_string(),
                 None,
                 None,
                 None,
@@ -4237,7 +4237,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &creator,
-                "uusdc.uusdt.uusdy".to_string(),
+                "o.uusdc.uusdt.uusdy".to_string(),
                 None,
                 None,
                 None,
@@ -4270,7 +4270,7 @@ mod provide_liquidity {
 
         let simulated_return_amount = RefCell::new(Uint128::zero());
         suite.query_simulation(
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             Coin {
                 denom: "uusdc".to_string(),
                 amount: Uint128::from(1_000u128),
@@ -4288,7 +4288,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             vec![coin(1_000u128, "uusdc".to_string())],
             |result| {
                 // Find the key with 'offer_amount' and the key with 'return_amount'
@@ -4327,7 +4327,7 @@ mod provide_liquidity {
         let simulated_offer_amount = RefCell::new(Uint128::zero());
         // Now Let's try a reverse simulation by swapping uluna to uwhale
         suite.query_reverse_simulation(
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             Coin {
                 denom: "uusdc".to_string(),
                 amount: Uint128::from(1000u128),
@@ -4345,7 +4345,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             vec![coin(
                 simulated_offer_amount.borrow().u128(),
                 "uusdt".to_string(),
@@ -4379,7 +4379,7 @@ mod provide_liquidity {
 
         // And now uusdc to uusdy
         suite.query_reverse_simulation(
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             Coin {
                 denom: "uusdy".to_string(),
                 amount: Uint128::from(1000u128),
@@ -4396,7 +4396,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             vec![coin(
                 simulated_return_amount.borrow().u128(),
                 "uusdc".to_string(),
@@ -4429,7 +4429,7 @@ mod provide_liquidity {
 
         // And now uusdy to uusdt
         suite.query_reverse_simulation(
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             Coin {
                 denom: "uusdt".to_string(),
                 amount: Uint128::from(1000u128),
@@ -4446,7 +4446,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "uusdc.uusdt.uusdy".to_string(),
+            "o.uusdc.uusdt.uusdy".to_string(),
             vec![coin(
                 simulated_offer_amount.borrow().u128(),
                 "uusdy".to_string(),
@@ -4480,7 +4480,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &creator,
-                "uusdc.uusdt.uusdy".to_string(),
+                "o.uusdc.uusdt.uusdy".to_string(),
                 None,
                 None,
                 None,
@@ -4515,7 +4515,7 @@ mod provide_liquidity {
         suite
             .provide_liquidity(
                 &alice,
-                "uusdc.uusdt.uusdy".to_string(),
+                "o.uusdc.uusdt.uusdy".to_string(),
                 None,
                 None,
                 None,
@@ -4598,7 +4598,7 @@ mod provide_liquidity {
         // Adding liquidity with less than the minimum liquidity amount should fail
         suite.provide_liquidity(
             &creator,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -4636,7 +4636,7 @@ mod provide_liquidity {
         // Let's try to add liquidity with the correct amount (1_000_000 of each asset)
         suite.provide_liquidity(
             &creator,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             None,
             None,
             None,
@@ -4673,7 +4673,7 @@ mod provide_liquidity {
 
         let simulated_return_amount = RefCell::new(Uint128::zero());
         suite.query_simulation(
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             Coin {
                 denom: "uwhale".to_string(),
                 amount: Uint128::from(1_000u128),
@@ -4691,7 +4691,7 @@ mod provide_liquidity {
             None,
             None,
             None,
-            "whale.uluna.uusd".to_string(),
+            "o.whale.uluna.uusd".to_string(),
             vec![coin(1_000u128, "uwhale".to_string())],
             |result| {
                 // Find the key with 'offer_amount' and the key with 'return_amount'
@@ -4811,9 +4811,9 @@ mod multiple_pools {
             .query_pools(None, None, None, |result| {
                 let response = result.unwrap();
                 assert_eq!(response.pools.len(), 3);
-                assert_eq!(response.pools[0].pool_info.pool_identifier, "1");
-                assert_eq!(response.pools[1].pool_info.pool_identifier, "pool.1");
-                assert_eq!(response.pools[2].pool_info.pool_identifier, "pool.2");
+                assert_eq!(response.pools[0].pool_info.pool_identifier, "o.pool.1");
+                assert_eq!(response.pools[1].pool_info.pool_identifier, "o.pool.2");
+                assert_eq!(response.pools[2].pool_info.pool_identifier, "p.1");
             });
     }
     #[test]
@@ -4918,7 +4918,7 @@ mod multiple_pools {
         suite
             .provide_liquidity(
                 &creator,
-                "whale.uluna".to_string(),
+                "o.whale.uluna".to_string(),
                 None,
                 None,
                 None,
@@ -4943,7 +4943,7 @@ mod multiple_pools {
             )
             .provide_liquidity(
                 &creator,
-                "whale.uluna.pool.1".to_string(),
+                "o.whale.uluna.pool.1".to_string(),
                 None,
                 None,
                 None,
@@ -4964,7 +4964,7 @@ mod multiple_pools {
             )
             .provide_liquidity(
                 &other,
-                "whale.uluna.pool.2".to_string(),
+                "o.whale.uluna.pool.2".to_string(),
                 None,
                 None,
                 None,
@@ -4985,7 +4985,7 @@ mod multiple_pools {
             )
             .provide_liquidity(
                 &other,
-                "uluna.uusd.pool.1".to_string(),
+                "o.uluna.uusd.pool.1".to_string(),
                 None,
                 None,
                 None,
@@ -5010,15 +5010,15 @@ mod multiple_pools {
                     balances,
                     vec![
                         Coin {
-                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/uluna.uusd.pool.1.LP".to_string(),
+                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.uluna.uusd.pool.1.LP".to_string(),
                             amount: Uint128::from(1_000u128),
                         },
                         Coin {
-                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.1.LP".to_string(),
+                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP".to_string(),
                             amount: Uint128::from(1_000u128),
                         },
                         Coin {
-                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.2.LP".to_string(),
+                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.2.LP".to_string(),
                             amount: Uint128::from(1_000u128),
                         },
                         Coin {
@@ -5037,7 +5037,7 @@ mod multiple_pools {
                 );
             });
 
-        // let's do swaps in whale.uluna.pool.1 and verify the fees are channeled correctly
+        // let's do swaps in o.whale.uluna.pool.1 and verify the fees are channeled correctly
         suite
             .swap(
                 &creator,
@@ -5045,13 +5045,13 @@ mod multiple_pools {
                 None,
                 None,
                 None,
-                "whale.uluna.pool.1".to_string(),
+                "o.whale.uluna.pool.1".to_string(),
                 vec![coin(1000u128, "uwhale".to_string())],
                 |result| {
                     result.unwrap();
                 },
             )
-            .query_pools(Some("whale.uluna.pool.1".to_string()), None, None, |result| {
+            .query_pools(Some("o.whale.uluna.pool.1".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -5064,9 +5064,9 @@ mod multiple_pools {
                 // Going out of the pool is 99 (fee collector) + 29 (burned)
 
                 assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: "whale.uluna.pool.1".to_string(),
+                    pool_identifier: "o.whale.uluna.pool.1".to_string(),
                     asset_denoms: vec!["uwhale".to_string(), "uluna".to_string()],
-                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.1.LP".to_string(),
+                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP".to_string(),
                     asset_decimals: vec![6u8, 6u8],
                     assets: vec![coin(1001000, "uwhale"), coin(999070, "uluna")],
                     pool_type: PoolType::ConstantProduct,
@@ -5089,13 +5089,13 @@ mod multiple_pools {
                 None,
                 None,
                 None,
-                "whale.uluna.pool.1".to_string(),
+                "o.whale.uluna.pool.1".to_string(),
                 vec![coin(2_000u128, "uluna".to_string())],
                 |result| {
                     result.unwrap();
                 },
             )
-            .query_pools(Some("whale.uluna.pool.1".to_string()), None, None, |result| {
+            .query_pools(Some("o.whale.uluna.pool.1".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -5108,9 +5108,9 @@ mod multiple_pools {
                 // Going out of the pool is 199 (fee collector) + 59 (burned)
 
                 assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: "whale.uluna.pool.1".to_string(),
+                    pool_identifier: "o.whale.uluna.pool.1".to_string(),
                     asset_denoms: vec!["uwhale".to_string(), "uluna".to_string()],
-                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.1.LP".to_string(),
+                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP".to_string(),
                     asset_decimals: vec![6u8, 6u8],
                     assets: vec![coin(999_140, "uwhale"), coin(1_001_070, "uluna")],
                     pool_type: PoolType::ConstantProduct,
@@ -5127,7 +5127,7 @@ mod multiple_pools {
                 assert_eq!(result.unwrap(), coin(99, "uluna"));
             });
 
-        // let's do swaps in whale.uluna.pool.2 and verify the fees are channeled correctly
+        // let's do swaps in o.whale.uluna.pool.2 and verify the fees are channeled correctly
         suite
             .swap(
                 &creator,
@@ -5135,13 +5135,13 @@ mod multiple_pools {
                 None,
                 None,
                 None,
-                "whale.uluna.pool.2".to_string(),
+                "o.whale.uluna.pool.2".to_string(),
                 vec![coin(1000u128, "uwhale".to_string())],
                 |result| {
                     result.unwrap();
                 },
             )
-            .query_pools(Some("whale.uluna.pool.2".to_string()), None, None, |result| {
+            .query_pools(Some("o.whale.uluna.pool.2".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -5154,9 +5154,9 @@ mod multiple_pools {
                 // Going out of the pool is 49 (burned)
 
                 assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: "whale.uluna.pool.2".to_string(),
+                    pool_identifier: "o.whale.uluna.pool.2".to_string(),
                     asset_denoms: vec!["uwhale".to_string(), "uluna".to_string()],
-                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.2.LP".to_string(),
+                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.2.LP".to_string(),
                     asset_decimals: vec![6u8, 6u8],
                     assets: vec![coin(1001000, "uwhale"), coin(999_150, "uluna")],
                     pool_type: PoolType::ConstantProduct,
@@ -5172,13 +5172,13 @@ mod multiple_pools {
                 None,
                 None,
                 None,
-                "whale.uluna.pool.2".to_string(),
+                "o.whale.uluna.pool.2".to_string(),
                 vec![coin(2_000u128, "uluna".to_string())],
                 |result| {
                     result.unwrap();
                 },
             )
-            .query_pools(Some("whale.uluna.pool.2".to_string()), None, None, |result| {
+            .query_pools(Some("o.whale.uluna.pool.2".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -5191,9 +5191,9 @@ mod multiple_pools {
                 // Going out of the pool is 99 (burned)
 
                 assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: "whale.uluna.pool.2".to_string(),
+                    pool_identifier: "o.whale.uluna.pool.2".to_string(),
                     asset_denoms: vec!["uwhale".to_string(), "uluna".to_string()],
-                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.2.LP".to_string(),
+                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.2.LP".to_string(),
                     asset_decimals: vec![6u8, 6u8],
                     assets: vec![coin(999_300, "uwhale"), coin(1_001_150, "uluna")],
                     pool_type: PoolType::ConstantProduct,
@@ -5211,7 +5211,7 @@ mod multiple_pools {
                 assert_eq!(result.unwrap(), coin(99, "uluna"));
             });
 
-        // let's do swaps in uluna.uusd.pool.1 and verify the fees are channeled correctly
+        // let's do swaps in o.uluna.uusd.pool.1 and verify the fees are channeled correctly
         suite
             .swap(
                 &creator,
@@ -5219,13 +5219,13 @@ mod multiple_pools {
                 None,
                 None,
                 None,
-                "uluna.uusd.pool.1".to_string(),
+                "o.uluna.uusd.pool.1".to_string(),
                 vec![coin(3000u128, "uluna".to_string())],
                 |result| {
                     result.unwrap();
                 },
             )
-            .query_pools(Some("uluna.uusd.pool.1".to_string()), None, None, |result| {
+            .query_pools(Some("o.uluna.uusd.pool.1".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -5238,9 +5238,9 @@ mod multiple_pools {
                 // Going out of the pool is 299 (fee collector) + 89 (burned)
 
                 assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: "uluna.uusd.pool.1".to_string(),
+                    pool_identifier: "o.uluna.uusd.pool.1".to_string(),
                     asset_denoms: vec!["uluna".to_string(), "uusd".to_string()],
-                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/uluna.uusd.pool.1.LP".to_string(),
+                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.uluna.uusd.pool.1.LP".to_string(),
                     asset_decimals: vec![6u8, 6u8],
                     assets: vec![coin(1003000, "uluna"), coin(997_218, "uusd")],
                     pool_type: PoolType::ConstantProduct,
@@ -5261,13 +5261,13 @@ mod multiple_pools {
                 None,
                 None,
                 None,
-                "uluna.uusd.pool.1".to_string(),
+                "o.uluna.uusd.pool.1".to_string(),
                 vec![coin(1_500u128, "uusd".to_string())],
                 |result| {
                     result.unwrap();
                 },
             )
-            .query_pools(Some("uluna.uusd.pool.1".to_string()), None, None, |result| {
+            .query_pools(Some("o.uluna.uusd.pool.1".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -5280,9 +5280,9 @@ mod multiple_pools {
                 // Going out of the pool is 150 (fee collector) + 45 (burned)
 
                 assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: "uluna.uusd.pool.1".to_string(),
+                    pool_identifier: "o.uluna.uusd.pool.1".to_string(),
                     asset_denoms: vec!["uluna".to_string(), "uusd".to_string()],
-                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/uluna.uusd.pool.1.LP".to_string(),
+                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.uluna.uusd.pool.1.LP".to_string(),
                     asset_decimals: vec![6u8, 6u8],
                     assets: vec![coin(1_001_599, "uluna"), coin(998_718, "uusd")],
                     pool_type: PoolType::ConstantProduct,
@@ -5321,15 +5321,15 @@ mod multiple_pools {
                     let balances = result.unwrap();
                     assert_eq!(balances, vec![
                         Coin {
-                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/uluna.uusd.pool.1.LP".to_string(),
+                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.uluna.uusd.pool.1.LP".to_string(),
                             amount: Uint128::from(1_000u128),
                         },
                         Coin {
-                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.1.LP".to_string(),
+                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP".to_string(),
                             amount: Uint128::from(1_000u128),
                         },
                         Coin {
-                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.2.LP".to_string(),
+                            denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.2.LP".to_string(),
                             amount: Uint128::from(1_000u128),
                         },
                         Coin {
@@ -5353,12 +5353,12 @@ mod multiple_pools {
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
-                pool_identifier: "whale.uluna.pool.2".to_string(),
+                pool_identifier: "o.whale.uluna.pool.2".to_string(),
             },
             amm::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
-                pool_identifier: "uluna.uusd.pool.1".to_string(),
+                pool_identifier: "o.uluna.uusd.pool.1".to_string(),
             },
         ];
 
@@ -5372,22 +5372,22 @@ mod multiple_pools {
             |result| {
                 result.unwrap();
             },
-        ).query_pools(Some("whale.uluna.pool.1".to_string()), None, None, |result| {
+        ).query_pools(Some("o.whale.uluna.pool.1".to_string()), None, None, |result| {
             let response = result.unwrap();
             let pool_info = response.pools[0].pool_info.clone();
 
             // this should have not changed since last time, since we didn't touch this pool
             assert_eq!(pool_info, PoolInfo {
-                pool_identifier: "whale.uluna.pool.1".to_string(),
+                pool_identifier: "o.whale.uluna.pool.1".to_string(),
                 asset_denoms: vec!["uwhale".to_string(), "uluna".to_string()],
-                lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.1.LP".to_string(),
+                lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP".to_string(),
                 asset_decimals: vec![6u8, 6u8],
                 assets: vec![coin(999_140, "uwhale"), coin(1_001_070, "uluna")],
                 pool_type: PoolType::ConstantProduct,
                 pool_fees: pool_fees_1.clone(),
             });
         })
-            .query_pools(Some("whale.uluna.pool.2".to_string()), None, None, |result| {
+            .query_pools(Some("o.whale.uluna.pool.2".to_string()), None, None, |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -5397,15 +5397,15 @@ mod multiple_pools {
                 // protocol_fee_amount: Uint128(0), burn_fee_amount: Uint128(249) }
 
                 assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: "whale.uluna.pool.2".to_string(),
+                    pool_identifier: "o.whale.uluna.pool.2".to_string(),
                     asset_denoms: vec!["uwhale".to_string(), "uluna".to_string()],
-                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.2.LP".to_string(),
+                    lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.2.LP".to_string(),
                     asset_decimals: vec![6u8, 6u8],
                     assets: vec![coin(1_004_300, "uwhale"), coin(996_913, "uluna")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_2.clone(),
                 });
-            }).query_pools(Some("uluna.uusd.pool.1".to_string()),None, None, |result| {
+            }).query_pools(Some("o.uluna.uusd.pool.1".to_string()),None, None, |result| {
             let response = result.unwrap();
             let pool_info = response.pools[0].pool_info.clone();
 
@@ -5415,9 +5415,9 @@ mod multiple_pools {
             // protocol_fee_amount: Uint128(396), burn_fee_amount: Uint128(118) }
 
             assert_eq!(pool_info, PoolInfo {
-                pool_identifier: "uluna.uusd.pool.1".to_string(),
+                pool_identifier: "o.uluna.uusd.pool.1".to_string(),
                 asset_denoms: vec!["uluna".to_string(), "uusd".to_string()],
-                lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/uluna.uusd.pool.1.LP".to_string(),
+                lp_denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.uluna.uusd.pool.1.LP".to_string(),
                 asset_decimals: vec![6u8, 6u8],
                 assets: vec![coin(1_005_587, "uluna"), coin(995_035, "uusd")],
                 pool_type: PoolType::ConstantProduct,
@@ -5430,7 +5430,7 @@ mod multiple_pools {
             |result| {
                 let balances = result.unwrap();
                 assert_eq!(balances, vec![
-                    // the whale.uluna.pool.2 doesn't have protocol fees, hence no luna was accrued
+                    // the o.whale.uluna.pool.2 doesn't have protocol fees, hence no luna was accrued
                     // in the last swap
                     Coin {
                         denom: "uluna".to_string(),
@@ -5452,15 +5452,15 @@ mod multiple_pools {
                 let balances = result.unwrap();
                 assert_eq!(balances, vec![
                     Coin {
-                        denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/uluna.uusd.pool.1.LP".to_string(),
+                        denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.uluna.uusd.pool.1.LP".to_string(),
                         amount: Uint128::from(1_000u128),
                     },
                     Coin {
-                        denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.1.LP".to_string(),
+                        denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP".to_string(),
                         amount: Uint128::from(1_000u128),
                     },
                     Coin {
-                        denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/whale.uluna.pool.2.LP".to_string(),
+                        denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.2.LP".to_string(),
                         amount: Uint128::from(1_000u128),
                     },
                     Coin {
@@ -5486,15 +5486,15 @@ mod multiple_pools {
                 assert_eq!(response.pools.len(), 3);
                 assert_eq!(
                     response.pools[0].pool_info.pool_identifier,
-                    "uluna.uusd.pool.1"
+                    "o.uluna.uusd.pool.1"
                 );
                 assert_eq!(
                     response.pools[1].pool_info.pool_identifier,
-                    "whale.uluna.pool.1"
+                    "o.whale.uluna.pool.1"
                 );
                 assert_eq!(
                     response.pools[2].pool_info.pool_identifier,
-                    "whale.uluna.pool.2"
+                    "o.whale.uluna.pool.2"
                 );
             })
             .query_pools(None, None, Some(2), |result| {
@@ -5502,40 +5502,40 @@ mod multiple_pools {
                 assert_eq!(response.pools.len(), 2);
                 assert_eq!(
                     response.pools[0].pool_info.pool_identifier,
-                    "uluna.uusd.pool.1"
+                    "o.uluna.uusd.pool.1"
                 );
                 assert_eq!(
                     response.pools[1].pool_info.pool_identifier,
-                    "whale.uluna.pool.1"
+                    "o.whale.uluna.pool.1"
                 );
             })
             .query_pools(
                 None,
-                Some("uluna.uusd.pool.1".to_string()),
+                Some("o.uluna.uusd.pool.1".to_string()),
                 None,
                 |result| {
                     let response = result.unwrap();
                     assert_eq!(response.pools.len(), 2);
                     assert_eq!(
                         response.pools[0].pool_info.pool_identifier,
-                        "whale.uluna.pool.1"
+                        "o.whale.uluna.pool.1"
                     );
                     assert_eq!(
                         response.pools[1].pool_info.pool_identifier,
-                        "whale.uluna.pool.2"
+                        "o.whale.uluna.pool.2"
                     );
                 },
             )
             .query_pools(
                 None,
-                Some("whale.uluna.pool.1".to_string()),
+                Some("o.whale.uluna.pool.1".to_string()),
                 None,
                 |result| {
                     let response = result.unwrap();
                     assert_eq!(response.pools.len(), 1);
                     assert_eq!(
                         response.pools[0].pool_info.pool_identifier,
-                        "whale.uluna.pool.2"
+                        "o.whale.uluna.pool.2"
                     );
                 },
             );
@@ -5660,5 +5660,101 @@ mod multiple_pools {
                     result.unwrap();
                 },
             );
+    }
+
+    #[test]
+    fn cant_create_pool_with_bogus_identifier() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uusdy".to_string()),
+                coin(1_000_000_000u128, "uusdc".to_string()),
+                coin(1_000_000_000u128, "uusdt".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(10),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(7),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create pools
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                vec![
+                    "uusdy".to_string(),
+                    "uusdc".to_string(),
+                    "uusdt".to_string(),
+                    "uusd".to_string(),
+                ],
+                vec![6u8, 6u8, 6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::StableSwap { amp: 80 },
+                Some("1".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uom".to_string(), "uusdc".to_string()],
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_pools(Some("1".to_string()), None, None, |result| {
+                let err = result.unwrap_err();
+                assert!(err.to_string().contains("not found"));
+            })
+            .query_pools(None, None, None, |result| {
+                let response = result.unwrap();
+                assert_eq!(response.pools.len(), 2);
+                assert_eq!(response.pools[0].pool_info.pool_identifier, "o.1");
+                assert_eq!(response.pools[1].pool_info.pool_identifier, "p.1");
+            });
+
+        suite.create_pool(
+            &creator,
+            vec![
+                "uusdy".to_string(),
+                "uusdc".to_string(),
+                "uusdt".to_string(),
+                "uusd".to_string(),
+            ],
+            vec![6u8, 6u8, 6u8, 6u8],
+            pool_fees.clone(),
+            PoolType::StableSwap { amp: 80 },
+            Some("1".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::PoolExists { .. } => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::PoolExists")
+                    }
+                }
+            },
+        );
     }
 }

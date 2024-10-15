@@ -557,7 +557,7 @@ fn create_farms() {
             assert_eq!(farms_response.farms.len(), 2);
         })
         .query_farms(
-            Some(FarmsBy::Identifier("farm_1".to_string())),
+            Some(FarmsBy::Identifier("m-farm_1".to_string())),
             None,
             None,
             |result| {
@@ -573,7 +573,7 @@ fn create_farms() {
             },
         )
         .query_farms(
-            Some(FarmsBy::Identifier("1".to_string())),
+            Some(FarmsBy::Identifier("f-1".to_string())),
             None,
             None,
             |result| {
@@ -666,7 +666,7 @@ fn expand_farms() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    farm_identifier: Some("farm_1".to_string()),
+                    farm_identifier: Some("m-farm_1".to_string()),
                 },
             },
             vec![coin(4_000, "uusdy")],
@@ -691,7 +691,7 @@ fn expand_farms() {
                         denom: "uom".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    farm_identifier: Some("farm_1".to_string()),
+                    farm_identifier: Some("m-farm_1".to_string()),
                 },
             },
             vec![coin(8_000, "uom")],
@@ -715,7 +715,7 @@ fn expand_farms() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_100u128),
                     },
-                    farm_identifier: Some("farm_1".to_string()),
+                    farm_identifier: Some("m-farm_1".to_string()),
                 },
             },
             vec![coin(4_100, "uusdy")],
@@ -742,7 +742,7 @@ fn expand_farms() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_100u128),
                     },
-                    farm_identifier: Some("farm_1".to_string()),
+                    farm_identifier: Some("m-farm_1".to_string()),
                 },
             },
             vec![], // sending no funds when expanding a farm should fail
@@ -769,7 +769,7 @@ fn expand_farms() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_100u128),
                     },
-                    farm_identifier: Some("farm_1".to_string()),
+                    farm_identifier: Some("m-farm_1".to_string()),
                 },
             },
             vec![coin(4_100u128, "uom"), coin(4_100u128, "uusdy")], // sending different funds than the one provided in the params should fail
@@ -796,7 +796,7 @@ fn expand_farms() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(4_100u128),
                     },
-                    farm_identifier: Some("farm_1".to_string()),
+                    farm_identifier: Some("m-farm_1".to_string()),
                 },
             },
             vec![coin(4_100u128, "uom")], // sending different funds than the one provided in the params should fail
@@ -810,7 +810,7 @@ fn expand_farms() {
             },
         )
         .query_farms(
-            Some(FarmsBy::Identifier("farm_1".to_string())),
+            Some(FarmsBy::Identifier("m-farm_1".to_string())),
             None,
             None,
             |result| {
@@ -839,7 +839,7 @@ fn expand_farms() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(5_000u128),
                     },
-                    farm_identifier: Some("farm_1".to_string()),
+                    farm_identifier: Some("m-farm_1".to_string()),
                 },
             },
             vec![coin(5_000u128, "uusdy")],
@@ -848,7 +848,7 @@ fn expand_farms() {
             },
         )
         .query_farms(
-            Some(FarmsBy::Identifier("farm_1".to_string())),
+            Some(FarmsBy::Identifier("m-farm_1".to_string())),
             None,
             None,
             |result| {
@@ -915,7 +915,7 @@ fn close_farms() {
         .manage_farm(
             &other,
             FarmAction::Close {
-                farm_identifier: "farm_1".to_string(),
+                farm_identifier: "m-farm_1".to_string(),
             },
             vec![coin(1_000, "uom")],
             |result| {
@@ -929,7 +929,7 @@ fn close_farms() {
         .manage_farm(
             &other,
             FarmAction::Close {
-                farm_identifier: "farm_2".to_string(),
+                farm_identifier: "m-farm_2".to_string(),
             },
             vec![],
             |result| {
@@ -944,7 +944,7 @@ fn close_farms() {
         .manage_farm(
             &another,
             FarmAction::Close {
-                farm_identifier: "farm_1".to_string(),
+                farm_identifier: "m-farm_1".to_string(),
             },
             vec![],
             |result| {
@@ -962,7 +962,7 @@ fn close_farms() {
         .manage_farm(
             &other,
             FarmAction::Close {
-                farm_identifier: "farm_1".to_string(),
+                farm_identifier: "m-farm_1".to_string(),
             },
             vec![],
             |result| {
@@ -1029,7 +1029,7 @@ fn close_farms() {
             result.unwrap();
         })
         .query_farms(
-            Some(FarmsBy::Identifier("farm_x".to_string())),
+            Some(FarmsBy::Identifier("m-farm_x".to_string())),
             None,
             None,
             |result| {
@@ -1055,7 +1055,7 @@ fn close_farms() {
         .manage_farm(
             &other,
             FarmAction::Close {
-                farm_identifier: "farm_x".to_string(),
+                farm_identifier: "m-farm_x".to_string(),
             },
             vec![],
             |result| {
@@ -3011,7 +3011,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                 farms_response.farms,
                 vec![
                     Farm {
-                        identifier: "1".to_string(),
+                        identifier: "f-1".to_string(),
                         owner: creator.clone(),
                         lp_denom: lp_denom.clone(),
                         farm_asset: Coin {
@@ -3026,7 +3026,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         last_epoch_claimed: 13u64,
                     },
                     Farm {
-                        identifier: "2".to_string(),
+                        identifier: "f-2".to_string(),
                         owner: creator.clone(),
                         lp_denom: lp_denom.clone(),
                         farm_asset: Coin {
@@ -3041,7 +3041,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         last_epoch_claimed: 14u64,
                     },
                     Farm {
-                        identifier: "3".to_string(),
+                        identifier: "f-3".to_string(),
                         owner: creator.clone(),
                         lp_denom: lp_denom_2.clone(),
                         farm_asset: Coin {
@@ -3056,7 +3056,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         last_epoch_claimed: 13u64,
                     },
                     Farm {
-                        identifier: "4".to_string(),
+                        identifier: "f-4".to_string(),
                         owner: creator.clone(),
                         lp_denom: lp_denom_2.clone(),
                         farm_asset: Coin {
@@ -3276,7 +3276,7 @@ fn test_close_expired_farms() {
         .query_farms(None, None, None, |result| {
             let farms_response = result.unwrap();
             assert_eq!(farms_response.farms.len(), 1);
-            assert_eq!(farms_response.farms[0].identifier, "farm");
+            assert_eq!(farms_response.farms[0].identifier, "m-farm");
         })
         .manage_farm(
             &other,
@@ -3304,7 +3304,7 @@ fn test_close_expired_farms() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "new_farm".to_string(),
+                    identifier: "m-new_farm".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
@@ -3364,7 +3364,7 @@ fn expand_expired_farm() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm".to_string(),
+                    identifier: "m-farm".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
@@ -3404,7 +3404,7 @@ fn expand_expired_farm() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    farm_identifier: Some("farm".to_string()),
+                    farm_identifier: Some("m-farm".to_string()),
                 },
             },
             vec![coin(8_000u128, "uusdy")],
@@ -4084,7 +4084,7 @@ fn test_multiple_farms_and_positions() {
 
     suite
         .query_farms(
-            Some(FarmsBy::Identifier("farm_1".to_string())),
+            Some(FarmsBy::Identifier("m-farm_1".to_string())),
             None,
             None,
             |result| {
@@ -4092,7 +4092,7 @@ fn test_multiple_farms_and_positions() {
                 assert_eq!(
                     farms_response.farms[0],
                     Farm {
-                        identifier: "farm_1".to_string(),
+                        identifier: "m-farm_1".to_string(),
                         owner: creator.clone(),
                         lp_denom: lp_denom_1.clone(),
                         farm_asset: Coin {
@@ -4123,7 +4123,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm_1".to_string(),
+                    identifier: "m-farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4141,7 +4141,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[1],
                 Farm {
-                    identifier: "farm_2".to_string(),
+                    identifier: "m-farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4190,7 +4190,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm_1".to_string(),
+                    identifier: "m-farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4208,7 +4208,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[1],
                 Farm {
-                    identifier: "farm_2".to_string(),
+                    identifier: "m-farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4317,7 +4317,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm_1".to_string(),
+                    identifier: "m-farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4335,7 +4335,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[1],
                 Farm {
-                    identifier: "farm_2".to_string(),
+                    identifier: "m-farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4353,7 +4353,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[2],
                 Farm {
-                    identifier: "farm_3".to_string(),
+                    identifier: "m-farm_3".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     farm_asset: Coin {
@@ -4371,7 +4371,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[3],
                 Farm {
-                    identifier: "farm_4".to_string(),
+                    identifier: "m-farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     farm_asset: Coin {
@@ -4395,7 +4395,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm_1".to_string(),
+                    identifier: "m-farm_1".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4413,7 +4413,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[1],
                 Farm {
-                    identifier: "farm_2".to_string(),
+                    identifier: "m-farm_2".to_string(),
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
@@ -4431,7 +4431,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[2],
                 Farm {
-                    identifier: "farm_3".to_string(),
+                    identifier: "m-farm_3".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     farm_asset: Coin {
@@ -4449,7 +4449,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[3],
                 Farm {
-                    identifier: "farm_4".to_string(),
+                    identifier: "m-farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     farm_asset: Coin {
@@ -4501,7 +4501,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[3],
                 Farm {
-                    identifier: "farm_4".to_string(),
+                    identifier: "m-farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     farm_asset: Coin {
@@ -4525,7 +4525,7 @@ fn test_multiple_farms_and_positions() {
             assert_eq!(
                 farms_response.farms[3],
                 Farm {
-                    identifier: "farm_4".to_string(),
+                    identifier: "m-farm_4".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom_2.clone(),
                     farm_asset: Coin {
@@ -4558,7 +4558,7 @@ fn test_multiple_farms_and_positions() {
     suite.manage_farm(
         &creator,
         FarmAction::Close {
-            farm_identifier: "farm_4".to_string(),
+            farm_identifier: "m-farm_4".to_string(),
         },
         vec![],
         |result| {
@@ -6062,8 +6062,14 @@ fn test_farm_expired() {
 
             assert!(farms_response.farms[0].claimed_amount.is_zero());
             assert!(farms_response.farms[1].claimed_amount.is_zero());
-            assert_eq!(farms_response.farms[0].identifier, "long_farm".to_string());
-            assert_eq!(farms_response.farms[1].identifier, "short_farm".to_string());
+            assert_eq!(
+                farms_response.farms[0].identifier,
+                "m-long_farm".to_string()
+            );
+            assert_eq!(
+                farms_response.farms[1].identifier,
+                "m-short_farm".to_string()
+            );
         });
 
     // the short farm should be expired by now, let's try creating a new farm
@@ -6096,9 +6102,12 @@ fn test_farm_expired() {
             assert!(farms_response.farms[1].claimed_amount.is_zero());
             assert_eq!(
                 farms_response.farms[0].identifier,
-                "another_farm".to_string()
+                "m-another_farm".to_string()
             );
-            assert_eq!(farms_response.farms[1].identifier, "long_farm".to_string());
+            assert_eq!(
+                farms_response.farms[1].identifier,
+                "m-long_farm".to_string()
+            );
         });
 }
 
@@ -6145,7 +6154,7 @@ fn user_can_claim_expired_epochs() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm".to_string(),
+                    identifier: "m-farm".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
@@ -6198,7 +6207,7 @@ fn user_can_claim_expired_epochs() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    farm_identifier: Some("farm".to_string()),
+                    farm_identifier: Some("m-farm".to_string()),
                 },
             },
             vec![coin(8_000u128, "uusdy")],
@@ -6222,7 +6231,7 @@ fn user_can_claim_expired_epochs() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm".to_string(),
+                    identifier: "m-farm".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
@@ -6253,7 +6262,7 @@ fn user_can_claim_expired_epochs() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: "farm".to_string(),
+                    identifier: "m-farm".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
@@ -6758,6 +6767,69 @@ fn fails_to_create_farm_if_start_epoch_is_zero() {
 }
 
 #[test]
+fn overriding_farm_with_bogus_id_not_possible() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, "invalid_lp"),
+    ]);
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("1".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 2);
+            assert_eq!(farms_response.farms[0].identifier, "f-1");
+            assert_eq!(farms_response.farms[1].identifier, "m-1");
+        });
+}
+
+#[test]
 fn closing_expired_farm_wont_pay_penalty() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -6959,7 +7031,7 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
         .query_farms(None, None, None, |result| {
             let response = result.unwrap();
             assert_eq!(response.farms.len(), 2);
-            assert_eq!(response.farms[0].identifier, "1");
-            assert_eq!(response.farms[1].identifier, "custom_id_1");
+            assert_eq!(response.farms[0].identifier, "f-1");
+            assert_eq!(response.farms[1].identifier, "m-custom_id_1");
         });
 }

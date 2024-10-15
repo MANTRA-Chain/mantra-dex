@@ -6,6 +6,7 @@ use cosmwasm_std::{
 use amm::farm_manager::MIN_FARM_AMOUNT;
 use amm::farm_manager::{Curve, Farm, FarmParams};
 
+use crate::farm::{AUTO_FARM_ID_PREFIX, EXPLICIT_FARM_ID_PREFIX};
 use crate::helpers::{
     assert_farm_asset, is_farm_expired, process_farm_creation_fee,
     validate_emergency_unlock_penalty, validate_farm_epochs, validate_farm_expiration_time,
@@ -107,11 +108,13 @@ fn create_farm(
 
     // create farm identifier
     let farm_identifier = if let Some(id) = params.farm_identifier {
-        id
+        // prepend EXPLICIT_FARM_ID_PREFIX to identifier
+        format!("{EXPLICIT_FARM_ID_PREFIX}{id}")
     } else {
         let farm_id =
             FARM_COUNTER.update::<_, StdError>(deps.storage, |current_id| Ok(current_id + 1u64))?;
-        farm_id.to_string()
+        // prepend AUTO_FARM_ID_PREFIX to the position_id_counter
+        format!("{AUTO_FARM_ID_PREFIX}{farm_id}")
     };
 
     validate_identifier(&farm_identifier)?;
