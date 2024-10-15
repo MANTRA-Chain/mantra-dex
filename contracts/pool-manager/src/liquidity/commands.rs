@@ -311,6 +311,12 @@ pub fn provide_liquidity(
 
         // if the unlocking duration is set, lock the LP tokens in the farm manager
         if let Some(unlocking_duration) = unlocking_duration {
+            // check if receiver is the same as the sender of the tx
+            ensure!(
+                receiver == info.sender.to_string(),
+                ContractError::Unauthorized
+            );
+
             // mint the lp tokens to the contract
             messages.push(amm::lp_common::mint_lp_token_msg(
                 liquidity_token.clone(),
