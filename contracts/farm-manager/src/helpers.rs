@@ -265,11 +265,14 @@ pub(crate) fn is_farm_expired(
     )
 }
 
+// 64 char hash  + 2 char prefix allowed
+const MAX_IDENTIFIER_LENGTH: usize = 66usize;
+
 /// Validates that farms and positions identifiers are correct, ensuring the identifier doesn't
 /// exceed 64 characters, it's alphanumeric, and can contain '.', '-' and '_'.
 pub fn validate_identifier(identifier: &str) -> Result<(), ContractError> {
     ensure!(
-        identifier.len() <= 64usize
+        identifier.len() <= MAX_IDENTIFIER_LENGTH
             && identifier
                 .chars()
                 .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_'),

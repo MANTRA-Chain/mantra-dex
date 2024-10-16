@@ -6523,7 +6523,10 @@ fn test_farm_and_position_id_validation() {
                         denom: "uusdy".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
-                    farm_identifier: Some("71059201816354683642937887892647".to_string()),
+                    farm_identifier: Some(
+                        "7105920181635468364293788789264771059201816354683642937887892647"
+                            .to_string(),
+                    ),
                 },
             },
             vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
