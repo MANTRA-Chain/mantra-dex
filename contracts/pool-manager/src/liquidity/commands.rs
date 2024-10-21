@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_std::{Decimal, OverflowError, Uint128};
 
-use amm::coin::{aggregate_coins, deduct_coins};
+use amm::coin::{add_coins, aggregate_coins};
 use amm::common::validate_addr_or_default;
 use amm::farm_manager::{PositionsBy, PositionsResponse};
 use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
@@ -172,25 +172,6 @@ pub fn provide_liquidity(
             ))
             .add_attributes(vec![("action", "single_side_liquidity_provision")]))
     } else {
-        // Increment the pool asset amount by the amount sent
-        for asset in deposits.iter() {
-            let asset_denom = &asset.denom;
-            let pool_asset_index = pool_assets
-                .iter()
-                .position(|pool_asset| &pool_asset.denom == asset_denom)
-                .ok_or(ContractError::AssetMismatch)?;
-
-            pool_assets[pool_asset_index].amount = pool_assets[pool_asset_index]
-                .amount
-                .checked_add(asset.amount)?;
-        }
-
-        // After totting up the pool assets we need to check if any of them are zero.
-        // The very first deposit cannot be done with a single asset
-        if pool_assets.iter().any(|deposit| deposit.amount.is_zero()) {
-            return Err(ContractError::InvalidZeroAmount);
-        }
-
         let mut messages: Vec<CosmosMsg> = vec![];
 
         let liquidity_token = pool.lp_denom.clone();
@@ -239,32 +220,14 @@ pub fn provide_liquidity(
                             .position(|pool_asset| &pool_asset.denom == asset_denom)
                             .ok_or(ContractError::AssetMismatch)?;
 
-                        // Since pool_assets already added the new deposits to the pool above, it
-                        // needs to be subtracted to calculate the LP shares properly
-                        let balance_before_deposit = pool_assets[pool_asset_index]
-                            .amount
-                            .checked_sub(deposit.amount)?;
-
                         asset_shares.push(
                             deposit
                                 .amount
-                                .multiply_ratio(total_share, balance_before_deposit),
+                                .multiply_ratio(total_share, pool_assets[pool_asset_index].amount),
                         );
                     }
 
-                    let amount = std::cmp::min(asset_shares[0], asset_shares[1]);
-
-                    // assert slippage tolerance
-                    helpers::assert_slippage_tolerance(
-                        &slippage_tolerance,
-                        &deposits,
-                        &pool_assets,
-                        pool.pool_type.clone(),
-                        amount,
-                        total_share,
-                    )?;
-
-                    amount
+                    std::cmp::min(asset_shares[0], asset_shares[1])
                 }
             }
             PoolType::StableSwap { amp: amp_factor } => {
@@ -291,29 +254,28 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    let amount = compute_lp_mint_amount_for_stableswap_deposit(
+                    compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
-                        // Since pool_assets already added the new deposits to the pool above, it
-                        // needs to be subtracted as this function requires the original pool_assets
-                        // to calculate the invariant d_0 properly
-                        &deduct_coins(pool_assets.clone(), deposits.clone())?,
+                        // pool_assets hold the balances before the deposit was made
                         &pool_assets,
+                        // add the deposit to the pool_assets to calculate the new balances
+                        &add_coins(pool_assets.clone(), deposits.clone())?,
                         total_share,
                     )?
-                    .ok_or(ContractError::StableLpMintError)?;
-
-                    helpers::assert_slippage_tolerance(
-                        &slippage_tolerance,
-                        &deposits,
-                        &pool_assets,
-                        pool.pool_type.clone(),
-                        amount,
-                        total_share,
-                    )?;
-                    amount
+                    .ok_or(ContractError::StableLpMintError)?
                 }
             }
         };
+
+        // assert slippage tolerance
+        helpers::assert_slippage_tolerance(
+            &slippage_tolerance,
+            &deposits,
+            &pool_assets,
+            pool.pool_type.clone(),
+            share,
+            total_share,
+        )?;
 
         // if the unlocking duration is set, lock the LP tokens in the farm manager
         if let Some(unlocking_duration) = unlocking_duration {
@@ -409,6 +371,19 @@ pub fn provide_liquidity(
                 &env.contract.address,
                 share,
             )?);
+        }
+
+        // Increment the pool asset amount by the amount sent
+        for asset in deposits.iter() {
+            let asset_denom = &asset.denom;
+            let pool_asset_index = pool_assets
+                .iter()
+                .position(|pool_asset| &pool_asset.denom == asset_denom)
+                .ok_or(ContractError::AssetMismatch)?;
+
+            pool_assets[pool_asset_index].amount = pool_assets[pool_asset_index]
+                .amount
+                .checked_add(asset.amount)?;
         }
 
         pool.assets = pool_assets.clone();

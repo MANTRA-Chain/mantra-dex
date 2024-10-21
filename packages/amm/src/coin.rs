@@ -70,16 +70,16 @@ pub fn get_factory_token_creator(denom: &str) -> StdResult<&str> {
     )
 }
 
-/// Deducts the coins in `to_deduct` from `coins` if they exist.
-pub fn deduct_coins(coins: Vec<Coin>, to_deduct: Vec<Coin>) -> StdResult<Vec<Coin>> {
+/// Add the coins in `to_add` to `coins` if they exist.
+pub fn add_coins(coins: Vec<Coin>, to_add: Vec<Coin>) -> StdResult<Vec<Coin>> {
     let mut updated_coins = coins.to_vec();
 
-    for coin in to_deduct {
+    for coin in to_add {
         if let Some(existing_coin) = updated_coins.iter_mut().find(|c| c.denom == coin.denom) {
-            existing_coin.amount = existing_coin.amount.checked_sub(coin.amount)?;
+            existing_coin.amount = existing_coin.amount.checked_add(coin.amount)?;
         } else {
             return Err(StdError::generic_err(format!(
-                "Error: Cannot deduct {} {}. Coin not found.",
+                "Error: Cannot add {} {}. Coin not found.",
                 coin.amount, coin.denom
             )));
         }
