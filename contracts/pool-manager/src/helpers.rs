@@ -396,8 +396,6 @@ pub struct OfferAmountComputation {
     pub burn_fee_amount: Uint128,
 }
 
-// TODO: make this work with n_coins being dynamic
-
 pub fn assert_slippage_tolerance(
     slippage_tolerance: &Option<Decimal>,
     deposits: &[Coin],
@@ -419,7 +417,6 @@ pub fn assert_slippage_tolerance(
         // Ensure each prices are not dropped as much as slippage tolerance rate
         match pool_type {
             PoolType::StableSwap { .. } => {
-                // TODO: shouldn't be necessary to handle unwraps properly as they come from Uint128, but doublecheck!
                 let pools_total: Uint256 = pools
                     .into_iter()
                     .fold(Uint256::zero(), |acc, x| acc.checked_add(x).unwrap());
@@ -751,7 +748,6 @@ pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
     }
 }
 
-// TODO: handle unwraps properly
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
     amp_factor: &u64,

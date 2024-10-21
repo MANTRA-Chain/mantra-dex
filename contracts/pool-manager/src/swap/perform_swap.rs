@@ -148,7 +148,7 @@ pub fn assert_max_spread(
         .into();
 
     if let Some(belief_price) = belief_price {
-        let expected_return = Decimal::new(offer_amount)
+        let expected_return = Decimal::from_ratio(offer_amount, Uint128::one())
             .checked_mul(
                 belief_price
                     .inv()

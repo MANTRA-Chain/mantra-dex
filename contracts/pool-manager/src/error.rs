@@ -76,9 +76,6 @@ pub enum ContractError {
     #[error("Operation disabled, {0}")]
     OperationDisabled(String),
 
-    #[error("Invalid zero amount")]
-    InvalidZeroAmount,
-
     #[error("Initial liquidity amount must be over {0}")]
     InvalidInitialLiquidityAmount(Uint128),
 

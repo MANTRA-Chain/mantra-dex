@@ -2579,13 +2579,13 @@ mod locking_lp {
             .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
                 // the LP tokens should have gone to the farm manager
-                // the new minted LP tokens should be 2_000 * 1_000_000 / 1_002_000 = 1_996
+                // the new minted LP tokens should be 2_000
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom
                         && coin.amount
                             == farm_manager_lp_amount
                                 .borrow()
-                                .checked_add(Uint128::from(1_996u128))
+                                .checked_add(Uint128::from(2_000u128))
                                 .unwrap()
                 }));
 
@@ -2606,7 +2606,7 @@ mod locking_lp {
             });
             assert_eq!(positions[1], Position {
                 identifier: "p-2".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(1_996u128) },
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(2_000u128) },
                 unlocking_duration: 200_000,
                 open: true,
                 expiring_at: None,
@@ -2772,13 +2772,13 @@ mod locking_lp {
             .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
                 // the LP tokens should have gone to the farm manager
-                // the new minted LP tokens should be 2_000 * 1_000_000 / 1_002_000 = 1_996
+                // the new minted LP tokens should be 2_000
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom
                         && coin.amount
                             == farm_manager_lp_amount
                                 .borrow()
-                                .checked_add(Uint128::from(1_996u128))
+                                .checked_add(Uint128::from(2_000u128))
                                 .unwrap()
                 }));
 
@@ -2958,13 +2958,13 @@ mod locking_lp {
             .query_all_balances(&farm_manager_addr.to_string(), |result| {
                 let balances = result.unwrap();
                 // the LP tokens should have gone to the farm manager
-                // the new minted LP tokens should be 2_000 * 1_000_000 / 1_002_000 = 1_996
+                // the new minted LP tokens should be 2_000
                 assert!(balances.iter().any(|coin| {
                     coin.denom == lp_denom
                         && coin.amount
                             == farm_manager_lp_amount
                                 .borrow()
-                                .checked_add(Uint128::from(1_996u128))
+                                .checked_add(Uint128::from(2_000u128))
                                 .unwrap()
                 }));
 
@@ -2978,7 +2978,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
                 identifier: "p-1".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(1_996u128)},
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(2_000u128)},
                 unlocking_duration: 200_000,
                 open: true,
                 expiring_at: None,
@@ -3124,7 +3124,7 @@ mod locking_lp {
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "u-legit_position".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(500_000u128)},
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(1_000_000u128)},
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
@@ -3376,10 +3376,11 @@ mod provide_liquidity {
             )
             .query_all_balances(&other.to_string(), |result| {
                 let balances = result.unwrap();
-                // the new minted LP tokens should be 10_000 * 1_000_000 / 1_010_000 = ~9_900 lp shares - slippage
+                println!("{:?}", balances);
+                // the new minted LP tokens should be 10_000 * 1_000_000 / 1_000_000 = ~10_000 lp shares - slippage
                 // of swapping half of one asset to the other
                 assert!(balances.iter().any(|coin| {
-                    coin.denom == lp_denom && coin.amount == Uint128::from(9_702u128)
+                    coin.denom == lp_denom && coin.amount == Uint128::from(9_798u128)
                 }));
             })
             .query_all_balances(&contract_addr.to_string(), |result| {
@@ -3392,9 +3393,9 @@ mod provide_liquidity {
 
         suite
             .query_lp_supply("o.whale.uluna".to_string(), |res| {
-                // total amount of LP tokens issued should be 1_009_511 = 999_000 to the first LP,
-                // 1_000 to the contract, and 9_511 to the second, single-side LP
-                assert_eq!(res.unwrap().amount, Uint128::from(1_009_702u128));
+                // total amount of LP tokens issued should be 1_009_798 = 999_000 to the first LP,
+                // 1_000 to the contract, and 9_798 to the second, single-side LP
+                assert_eq!(res.unwrap().amount, Uint128::from(1_009_798u128));
             })
             .query_pools(Some("o.whale.uluna".to_string()), None, None, |res| {
                 let response = res.unwrap();
@@ -3489,7 +3490,7 @@ mod provide_liquidity {
                     vec![
                         Coin {
                             denom: "uluna".to_string(),
-                            amount: Uint128::from(9_989_302u128),
+                            amount: Uint128::from(9_989_208u128),
                         },
                         Coin {
                             denom: "uom".to_string(),
@@ -3505,7 +3506,7 @@ mod provide_liquidity {
                         },
                         Coin {
                             denom: "uwhale".to_string(),
-                            amount: Uint128::from(10_009_188u128),
+                            amount: Uint128::from(10_009_092u128),
                         },
                     ]
                 );
@@ -3521,7 +3522,7 @@ mod provide_liquidity {
                     vec![
                         Coin {
                             denom: lp_denom.clone(),
-                            amount: Uint128::from(9_702u128),
+                            amount: Uint128::from(9_798u128),
                         },
                         Coin {
                             denom: "uluna".to_string(),
@@ -3551,7 +3552,7 @@ mod provide_liquidity {
                 "o.whale.uluna".to_string(),
                 vec![Coin {
                     denom: lp_denom.clone(),
-                    amount: Uint128::from(9_702u128),
+                    amount: Uint128::from(9_798u128),
                 }],
                 |result| {
                     result.unwrap();
@@ -3564,7 +3565,7 @@ mod provide_liquidity {
                     vec![
                         Coin {
                             denom: "uluna".to_string(),
-                            amount: Uint128::from(10_009_608u128),
+                            amount: Uint128::from(10_009_702u128),
                         },
                         Coin {
                             denom: "uom".to_string(),
@@ -3580,7 +3581,7 @@ mod provide_liquidity {
                         },
                         Coin {
                             denom: "uwhale".to_string(),
-                            amount: Uint128::from(9_989_801u128),
+                            amount: Uint128::from(9_989_897u128),
                         },
                     ]
                 );
@@ -3599,6 +3600,27 @@ mod provide_liquidity {
                         Coin {
                             denom: "uusd".to_string(),
                             amount: Uint128::from(1_000u128),
+                        },
+                    ]
+                );
+            })
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                // the contract should have some dust left, and 1000 LP tokens
+                assert_eq!(
+                    balances,
+                    vec![
+                        Coin {
+                            denom: lp_denom.clone(),
+                            amount: Uint128::from(1_000u128),
+                        },
+                        Coin {
+                            denom: "uluna".to_string(),
+                            amount: Uint128::from(991u128),
+                        },
+                        Coin {
+                            denom: "uwhale".to_string(),
+                            amount: Uint128::from(1_011u128),
                         },
                     ]
                 );
@@ -3826,6 +3848,7 @@ mod provide_liquidity {
                 }));
             });
 
+        println!(">>>> provide liquidity: 5_000 uwhale, 5_000 uluna");
         // other provides liquidity as well, half of the tokens the creator provided
         // this should result in ~half LP tokens given to other
         suite
@@ -3852,10 +3875,207 @@ mod provide_liquidity {
             )
             .query_all_balances(&other.to_string(), |result| {
                 let balances = result.unwrap();
-                // user should have 5_000 * 10_000 / 15_000 = 3_333 LP shares
+                // user should have 5_000 * 10_000 / 10_000 = 5_000 LP shares
                 assert!(balances
                     .iter()
-                    .any(|coin| { coin.denom == lp_denom && coin.amount == Uint128::new(3_333) }));
+                    .any(|coin| { coin.denom == lp_denom && coin.amount == Uint128::new(5_000) }));
+            });
+    }
+
+    #[test]
+    fn provide_liquidity_emits_right_lp_shares() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000_000u128, "uusdc".to_string()),
+                coin(1_000_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_denoms = vec!["uom".to_string(), "uusdc".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::permille(30),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_denoms,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            None,
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let contract_addr = suite.pool_manager_addr.clone();
+        let lp_denom = suite.get_lp_denom("p.1".to_string());
+
+        // let's provide liquidity 1.5 om, 1 usdc
+        suite
+            .provide_liquidity(
+                &creator,
+                "p.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(1_500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::new(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+            })
+            .query_all_balances(&creator.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == Uint128::new(1_223_744u128)
+                }));
+            });
+
+        suite
+            .provide_liquidity(
+                &creator,
+                "p.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1_500_000u128),
+                    },
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                println!("balances contract: {:?}", balances);
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == "uom" && coin.amount == Uint128::new(3_000_000u128)
+                }));
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == "uusdc" && coin.amount == Uint128::new(2_000_000u128)
+                }));
+            })
+            .query_all_balances(&creator.to_string(), |result| {
+                let balances = result.unwrap();
+
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == Uint128::new(2_448_488u128)
+                }));
+            });
+
+        suite
+            .withdraw_liquidity(
+                &creator,
+                "p.1".to_string(),
+                vec![Coin {
+                    denom: lp_denom.clone(),
+                    amount: Uint128::new(2_448_488u128),
+                }],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+
+                assert!(balances
+                    .iter()
+                    .any(|coin| { coin.denom == "uom" && coin.amount == Uint128::new(1_225u128) }));
+                assert!(balances
+                    .iter()
+                    .any(|coin| { coin.denom == "uusdc" && coin.amount == Uint128::new(817u128) }));
+            });
+
+        suite
+            .provide_liquidity(
+                &creator,
+                "p.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1_500_000_000u128),
+                    },
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(1_000_000_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == "uom" && coin.amount == Uint128::from(1_500_001_225u128)
+                }));
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == "uusdc" && coin.amount == Uint128::from(1_000_000_817u128)
+                }));
+            })
+            .query_all_balances(&creator.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone()
+                        && coin.amount == Uint128::from(1_223_990_208u128)
+                }));
             });
     }
 
