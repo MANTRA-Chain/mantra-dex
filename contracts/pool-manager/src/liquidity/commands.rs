@@ -232,17 +232,23 @@ pub fn provide_liquidity(
                 } else {
                     let mut asset_shares = vec![];
 
-                    for asset in deposits.iter() {
-                        let asset_denom = &asset.denom;
+                    for deposit in deposits.iter() {
+                        let asset_denom = &deposit.denom;
                         let pool_asset_index = pool_assets
                             .iter()
                             .position(|pool_asset| &pool_asset.denom == asset_denom)
                             .ok_or(ContractError::AssetMismatch)?;
 
+                        // Since pool_assets already added the new deposits to the pool above, it
+                        // needs to be subtracted to calculate the LP shares properly
+                        let balance_before_deposit = pool_assets[pool_asset_index]
+                            .amount
+                            .checked_sub(deposit.amount)?;
+
                         asset_shares.push(
-                            asset
+                            deposit
                                 .amount
-                                .multiply_ratio(total_share, pool_assets[pool_asset_index].amount),
+                                .multiply_ratio(total_share, balance_before_deposit),
                         );
                     }
 
@@ -487,8 +493,17 @@ pub fn withdraw_liquidity(
     }));
 
     // Deduct balances on pool_info by the amount of each refund asset
-    for (i, pool_asset) in pool.assets.iter_mut().enumerate() {
-        pool_asset.amount = pool_asset.amount.checked_sub(refund_assets[i].amount)?;
+    for refund_asset in refund_assets.iter() {
+        let refund_asset_denom = &refund_asset.denom;
+        let pool_asset_index = pool
+            .assets
+            .iter()
+            .position(|pool_asset| &pool_asset.denom == refund_asset_denom)
+            .ok_or(ContractError::AssetMismatch)?;
+
+        pool.assets[pool_asset_index].amount = pool.assets[pool_asset_index]
+            .amount
+            .checked_sub(refund_asset.amount)?;
     }
 
     POOLS.save(deps.storage, &pool_identifier, &pool)?;
