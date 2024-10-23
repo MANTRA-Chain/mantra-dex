@@ -28,22 +28,7 @@ pub(crate) fn query_current_epoch(deps: Deps, env: Env) -> Result<EpochResponse,
     .checked_div_floor((config.epoch_config.duration.u64(), 1u64))
     .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?;
 
-    let start_time = config
-        .epoch_config
-        .genesis_epoch
-        .checked_add(
-            current_epoch
-                .checked_mul(config.epoch_config.duration)
-                .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?,
-        )
-        .map_err(|e| StdError::generic_err(format!("Error: {:?}", e)))?;
-
-    let epoch = Epoch {
-        id: current_epoch.u64(),
-        start_time: Timestamp::from_seconds(start_time.u64()),
-    };
-
-    Ok(EpochResponse { epoch })
+    query_epoch(deps, current_epoch.u64())
 }
 
 /// Queries the epoch with the given id. Returns an [EpochResponse].
