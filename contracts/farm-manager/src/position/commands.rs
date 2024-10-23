@@ -286,7 +286,8 @@ fn close_position_in_full(position: &mut Position, expires_at: u64) -> Uint128 {
     position.lp_asset.amount
 }
 
-/// Withdraws the given position. The position needs to have expired.
+/// Withdraws the given position. If the position has not expired, i.e. the unlocking period has not
+/// passed, the position can be withdrawn with a penalty fee using the`emergency_unlock` param.
 pub(crate) fn withdraw_position(
     mut deps: DepsMut,
     env: Env,
@@ -307,16 +308,13 @@ pub(crate) fn withdraw_position(
         ContractError::Unauthorized
     );
 
-    if emergency_unlock.is_none() || emergency_unlock.is_some() && !emergency_unlock.unwrap() {
-        // check if the user has pending rewards. Can't withdraw a position without claiming pending rewards first.
-        // if the user wants to perform an emergency withdrawal, this is not checked
-        validate_no_pending_rewards(deps.as_ref(), &env, &info)?;
-    }
-
     let current_time = env.block.time.seconds();
     let mut messages: Vec<CosmosMsg> = vec![];
 
-    // check if the emergency unlock is requested, will pull the whole position out whether it's open, closed or expired, paying the penalty
+    // check if the emergency unlock is requested, will pull the whole position out whether it's
+    // open, closed or expired.
+    // If the position already expired, the position can be withdrawn without penalty, even if the
+    // emergency_unlock is requested
     if emergency_unlock.is_some() && emergency_unlock.unwrap() && !position.is_expired(current_time)
     {
         let emergency_unlock_penalty = CONFIG.load(deps.storage)?.emergency_unlock_penalty;

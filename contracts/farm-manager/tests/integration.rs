@@ -1,15 +1,14 @@
 extern crate core;
 
-use amm::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
 use std::cell::RefCell;
 
-use cosmwasm_std::{coin, Addr, Coin, Decimal, StdResult, Timestamp, Uint128};
-use cw_utils::PaymentError;
-
+use amm::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
 use amm::farm_manager::{
     Config, Curve, Farm, FarmAction, FarmParams, FarmsBy, LpWeightResponse, Position,
     PositionAction, PositionsBy, PositionsResponse, RewardsResponse,
 };
+use cosmwasm_std::{coin, Addr, Coin, Decimal, StdResult, Timestamp, Uint128};
+use cw_utils::PaymentError;
 use farm_manager::state::MAX_ITEMS_LIMIT;
 use farm_manager::ContractError;
 
@@ -1702,7 +1701,7 @@ pub fn test_manage_position() {
         .query_farms(None, None, None, |result| {
             let farms_response = result.unwrap();
             assert_eq!(farms_response.farms.len(), 1);
-            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::new(2_000),);
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::new(2_000));
         })
         .manage_position(
             &creator,
@@ -1906,18 +1905,14 @@ pub fn test_manage_position() {
             },
             vec![],
             |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::PendingRewards { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
-                }
+                result.unwrap();
             },
         )
+        .query_balance("uusdy".to_string(), &creator, |balance| {
+            assert_eq!(balance, Uint128::new(999_994_000));
+        })
         .claim(&creator, vec![], |result| {
             result.unwrap();
-        })
-        .query_balance("uusdy".to_string(), &creator, |balance| {
-            assert_eq!(balance, Uint128::new(1000_000_000));
         })
         .query_farms(None, None, None, |result| {
             let farms_response = result.unwrap();
@@ -1925,7 +1920,6 @@ pub fn test_manage_position() {
                 farms_response.farms[0].farm_asset.amount,
                 farms_response.farms[0].claimed_amount
             );
-            //assert!(farms_response.farms[0].is_expired(5));
         })
         .query_rewards(&creator, |result| {
             let rewards_response = result.unwrap();
@@ -1936,23 +1930,9 @@ pub fn test_manage_position() {
                 _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
-        .claim(&creator, vec![], |result| {
-            result.unwrap();
-        })
         .query_balance("uusdy".to_string(), &creator, |balance| {
-            assert_eq!(balance, Uint128::new(1000_000_000));
+            assert_eq!(balance, Uint128::new(1_000_000_000));
         })
-        .manage_position(
-            &creator,
-            PositionAction::Withdraw {
-                identifier: "p-1".to_string(),
-                emergency_unlock: None,
-            },
-            vec![],
-            |result| {
-                result.unwrap();
-            },
-        )
         .query_positions(
             Some(PositionsBy::Receiver(other.to_string())),
             Some(false),
@@ -2297,6 +2277,161 @@ pub fn test_manage_position() {
                 assert!(positions.positions.is_empty());
             },
         );
+}
+
+#[test]
+#[allow(clippy::inconsistent_digit_grouping)]
+pub fn test_withdrawing_open_positions_updates_weight() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let another_lp = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+    let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, invalid_lp_denom.clone()),
+        coin(1_000_000_000u128, another_lp.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    let farm_manager = suite.farm_manager_addr.clone();
+    let pool_manager = suite.pool_manager_addr.clone();
+
+    // send some lp tokens to the pool manager, to simulate later the creation of a position
+    // on behalf of a user by the pool manager
+    suite.send_tokens(&creator, &pool_manager, &[coin(100_000, lp_denom.clone())]);
+
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(2),
+                    preliminary_end_epoch: Some(6),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&farm_manager, &lp_denom, 0, |result| {
+            let err = result.unwrap_err().to_string();
+
+            assert_eq!(
+                err,
+                "Generic error: Querier contract error: There's no snapshot of the LP \
+           weight in the contract for the epoch 0"
+            );
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(2_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&farm_manager, &lp_denom, 1, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(2_000),
+                    epoch_id: 1,
+                }
+            );
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 2);
+        })
+        .query_rewards(&creator, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
+                    assert_eq!(
+                        total_rewards[0],
+                        Coin {
+                            denom: "uusdy".to_string(),
+                            amount: Uint128::new(2_000),
+                        }
+                    );
+                }
+                _ => panic!("shouldn't return this but RewardsResponse"),
+            }
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::zero());
+        });
+
+    // withdraw the position
+    suite
+        .manage_position(
+            &creator,
+            PositionAction::Withdraw {
+                identifier: "u-creator_position".to_string(),
+                emergency_unlock: None,
+            },
+            vec![],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Withdraw {
+                identifier: "u-creator_position".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // the weight is updated after the position is withdrawn with the emergency flag
+        .query_lp_weight(&farm_manager, &lp_denom, 3, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::zero(),
+                    epoch_id: 3,
+                }
+            );
+        })
+        .query_farms(None, None, None, |result| {
+            let farms_response = result.unwrap();
+            assert_eq!(farms_response.farms.len(), 1);
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::zero());
+        });
 }
 
 #[test]
@@ -2846,7 +2981,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                             open: true,
                             expiring_at: None,
                             receiver: other.clone(),
-                        }
+                        },
                     ]
                 );
             },
@@ -3069,7 +3204,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         start_epoch: 16u64,
                         preliminary_end_epoch: 20u64,
                         last_epoch_claimed: 15u64,
-                    }
+                    },
                 ]
             );
         });
@@ -4732,7 +4867,7 @@ fn test_rewards_query_overlapping_farms() {
                         lp_denom_2.clone(),
                         vec![coin(15000, "uom"), coin(35000, "uusdy")]
                     ),
-                ]
+                ],
             }
         );
     });
@@ -5266,7 +5401,7 @@ fn position_fill_attack_is_not_possible() {
                         identifier: "u-nice_position".to_string(),
                         lp_asset: Coin {
                             denom: lp_denom.clone(),
-                            amount: Uint128::new(5_000)
+                            amount: Uint128::new(5_000),
                         },
                         unlocking_duration: 86_400,
                         open: true,
@@ -5385,7 +5520,7 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
                         identifier: "u-nice_position".to_string(),
                         lp_asset: Coin {
                             denom: lp_denom.clone(),
-                            amount: Uint128::new(5_000)
+                            amount: Uint128::new(5_000),
                         },
                         unlocking_duration: 86_400,
                         open: true,
@@ -5423,7 +5558,7 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
                         identifier: "u-nice_position".to_string(),
                         lp_asset: Coin {
                             denom: lp_denom.clone(),
-                            amount: Uint128::new(10_000)
+                            amount: Uint128::new(10_000),
                         },
                         unlocking_duration: 86_400,
                         open: true,
@@ -5481,7 +5616,7 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
                         identifier: "u-nice_position".to_string(),
                         lp_asset: Coin {
                             denom: lp_denom.clone(),
-                            amount: Uint128::new(10_000)
+                            amount: Uint128::new(10_000),
                         },
                         unlocking_duration: 86_400,
                         open: true,
@@ -5711,8 +5846,8 @@ fn test_positions_limits() {
                 match err {
                     ContractError::MaxPositionsPerUserExceeded { .. } => {}
                     _ => panic!(
-                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
-                ),
+                        "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                    ),
                 }
             },
         )
@@ -5732,8 +5867,8 @@ fn test_positions_limits() {
                 match err {
                     ContractError::MaxPositionsPerUserExceeded { .. } => {}
                     _ => panic!(
-                    "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
-                ),
+                        "Wrong error type, should return ContractError::MaxPositionsPerUserExceeded"
+                    ),
                 }
             },
         );
