@@ -2,6 +2,7 @@ use cosmwasm_std::{DepsMut, MessageInfo, Response};
 
 use amm::epoch_manager::EpochConfig;
 
+use crate::helpers::validate_epoch_duration;
 use crate::state::CONFIG;
 use crate::ContractError;
 
@@ -16,6 +17,7 @@ pub fn update_config(
     let mut config = CONFIG.load(deps.storage)?;
 
     if let Some(epoch_config) = epoch_config.clone() {
+        validate_epoch_duration(epoch_config.duration)?;
         config.epoch_config = epoch_config;
         CONFIG.save(deps.storage, &config)?;
     }

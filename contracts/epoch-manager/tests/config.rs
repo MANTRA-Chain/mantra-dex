@@ -72,6 +72,19 @@ fn update_config_unsuccessfully() {
 
     let msg = ExecuteMsg::UpdateConfig {
         epoch_config: Some(EpochConfig {
+            duration: Uint64::new(600),
+            genesis_epoch: Uint64::new(current_time.seconds()),
+        }),
+    };
+
+    let err = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
+    match err {
+        ContractError::InvalidEpochDuration { .. } => {}
+        _ => panic!("should return ContractError::InvalidEpochDuration"),
+    }
+
+    let msg = ExecuteMsg::UpdateConfig {
+        epoch_config: Some(EpochConfig {
             duration: Uint64::new(172800),
             genesis_epoch: Uint64::new(current_time.seconds()),
         }),

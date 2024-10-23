@@ -1,5 +1,4 @@
-use amm::constants::DAY_IN_SECONDS;
-use cosmwasm_std::{ensure, entry_point, to_json_binary, Uint64};
+use cosmwasm_std::{ensure, entry_point, to_json_binary};
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
@@ -7,6 +6,7 @@ use amm::epoch_manager::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMs
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;
+use crate::helpers::validate_epoch_duration;
 use crate::state::CONFIG;
 use crate::{commands, queries};
 
@@ -29,12 +29,7 @@ pub fn instantiate(
         ContractError::InvalidStartTime
     );
 
-    ensure!(
-        msg.epoch_config.duration >= Uint64::from(DAY_IN_SECONDS),
-        ContractError::InvalidEpochDuration {
-            min: DAY_IN_SECONDS
-        }
-    );
+    validate_epoch_duration(msg.epoch_config.duration)?;
 
     cw_ownable::initialize_owner(deps.storage, deps.api, Some(msg.owner.as_str()))?;
 
