@@ -86,6 +86,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
                     &info.sender,
                     lp_denom,
                     &current_epoch.id,
+                    true,
                 )?;
             }
             _ => return Err(ContractError::Unauthorized),
@@ -386,11 +387,12 @@ fn compute_farm_emissions(
 
 /// Syncs the address lp weight history for the given address and epoch_id, removing all the previous
 /// entries as the user has already claimed those epochs, and setting the weight for the current epoch.
-fn sync_address_lp_weight_history(
+pub fn sync_address_lp_weight_history(
     storage: &mut dyn Storage,
     address: &Addr,
     lp_denom: &str,
     current_epoch_id: &u64,
+    save_last_lp_weight: bool,
 ) -> Result<(), ContractError> {
     let (earliest_epoch_id, _) = get_earliest_address_lp_weight(storage, address, lp_denom)?;
     let (latest_epoch_id, latest_address_lp_weight) =
@@ -401,12 +403,14 @@ fn sync_address_lp_weight_history(
         LP_WEIGHT_HISTORY.remove(storage, (address, lp_denom, epoch_id));
     }
 
-    // save the latest weight for the current epoch
-    LP_WEIGHT_HISTORY.save(
-        storage,
-        (address, lp_denom, *current_epoch_id),
-        &latest_address_lp_weight,
-    )?;
+    if save_last_lp_weight {
+        // save the latest weight for the current epoch
+        LP_WEIGHT_HISTORY.save(
+            storage,
+            (address, lp_denom, *current_epoch_id),
+            &latest_address_lp_weight,
+        )?;
+    }
 
     Ok(())
 }

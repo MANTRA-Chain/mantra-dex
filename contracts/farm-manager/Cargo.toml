@@ -1,6 +1,6 @@
 [package]
 name = "farm-manager"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Kerber0x <kerber0x@protonmail.com>"]
 edition.workspace = true
 description = "The Farm Manager is a contract that allows to manage multiple pool farms in a single contract."

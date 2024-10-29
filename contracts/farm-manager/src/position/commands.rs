@@ -8,7 +8,7 @@ use amm::farm_manager::Position;
 
 use crate::helpers::{validate_identifier, validate_lp_denom};
 use crate::position::helpers::{
-    calculate_weight, create_penalty_share_msg, get_latest_address_weight,
+    calculate_weight, create_penalty_share_msg, get_latest_address_weight, reconcile_user_state,
     validate_no_pending_rewards, AUTO_POSITION_ID_PREFIX, EXPLICIT_POSITION_ID_PREFIX,
     PENALTY_FEE_SHARE,
 };
@@ -274,6 +274,8 @@ pub(crate) fn close_position(
 
     POSITIONS.save(deps.storage, &identifier, &position)?;
 
+    reconcile_user_state(deps, &info.sender, &position)?;
+
     Ok(Response::default().add_attributes(attributes))
 }
 
@@ -412,13 +414,19 @@ pub(crate) fn withdraw_position(
         messages.push(
             BankMsg::Send {
                 to_address: position.receiver.to_string(),
-                amount: vec![position.lp_asset],
+                amount: vec![position.lp_asset.clone()],
             }
             .into(),
         );
     }
 
     POSITIONS.remove(deps.storage, &identifier)?;
+
+    // if the position to remove was open, i.e. withdrawn via the emergency unlock feature, then
+    // we need to reconcile the user state
+    if position.open {
+        reconcile_user_state(deps, &info.sender, &position)?;
+    }
 
     Ok(Response::default()
         .add_attributes(vec![
