@@ -275,6 +275,13 @@
         "update_config": {
           "type": "object",
           "properties": {
+            "farm_manager_addr": {
+              "description": "The new farm manager contract address.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "feature_toggle": {
               "description": "The new feature toggles of the contract, allowing fine-tuned control over which operations are allowed.",
               "anyOf": [
