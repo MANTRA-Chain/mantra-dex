@@ -205,6 +205,8 @@ pub enum ExecuteMsg {
     UpdateConfig {
         /// The new fee collector contract address.
         fee_collector_addr: Option<String>,
+        /// The new farm manager contract address.
+        farm_manager_addr: Option<String>,
         /// The new fee that must be paid when a pool is created.
         pool_creation_fee: Option<Coin>,
         /// The new feature toggles of the contract, allowing fine-tuned

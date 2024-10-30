@@ -7,6 +7,7 @@ pub fn update_config(
     deps: DepsMut,
     info: MessageInfo,
     fee_collector_addr: Option<String>,
+    farm_manager_addr: Option<String>,
     pool_creation_fee: Option<Coin>,
     feature_toggle: Option<FeatureToggle>,
 ) -> Result<Response, ContractError> {
@@ -17,6 +18,11 @@ pub fn update_config(
         if let Some(new_fee_collector_addr) = fee_collector_addr {
             let fee_collector_addr = deps.api.addr_validate(&new_fee_collector_addr)?;
             config.fee_collector_addr = fee_collector_addr;
+        }
+
+        if let Some(new_farm_manager_addr) = farm_manager_addr {
+            let farm_manager_addr = deps.api.addr_validate(&new_farm_manager_addr)?;
+            config.farm_manager_addr = farm_manager_addr;
         }
 
         if let Some(pool_creation_fee) = pool_creation_fee {

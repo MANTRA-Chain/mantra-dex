@@ -166,12 +166,14 @@ pub fn execute(
         ),
         ExecuteMsg::UpdateConfig {
             fee_collector_addr,
+            farm_manager_addr,
             pool_creation_fee,
             feature_toggle,
         } => manager::update_config(
             deps,
             info,
             fee_collector_addr,
+            farm_manager_addr,
             pool_creation_fee,
             feature_toggle,
         ),
