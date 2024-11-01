@@ -336,33 +336,41 @@ pub(crate) fn withdraw_position(
             .checked_mul(PENALTY_FEE_SHARE)?
             .to_uint_floor();
 
-        let penalty_fee_fee_collector =
+        let mut penalty_fee_fee_collector =
             total_penalty_fee.saturating_sub(owner_penalty_fee_comission);
 
         let fee_collector_addr = CONFIG.load(deps.storage)?.fee_collector_addr;
 
-        // send penalty to farm owners
-        if owner_penalty_fee_comission > Uint128::zero() {
-            let farms = get_farms_by_lp_denom(
-                deps.storage,
-                &position.lp_asset.denom,
-                None,
-                Some(MAX_ITEMS_LIMIT),
-            )?;
+        let farms = get_farms_by_lp_denom(
+            deps.storage,
+            &position.lp_asset.denom,
+            None,
+            Some(MAX_ITEMS_LIMIT),
+        )?;
 
-            let unique_farm_owners: Vec<Addr> = farms
-                .iter()
-                .map(|farm| farm.owner.clone())
-                .collect::<HashSet<_>>()
-                .into_iter()
-                .collect();
+        // get unique farm owners for this lp denom
+        let unique_farm_owners: Vec<Addr> = farms
+            .iter()
+            .map(|farm| farm.owner.clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
 
+        // if there are no farms for this lp denom there's no need to send any penalty to the farm
+        // owners, as there are none. Send it all to the fee collector
+        if unique_farm_owners.is_empty() {
+            // send the whole penalty fee to the fee collector
+            penalty_fee_fee_collector = total_penalty_fee;
+        } else {
+            // send penalty to farm owners
             let penalty_fee_share_per_farm_owner = Decimal::from_ratio(
                 owner_penalty_fee_comission,
                 unique_farm_owners.len() as u128,
             )
             .to_uint_floor();
 
+            // if the farm owner penalty fee is greater than zero, send it to the farm owners,
+            // otherwise send the whole penalty fee to the fee collector
             if penalty_fee_share_per_farm_owner > Uint128::zero() {
                 for farm_owner in unique_farm_owners {
                     messages.push(create_penalty_share_msg(
@@ -371,6 +379,10 @@ pub(crate) fn withdraw_position(
                         &farm_owner,
                     ));
                 }
+            } else {
+                // if the penalty fee share per farm owner is zero, then the whole penalty fee goes
+                // to the fee collector, if any
+                penalty_fee_fee_collector = total_penalty_fee;
             }
         }
 

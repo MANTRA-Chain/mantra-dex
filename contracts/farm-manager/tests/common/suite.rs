@@ -32,7 +32,7 @@ type OsmosisTokenFactoryApp = App<
 
 pub struct TestingSuite {
     app: OsmosisTokenFactoryApp,
-    pub senders: [Addr; 3],
+    pub senders: [Addr; 4],
     pub farm_manager_addr: Addr,
     pub fee_collector_addr: Addr,
     pub pool_manager_addr: Addr,
@@ -90,6 +90,7 @@ impl TestingSuite {
         let sender_1 = Addr::unchecked("mantra15n2dapfyf7mzz70y0srycnduw5skp0s9u9g74e");
         let sender_2 = Addr::unchecked("mantra13cxr0w5tvczvte29r5n0mauejmrg83m4zxj4l2");
         let sender_3 = Addr::unchecked("mantra150qvkpleat9spklzs3mtwdxszjpeyjcssce49d");
+        let sender_4 = Addr::unchecked("mantra15dzl255vgd8t4y2jdjkeyrjqjygv446nr58ltm");
 
         let bank = BankKeeper::new();
 
@@ -97,6 +98,7 @@ impl TestingSuite {
             (sender_1.clone(), initial_balance.clone()),
             (sender_2.clone(), initial_balance.clone()),
             (sender_3.clone(), initial_balance.clone()),
+            (sender_4.clone(), initial_balance.clone()),
         ];
 
         let app = AppBuilder::new()
@@ -112,7 +114,7 @@ impl TestingSuite {
 
         Self {
             app,
-            senders: [sender_1, sender_2, sender_3],
+            senders: [sender_1, sender_2, sender_3, sender_4],
             farm_manager_addr: Addr::unchecked(""),
             fee_collector_addr: Addr::unchecked(""),
             pool_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
@@ -141,7 +143,7 @@ impl TestingSuite {
             2,
             14,
             86_400,
-            31_556_926,
+            31_556_926u64,
             MONTH_IN_SECONDS,
             Decimal::percent(10), //10% penalty
         );
