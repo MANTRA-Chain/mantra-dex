@@ -2280,6 +2280,630 @@ mod swapping {
             },
         );
     }
+
+    #[allow(clippy::inconsistent_digit_grouping)]
+    #[test]
+    fn swap_large_digits_xyk() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000_000u128, "uusd".to_string()),
+                coin(100_000_000_000_000_000000u128, "uusdc".to_string()),
+                coin(
+                    100_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                ),
+                coin(150_000_000_000_000_000000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let alice = suite.creator();
+        let bob = suite.senders[1].clone();
+        let carol = suite.senders[2].clone();
+        let dan = suite.senders[3].clone();
+
+        let asset_denoms = vec!["uom".to_string(), "ausdy".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::permille(30),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &alice,
+            asset_denoms,
+            vec![6u8, 18u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            None,
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let contract_addr = suite.pool_manager_addr.clone();
+        let lp_denom = suite.get_lp_denom("p.1".to_string());
+
+        // let's provide liquidity 150T om, 100T usdy
+        suite
+            .provide_liquidity(
+                &bob,
+                "p.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(150_000_000_000_000_000000u128),
+                    },
+                    Coin {
+                        denom: "ausdy".to_string(),
+                        amount: Uint128::new(100_000_000_000_000_000000000000000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+            })
+            .query_all_balances(&bob.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone()
+                        && coin.amount == Uint128::new(122_474_487_139_158_904_909_863_203u128)
+                }));
+            });
+
+        // swap 2T usdy for om
+        suite
+            .query_balance(&carol.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_balance(&carol.to_string(), "uom".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(150_000_000_000_000_000000u128)
+                );
+            })
+            .query_simulation(
+                "p.1".to_string(),
+                Coin {
+                    denom: "ausdy".to_string(),
+                    amount: Uint128::new(2_000_000_000_000_000000000000000000u128),
+                },
+                "uom".to_string(),
+                |result| {
+                    assert_eq!(
+                        result.unwrap().return_amount,
+                        Uint128::new(2_852_941_176_470_588236u128)
+                    );
+                },
+            )
+            .swap(
+                &carol,
+                "uom".to_string(),
+                None,
+                Some(Decimal::percent(3)),
+                None,
+                "p.1".to_string(),
+                vec![coin(
+                    2_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                )],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&carol.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        100_000_000_000_000_000000000000000000u128
+                            - 2_000_000_000_000_000000000000000000u128
+                    )
+                );
+            })
+            .query_balance(&carol.to_string(), "uom".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(150_000_000_000_000_000000u128 + 2_852_941_176_470_588236u128)
+                );
+            });
+
+        // swap 10T om for usdy
+        suite
+            .query_balance(&dan.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_balance(&dan.to_string(), "uom".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(150_000_000_000_000_000000u128)
+                );
+            })
+            .query_simulation(
+                "p.1".to_string(),
+                Coin {
+                    denom: "uom".to_string(),
+                    amount: Uint128::new(10_000_000_000_000_000000u128),
+                },
+                "ausdy".to_string(),
+                |result| {
+                    assert_eq!(
+                        result.unwrap().return_amount,
+                        Uint128::new(6_296_013_475_575_519371168089897701u128)
+                    );
+                },
+            )
+            .swap(
+                &dan,
+                "ausdy".to_string(),
+                None,
+                Some(Decimal::percent(20)),
+                None,
+                "p.1".to_string(),
+                vec![coin(10_000_000_000_000_000000u128, "uom".to_string())],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&dan.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        100_000_000_000_000_000000000000000000u128
+                            + 6_296_013_475_575_519371168089897701u128
+                    )
+                );
+            })
+            .query_balance(&dan.to_string(), "uom".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(150_000_000_000_000_000000u128 - 10_000_000_000_000_000000u128)
+                );
+            });
+    }
+
+    #[allow(clippy::inconsistent_digit_grouping)]
+    #[test]
+    fn swap_large_digits_stable() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000_000u128, "uusd".to_string()),
+                coin(100_000_000_000_000_000000u128, "uusdc".to_string()),
+                coin(
+                    100_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                ),
+                coin(150_000_000_000_000_000000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let alice = suite.creator();
+        let bob = suite.senders[1].clone();
+        let carol = suite.senders[2].clone();
+        let dan = suite.senders[3].clone();
+
+        let asset_denoms = vec!["ausdy".to_string(), "uusdc".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::permille(5),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &alice,
+            asset_denoms,
+            vec![18u8, 6u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            None,
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // let's provide liquidity 200T usdc, 200T usdy
+        suite
+            .provide_liquidity(
+                &alice,
+                "p.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::new(100_000_000_000_000_000000u128),
+                    },
+                    Coin {
+                        denom: "ausdy".to_string(),
+                        amount: Uint128::new(100_000_000_000_000_000000000000000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &bob,
+                "p.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::new(100_000_000_000_000_000000u128),
+                    },
+                    Coin {
+                        denom: "ausdy".to_string(),
+                        amount: Uint128::new(100_000_000_000_000_000000000000000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        // swap 10T usdc for usdy
+        suite
+            .query_balance(&carol.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_balance(&carol.to_string(), "uusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000u128)
+                );
+            })
+            .query_simulation(
+                "p.1".to_string(),
+                Coin {
+                    denom: "uusdc".to_string(),
+                    amount: Uint128::new(10_000_000_000_000_000000u128),
+                },
+                "ausdy".to_string(),
+                |result| {
+                    assert_eq!(
+                        result.unwrap().return_amount,
+                        Uint128::new(9_476_190_476_190_476190476190476190u128)
+                    );
+                },
+            )
+            .swap(
+                &carol,
+                "ausdy".to_string(),
+                None,
+                Some(Decimal::percent(5)),
+                None,
+                "p.1".to_string(),
+                vec![coin(10_000_000_000_000_000000u128, "uusdc".to_string())],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&carol.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        100_000_000_000_000_000000000000000000u128
+                            + 9_476_190_476_190_476190476190476190u128
+                    )
+                );
+            })
+            .query_balance(&carol.to_string(), "uusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000u128 - 10_000_000_000_000_000000u128)
+                );
+            });
+
+        // swap 20T usdy for usdc
+        suite
+            .query_balance(&dan.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_balance(&dan.to_string(), "uusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000u128)
+                );
+            })
+            .query_simulation(
+                "p.1".to_string(),
+                Coin {
+                    denom: "ausdy".to_string(),
+                    amount: Uint128::new(20_000_000_000_000_000000000000000000u128),
+                },
+                "uusdc".to_string(),
+                |result| {
+                    assert_eq!(
+                        result.unwrap().return_amount,
+                        Uint128::new(19_850_486_315_313_277539u128)
+                    );
+                },
+            )
+            .swap(
+                &dan,
+                "uusdc".to_string(),
+                None,
+                Some(Decimal::percent(10)),
+                None,
+                "p.1".to_string(),
+                vec![coin(
+                    20_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                )],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&dan.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        100_000_000_000_000_000000000000000000u128
+                            - 20_000_000_000_000_000000000000000000u128
+                    )
+                );
+            })
+            .query_balance(&dan.to_string(), "uusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(100_000_000_000_000_000000u128 + 19_850_486_315_313_277539u128)
+                );
+            });
+    }
+    #[allow(clippy::inconsistent_digit_grouping)]
+    #[test]
+    fn swap_large_digits_stable_18_digits() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000_000u128, "uusdc".to_string()),
+                coin(
+                    300_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                ),
+                coin(
+                    300_000_000_000_000_000000000000000000u128,
+                    "pusdc".to_string(),
+                ),
+                coin(1_000_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let alice = suite.creator();
+        let bob = suite.senders[1].clone();
+        let carol = suite.senders[2].clone();
+        let dan = suite.senders[3].clone();
+
+        let asset_denoms = vec!["ausdy".to_string(), "pusdc".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::permille(5),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &alice,
+            asset_denoms,
+            vec![18u8, 18u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            None,
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // let's provide liquidity 300T pusdc, 300T usdy
+        suite.provide_liquidity(
+            &alice,
+            "p.1".to_string(),
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "pusdc".to_string(),
+                    amount: Uint128::new(300_000_000_000_000_000000000000000000u128),
+                },
+                Coin {
+                    denom: "ausdy".to_string(),
+                    amount: Uint128::new(300_000_000_000_000_000000000000000000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // swap 100T pusdc for usdy
+        suite
+            .query_balance(&bob.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(300_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_balance(&bob.to_string(), "pusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(300_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_simulation(
+                "p.1".to_string(),
+                Coin {
+                    denom: "pusdc".to_string(),
+                    amount: Uint128::new(100_000_000_000_000_000000000000000000u128),
+                },
+                "ausdy".to_string(),
+                |result| {
+                    assert_eq!(
+                        result.unwrap().return_amount,
+                        Uint128::new(74_625_000_000_000_000000000000000000u128)
+                    );
+                },
+            )
+            .swap(
+                &bob,
+                "ausdy".to_string(),
+                None,
+                Some(Decimal::percent(30)),
+                None,
+                "p.1".to_string(),
+                vec![coin(
+                    100_000_000_000_000_000000000000000000u128,
+                    "pusdc".to_string(),
+                )],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&bob.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        300_000_000_000_000_000000000000000000u128
+                            + 74_625_000_000_000_000000000000000000u128
+                    )
+                );
+            })
+            .query_balance(&bob.to_string(), "pusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        300_000_000_000_000_000000000000000000u128
+                            - 100_000_000_000_000_000000000000000000u128
+                    )
+                );
+            });
+
+        // swap 50T usdy for pusdc
+        suite
+            .query_balance(&carol.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(300_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_balance(&carol.to_string(), "pusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(300_000_000_000_000_000000000000000000u128)
+                );
+            })
+            .query_simulation(
+                "p.1".to_string(),
+                Coin {
+                    denom: "ausdy".to_string(),
+                    amount: Uint128::new(50_000_000_000_000_000000000000000000u128),
+                },
+                "pusdc".to_string(),
+                |result| {
+                    assert_eq!(
+                        result.unwrap().return_amount,
+                        Uint128::new(72_265_093_054_925_102133454380390377u128)
+                    );
+                },
+            )
+            .swap(
+                &carol,
+                "pusdc".to_string(),
+                None,
+                Some(Decimal::percent(20)),
+                None,
+                "p.1".to_string(),
+                vec![coin(
+                    50_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                )],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&carol.to_string(), "ausdy".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        300_000_000_000_000_000000000000000000u128
+                            - 50_000_000_000_000_000000000000000000u128
+                    )
+                );
+            })
+            .query_balance(&carol.to_string(), "pusdc".to_string(), |result| {
+                assert_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(
+                        300_000_000_000_000_000000000000000000u128
+                            + 72_265_093_054_925_102133454380390377u128
+                    )
+                );
+            });
+    }
 }
 
 mod ownership {
