@@ -1,12 +1,16 @@
 use cosmwasm_std::{
-    ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, Deps, Env, MessageInfo, Order,
-    StdError, Storage, Uint128,
+    ensure, Addr, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo,
+    Order, StdError, Storage, Uint128,
 };
 
-use amm::farm_manager::{Config, EpochId, RewardsResponse};
+use amm::farm_manager::{Config, EpochId, Position, RewardsResponse};
 
+use crate::farm::commands::sync_address_lp_weight_history;
 use crate::queries::query_rewards;
-use crate::state::{get_positions_by_receiver, LP_WEIGHT_HISTORY, MAX_ITEMS_LIMIT};
+use crate::state::{
+    get_positions_by_receiver, has_any_lp_weight, CONFIG, LAST_CLAIMED_EPOCH, LP_WEIGHT_HISTORY,
+    MAX_ITEMS_LIMIT,
+};
 use crate::ContractError;
 
 const SECONDS_IN_DAY: u64 = 86400;
@@ -173,6 +177,79 @@ pub fn validate_no_pending_rewards(
         }
         _ => return Err(ContractError::Unauthorized),
     }
+
+    Ok(())
+}
+
+/// Reconciles a user's state by updating or removing stale data based on their current open positions.
+///
+/// This function checks for two primary conditions:
+/// 1. If the user has no more open positions, it clears the LAST_CLAIMED_EPOCH state item.
+/// 2. If the user has no more open positions for a specific LP denom, it wipes the LP weight history for that denom.
+///
+/// Why do we need to do this?
+/// If the lp history and the LAST_CLAIMED_EPOCH for the user is not cleared when fully existing the farm,
+/// if the user would create a new position in the future for the same denom, the contract would try to
+/// claim rewards for old epochs that would be irrelevant, as the LAST_CLAIMED_EPOCH is recorded when
+/// the user claims rewards. At that point, the user weight would be zero for the given LP, which renders
+/// the computation for those epochs useless. Additionally, if the user were be the only user in the farm,
+/// exiting the farms would record the lp weight for both the user and contract as zero. If the LAST_CLAIMED_EPOCH
+/// and lp weight history were not cleared, if the user opens another position for the same LP denom in the future,
+/// as the contract would try to claim previous epoch rewards there would be a DivideByZero error as the
+/// total_lp_weight would be zero when calculating user's share of the rewards.
+pub fn reconcile_user_state(
+    deps: DepsMut,
+    receiver: &Addr,
+    position: &Position,
+) -> Result<(), ContractError> {
+    let receiver_open_positions = get_positions_by_receiver(
+        deps.storage,
+        receiver.as_ref(),
+        Some(true),
+        None,
+        Some(MAX_ITEMS_LIMIT),
+    )?;
+
+    // if the user has no more open positions, clear the last claimed epoch
+    if receiver_open_positions.is_empty() {
+        LAST_CLAIMED_EPOCH.remove(deps.storage, receiver);
+    }
+
+    // if the user has no more open positions for the position's LP denom, wipe the LP weight
+    // history for that denom
+    if receiver_open_positions
+        .iter()
+        .filter(|p| p.lp_asset.denom == position.lp_asset.denom)
+        .collect::<Vec<_>>()
+        .is_empty()
+    {
+        // if it doesn't have any it means it was already cleared up when closing the position,
+        // but it is different if the user emergency exits an open position.
+        // if withdrawing a position after closing it, this won't be triggered as it was already
+        // called when closing the position.
+        if has_any_lp_weight(deps.storage, receiver, &position.lp_asset.denom)? {
+            clear_lp_weight_history(deps, receiver, &position.lp_asset.denom)?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Clears the lp weight history.
+fn clear_lp_weight_history(
+    deps: DepsMut,
+    address: &Addr,
+    lp_denom: &str,
+) -> Result<(), ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    let current_epoch = amm::epoch_manager::get_current_epoch(
+        deps.as_ref(),
+        config.epoch_manager_addr.to_string(),
+    )?;
+
+    // by passing the false flag the lp weight for the current epoch won't be saved, which we want
+    // as we want to clear the whole lp weight history for this lp denom.
+    sync_address_lp_weight_history(deps.storage, address, lp_denom, &current_epoch.id, false)?;
 
     Ok(())
 }

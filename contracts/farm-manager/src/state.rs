@@ -257,6 +257,25 @@ pub fn get_earliest_address_lp_weight(
     }
 }
 
+/// Checks if a user has any LP weight for the given LP denom.
+pub fn has_any_lp_weight(
+    storage: &dyn Storage,
+    address: &Addr,
+    lp_denom: &str,
+) -> Result<bool, ContractError> {
+    let lp_weight_history_result = LP_WEIGHT_HISTORY
+        .prefix((address, lp_denom))
+        .range(storage, None, None, Order::Ascending)
+        .next()
+        .transpose();
+
+    match lp_weight_history_result {
+        Ok(Some(_)) => Ok(true),
+        Ok(None) => Ok(false),
+        Err(std_err) => Err(std_err.into()),
+    }
+}
+
 /// Gets the latest entry of an address in the address lp weight history.
 /// If the address has no open positions, returns 0 for the weight.
 pub fn get_latest_address_lp_weight(

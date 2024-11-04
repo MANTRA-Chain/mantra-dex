@@ -5112,8 +5112,8 @@ fn test_fill_closed_position() {
             },
         )
         .query_lp_weight(&creator, &lp_denom_1, 12, |result| {
-            let response = result.unwrap();
-            assert_eq!(response.lp_weight, Uint128::zero());
+            // as the user closed the position in full, shouldn't have any lp weight registered
+            result.unwrap_err();
         });
 }
 
@@ -7171,5 +7171,1419 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
             assert_eq!(response.farms.len(), 2);
             assert_eq!(response.farms[0].identifier, "f-1");
             assert_eq!(response.farms[1].identifier, "m-custom_id_1");
+        });
+}
+
+// This is to cover for the following edge case:
+// Single user in the system opens a position, claims some rewards, and then closes the
+// position in full (making the total_lp_weight zero for the subsequent epoch).
+// The LAST_CLAIMED_EPOCH is set to the epoch where the user closed the position (let's call
+// it EC).
+// At EC + 1, the total_lp_weight will be zero.
+// Then, the user opens another position.
+// The LAST_CLAIMED_EPOCH remains unchanged.
+// When the user tries to query the rewards or claim the rewards with the new position,
+// it would get a DivideByZero error, as the algorithm will try to iterate from EC + 1,
+// where the total_lp_weight is zero.
+// This scenario could have been fixed by skipping the rewards calculation if total_lp_weight was zero,
+// but clearing up the LAST_CLAIMED_EPOCH and the LP_WEIGHT_HISTORY for the user was more correct
+#[test]
+fn test_query_rewards_divide_by_zero() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000_000, lp_denom_1.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    let farm_manager = suite.farm_manager_addr.clone();
+
+    suite.manage_farm(
+        &creator,
+        FarmAction::Fill {
+            params: FarmParams {
+                lp_denom: lp_denom_1.clone(),
+                start_epoch: None,
+                preliminary_end_epoch: None,
+                curve: None,
+                farm_asset: Coin {
+                    denom: "uusdy".to_string(),
+                    amount: Uint128::new(3333u128),
+                },
+                farm_identifier: None,
+            },
+        },
+        vec![coin(3333u128, "uusdy"), coin(1_000, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // creator and other fill a position
+    suite.manage_position(
+        &creator,
+        PositionAction::Create {
+            identifier: Some("creator_position".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(1_000, lp_denom_1.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 5);
+        });
+
+    suite.query_rewards(&creator, |result| {
+        result.unwrap();
+    });
+
+    suite
+        .claim(&creator, vec![], |result| {
+            result.unwrap();
+        })
+        .manage_position(
+            &creator,
+            PositionAction::Close {
+                identifier: "u-creator_position".to_string(),
+                lp_asset: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&farm_manager, &lp_denom_1, 6, |result| {
+            result.unwrap();
+        })
+        .query_rewards(&creator, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 4, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 5, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 6, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 7, |result| {
+            result.unwrap_err();
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_rewards(&creator, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+
+    // open a new position
+    suite.manage_position(
+        &creator,
+        PositionAction::Create {
+            identifier: Some("creator_another_position".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(2_000, lp_denom_1.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite.add_one_epoch().query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 8);
+    });
+
+    // this would normally fail as in some point of the reward calculation the total_lp_weight
+    // would be zero.
+    // This is a case that the contract shouldn't compute rewards for anyway, so the epoch is skipped.
+    suite
+        .query_rewards(&creator, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(!total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .claim(&creator, vec![], |result| {
+            result.unwrap();
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 7, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 8, |result| {
+            let lp_weight_response = result.unwrap();
+            assert_eq!(lp_weight_response.lp_weight, Uint128::new(2_000));
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 9, |result| {
+            result.unwrap_err();
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_rewards(&creator, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(!total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+
+    // let's emergency withdraw the new position
+    suite
+        .manage_position(
+            &creator,
+            PositionAction::Withdraw {
+                identifier: "u-creator_another_position".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&creator, &lp_denom_1, 9, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 10, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
+            result.unwrap_err();
+        })
+        .query_rewards(&creator, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+}
+
+/// This test creates multiple farms, and multiple positions with different users. Users open and close
+/// and withdraw positions in different fashion, and claim rewards. The test checks if the rewards
+/// are calculated correctly, and if the positions are managed correctly.
+#[test]
+fn test_managing_positions_close_and_emergency_withdraw() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000_000, lp_denom_1.clone()),
+        coin(1_000_000_000_000, lp_denom_2.clone()),
+    ]);
+
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+    let carol = suite.senders[2].clone();
+
+    suite.instantiate_default();
+
+    // create overlapping farms
+    suite
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_888u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_888u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(10),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(666_666u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(666_666u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // alice locks liquidity early
+    suite.manage_position(
+        &alice,
+        PositionAction::Create {
+            identifier: Some("alice_position_1".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(333, lp_denom_1.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 5);
+        });
+
+    // then bob joins alice after a few epochs, having positions in both farms
+    suite
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("bob_position_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(666, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("bob_position_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(666, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
+                    assert_eq!(total_rewards[0], coin(3_170u128, "uusdy"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_rewards(&carol, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+
+    suite
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_000_000u128 - (8_888u128 + 666_666u128))
+            );
+        })
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_000_000u128 - (8_888u128 + 666_666u128) + 3_170u128)
+            );
+        });
+
+    // last claimed epoch for alice = 5
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 8);
+        });
+
+    // then carol joins alice and bob after a few epochs
+    suite.manage_position(
+        &carol,
+        PositionAction::Create {
+            identifier: Some("carol_position_2".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(1_000, lp_denom_2.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // create two more farms, one overlapping, the other one not.
+    suite
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: Some(15),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(8_888u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_888u128, "uosmo"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(22),
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::new(1_000_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(1_001_000u128, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
+                    assert_eq!(total_rewards[0], coin(633u128, "uusdy"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
+                    assert_eq!(total_rewards[0], coin(1_266u128, "uusdy"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_rewards(&carol, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+
+    // now alice emergency withdraws her position, giving up her rewards
+    suite
+        .manage_position(
+            &alice,
+            PositionAction::Withdraw {
+                identifier: "u-alice_position_1".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        // Bob's rewards should remain the same for the current epoch
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
+                    assert_eq!(total_rewards[0], coin(1_266u128, "uusdy"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+
+    suite.add_one_epoch().query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 9);
+    });
+
+    suite.query_rewards(&bob, |result| {
+        let rewards_response = result.unwrap();
+        match rewards_response {
+            RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                assert_eq!(total_rewards.len(), 1);
+                // 634 is the emission rate for farm 1
+                assert_eq!(total_rewards[0], coin(1_266u128 + 634, "uusdy"));
+            }
+            _ => {
+                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+            }
+        }
+    });
+
+    // alice creates a new position with the same LP denom
+    suite
+        .manage_position(
+            &alice,
+            PositionAction::Create {
+                identifier: Some("alice_second_position_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(300, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &alice,
+            PositionAction::Create {
+                identifier: Some("alice_second_position_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(700, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite.add_one_epoch();
+
+    suite
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1);
+                    assert_eq!(total_rewards[0], coin(380u128, "uusdy"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        });
+
+    suite.add_one_epoch().add_one_epoch();
+
+    suite
+        .manage_position(
+            &alice,
+            PositionAction::Withdraw {
+                identifier: "u-alice_second_position_1".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        });
+
+    suite
+        .add_one_epoch()
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1usize);
+                    assert_eq!(total_rewards[0], coin(324u128, "uusdy"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(999_328_756u128));
+        })
+        .claim(&alice, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(999_328_756u128 + 324u128));
+        })
+        .manage_position(
+            &alice,
+            PositionAction::Close {
+                identifier: "u-alice_second_position_2".to_string(),
+                lp_asset: Some(coin(500, lp_denom_1.clone())),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite.add_one_epoch();
+
+    suite.query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 14);
+    });
+
+    suite
+        .manage_position(
+            &alice,
+            PositionAction::Withdraw {
+                identifier: "p-1".to_string(),
+                emergency_unlock: None,
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &alice,
+            PositionAction::Withdraw {
+                identifier: "u-alice_second_position_2".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_lp_weight(&alice, &lp_denom_1, 15, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&alice, &lp_denom_1, 14, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&alice, &lp_denom_1, 13, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&alice, &lp_denom_1, 12, |result| {
+            result.unwrap_err();
+        });
+
+    suite
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .manage_position(
+            &alice,
+            PositionAction::Create {
+                identifier: Some("final_alice_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(3000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_lp_weight(&alice, &lp_denom_1, 14, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&alice, &lp_denom_1, 15, |result| {
+            let lp_weight_response = result.unwrap();
+            assert_eq!(lp_weight_response.lp_weight, Uint128::new(3000));
+        })
+        .add_one_epoch()
+        .query_rewards(&alice, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1usize);
+                    assert_eq!(total_rewards[0], coin(1_454, "uosmo"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+
+    suite
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 2usize);
+                    assert_eq!(
+                        total_rewards,
+                        vec![coin(322u128, "uosmo"), coin(163_355u128, "uusdy")]
+                    );
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance("uosmo".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .claim(&bob, vec![], |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 163_355u128));
+        })
+        .query_balance("uosmo".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 322u128));
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 18);
+        });
+
+    suite
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 2usize);
+                    assert_eq!(
+                        total_rewards,
+                        vec![coin(966u128, "uosmo"), coin(79_950u128, "uusdy")]
+                    );
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        // since bob didn't have more positions for lp1, the lp_weight_history gets wiped for that lp denom
+        .manage_position(
+            &bob,
+            PositionAction::Withdraw {
+                identifier: "u-bob_position_1".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1usize);
+                    assert_eq!(total_rewards, vec![coin(79_950u128, "uusdy")]);
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        // creating a new position for bob with the lp denom 1 won't give him the rewards in the past
+        // epochs he had but gave up by emergency withdrawing
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("new_bob_position_lp_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 1usize);
+                    assert_eq!(total_rewards, vec![coin(79_950u128, "uusdy")]);
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .claim(&bob, vec![], |result| {
+            result.unwrap();
+        })
+        .add_one_epoch()
+        .query_rewards(&bob, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards.len(), 2usize);
+                    assert_eq!(
+                        total_rewards,
+                        vec![coin(444, "uosmo"), coin(26_650u128, "uusdy")]
+                    );
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        });
+}
+
+#[test]
+#[allow(clippy::inconsistent_digit_grouping)]
+pub fn can_emergency_withdraw_an_lp_without_farm() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let lp_without_farm = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom"),
+        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "uosmo"),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, lp_without_farm.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: Some(2),
+                    preliminary_end_epoch: Some(6),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &creator,
+            PositionAction::Create {
+                identifier: Some("creator_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(2_000, lp_without_farm.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite.add_one_epoch().add_one_epoch();
+
+    // withdraw the position
+    suite.manage_position(
+        &creator,
+        PositionAction::Withdraw {
+            identifier: "u-creator_position".to_string(),
+            emergency_unlock: Some(true),
+        },
+        vec![],
+        |result| {
+            result.unwrap();
+        },
+    );
+}
+
+#[test]
+fn farm_owners_get_penalty_fees() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+    let lp_denom_3 = format!("factory/{MOCK_CONTRACT_ADDR_1}/3.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom_1.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+        coin(1_000_000_000u128, lp_denom_3.clone()),
+    ]);
+
+    let alice = suite.senders[0].clone();
+    let bob = suite.senders[1].clone();
+    let carol = suite.senders[2].clone();
+    let dan = suite.senders[3].clone();
+
+    suite.instantiate_default();
+
+    let fee_collector = suite.fee_collector_addr.clone();
+
+    suite
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &bob,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &carol,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(8_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &dan,
+            PositionAction::Create {
+                identifier: Some("dan_position_lp_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &dan,
+            PositionAction::Create {
+                identifier: Some("dan_position_lp_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &dan,
+            PositionAction::Create {
+                identifier: Some("dan_position_lp_3".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_3.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(dan.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 3);
+                assert_eq!(
+                    positions.positions,
+                    vec![
+                        Position {
+                            identifier: "u-dan_position_lp_1".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: dan.clone(),
+                        },
+                        Position {
+                            identifier: "u-dan_position_lp_2".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: dan.clone(),
+                        },
+                        Position {
+                            identifier: "u-dan_position_lp_3".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/3.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: dan.clone(),
+                        }
+                    ]
+                );
+            },
+        );
+
+    suite.add_one_epoch().add_one_epoch();
+
+    suite.query_rewards(&dan, |result| {
+        let rewards_response = result.unwrap();
+        match rewards_response {
+            RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                assert_eq!(total_rewards.len(), 1);
+                assert_eq!(total_rewards[0], coin(2_854u128, "uusdy"));
+            }
+            _ => {
+                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+            }
+        }
+    });
+
+    // dan emergency withdraws the position for the lp_3, which doesn't have any farm.
+    // in that case, the full penalty fee should go to the fee collector
+    suite
+        .query_balance(lp_denom_3.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &dan,
+            PositionAction::Withdraw {
+                identifier: "u-dan_position_lp_3".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_3.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(100u128));
+        });
+
+    // dan emergency withdraws the position for the lp_2, which has a single farm.
+    // in that case, half of the penalty fee should go to the fee collector and the other half
+    // to the only farm owner (carol)
+    suite
+        .query_balance(lp_denom_2.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .query_balance(lp_denom_2.clone(), &carol, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .manage_position(
+            &dan,
+            PositionAction::Withdraw {
+                identifier: "u-dan_position_lp_2".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_2.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(50u128));
+        })
+        .query_balance(lp_denom_2.clone(), &carol, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 50u128));
+        });
+
+    // dan emergency withdraws the position for the lp_1, which has two farms.
+    // in that case, half of the penalty fee should go to the fee collector and the other half
+    // to the two farm owners (alice and bob)
+    suite
+        .query_balance(lp_denom_1.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .query_balance(lp_denom_1.clone(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance(lp_denom_1.clone(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .manage_position(
+            &dan,
+            PositionAction::Withdraw {
+                identifier: "u-dan_position_lp_1".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_1.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(50u128));
+        })
+        .query_balance(lp_denom_1.clone(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+        })
+        .query_balance(lp_denom_1.clone(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+        });
+
+    // now let's create a new position with such a small amount that the penalty fee could go
+    // (rounded down) to zero
+
+    suite
+        .manage_position(
+            &dan,
+            PositionAction::Create {
+                identifier: Some("dan_position_lp_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(20, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &dan,
+            PositionAction::Create {
+                identifier: Some("dan_position_lp_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(10, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &dan,
+            PositionAction::Create {
+                identifier: Some("dan_position_lp_3".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(5, lp_denom_3.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(dan.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 3);
+                assert_eq!(
+                    positions.positions,
+                    vec![
+                        Position {
+                            identifier: "u-dan_position_lp_1".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(20),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: dan.clone(),
+                        },
+                        Position {
+                            identifier: "u-dan_position_lp_2".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(10),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: dan.clone(),
+                        },
+                        Position {
+                            identifier: "u-dan_position_lp_3".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/3.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(5),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: dan.clone(),
+                        }
+                    ]
+                );
+            },
+        );
+
+    // dan emergency withdraws the position for the lp_3, which doesn't have any farm.
+    // in that case, the full penalty fee should go to the fee collector, but it won't since the penalty
+    // will go to zero
+    suite
+        .query_balance(lp_denom_3.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(100u128));
+        })
+        .query_balance(lp_denom_3.clone(), &dan, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_895u128));
+        })
+        .manage_position(
+            &dan,
+            PositionAction::Withdraw {
+                identifier: "u-dan_position_lp_3".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_3.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(100u128));
+        })
+        .query_balance(lp_denom_3.clone(), &dan, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_900u128));
+        });
+
+    // dan emergency withdraws the position for the lp_2, which has a single farm.
+    // in that case, the full amount of the penalty will go to the fee collector because if split in
+    // half it would approximate to zero
+    suite
+        .query_balance(lp_denom_2.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(50u128));
+        })
+        .query_balance(lp_denom_2.clone(), &carol, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 50u128));
+        })
+        .manage_position(
+            &dan,
+            PositionAction::Withdraw {
+                identifier: "u-dan_position_lp_2".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_2.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(51u128));
+        })
+        .query_balance(lp_denom_2.clone(), &carol, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 50u128));
+        });
+
+    // dan emergency withdraws the position for the lp_1, which has two farms.
+    // in that case, the whole penalty will go to the fee collector because the second half going to
+    // the owners will approximate to zero
+    suite
+        .query_balance(lp_denom_1.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(50u128));
+        })
+        .query_balance(lp_denom_1.clone(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+        })
+        .query_balance(lp_denom_1.clone(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+        })
+        .manage_position(
+            &dan,
+            PositionAction::Withdraw {
+                identifier: "u-dan_position_lp_1".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_1.clone(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(52u128));
+        })
+        .query_balance(lp_denom_1.clone(), &alice, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+        })
+        .query_balance(lp_denom_1.clone(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
         });
 }
