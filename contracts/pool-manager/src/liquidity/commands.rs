@@ -1,8 +1,8 @@
 use cosmwasm_std::{
-    coin, coins, ensure, to_json_binary, wasm_execute, BankMsg, Coin, CosmosMsg, DepsMut, Env,
-    MessageInfo, Response, StdResult, SubMsg,
+    coin, coins, ensure, to_json_binary, wasm_execute, BankMsg, Coin, CosmosMsg, Decimal256,
+    DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, Uint256,
 };
-use cosmwasm_std::{Decimal, OverflowError, Uint128};
+use cosmwasm_std::{Decimal, Uint128};
 
 use amm::coin::{add_coins, aggregate_coins};
 use amm::common::validate_addr_or_default;
@@ -433,11 +433,11 @@ pub fn withdraw_liquidity(
     let total_share = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
 
     // Get the ratio of the amount to withdraw to the total share
-    let share_ratio: Decimal = Decimal::from_ratio(amount, total_share);
+    let share_ratio: Decimal256 = Decimal256::from_ratio(amount, total_share);
 
     // sanity check, the share_ratio cannot possibly be greater than 1
     ensure!(
-        share_ratio <= Decimal::one(),
+        share_ratio <= Decimal256::one(),
         ContractError::InvalidLpShareToWithdraw
     );
 
@@ -448,12 +448,14 @@ pub fn withdraw_liquidity(
         .map(|pool_asset| {
             Ok(Coin {
                 denom: pool_asset.denom.clone(),
-                amount: Decimal::from_ratio(pool_asset.amount, Uint128::one())
-                    .checked_mul(share_ratio)?
-                    .to_uint_floor(),
+                amount: Uint128::try_from(
+                    Decimal256::from_ratio(pool_asset.amount, Uint256::one())
+                        .checked_mul(share_ratio)?
+                        .to_uint_floor(),
+                )?,
             })
         })
-        .collect::<Result<Vec<Coin>, OverflowError>>()?
+        .collect::<Result<Vec<Coin>, ContractError>>()?
         .into_iter()
         // filter out assets with zero amount
         .filter(|coin| coin.amount > Uint128::zero())
