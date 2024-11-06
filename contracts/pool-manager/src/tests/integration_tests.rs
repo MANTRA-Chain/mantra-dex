@@ -163,8 +163,9 @@ fn deposit_and_withdraw_sanity_check() {
 }
 
 mod pool_creation_failures {
-    use super::*;
     use common_testing::multi_test::stargate_mock::StargateMock;
+
+    use super::*;
 
     // Insufficient fee to create pool; 90 instead of 100
     #[test]
@@ -2701,6 +2702,7 @@ mod swapping {
                 );
             });
     }
+
     #[allow(clippy::inconsistent_digit_grouping)]
     #[test]
     fn swap_large_digits_stable_18_digits() {
@@ -2726,7 +2728,6 @@ mod swapping {
         let alice = suite.creator();
         let bob = suite.senders[1].clone();
         let carol = suite.senders[2].clone();
-        let dan = suite.senders[3].clone();
 
         let asset_denoms = vec!["ausdy".to_string(), "pusdc".to_string()];
 
@@ -3042,10 +3043,10 @@ mod ownership {
 }
 
 mod locking_lp {
-    use cosmwasm_std::{coin, Coin, Decimal, Uint128};
     use std::cell::RefCell;
 
-    use crate::ContractError;
+    use cosmwasm_std::{coin, Coin, Decimal, Uint128};
+
     use amm::farm_manager::{Position, PositionsBy};
     use amm::fee::{Fee, PoolFee};
     use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
@@ -3053,6 +3054,7 @@ mod locking_lp {
     use common_testing::multi_test::stargate_mock::StargateMock;
 
     use crate::tests::suite::TestingSuite;
+    use crate::ContractError;
 
     #[test]
     fn provide_liquidity_locking_lp_no_lock_position_identifier() {
@@ -3156,7 +3158,7 @@ mod locking_lp {
                 }));
             });
 
-        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None,|result| {
+        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
@@ -3225,7 +3227,7 @@ mod locking_lp {
                 *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
             });
 
-        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None,|result| {
+        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
@@ -3349,7 +3351,7 @@ mod locking_lp {
                 }));
             });
 
-        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None,|result| {
+        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
@@ -3418,7 +3420,7 @@ mod locking_lp {
                 *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
             });
 
-        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None,|result| {
+        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
             let positions = result.unwrap().positions;
             // the position should be updated
             assert_eq!(positions.len(), 1);
@@ -3535,7 +3537,7 @@ mod locking_lp {
                 }));
             });
 
-        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None,|result| {
+        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
             let positions = result.unwrap().positions;
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
@@ -3604,13 +3606,13 @@ mod locking_lp {
                 *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
             });
 
-        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None,|result| {
+        suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
             let positions = result.unwrap().positions;
             // the position should be updated
             assert_eq!(positions.len(), 2);
             assert_eq!(positions[0], Position {
                 identifier: "p-1".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(2_000u128)},
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(2_000u128) },
                 unlocking_duration: 200_000,
                 open: true,
                 expiring_at: None,
@@ -3750,21 +3752,20 @@ mod locking_lp {
                 },
             );
 
-        suite.query_farm_positions(Some(PositionsBy::Receiver(attacker.to_string())), None, None, None,|result| {
+        suite.query_farm_positions(Some(PositionsBy::Receiver(attacker.to_string())), None, None, None, |result| {
             let positions = result.unwrap().positions;
             // the position should be updated
             assert_eq!(positions.len(), 1);
             assert_eq!(positions[0], Position {
                 identifier: "u-legit_position".to_string(),
-                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(1_000_000u128)},
+                lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(1_000_000u128) },
                 unlocking_duration: 86_400,
                 open: true,
                 expiring_at: None,
                 receiver: attacker.clone(),
             });
-
         })
-            .query_farm_positions(Some(PositionsBy::Receiver(victim.to_string())), None, None, None,|result| {
+            .query_farm_positions(Some(PositionsBy::Receiver(victim.to_string())), None, None, None, |result| {
                 let positions = result.unwrap().positions;
                 assert!(positions.is_empty());
             })
@@ -5579,6 +5580,119 @@ mod provide_liquidity {
             },
         );
     }
+
+    #[allow(clippy::inconsistent_digit_grouping)]
+    #[test]
+    fn provide_and_remove_liquidity_18_decimals() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000_000u128, "uusdc".to_string()),
+                coin(
+                    300_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                ),
+                coin(
+                    300_000_000_000_000_000000000000000000u128,
+                    "pusdc".to_string(),
+                ),
+                coin(1_000_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let alice = suite.creator();
+
+        let asset_denoms = vec!["ausdy".to_string(), "pusdc".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::permille(5),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &alice,
+            asset_denoms,
+            vec![18u8, 18u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            None,
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // let's provide liquidity 300T pusdc, 300T usdy
+        suite.provide_liquidity(
+            &alice,
+            "p.1".to_string(),
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "pusdc".to_string(),
+                    amount: Uint128::new(300_000_000_000_000_000000000000000000u128),
+                },
+                Coin {
+                    denom: "ausdy".to_string(),
+                    amount: Uint128::new(300_000_000_000_000_000000000000000000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let lp_shares = RefCell::new(Coin::new(0u128, "".to_string()));
+        suite.query_all_balances(&alice.to_string(), |balances| {
+            for coin in balances.unwrap().iter() {
+                if coin.denom.contains("p.1") {
+                    *lp_shares.borrow_mut() = coin.clone();
+                }
+            }
+        });
+
+        suite
+            .query_balance(&alice.to_string(), "pusdc".to_string(), |result| {
+                assert_eq!(result.unwrap().amount, Uint128::zero());
+            })
+            .query_balance(&alice.to_string(), "usdy".to_string(), |result| {
+                assert_eq!(result.unwrap().amount, Uint128::zero());
+            })
+            .withdraw_liquidity(
+                &alice,
+                "p.1".to_string(),
+                vec![lp_shares.borrow().clone()],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_balance(&alice.to_string(), "pusdc".to_string(), |result| {
+                assert_approx_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(300_000_000_000_000_000000000000000000u128),
+                    "0.000000000000000001"
+                );
+            })
+            .query_balance(&alice.to_string(), "ausdy".to_string(), |result| {
+                assert_approx_eq!(
+                    result.unwrap().amount,
+                    Uint128::new(300_000_000_000_000_000000000000000000u128),
+                    "0.000000000000000001"
+                );
+            });
+    }
 }
 
 mod multiple_pools {
@@ -5668,6 +5782,7 @@ mod multiple_pools {
                 assert_eq!(response.pools[2].pool_info.pool_identifier, "p.1");
             });
     }
+
     #[test]
     fn provide_liquidity_to_multiple_pools_check_fees() {
         let mut suite = TestingSuite::default_with_balances(
@@ -6257,7 +6372,7 @@ mod multiple_pools {
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_2.clone(),
                 });
-            }).query_pools(Some("o.uluna.uusd.pool.1".to_string()),None, None, |result| {
+            }).query_pools(Some("o.uluna.uusd.pool.1".to_string()), None, None, |result| {
             let response = result.unwrap();
             let pool_info = response.pools[0].pool_info.clone();
 
