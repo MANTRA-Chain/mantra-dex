@@ -4,7 +4,7 @@ set -e
 project_root_path=$(realpath "$0" | sed 's|\(.*\)/.*|\1|' | cd ../ | pwd)
 
 if [ "$1" != "--skip-verbose" ]; then
-  echo -e "\nGetting artifacts versions...\n"
+	echo -e "\nGetting artifacts versions...\n"
 fi
 
 echo -e "\033[1mContracts:\033[0m"
@@ -20,8 +20,8 @@ done
 echo -e "\n\033[1mPackages:\033[0m"
 
 for package in packages/*; do
-  version=$(cat ''"$package"'/Cargo.toml' | awk -F= '/^version/ { print $2 }')
-  version="${version//\"/}"
+	version=$(cat ''"$package"'/Cargo.toml' | awk -F= '/^version/ { print $2 }')
+	version="${version//\"/}"
 
-  printf "%-20s %s\n" "$(basename $package)" ": $version"
+	printf "%-20s %s\n" "$(basename $package)" ": $version"
 done
