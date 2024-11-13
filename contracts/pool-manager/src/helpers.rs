@@ -338,11 +338,15 @@ pub fn compute_offer_amount(
 
     // ask => offer
     // offer_amount = cp / (ask_pool - ask_amount / (1 - fees)) - offer_pool
-    let fees = pool_fees
+    let mut fees = pool_fees
         .swap_fee
         .to_decimal_256()
         .checked_add(pool_fees.protocol_fee.to_decimal_256())?
         .checked_add(pool_fees.burn_fee.to_decimal_256())?;
+
+    for extra_fee in pool_fees.extra_fees.iter() {
+        fees = fees.checked_add(extra_fee.to_decimal_256())?;
+    }
 
     let one_minus_commission = Decimal256::one() - fees;
     let inv_one_minus_commission = Decimal256::one() / one_minus_commission;
