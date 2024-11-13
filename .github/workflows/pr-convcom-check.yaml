@@ -3,25 +3,8 @@ name: Pull request
 on: [pull_request]
 
 jobs:
-  style:
-    name: Style
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Install stable toolchain and check style
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: 1.80.0
-          override: true
-          components: rustfmt
-      - run: cargo fmt -- --check
   check:
-    name: Check
+    name: Check conventional commits
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
