@@ -15,7 +15,7 @@ use crate::helpers::{
 use crate::state::{CONFIG, FARM_COUNTER};
 use crate::{farm, manager, position, queries};
 
-const CONTRACT_NAME: &str = "mantra_farm-manager";
+const CONTRACT_NAME: &str = "mantra:farm-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]

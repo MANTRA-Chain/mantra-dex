@@ -681,7 +681,7 @@ dependencies = [
 
 [[package]]
 name = "epoch-manager"
-version = "0.1.2"
+version = "1.0.0"
 dependencies = [
  "amm",
  "cosmwasm-schema",
@@ -711,7 +711,7 @@ dependencies = [
 
 [[package]]
 name = "farm-manager"
-version = "0.1.6"
+version = "1.0.0"
 dependencies = [
  "amm",
  "anyhow",
@@ -742,7 +742,7 @@ checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 
 [[package]]
 name = "fee-collector"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "amm",
  "cosmwasm-schema",
@@ -1054,7 +1054,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pool-manager"
-version = "0.1.5"
+version = "1.0.0"
 dependencies = [
  "amm",
  "anyhow",

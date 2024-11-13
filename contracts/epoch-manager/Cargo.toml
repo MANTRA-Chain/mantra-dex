@@ -1,6 +1,6 @@
 [package]
 name = "epoch-manager"
-version = "0.1.2"
+version = "1.0.0"
 authors = ["Kerber0x <kerber0x@protonmail.com>"]
 edition.workspace = true
 description = "The Epoch Manager contract keeps track of epochs."

@@ -11,7 +11,7 @@ use crate::state::CONFIG;
 use crate::{commands, queries};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "mantra_epoch-manager";
+const CONTRACT_NAME: &str = "mantra:epoch-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]

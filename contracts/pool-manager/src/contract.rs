@@ -16,7 +16,7 @@ use crate::state::{
 use crate::{liquidity, manager, queries, router, swap};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "mantra_pool-manager";
+const CONTRACT_NAME: &str = "mantra:pool-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID: u64 = 1;
 
