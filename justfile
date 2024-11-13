@@ -60,7 +60,7 @@ optimize:
 
 # Prints the artifacts versions on the current commit.
 get-artifacts-versions:
-  scripts/get_artifacts_versions.sh
+  scripts/get_artifacts_versions.sh --skip-verbose
 
 # Prints the artifacts size. Optimize should be called before.
 get-artifacts-size:
