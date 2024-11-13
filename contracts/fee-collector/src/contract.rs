@@ -6,7 +6,7 @@ use mantra_utils::validate_contract;
 
 use crate::error::ContractError;
 
-const CONTRACT_NAME: &str = "mantra_fee-collector";
+const CONTRACT_NAME: &str = "mantra:fee-collector";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
