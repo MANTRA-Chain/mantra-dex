@@ -84,7 +84,7 @@ function init_epoch_manager() {
       "genesis_epoch": "1763650800"
     }
   }'
-	init_artifact 'epoch_manager.wasm' "$init_msg" "X-MANTRA Epoch Manager"
+	init_artifact 'epoch_manager.wasm' "$init_msg" "MANTRA Epoch Manager"
 }
 
 function init_pool_manager() {
@@ -99,18 +99,19 @@ function init_pool_manager() {
                 "amount": "10000000"
               }
             }'
-	init_artifact 'pool_manager.wasm' "$init_msg" "X-MANTRA Pool Manager"
+	init_artifact 'pool_manager.wasm' "$init_msg" "MANTRA Pool Manager"
 }
 
 function init_fee_collector() {
 	init_msg='{}'
-	init_artifact 'fee_collector.wasm' "$init_msg" "X-MANTRA Fee Collector"
+	init_artifact 'fee_collector.wasm' "$init_msg" "MANTRA Fee Collector"
 }
 
 function init_farm_manager() {
 	epoch_manager_addr=$(jq -r '.contracts[] | select (.wasm == "epoch_manager.wasm") | .contract_address' $output_file)
 	fee_collector_addr=$(jq -r '.contracts[] | select (.wasm == "fee_collector.wasm") | .contract_address' $output_file)
 
+	#farm_expiration_time = 2629746 = 1 month
 	init_msg='{
               "owner": "'$deployer_address'",
               "epoch_manager_addr": "'$epoch_manager_addr'",
@@ -124,9 +125,10 @@ function init_farm_manager() {
               "max_farm_epoch_buffer": 14,
               "min_unlocking_duration": 86400,
               "max_unlocking_duration": 86400,
+              "farm_expiration_time": 2629746,
               "emergency_unlock_penalty": "0.02"
             }'
-	init_artifact 'farm_manager.wasm' "$init_msg" "X-MANTRA Farm Manager"
+	init_artifact 'farm_manager.wasm' "$init_msg" "MANTRA Farm Manager"
 }
 
 function update_farm_manager_config() {
