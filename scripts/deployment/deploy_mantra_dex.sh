@@ -31,7 +31,7 @@ function store_artifact_on_chain() {
 	echo "Storing $(basename $artifact) on $CHAIN_ID..."
 
 	# Get contract version for storing purposes
-	local contract_path=$(find "$project_root_path" -iname $(cut -d . -f 1 <<<$(basename $artifact)) -type d)
+	local contract_path=$(find "$project_root_path" -iname $(cut -d . -f 1 <<<$(basename $(echo $artifact | sed 's/_/-/g'))) -type d)
 	local version=$(cat ''"$contract_path"'/Cargo.toml' | awk -F= '/^version/ { print $2 }')
 	local version="${version//\"/}"
 
@@ -80,11 +80,11 @@ function init_epoch_manager() {
 	init_msg='{
     "owner": "'$deployer_address'",
     "epoch_config": {
-      "duration": "3600",
-      "genesis_epoch": "1728489307"
+      "duration": "86400",
+      "genesis_epoch": "1763650800"
     }
   }'
-	init_artifact 'epoch_manager.wasm' "$init_msg" "MANTRA Epoch Manager"
+	init_artifact 'epoch_manager.wasm' "$init_msg" "X-MANTRA Epoch Manager"
 }
 
 function init_pool_manager() {
@@ -96,15 +96,15 @@ function init_pool_manager() {
               "farm_manager_addr": "'$farm_manager_addr'",
               "pool_creation_fee": {
                 "denom": "uom",
-                "amount": "1000"
+                "amount": "10000000"
               }
             }'
-	init_artifact 'pool_manager.wasm' "$init_msg" "MANTRA Pool Manager"
+	init_artifact 'pool_manager.wasm' "$init_msg" "X-MANTRA Pool Manager"
 }
 
 function init_fee_collector() {
 	init_msg='{}'
-	init_artifact 'fee_collector.wasm' "$init_msg" "MANTRA Fee Collector"
+	init_artifact 'fee_collector.wasm' "$init_msg" "X-MANTRA Fee Collector"
 }
 
 function init_farm_manager() {
@@ -118,15 +118,24 @@ function init_farm_manager() {
               "pool_manager_addr": "",
               "create_farm_fee": {
                 "denom": "uom",
-                "amount": "1000"
+                "amount": "10000000"
               },
               "max_concurrent_farms": 7,
               "max_farm_epoch_buffer": 14,
               "min_unlocking_duration": 86400,
               "max_unlocking_duration": 86400,
-              "emergency_unlock_penalty": "0.01"
+              "emergency_unlock_penalty": "0.02"
             }'
-	init_artifact 'farm_manager.wasm' "$init_msg" "MANTRA Farm Manager"
+	init_artifact 'farm_manager.wasm' "$init_msg" "X-MANTRA Farm Manager"
+}
+
+function update_farm_manager_config() {
+	farm_manager_addr=$(jq -r '.contracts[] | select (.wasm == "farm_manager.wasm") | .contract_address' $output_file)
+	pool_manager_addr=$(jq -r '.contracts[] | select (.wasm == "pool_manager.wasm") | .contract_address' $output_file)
+
+	msg='{"update_config":{"pool_manager_addr":"'$pool_manager_addr'"}}'
+
+	$BINARY tx wasm execute $farm_manager_addr "$msg" --from $deployer $TXFLAG
 }
 
 function init_mantra_dex() {
@@ -136,6 +145,7 @@ function init_mantra_dex() {
 	init_epoch_manager
 	init_farm_manager
 	init_pool_manager
+	update_farm_manager_config
 }
 
 function init_artifact() {
