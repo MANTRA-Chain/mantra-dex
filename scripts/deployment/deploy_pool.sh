@@ -7,11 +7,12 @@ project_root_path=$(realpath "$0" | sed 's|\(.*\)/.*|\1|' | cd ../ | pwd)
 # Displays tool usage
 function display_usage() {
 	echo "MANTRA Dex Pool Deployer"
-	echo -e "\nUsage:./deploy_pool.sh [flags].\n"
+	echo -e "\nUsage:./deploy_pool.sh [flags]. Does not support stable pools just yet.\n"
 	echo -e "Available flags:\n"
 	echo -e "  -h \thelp"
 	echo -e "  -c \tThe chain where you want to deploy (mantra|mantra-testnet)"
 	echo -e "  -p \tPool configuration file to get deployment info from."
+	echo -e "  -a \tThe amount to provide liquidity with, if any, comma separated, for denom 0 and denom 1. e.g. 1000,2000 would mean 1000denom0,2000denom1"
 }
 
 # Reads a pool config file, like the follow:
@@ -67,7 +68,6 @@ function create_pool() {
 		# build the label for the output file
 		denom=$(echo $asset | jq -r '.denom')
 		if [[ "$denom" == ibc/* ]]; then
-			echo here
 			local subdenom=$($BINARY q ibc-transfer denom-trace $denom --node $RPC -o json | jq -r '.denom_trace.base_denom | split("/") | .[-1]')
 		elif [[ "$denom" == factory/* ]]; then
 			local subdenom=$(basename "$denom")
@@ -150,13 +150,13 @@ function create_pool() {
 
 	local lp_asset=$(echo $res | jq -r '.events[] | select(.type == "wasm") | .attributes[] | select(.key == "lp_asset") | .value')
 	local pool_type=$(echo $res | jq -r '.events[] | select(.type == "wasm") | .attributes[] | select(.key == "pool_type") | .value')
-	local pool_identifier=$(echo $res | jq -r '.events[] | select(.type == "wasm") | .attributes[] | select(.key == "pool_identifier") | .value')
+	pool_identifier=$(echo $res | jq -r '.events[] | select(.type == "wasm") | .attributes[] | select(.key == "pool_identifier") | .value')
 
 	local label=$(echo "${label::-1}")
 
-	local denom_0="${asset_denoms[0]}"
+	denom_0="${asset_denoms[0]}"
 	local decimal_0=${asset_decimals[0]}
-	local denom_1="${asset_denoms[1]}"
+	denom_1="${asset_denoms[1]}"
 	local decimal_1=${asset_decimals[1]}
 
 	# Store on output file
@@ -173,13 +173,40 @@ function create_pool() {
 	jq '.' $output_file
 }
 
+function provide_liquidity() {
+	local provide_liquidity_msg='{"provide_liquidity":{"pool_identifier":"'$pool_identifier'"}}'
+
+	if [ ${#amounts[@]} -ne 2 ]; then
+		echo "You must provide liquidity for both assets"
+		exit 1
+	fi
+
+	amount=${amounts[0]}$denom_0,${amounts[1]}$denom_1
+
+	echo -e "\nProviding liquidity to:"
+	echo "Pool: $pool_identifier"
+	echo "Asset 0: ${amounts[0]}$denom_0"
+	echo "Asset 1: ${amounts[1]}$denom_1"
+
+	local res=$($BINARY tx wasm execute $pool_manager_addr "$provide_liquidity_msg" $TXFLAG --amount=$amount --from $deployer_address | jq -r '.txhash')
+	sleep $tx_delay
+	local res=$($BINARY q tx $res --node $RPC -o json)
+
+	if [[ $(echo $res | jq -r '.raw_log') == "" ]]; then
+		echo -e "\n**** Provided liquidity successfully ****\n"
+	elif [[ $(echo $res | jq -r '.raw_log') == *"error"* ]]; then
+		echo -e "\n**** Error providing liquidity ****\n"
+		echo $res
+	fi
+}
+
 if [ -z $1 ]; then
 	display_usage
 	exit 0
 fi
 
 # get args
-optstring=':c:p:h'
+optstring=':c:p:a:h'
 while getopts $optstring arg; do
 	case "$arg" in
 	c)
@@ -198,6 +225,10 @@ while getopts $optstring arg; do
 
 		# read pool config from file $OPTARG
 		read_pool_config $OPTARG && create_pool
+		;;
+	a)
+		readarray -t amounts < <(awk -F',' '{ for( i=1; i<=NF; i++ ) print $i }' <<<"$OPTARG")
+		provide_liquidity
 		;;
 	h)
 		display_usage
