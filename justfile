@@ -77,3 +77,7 @@ deploy CHAIN='mantra-testnet' CONTRACT='all':
 # Stores the MANTRA Dex contracts on the given CHAIN, default is mantra-testnet.
 store CHAIN='mantra-testnet' CONTRACT='all':
     ./scripts/deployment/deploy_mantra_dex.sh -c {{CHAIN}} -s {{CONTRACT}}
+
+# Deploys a pool on MANTRA Dex on the given CHAIN, default is mantra-testnet.
+deploy-pool CHAIN='mantra-testnet' POOL_FILE='pool.json':
+    ./scripts/deployment/deploy_pool.sh -c {{CHAIN}} -p {{POOL_FILE}}
