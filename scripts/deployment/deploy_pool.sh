@@ -22,6 +22,7 @@ function display_usage() {
 #  "swap_fee": "0.002",
 #  "burn_fee": "0",
 #  "pool_type": "constant_product",
+#  "amp_factor": 85,
 #  "pool_identifier": "pool_identifier",
 #  "assets": [
 #    {
@@ -48,6 +49,10 @@ function read_pool_config() {
 	burn_fee=$(jq -r '.burn_fee' $pool)
 	pool_type=$(jq -r '.pool_type' $pool)
 	pool_identifier=$(jq -r '.pool_identifier' $pool)
+
+	if [[ "$pool_type" == "stable_swap" ]]; then
+		amp_factor=$(jq -r '.amp_factor' $pool)
+	fi
 }
 
 function create_pool() {
@@ -84,6 +89,12 @@ function create_pool() {
 		asset_decimals+=($decimals)
 	done
 
+	if [[ "$pool_type" == "stable_swap" ]]; then
+		pool_type='{"'$pool_type'": {"amp": '$amp_factor'}}'
+	else
+		pool_type='"'$pool_type'"'
+	fi
+
 	create_pool_msg='{
                      "create_pool": {
                        "asset_denoms":["'${asset_denoms[0]}'","'${asset_denoms[1]}'"],
@@ -103,10 +114,12 @@ function create_pool() {
                          },
                          "extra_fees": []
                        },
-                       "pool_type": "'$pool_type'",
+                       "pool_type": '$pool_type',
                        "pool_identifier": "'$pool_identifier'"
                      }
                    }'
+
+	echo -e"\n$create_pool_msg\n"
 
 	echo -e "\e[1;31m⚠️ WARNING ⚠️️\e[0m"
 
