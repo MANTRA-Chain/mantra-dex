@@ -3,8 +3,8 @@ use cosmwasm_std::{
     Storage, Uint128, Uint64,
 };
 
-use amm::farm_manager::MIN_FARM_AMOUNT;
-use amm::farm_manager::{Curve, Farm, FarmParams};
+use mantra_dex_std::farm_manager::MIN_FARM_AMOUNT;
+use mantra_dex_std::farm_manager::{Curve, Farm, FarmParams};
 
 use crate::farm::{AUTO_FARM_ID_PREFIX, EXPLICIT_FARM_ID_PREFIX};
 use crate::helpers::{
@@ -57,7 +57,7 @@ fn create_farm(
         Some(config.max_concurrent_farms),
     )?;
 
-    let current_epoch = amm::epoch_manager::get_current_epoch(
+    let current_epoch = mantra_dex_std::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.clone().into_string(),
     )?;

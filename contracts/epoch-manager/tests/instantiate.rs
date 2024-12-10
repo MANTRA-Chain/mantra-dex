@@ -1,11 +1,11 @@
-use amm::constants::DAY_IN_SECONDS;
 use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
 use cosmwasm_std::{from_json, Uint64};
 use cw_multi_test::IntoBech32;
+use mantra_dex_std::constants::DAY_IN_SECONDS;
 
-use amm::epoch_manager::{ConfigResponse, EpochConfig, InstantiateMsg, QueryMsg};
 use epoch_manager::contract::{instantiate, query};
 use epoch_manager::ContractError;
+use mantra_dex_std::epoch_manager::{ConfigResponse, EpochConfig, InstantiateMsg, QueryMsg};
 
 mod common;
 

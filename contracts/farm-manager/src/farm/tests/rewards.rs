@@ -2,9 +2,9 @@ use crate::farm::commands::{
     compute_address_weights, compute_contract_weights, compute_start_from_epoch_for_address,
 };
 use crate::state::LP_WEIGHT_HISTORY;
-use amm::farm_manager::{Curve, Farm, Position};
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::{Addr, Coin, Uint128};
+use mantra_dex_std::farm_manager::{Curve, Farm, Position};
 
 #[test]
 fn compute_start_from_epoch_for_user_successfully() {

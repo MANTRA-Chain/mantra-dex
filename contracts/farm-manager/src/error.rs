@@ -7,7 +7,7 @@ use cw_ownable::OwnershipError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-use amm::farm_manager::EpochId;
+use mantra_dex_std::farm_manager::EpochId;
 
 #[cw_migrate_invalid_version_error]
 #[derive(Error, Debug)]

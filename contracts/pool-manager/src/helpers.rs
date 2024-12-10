@@ -1,14 +1,14 @@
 use std::ops::Mul;
 
-use amm::coin::{aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
-use amm::constants::LP_SYMBOL;
-use amm::fee::PoolFee;
-use amm::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, StdError,
     StdResult, Uint128, Uint256, Uint512,
 };
+use mantra_dex_std::coin::{aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
+use mantra_dex_std::constants::LP_SYMBOL;
+use mantra_dex_std::fee::PoolFee;
+use mantra_dex_std::pool_manager::{PoolInfo, PoolType, SimulationResponse};
 
 use crate::error::ContractError;
 use crate::math::Decimal256Helper;
@@ -384,7 +384,8 @@ pub fn compute_offer_amount(
     //todo test
     let mut extra_fees_amount: Uint256 = Uint256::zero();
     for extra_fee in pool_fees.extra_fees.iter() {
-        extra_fees_amount = extra_fees_amount.checked_add(extra_fee.compute(before_commission_deduction)?)?;
+        extra_fees_amount =
+            extra_fees_amount.checked_add(extra_fee.compute(before_commission_deduction)?)?;
     }
 
     Ok(OfferAmountComputation {

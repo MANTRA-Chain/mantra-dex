@@ -1,21 +1,21 @@
-use amm::constants::MONTH_IN_SECONDS;
 use cosmwasm_std::testing::MockStorage;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
 use cw_multi_test::{
     App, AppBuilder, AppResponse, BankKeeper, DistributionKeeper, Executor, FailingModule,
     GovFailingModule, IbcFailingModule, MockApiBech32, StakeKeeper, WasmKeeper,
 };
+use mantra_dex_std::constants::MONTH_IN_SECONDS;
 
 use crate::common::suite_contracts::{
     epoch_manager_contract, farm_manager_contract, fee_collector_contract,
 };
 use crate::common::MOCK_CONTRACT_ADDR_1;
-use amm::epoch_manager::{EpochConfig, EpochResponse};
-use amm::farm_manager::{
+use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+use mantra_dex_std::epoch_manager::{EpochConfig, EpochResponse};
+use mantra_dex_std::farm_manager::{
     Config, FarmAction, FarmsBy, FarmsResponse, InstantiateMsg, LpWeightResponse, PositionAction,
     PositionsResponse, RewardsResponse,
 };
-use common_testing::multi_test::stargate_mock::StargateMock;
 
 type OsmosisTokenFactoryApp = App<
     BankKeeper,
@@ -157,7 +157,7 @@ impl TestingSuite {
         let creator = self.creator().clone();
 
         // create epoch manager
-        let msg = amm::epoch_manager::InstantiateMsg {
+        let msg = mantra_dex_std::epoch_manager::InstantiateMsg {
             owner: creator.to_string(),
             epoch_config: EpochConfig {
                 duration: Uint64::new(86_400u64),
@@ -183,7 +183,7 @@ impl TestingSuite {
         let fee_collector_contract = self.app.store_code(fee_collector_contract());
 
         // create fee collector
-        let msg = amm::fee_collector::InstantiateMsg {};
+        let msg = mantra_dex_std::fee_collector::InstantiateMsg {};
 
         let creator = self.creator().clone();
 
@@ -303,7 +303,7 @@ impl TestingSuite {
         action: cw_ownable::Action,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::farm_manager::ExecuteMsg::UpdateOwnership(action);
+        let msg = mantra_dex_std::farm_manager::ExecuteMsg::UpdateOwnership(action);
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -333,7 +333,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::farm_manager::ExecuteMsg::UpdateConfig {
+        let msg = mantra_dex_std::farm_manager::ExecuteMsg::UpdateConfig {
             fee_collector_addr,
             epoch_manager_addr,
             pool_manager_addr,
@@ -364,7 +364,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::farm_manager::ExecuteMsg::ManageFarm { action };
+        let msg = mantra_dex_std::farm_manager::ExecuteMsg::ManageFarm { action };
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -384,7 +384,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::farm_manager::ExecuteMsg::ManagePosition { action };
+        let msg = mantra_dex_std::farm_manager::ExecuteMsg::ManagePosition { action };
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -403,7 +403,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::farm_manager::ExecuteMsg::Claim {};
+        let msg = mantra_dex_std::farm_manager::ExecuteMsg::Claim {};
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -425,7 +425,7 @@ impl TestingSuite {
         let ownership_response: StdResult<cw_ownable::Ownership<String>> =
             self.app.wrap().query_wasm_smart(
                 &self.farm_manager_addr,
-                &amm::farm_manager::QueryMsg::Ownership {},
+                &mantra_dex_std::farm_manager::QueryMsg::Ownership {},
             );
 
         result(ownership_response);
@@ -437,7 +437,7 @@ impl TestingSuite {
     pub(crate) fn query_config(&mut self, result: impl Fn(StdResult<Config>)) -> &mut Self {
         let response: StdResult<Config> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::Config {},
+            &mantra_dex_std::farm_manager::QueryMsg::Config {},
         );
 
         result(response);
@@ -455,7 +455,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let farms_response: StdResult<FarmsResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::Farms {
+            &mantra_dex_std::farm_manager::QueryMsg::Farms {
                 filter_by,
                 start_after,
                 limit,
@@ -470,7 +470,7 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn query_positions(
         &mut self,
-        filter_by: Option<amm::farm_manager::PositionsBy>,
+        filter_by: Option<mantra_dex_std::farm_manager::PositionsBy>,
         open_state: Option<bool>,
         start_after: Option<String>,
         limit: Option<u32>,
@@ -478,7 +478,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let positions_response: StdResult<PositionsResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::Positions {
+            &mantra_dex_std::farm_manager::QueryMsg::Positions {
                 filter_by,
                 open_state,
                 start_after,
@@ -498,7 +498,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let rewards_response: StdResult<RewardsResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::Rewards {
+            &mantra_dex_std::farm_manager::QueryMsg::Rewards {
                 address: address.to_string(),
             },
         );
@@ -518,7 +518,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let rewards_response: StdResult<LpWeightResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::LpWeight {
+            &mantra_dex_std::farm_manager::QueryMsg::LpWeight {
                 address: address.to_string(),
                 denom: denom.to_string(),
                 epoch_id,
@@ -553,7 +553,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let current_epoch_response: StdResult<EpochResponse> = self.app.wrap().query_wasm_smart(
             &self.epoch_manager_addr,
-            &amm::epoch_manager::QueryMsg::CurrentEpoch {},
+            &mantra_dex_std::epoch_manager::QueryMsg::CurrentEpoch {},
         );
 
         result(current_epoch_response);

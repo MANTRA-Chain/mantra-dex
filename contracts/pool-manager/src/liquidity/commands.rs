@@ -4,12 +4,12 @@ use cosmwasm_std::{
 };
 use cosmwasm_std::{Decimal, Uint128};
 
-use amm::coin::{add_coins, aggregate_coins};
-use amm::common::validate_addr_or_default;
-use amm::farm_manager::{PositionsBy, PositionsResponse};
-use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
-use amm::pool_manager::{get_total_share, ExecuteMsg, PoolType};
-use amm::U256;
+use mantra_dex_std::coin::{add_coins, aggregate_coins};
+use mantra_dex_std::common::validate_addr_or_default;
+use mantra_dex_std::farm_manager::{PositionsBy, PositionsResponse};
+use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
+use mantra_dex_std::pool_manager::{get_total_share, ExecuteMsg, PoolType};
+use mantra_dex_std::U256;
 
 use crate::{
     helpers::{self},
@@ -202,7 +202,7 @@ pub fn provide_liquidity(
                         ));
                     }
 
-                    messages.push(amm::lp_common::mint_lp_token_msg(
+                    messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                         liquidity_token.clone(),
                         &env.contract.address,
                         &env.contract.address,
@@ -245,7 +245,7 @@ pub fn provide_liquidity(
                     }
 
                     // mint the lp tokens to the contract
-                    messages.push(amm::lp_common::mint_lp_token_msg(
+                    messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                         liquidity_token.clone(),
                         &env.contract.address,
                         &env.contract.address,
@@ -286,7 +286,7 @@ pub fn provide_liquidity(
             );
 
             // mint the lp tokens to the contract
-            messages.push(amm::lp_common::mint_lp_token_msg(
+            messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                 liquidity_token.clone(),
                 &env.contract.address,
                 &env.contract.address,
@@ -297,7 +297,7 @@ pub fn provide_liquidity(
             if let Some(position_identifier) = lock_position_identifier {
                 let positions_result: StdResult<PositionsResponse> = deps.querier.query_wasm_smart(
                     config.farm_manager_addr.to_string(),
-                    &amm::farm_manager::QueryMsg::Positions {
+                    &mantra_dex_std::farm_manager::QueryMsg::Positions {
                         filter_by: Some(PositionsBy::Identifier(position_identifier.clone())),
                         open_state: None,
                         start_after: None,
@@ -319,8 +319,8 @@ pub fn provide_liquidity(
                     messages.push(
                         wasm_execute(
                             config.farm_manager_addr,
-                            &amm::farm_manager::ExecuteMsg::ManagePosition {
-                                action: amm::farm_manager::PositionAction::Expand {
+                            &mantra_dex_std::farm_manager::ExecuteMsg::ManagePosition {
+                                action: mantra_dex_std::farm_manager::PositionAction::Expand {
                                     identifier: position_identifier,
                                 },
                             },
@@ -334,8 +334,8 @@ pub fn provide_liquidity(
                     messages.push(
                         wasm_execute(
                             config.farm_manager_addr,
-                            &amm::farm_manager::ExecuteMsg::ManagePosition {
-                                action: amm::farm_manager::PositionAction::Create {
+                            &mantra_dex_std::farm_manager::ExecuteMsg::ManagePosition {
+                                action: mantra_dex_std::farm_manager::PositionAction::Create {
                                     identifier: Some(position_identifier),
                                     unlocking_duration,
                                     receiver: Some(receiver.clone()),
@@ -351,8 +351,8 @@ pub fn provide_liquidity(
                 messages.push(
                     wasm_execute(
                         config.farm_manager_addr,
-                        &amm::farm_manager::ExecuteMsg::ManagePosition {
-                            action: amm::farm_manager::PositionAction::Create {
+                        &mantra_dex_std::farm_manager::ExecuteMsg::ManagePosition {
+                            action: mantra_dex_std::farm_manager::PositionAction::Create {
                                 identifier: lock_position_identifier,
                                 unlocking_duration,
                                 receiver: Some(receiver.clone()),
@@ -365,7 +365,7 @@ pub fn provide_liquidity(
             }
         } else {
             // if no unlocking duration is set, just mint the LP tokens to the receiver
-            messages.push(amm::lp_common::mint_lp_token_msg(
+            messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                 liquidity_token,
                 &deps.api.addr_validate(&receiver)?,
                 &env.contract.address,
@@ -486,7 +486,7 @@ pub fn withdraw_liquidity(
     POOLS.save(deps.storage, &pool_identifier, &pool)?;
 
     // Burn the LP tokens
-    messages.push(amm::lp_common::burn_lp_asset_msg(
+    messages.push(mantra_dex_std::lp_common::burn_lp_asset_msg(
         liquidity_token,
         env.contract.address,
         amount,

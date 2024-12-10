@@ -1,8 +1,8 @@
 use cosmwasm_std::Decimal;
 use cosmwasm_std::{ensure, Addr, BankMsg, CosmosMsg, DepsMut, MessageInfo, Response};
 
-use amm::coin::burn_coin_msg;
-use amm::common::validate_addr_or_default;
+use mantra_dex_std::coin::burn_coin_msg;
+use mantra_dex_std::common::validate_addr_or_default;
 
 use crate::state::get_pool_by_identifier;
 use crate::{state::CONFIG, ContractError};

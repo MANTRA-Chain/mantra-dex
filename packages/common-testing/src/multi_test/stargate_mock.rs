@@ -9,10 +9,10 @@ use osmosis_std::types::cosmos::base::v1beta1::Coin;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::{Params, QueryParamsResponse};
 use std::str::FromStr;
 
-use amm::tokenfactory::burn::MsgBurn;
-use amm::tokenfactory::common::EncodeMessage;
-use amm::tokenfactory::create_denom::{MsgCreateDenom, MsgCreateDenomResponse};
-use amm::tokenfactory::mint::MsgMint;
+use mantra_dex_std::tokenfactory::burn::MsgBurn;
+use mantra_dex_std::tokenfactory::common::EncodeMessage;
+use mantra_dex_std::tokenfactory::create_denom::{MsgCreateDenom, MsgCreateDenomResponse};
+use mantra_dex_std::tokenfactory::mint::MsgMint;
 
 pub struct StargateMock {
     pub denom_creation_fee_denom: String,

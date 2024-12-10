@@ -1,6 +1,6 @@
 use cosmwasm_std::{DepsMut, MessageInfo, Response};
 
-use amm::epoch_manager::EpochConfig;
+use mantra_dex_std::epoch_manager::EpochConfig;
 
 use crate::helpers::validate_epoch_duration;
 use crate::state::CONFIG;

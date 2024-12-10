@@ -4,7 +4,7 @@ use cosmwasm_std::{
     Coin, Decimal, Decimal256, DepsMut, Fraction, StdError, StdResult, Uint128, Uint256,
 };
 
-use amm::pool_manager::PoolInfo;
+use mantra_dex_std::pool_manager::PoolInfo;
 
 use crate::helpers::{aggregate_outgoing_fees, get_asset_indexes_in_pool};
 use crate::{

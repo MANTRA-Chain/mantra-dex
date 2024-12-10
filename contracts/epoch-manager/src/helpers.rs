@@ -1,6 +1,6 @@
 use crate::ContractError;
-use amm::constants::DAY_IN_SECONDS;
 use cosmwasm_std::{ensure, Uint64};
+use mantra_dex_std::constants::DAY_IN_SECONDS;
 
 /// Validates the epoch duration.
 pub fn validate_epoch_duration(epoch_duration: Uint64) -> Result<(), ContractError> {

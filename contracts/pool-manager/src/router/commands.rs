@@ -2,9 +2,9 @@ use cosmwasm_std::{
     attr, coin, ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, MessageInfo, Response, Uint128,
 };
 
-use amm::coin::burn_coin_msg;
-use amm::common::validate_addr_or_default;
-use amm::pool_manager::SwapOperation;
+use mantra_dex_std::coin::burn_coin_msg;
+use mantra_dex_std::common::validate_addr_or_default;
+use mantra_dex_std::pool_manager::SwapOperation;
 
 use crate::{state::CONFIG, swap::perform_swap::perform_swap, ContractError};
 

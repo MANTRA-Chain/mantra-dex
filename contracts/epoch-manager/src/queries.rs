@@ -1,7 +1,7 @@
 use cosmwasm_std::{ensure, Deps, Env, StdError, Timestamp, Uint64};
 
 use crate::ContractError;
-use amm::epoch_manager::{ConfigResponse, Epoch, EpochResponse};
+use mantra_dex_std::epoch_manager::{ConfigResponse, Epoch, EpochResponse};
 
 use crate::state::CONFIG;
 

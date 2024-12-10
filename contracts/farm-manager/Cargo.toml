@@ -24,7 +24,7 @@ schemars.workspace = true
 semver.workspace = true
 serde.workspace = true
 thiserror.workspace = true
-amm.workspace = true
+mantra-dex-std.workspace = true
 mantra-utils.workspace = true
 cw-utils.workspace = true
 cw-ownable.workspace = true
@@ -32,7 +32,7 @@ cw-migrate-error-derive.workspace = true
 
 [dev-dependencies]
 cw-multi-test.workspace = true
-common-testing.workspace = true
+mantra-common-testing.workspace = true
 epoch-manager.workspace = true
 anyhow.workspace = true
 pool-manager.workspace = true

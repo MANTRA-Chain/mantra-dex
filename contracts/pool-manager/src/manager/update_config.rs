@@ -1,5 +1,5 @@
-use amm::pool_manager::{Config, FeatureToggle};
 use cosmwasm_std::{Coin, DepsMut, MessageInfo, Response};
+use mantra_dex_std::pool_manager::{Config, FeatureToggle};
 
 use crate::{state::CONFIG, ContractError};
 

@@ -1,7 +1,7 @@
 use cosmwasm_std::{Coin, Deps, Env};
 
-use amm::coin::aggregate_coins;
-use amm::farm_manager::{
+use mantra_dex_std::coin::aggregate_coins;
+use mantra_dex_std::farm_manager::{
     Config, EpochId, FarmsBy, FarmsResponse, LpWeightResponse, PositionsBy, PositionsResponse,
     RewardsResponse,
 };
@@ -98,8 +98,10 @@ pub(crate) fn query_rewards(
     }
 
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch =
-        amm::epoch_manager::get_current_epoch(deps, config.epoch_manager_addr.into_string())?;
+    let current_epoch = mantra_dex_std::epoch_manager::get_current_epoch(
+        deps,
+        config.epoch_manager_addr.into_string(),
+    )?;
 
     let mut total_rewards = vec![];
     let mut rewards_per_lp: Vec<(String, Vec<Coin>)> = vec![];

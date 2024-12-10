@@ -258,11 +258,11 @@ dependencies = [
 name = "common-testing"
 version = "1.0.0"
 dependencies = [
- "amm",
  "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
+ "mantra-dex-std",
  "osmosis-std",
  "schemars",
  "serde",
@@ -682,7 +682,6 @@ dependencies = [
 name = "epoch-manager"
 version = "1.0.0"
 dependencies = [
- "amm",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-migrate-error-derive",
@@ -691,7 +690,8 @@ dependencies = [
  "cw-storage-plus",
  "cw-utils",
  "cw2",
- "mantra-utils",
+ "mantra-dex-std",
+ "mantra-utils 1.0.0",
  "schemars",
  "semver",
  "serde",
@@ -712,9 +712,7 @@ dependencies = [
 name = "farm-manager"
 version = "1.0.0"
 dependencies = [
- "amm",
  "anyhow",
- "common-testing",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-migrate-error-derive",
@@ -725,7 +723,9 @@ dependencies = [
  "cw2",
  "epoch-manager",
  "fee-collector",
- "mantra-utils",
+ "mantra-common-testing",
+ "mantra-dex-std",
+ "mantra-utils 1.0.0",
  "pool-manager",
  "schemars",
  "semver",
@@ -743,7 +743,6 @@ checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 name = "fee-collector"
 version = "1.0.0"
 dependencies = [
- "amm",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-migrate-error-derive",
@@ -751,7 +750,8 @@ dependencies = [
  "cw-ownable",
  "cw-utils",
  "cw2",
- "mantra-utils",
+ "mantra-dex-std",
+ "mantra-utils 1.0.0",
  "schemars",
  "semver",
  "serde",
@@ -924,8 +924,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "mantra-common-testing"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36f8fd16fe8bf6c3b709be3b735e834ce51e79efa287d3aac354845c2e5a2407"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "mantra-dex-std",
+ "osmosis-std",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "mantra-dex-std"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23e45b02111a92b1f75701f1e80ca89458b5533752f5dd00717edd249a6c51ce"
+dependencies = [
+ "anybuf",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-ownable",
+ "cw-storage-plus",
+ "osmosis-std",
+ "uint",
+]
+
+[[package]]
 name = "mantra-utils"
 version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw-ownable",
+]
+
+[[package]]
+name = "mantra-utils"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af1d014b422ea59b60783bb67f67bd734fced1fa5a53bbb6395e171cfabfa54f"
 dependencies = [
  "cosmwasm-std",
  "cw-ownable",
@@ -1055,9 +1096,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 name = "pool-manager"
 version = "1.0.1"
 dependencies = [
- "amm",
  "anyhow",
- "common-testing",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-migrate-error-derive",
@@ -1069,7 +1108,9 @@ dependencies = [
  "epoch-manager",
  "farm-manager",
  "fee-collector",
- "mantra-utils",
+ "mantra-common-testing",
+ "mantra-dex-std",
+ "mantra-utils 1.0.0",
  "proptest",
  "rand",
  "semver",
@@ -1789,8 +1830,8 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 name = "xtask"
 version = "1.0.0"
 dependencies = [
- "amm",
  "cosmwasm-schema",
+ "mantra-dex-std",
  "serde",
  "serde_json",
 ]

@@ -3,7 +3,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use amm::farm_manager::{
+use mantra_dex_std::farm_manager::{
     Config, ExecuteMsg, FarmAction, InstantiateMsg, MigrateMsg, PositionAction, QueryMsg,
 };
 use mantra_utils::validate_contract;

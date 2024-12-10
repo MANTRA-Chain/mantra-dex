@@ -18,5 +18,5 @@ schemars.workspace = true
 serde.workspace = true
 cosmwasm-schema.workspace = true
 cw-multi-test.workspace = true
-amm.workspace = true
+mantra-dex-std.workspace = true
 osmosis-std.workspace = true

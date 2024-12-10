@@ -15,7 +15,7 @@ pub mod tasks {
 
     use cosmwasm_schema::{generate_api, remove_schemas};
 
-    use amm::*;
+    use mantra_dex_std::*;
     use serde::Deserialize;
 
     fn project_root() -> PathBuf {

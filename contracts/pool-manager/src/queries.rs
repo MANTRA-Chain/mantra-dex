@@ -1,13 +1,13 @@
 use std::cmp::Ordering;
 
-use amm::pool_manager::{
-    AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
-    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
-};
 use cosmwasm_std::{
     coin, ensure, Coin, Decimal256, Deps, Fraction, Order, StdResult, Uint128, Uint256,
 };
 use cw_storage_plus::Bound;
+use mantra_dex_std::pool_manager::{
+    AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
+    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
+};
 
 use crate::helpers::get_asset_indexes_in_pool;
 use crate::math::Decimal256Helper;
@@ -165,7 +165,8 @@ pub fn query_reverse_simulation(
 
             let mut extra_fees_amount: Uint256 = Uint256::zero();
             for extra_fee in pool_fees.extra_fees.iter() {
-                extra_fees_amount = extra_fees_amount.checked_add(extra_fee.compute(before_fees_ask)?)?;
+                extra_fees_amount =
+                    extra_fees_amount.checked_add(extra_fee.compute(before_fees_ask)?)?;
             }
 
             //todo test this
