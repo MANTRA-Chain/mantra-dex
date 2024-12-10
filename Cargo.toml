@@ -52,7 +52,7 @@ proptest = { version = "1.5.0" }
 rand = { version = "0.8.5" }
 hex = { version = "0.4.3" }
 
-mantra-dex-std = { version = "1.0.2" }
+mantra-dex-std = { version = "2.0.0" }
 mantra-common-testing = { version = "1.0.0" }
 mantra-utils = { version = "1.0.0" }
 

@@ -1679,21 +1679,21 @@ mod router {
 
         // simulating (reverse) swap operations should return the correct same amount as the pools are balanced
         // going from whale -> uusd should return 974 uusd
-        // going from uusd -> whale should return 974 whale
+        // going in reverse, 974 uusd -> whale should require approximately 1000 whale
         suite.query_simulate_swap_operations(
             Uint128::new(1_000),
             swap_operations.clone(),
             |result| {
                 let result = result.unwrap();
-                assert_eq!(result.amount.u128(), 974);
+                assert_eq!(result.return_amount.u128(), 974);
             },
         );
         suite.query_reverse_simulate_swap_operations(
-            Uint128::new(1_000),
+            Uint128::new(974),
             swap_operations.clone(),
             |result| {
                 let result = result.unwrap();
-                assert_eq!(result.amount.u128(), 974);
+                assert_approx_eq!(result.offer_amount.u128(), 1000, "0.004");
             },
         );
 
@@ -1734,7 +1734,7 @@ mod router {
             swap_operations.clone(),
             |result| {
                 let result = result.unwrap();
-                assert_approx_eq!(result.amount.u128(), 1_007, "0.1");
+                assert_approx_eq!(result.offer_amount.u128(), 1_007, "0.1");
             },
         );
 
@@ -1744,7 +1744,7 @@ mod router {
             swap_operations.clone(),
             |result| {
                 let result = result.unwrap();
-                assert_eq!(result.amount.u128(), 935);
+                assert_eq!(result.return_amount.u128(), 935);
             },
         );
     }
@@ -6731,8 +6731,7 @@ mod query_simulations {
     use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
     use mantra_common_testing::multi_test::stargate_mock::StargateMock;
     use mantra_dex_std::fee::{Fee, PoolFee};
-    use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
-    use mantra_dex_std::pool_manager::PoolType;
+    use mantra_dex_std::pool_manager::{PoolType, SwapOperation};
     use std::cell::RefCell;
 
     #[test]
@@ -6983,9 +6982,6 @@ mod query_simulations {
             StargateMock::new("uom".to_string(), "8888".to_string()),
         );
         let creator = suite.creator();
-        let _other = suite.senders[1].clone();
-        let _unauthorized = suite.senders[2].clone();
-        // Asset infos with uwhale and uluna
 
         let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
 
@@ -7207,6 +7203,428 @@ mod query_simulations {
                 );
 
                 assert_approx_eq!(900u128, return_amount.parse::<u128>().unwrap(), "0.002");
+            },
+        );
+    }
+
+    #[test]
+    fn simulate_swap_operations_query_verification() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uom".to_string()),
+                coin(1_000_000_000u128, "uusdt".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uusdc".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_infos = vec!["uom".to_string(), "uusdt".to_string()];
+
+        // protocol fee 1%
+        // swap fee 2%
+        // burn fee 3%
+        // extra fee 4%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(1u64),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(2u64),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3u64),
+            },
+            extra_fees: vec![Fee {
+                share: Decimal::percent(4u64),
+            }],
+        };
+
+        // Create a pool
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_infos,
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("uom.uusdt".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uusdt".to_string(), "uusdc".to_string()],
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::StableSwap { amp: 85 },
+                Some("uusdt.uusdc".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.uom.uusdt".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(4000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                "o.uusdt.uusdc".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        let simulated_return_amount = RefCell::new(Uint128::zero());
+        suite.query_simulate_swap_operations(
+            Uint128::from(1000u128),
+            vec![
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uom".to_string(),
+                    token_out_denom: "uusdt".to_string(),
+                    pool_identifier: "o.uom.uusdt".to_string(),
+                },
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uusdt".to_string(),
+                    token_out_denom: "uusdc".to_string(),
+                    pool_identifier: "o.uusdt.uusdc".to_string(),
+                },
+            ],
+            |result| {
+                let response = result.unwrap();
+
+                assert_eq!(response.return_amount, Uint128::from(3240u128));
+                assert_eq!(response.spreads, vec![coin(4u128, "uusdt".to_string()),]);
+                assert_eq!(
+                    response.swap_fees,
+                    vec![
+                        coin(72u128, "uusdc".to_string()),
+                        coin(79u128, "uusdt".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    response.protocol_fees,
+                    vec![
+                        coin(36u128, "uusdc".to_string()),
+                        coin(39u128, "uusdt".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    response.burn_fees,
+                    vec![
+                        coin(108u128, "uusdc".to_string()),
+                        coin(119u128, "uusdt".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    response.extra_fees,
+                    vec![
+                        coin(144u128, "uusdc".to_string()),
+                        coin(159u128, "uusdt".to_string()),
+                    ]
+                );
+
+                simulated_return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        );
+
+        // Now Let's try a swap
+        suite.execute_swap_operations(
+            &creator,
+            vec![
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uom".to_string(),
+                    token_out_denom: "uusdt".to_string(),
+                    pool_identifier: "o.uom.uusdt".to_string(),
+                },
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uusdt".to_string(),
+                    token_out_denom: "uusdc".to_string(),
+                    pool_identifier: "o.uusdt.uusdc".to_string(),
+                },
+            ],
+            None,
+            None,
+            None,
+            vec![coin(1000u128, "uom".to_string())],
+            |result| {
+                println!("{:?}", result);
+                let mut return_amount = String::new();
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
+                // return amount must be approximately equal to the value returned by the simulation
+                assert_approx_eq!(
+                    simulated_return_amount.borrow().u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.00000001"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn reverse_simulate_swap_operations_query_verification() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uom".to_string()),
+                coin(1_000_000_000u128, "uusdt".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uusdc".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_infos = vec!["uom".to_string(), "uusdt".to_string()];
+
+        // protocol fee 1%
+        // swap fee 2%
+        // burn fee 3%
+        // extra fee 4%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(1u64),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(2u64),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3u64),
+            },
+            extra_fees: vec![Fee {
+                share: Decimal::percent(4u64),
+            }],
+        };
+
+        // Create a pool
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_infos,
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("uom.uusdt".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uusdt".to_string(), "uusdc".to_string()],
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::StableSwap { amp: 85 },
+                Some("uusdt.uusdc".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.uom.uusdt".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(4000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                "o.uusdt.uusdc".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdt".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        let simulated_input_amount = RefCell::new(Uint128::zero());
+        let desired_output_amount = Uint128::from(3240u128);
+        suite.query_reverse_simulate_swap_operations(
+            desired_output_amount,
+            vec![
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uom".to_string(),
+                    token_out_denom: "uusdt".to_string(),
+                    pool_identifier: "o.uom.uusdt".to_string(),
+                },
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uusdt".to_string(),
+                    token_out_denom: "uusdc".to_string(),
+                    pool_identifier: "o.uusdt.uusdc".to_string(),
+                },
+            ],
+            |result| {
+                let response = result.unwrap();
+
+                // this is the value we got in the previous test for the regular simulation
+                assert_eq!(response.offer_amount, Uint128::from(1000u128));
+                assert_eq!(
+                    response.spreads,
+                    vec![
+                        coin(1u128, "uusdc".to_string()),
+                        coin(1u128, "uusdt".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    response.swap_fees,
+                    vec![
+                        coin(71u128, "uusdc".to_string()),
+                        coin(79u128, "uusdt".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    response.protocol_fees,
+                    vec![
+                        coin(35u128, "uusdc".to_string()),
+                        coin(39u128, "uusdt".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    response.burn_fees,
+                    vec![
+                        coin(107u128, "uusdc".to_string()),
+                        coin(119u128, "uusdt".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    response.extra_fees,
+                    vec![
+                        coin(143u128, "uusdc".to_string()),
+                        coin(159u128, "uusdt".to_string()),
+                    ]
+                );
+
+                simulated_input_amount
+                    .borrow_mut()
+                    .clone_from(&response.offer_amount);
+            },
+        );
+
+        // Now Let's try a swap
+        suite.execute_swap_operations(
+            &creator,
+            vec![
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uom".to_string(),
+                    token_out_denom: "uusdt".to_string(),
+                    pool_identifier: "o.uom.uusdt".to_string(),
+                },
+                SwapOperation::MantraSwap {
+                    token_in_denom: "uusdt".to_string(),
+                    token_out_denom: "uusdc".to_string(),
+                    pool_identifier: "o.uusdt.uusdc".to_string(),
+                },
+            ],
+            None,
+            None,
+            None,
+            vec![coin(
+                simulated_input_amount.borrow().u128(),
+                "uom".to_string(),
+            )],
+            |result| {
+                let mut return_amount = String::new();
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
+                // return amount must be approximately equal to the value returned by the simulation
+                assert_approx_eq!(
+                    desired_output_amount.u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.00000001"
+                );
             },
         );
     }
