@@ -21,20 +21,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
-name = "amm"
-version = "1.0.0"
-dependencies = [
- "anybuf",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-ownable",
- "cw-storage-plus",
- "osmosis-std",
- "test-case",
- "uint",
-]
-
-[[package]]
 name = "anybuf"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -252,20 +238,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "num-traits",
-]
-
-[[package]]
-name = "common-testing"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-multi-test",
- "mantra-dex-std",
- "osmosis-std",
- "schemars",
- "serde",
 ]
 
 [[package]]
@@ -691,7 +663,7 @@ dependencies = [
  "cw-utils",
  "cw2",
  "mantra-dex-std",
- "mantra-utils 1.0.0",
+ "mantra-utils",
  "schemars",
  "semver",
  "serde",
@@ -725,7 +697,7 @@ dependencies = [
  "fee-collector",
  "mantra-common-testing",
  "mantra-dex-std",
- "mantra-utils 1.0.0",
+ "mantra-utils",
  "pool-manager",
  "schemars",
  "semver",
@@ -751,7 +723,7 @@ dependencies = [
  "cw-utils",
  "cw2",
  "mantra-dex-std",
- "mantra-utils 1.0.0",
+ "mantra-utils",
  "schemars",
  "semver",
  "serde",
@@ -956,14 +928,6 @@ dependencies = [
 
 [[package]]
 name = "mantra-utils"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-ownable",
-]
-
-[[package]]
-name = "mantra-utils"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af1d014b422ea59b60783bb67f67bd734fced1fa5a53bbb6395e171cfabfa54f"
@@ -1110,7 +1074,7 @@ dependencies = [
  "fee-collector",
  "mantra-common-testing",
  "mantra-dex-std",
- "mantra-utils 1.0.0",
+ "mantra-utils",
  "proptest",
  "rand",
  "semver",

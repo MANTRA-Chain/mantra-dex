@@ -2,7 +2,6 @@
 resolver = "2"
 
 members = [
-  "packages/*",
   "contracts/pool-manager",
   "contracts/epoch-manager",
   "contracts/farm-manager",
@@ -13,11 +12,14 @@ members = [
 [workspace.package]
 edition = "2021"
 homepage = "https://mantra.zone"
-documentation = ""
-license = "MIT"
-repository = "https://github.com/MANTRA-Finance/amm"
+documentation = "https://docs.mantrachain.io/mantra-smart-contracts/mantra_dex"
+license = "MPL-2.0"
+repository = "https://github.com/MANTRA-Chain/mantra-dex"
 publish = false
-authors = ["MANTRA Finance"]
+authors = [
+  "MANTRA Engineering Team <tech@mantrachain.io>",
+  "Javier C <javier.m.costa@mantra.finance"
+]
 
 [workspace.dependencies]
 cosmwasm-schema = { version = "2.1.3" }
