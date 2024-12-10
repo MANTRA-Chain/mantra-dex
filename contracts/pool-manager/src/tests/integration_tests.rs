@@ -6725,3 +6725,489 @@ mod multiple_pools {
         );
     }
 }
+
+mod query_simulations {
+    use crate::tests::suite::TestingSuite;
+    use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
+    use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_dex_std::fee::{Fee, PoolFee};
+    use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
+    use mantra_dex_std::pool_manager::PoolType;
+    use std::cell::RefCell;
+
+    #[test]
+    fn simulation_queries_fees_verification() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uusdc".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+        let _other = suite.senders[1].clone();
+        let _unauthorized = suite.senders[2].clone();
+        // Asset infos with uwhale and uluna
+
+        let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        // protocol fee 1%
+        // swap fee 2%
+        // burn fee 3%
+        // extra fee 4%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(1u64),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(2u64),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3u64),
+            },
+            extra_fees: vec![Fee {
+                share: Decimal::percent(4u64),
+            }],
+        };
+
+        // Create a pool
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_infos,
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uusd".to_string(), "uusdc".to_string()],
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::StableSwap { amp: 85 },
+                Some("uusd.uusdc".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                "o.uusd.uusdc".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        let simulated_return_amount = RefCell::new(Uint128::zero());
+        suite.query_simulation(
+            "o.whale.uluna".to_string(),
+            Coin {
+                denom: "uwhale".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uluna".to_string(),
+            |result| {
+                let response = result.as_ref().unwrap();
+
+                // the protocol fee is 1% of the output amount
+                assert_approx_eq!(response.protocol_fee_amount, Uint128::new(10u128), "0.1");
+
+                // the swap fee is 2% of the output amount
+                assert_approx_eq!(response.swap_fee_amount, Uint128::new(20u128), "0.1");
+
+                // the burn fee is 3% of the output amount
+                assert_approx_eq!(response.burn_fee_amount, Uint128::new(30u128), "0.1");
+
+                // the extra fees are 4% of the output amount
+                assert_approx_eq!(response.extra_fees_amount, Uint128::new(40u128), "0.1");
+
+                *simulated_return_amount.borrow_mut() = response.return_amount;
+            },
+        );
+
+        // Now Let's try a swap
+        suite.swap(
+            &creator,
+            "uluna".to_string(),
+            None,
+            None,
+            None,
+            "o.whale.uluna".to_string(),
+            vec![coin(1000u128, "uwhale".to_string())],
+            |result| {
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
+                // return amount must be approximately equal to the value returned by the simulation
+                assert_approx_eq!(
+                    simulated_return_amount.borrow().u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.00000001"
+                );
+            },
+        );
+
+        // now on the stable pool
+
+        suite.query_simulation(
+            "o.uusd.uusdc".to_string(),
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(1000u128),
+            },
+            "uusdc".to_string(),
+            |result| {
+                let response = result.as_ref().unwrap();
+
+                assert_eq!(response.spread_amount, Uint128::zero());
+
+                // the protocol fee is 1% of the output amount
+                assert_approx_eq!(response.protocol_fee_amount, Uint128::new(10u128), "0.1");
+
+                // the swap fee is 2% of the output amount
+                assert_approx_eq!(response.swap_fee_amount, Uint128::new(20u128), "0.1");
+
+                // the burn fee is 3% of the output amount
+                assert_approx_eq!(response.burn_fee_amount, Uint128::new(30u128), "0.1");
+
+                // the extra fees are 4% of the output amount
+                assert_approx_eq!(response.extra_fees_amount, Uint128::new(40u128), "0.1");
+
+                *simulated_return_amount.borrow_mut() = response.return_amount;
+            },
+        );
+
+        suite.swap(
+            &creator,
+            "uusdc".to_string(),
+            None,
+            None,
+            None,
+            "o.uusd.uusdc".to_string(),
+            vec![coin(1000u128, "uusd".to_string())],
+            |result| {
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
+                // return amount must be approximately equal to the value returned by the simulation
+                assert_approx_eq!(
+                    simulated_return_amount.borrow().u128(),
+                    return_amount.parse::<u128>().unwrap(),
+                    "0.00000001"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn reverse_simulation_queries_fees_verification() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uusdc".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+        let _other = suite.senders[1].clone();
+        let _unauthorized = suite.senders[2].clone();
+        // Asset infos with uwhale and uluna
+
+        let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        // protocol fee 1%
+        // swap fee 2%
+        // burn fee 3%
+        // extra fee 4%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(1u64),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(2u64),
+            },
+            burn_fee: Fee {
+                share: Decimal::percent(3u64),
+            },
+            extra_fees: vec![Fee {
+                share: Decimal::percent(4u64),
+            }],
+        };
+
+        // Create a pool
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_infos,
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("whale.uluna".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uusd".to_string(), "uusdc".to_string()],
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::StableSwap { amp: 85 },
+                Some("uusd.uusdc".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                "o.uusd.uusdc".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusdc".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        let simulated_offer_amount = RefCell::new(Uint128::zero());
+        suite.query_reverse_simulation(
+            "o.whale.uluna".to_string(),
+            Coin {
+                denom: "uwhale".to_string(),
+                // reuse the value of the previous test
+                amount: Uint128::from(903u128),
+            },
+            "uluna".to_string(),
+            |result| {
+                let response = result.as_ref().unwrap();
+
+                // the fees should be the same as the previous test, as we requested
+                // the reverse simulation for the value we obtained before
+
+                assert_approx_eq!(response.protocol_fee_amount, Uint128::new(10u128), "0.1");
+
+                assert_approx_eq!(response.swap_fee_amount, Uint128::new(20u128), "0.1");
+
+                assert_approx_eq!(response.burn_fee_amount, Uint128::new(30u128), "0.1");
+
+                assert_approx_eq!(response.extra_fees_amount, Uint128::new(40u128), "0.1");
+
+                *simulated_offer_amount.borrow_mut() = response.offer_amount;
+            },
+        );
+
+        // Another swap but this time the other way around
+        suite.swap(
+            &creator,
+            "uwhale".to_string(),
+            None,
+            None,
+            None,
+            "o.whale.uluna".to_string(),
+            vec![coin(
+                simulated_offer_amount.borrow().u128(),
+                "uluna".to_string(),
+            )],
+            |result| {
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_offer_amount.borrow().u128(),
+                    offer_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+
+                assert_approx_eq!(903u128, return_amount.parse::<u128>().unwrap(), "0.002");
+            },
+        );
+
+        // now on the stable pool
+        suite.query_reverse_simulation(
+            "o.uusd.uusdc".to_string(),
+            Coin {
+                denom: "uusd".to_string(),
+                // reuse the value of the previous test
+                amount: Uint128::from(900u128),
+            },
+            "uusdc".to_string(),
+            |result| {
+                let response = result.as_ref().unwrap();
+
+                // the fees should be the same as the previous test, as we requested
+                // the reverse simulation for the value we obtained before
+
+                assert_approx_eq!(response.protocol_fee_amount, Uint128::new(10u128), "0.1");
+
+                assert_approx_eq!(response.swap_fee_amount, Uint128::new(20u128), "0.1");
+
+                assert_approx_eq!(response.burn_fee_amount, Uint128::new(30u128), "0.1");
+
+                assert_approx_eq!(response.extra_fees_amount, Uint128::new(40u128), "0.1");
+
+                *simulated_offer_amount.borrow_mut() = response.offer_amount;
+            },
+        );
+
+        // Another swap but this time the other way around
+        suite.swap(
+            &creator,
+            "uusd".to_string(),
+            None,
+            None,
+            None,
+            "o.uusd.uusdc".to_string(),
+            vec![coin(
+                simulated_offer_amount.borrow().u128(),
+                "uusdc".to_string(),
+            )],
+            |result| {
+                let mut return_amount = String::new();
+                let mut offer_amount = String::new();
+
+                for event in result.unwrap().events {
+                    if event.ty == "wasm" {
+                        for attribute in event.attributes {
+                            match attribute.key.as_str() {
+                                "return_amount" => return_amount = attribute.value,
+                                "offer_amount" => offer_amount = attribute.value,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                assert_approx_eq!(
+                    simulated_offer_amount.borrow().u128(),
+                    offer_amount.parse::<u128>().unwrap(),
+                    "0.002"
+                );
+
+                assert_approx_eq!(900u128, return_amount.parse::<u128>().unwrap(), "0.002");
+            },
+        );
+    }
+}

@@ -18,7 +18,7 @@ repository = "https://github.com/MANTRA-Chain/mantra-dex"
 publish = false
 authors = [
   "MANTRA Engineering Team <tech@mantrachain.io>",
-  "Javier C <javier.m.costa@mantra.finance"
+  "Javier C <javier.m.costa@mantra.finance",
 ]
 
 [workspace.dependencies]

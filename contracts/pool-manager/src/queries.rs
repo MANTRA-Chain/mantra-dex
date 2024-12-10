@@ -6,7 +6,8 @@ use cosmwasm_std::{
 use cw_storage_plus::Bound;
 use mantra_dex_std::pool_manager::{
     AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
-    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
+    ReverseSimulateSwapOperationsResponse, ReverseSimulationResponse,
+    SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
 };
 
 use crate::helpers::get_asset_indexes_in_pool;
@@ -100,7 +101,6 @@ pub fn query_reverse_simulation(
                 pool_fees,
             )?;
 
-            //todo test this
             Ok(ReverseSimulationResponse {
                 offer_amount: offer_amount_computation.offer_amount,
                 spread_amount: offer_amount_computation.spread_amount,
@@ -116,10 +116,16 @@ pub fn query_reverse_simulation(
             let ask_pool =
                 Decimal256::decimal_with_precision(ask_asset_in_pool.amount, ask_decimal)?;
 
-            let before_fees = (Decimal256::one()
+            let mut extra_fees = Decimal256::zero();
+            for extra_fee in pool_fees.extra_fees.iter() {
+                extra_fees = extra_fees.checked_add(extra_fee.to_decimal_256())?;
+            }
+
+            let mut before_fees = (Decimal256::one()
                 .checked_sub(pool_fees.protocol_fee.to_decimal_256())?
                 .checked_sub(pool_fees.swap_fee.to_decimal_256())?
                 .checked_sub(pool_fees.burn_fee.to_decimal_256())?)
+            .checked_sub(extra_fees)?
             .inv()
             .unwrap_or_else(Decimal256::one)
             .checked_mul(Decimal256::decimal_with_precision(
@@ -169,7 +175,6 @@ pub fn query_reverse_simulation(
                     extra_fees_amount.checked_add(extra_fee.compute(before_fees_ask)?)?;
             }
 
-            //todo test this
             Ok(ReverseSimulationResponse {
                 offer_amount,
                 spread_amount,
@@ -267,7 +272,7 @@ pub fn reverse_simulate_swap_operations(
     deps: Deps,
     ask_amount: Uint128,
     operations: Vec<SwapOperation>,
-) -> Result<SimulateSwapOperationsResponse, ContractError> {
+) -> Result<ReverseSimulateSwapOperationsResponse, ContractError> {
     let operations_len = operations.len();
     if operations_len == 0 {
         return Err(ContractError::NoSwapOperationsProvided);
@@ -293,5 +298,5 @@ pub fn reverse_simulate_swap_operations(
         }
     }
 
-    Ok(SimulateSwapOperationsResponse { amount })
+    Ok(ReverseSimulateSwapOperationsResponse { amount })
 }
