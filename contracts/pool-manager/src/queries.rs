@@ -329,7 +329,7 @@ pub fn reverse_simulate_swap_operations(
             } => {
                 let res = query_reverse_simulation(
                     deps,
-                    coin(offer_in_needed.u128(), &token_out_denom.clone()),
+                    coin(offer_in_needed.u128(), token_out_denom.clone()),
                     token_in_denom,
                     pool_identifier,
                 )?;

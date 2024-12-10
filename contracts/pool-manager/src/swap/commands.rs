@@ -105,6 +105,10 @@ pub fn swap(
             swap_result.burn_fee_asset.amount.to_string(),
         ),
         (
+            "extra_fees_amount",
+            swap_result.extra_fees_asset.amount.to_string(),
+        ),
+        (
             "swap_type",
             swap_result.pool_info.pool_type.get_label().to_string(),
         ),

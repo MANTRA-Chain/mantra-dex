@@ -6884,13 +6884,11 @@ mod query_simulations {
             vec![coin(1000u128, "uwhale".to_string())],
             |result| {
                 let mut return_amount = String::new();
-                let mut offer_amount = String::new();
                 for event in result.unwrap().events {
                     if event.ty == "wasm" {
                         for attribute in event.attributes {
                             match attribute.key.as_str() {
                                 "return_amount" => return_amount = attribute.value,
-                                "offer_amount" => offer_amount = attribute.value,
                                 _ => {}
                             }
                         }
@@ -6946,13 +6944,11 @@ mod query_simulations {
             vec![coin(1000u128, "uusd".to_string())],
             |result| {
                 let mut return_amount = String::new();
-                let mut offer_amount = String::new();
                 for event in result.unwrap().events {
                     if event.ty == "wasm" {
                         for attribute in event.attributes {
                             match attribute.key.as_str() {
                                 "return_amount" => return_amount = attribute.value,
-                                "offer_amount" => offer_amount = attribute.value,
                                 _ => {}
                             }
                         }
