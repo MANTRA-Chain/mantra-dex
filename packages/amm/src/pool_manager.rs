@@ -195,9 +195,9 @@ pub enum ExecuteMsg {
         ///
         /// If left unspecified, tokens will be sent to the sender of the message.
         receiver: Option<String>,
-        /// The (optional) maximum spread to incur when performing any swap.
-        ///
-        /// If left unspecified, there is no limit to what spread the transaction can incur.
+        /// The maximum allowable spread between the bid and ask prices for the pool.
+        /// When provided, if the spread exceeds this value, the liquidity provision will not be
+        /// executed. If not provided, the default value will be used. Max 50%.
         max_spread: Option<Decimal>,
     },
     /// Updates the configuration of the contract.
@@ -345,6 +345,8 @@ pub struct ReverseSimulationResponse {
     pub protocol_fee_amount: Uint128,
     /// The burn fee amount of the swap.
     pub burn_fee_amount: Uint128,
+    /// The extra fees amount of the swap.
+    pub extra_fees_amount: Uint128,
 }
 
 /// Pool feature toggle, can control whether swaps, deposits, and withdrawals are enabled.

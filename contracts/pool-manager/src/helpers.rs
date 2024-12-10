@@ -381,12 +381,19 @@ pub fn compute_offer_amount(
         .compute(before_commission_deduction)?;
     let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(before_commission_deduction)?;
 
+    //todo test
+    let mut extra_fees_amount: Uint256 = Uint256::zero();
+    for extra_fee in pool_fees.extra_fees.iter() {
+        extra_fees_amount = extra_fees_amount.checked_add(extra_fee.compute(before_commission_deduction)?)?;
+    }
+
     Ok(OfferAmountComputation {
         offer_amount: offer_amount.try_into()?,
         spread_amount: spread_amount.try_into()?,
         swap_fee_amount: swap_fee_amount.try_into()?,
         protocol_fee_amount: protocol_fee_amount.try_into()?,
         burn_fee_amount: burn_fee_amount.try_into()?,
+        extra_fees_amount: extra_fees_amount.try_into()?,
     })
 }
 
@@ -398,6 +405,7 @@ pub struct OfferAmountComputation {
     pub swap_fee_amount: Uint128,
     pub protocol_fee_amount: Uint128,
     pub burn_fee_amount: Uint128,
+    pub extra_fees_amount: Uint128,
 }
 
 pub fn assert_slippage_tolerance(
