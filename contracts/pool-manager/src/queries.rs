@@ -1,13 +1,13 @@
 use std::cmp::Ordering;
 
-use amm::pool_manager::{
-    AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
-    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
-};
 use cosmwasm_std::{
     coin, ensure, Coin, Decimal256, Deps, Fraction, Order, StdResult, Uint128, Uint256,
 };
 use cw_storage_plus::Bound;
+use mantra_dex_std::pool_manager::{
+    AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
+    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
+};
 
 use crate::helpers::get_asset_indexes_in_pool;
 use crate::math::Decimal256Helper;
@@ -100,12 +100,14 @@ pub fn query_reverse_simulation(
                 pool_fees,
             )?;
 
+            //todo test this
             Ok(ReverseSimulationResponse {
                 offer_amount: offer_amount_computation.offer_amount,
                 spread_amount: offer_amount_computation.spread_amount,
                 swap_fee_amount: offer_amount_computation.swap_fee_amount,
                 protocol_fee_amount: offer_amount_computation.protocol_fee_amount,
                 burn_fee_amount: offer_amount_computation.burn_fee_amount,
+                extra_fees_amount: offer_amount_computation.extra_fees_amount,
             })
         }
         PoolType::StableSwap { amp } => {
@@ -161,12 +163,20 @@ pub fn query_reverse_simulation(
             let protocol_fee_amount = pool_fees.protocol_fee.compute(before_fees_ask)?;
             let burn_fee_amount = pool_fees.burn_fee.compute(before_fees_ask)?;
 
+            let mut extra_fees_amount: Uint256 = Uint256::zero();
+            for extra_fee in pool_fees.extra_fees.iter() {
+                extra_fees_amount =
+                    extra_fees_amount.checked_add(extra_fee.compute(before_fees_ask)?)?;
+            }
+
+            //todo test this
             Ok(ReverseSimulationResponse {
                 offer_amount,
                 spread_amount,
                 swap_fee_amount: swap_fee_amount.try_into()?,
                 protocol_fee_amount: protocol_fee_amount.try_into()?,
                 burn_fee_amount: burn_fee_amount.try_into()?,
+                extra_fees_amount: extra_fees_amount.try_into()?,
             })
         }
     }

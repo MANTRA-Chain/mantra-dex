@@ -1,7 +1,7 @@
-use amm::fee_collector::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use cosmwasm_std::{entry_point, to_json_binary};
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
+use mantra_dex_std::fee_collector::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;

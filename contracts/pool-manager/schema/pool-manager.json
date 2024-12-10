@@ -1,6 +1,6 @@
 {
   "contract_name": "pool-manager",
-  "contract_version": "1.0.0",
+  "contract_version": "1.0.1",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -216,7 +216,7 @@
                 ]
               },
               "max_spread": {
-                "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed.",
+                "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
                 "anyOf": [
                   {
                     "$ref": "#/definitions/Decimal"
@@ -266,7 +266,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Execute multiple [`SwapOperations`] to allow for multi-hop swaps.",
+        "description": "Execute multiple [`SwapOperation`]s to allow for multi-hop swaps.",
         "type": "object",
         "required": [
           "execute_swap_operations"
@@ -279,7 +279,7 @@
             ],
             "properties": {
               "max_spread": {
-                "description": "The (optional) maximum spread to incur when performing any swap.\n\nIf left unspecified, there is no limit to what spread the transaction can incur.",
+                "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
                 "anyOf": [
                   {
                     "$ref": "#/definitions/Decimal"
@@ -301,7 +301,7 @@
                 ]
               },
               "operations": {
-                "description": "The operations that should be performed in sequence.\n\nThe amount in each swap will be the output from the previous swap.\n\nThe first swap will use whatever funds are sent in the [`MessageInfo`].",
+                "description": "The operations that should be performed in sequence.\n\nThe amount in each swap will be the output from the previous swap.\n\nThe first swap will use whatever funds are sent in the MessageInfo.",
                 "type": "array",
                 "items": {
                   "$ref": "#/definitions/SwapOperation"
@@ -1484,6 +1484,7 @@
       "type": "object",
       "required": [
         "burn_fee_amount",
+        "extra_fees_amount",
         "offer_amount",
         "protocol_fee_amount",
         "spread_amount",
@@ -1492,6 +1493,14 @@
       "properties": {
         "burn_fee_amount": {
           "description": "The burn fee amount of the swap.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
+        },
+        "extra_fees_amount": {
+          "description": "The extra fees amount of the swap.",
           "allOf": [
             {
               "$ref": "#/definitions/Uint128"

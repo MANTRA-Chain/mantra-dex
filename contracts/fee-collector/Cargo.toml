@@ -20,7 +20,7 @@ mantra-utils.workspace = true
 cw-migrate-error-derive.workspace = true
 semver.workspace = true
 cw-utils.workspace = true
-amm.workspace = true
+mantra-dex-std.workspace = true
 
 [dev-dependencies]
 cw-multi-test.workspace = true

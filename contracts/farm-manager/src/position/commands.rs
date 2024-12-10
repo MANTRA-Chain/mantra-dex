@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use std::collections::HashSet;
 
-use amm::farm_manager::Position;
+use mantra_dex_std::farm_manager::Position;
 
 use crate::helpers::{validate_identifier, validate_lp_denom};
 use crate::position::helpers::{
@@ -460,7 +460,7 @@ fn update_weights(
 ) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    let current_epoch = amm::epoch_manager::get_current_epoch(
+    let current_epoch = mantra_dex_std::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.to_string(),
     )?;

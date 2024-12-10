@@ -4,7 +4,9 @@ use cosmwasm_std::{
 use cosmwasm_std::{wasm_execute, Reply, StdError};
 use cw2::set_contract_version;
 
-use amm::pool_manager::{ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg};
+use mantra_dex_std::pool_manager::{
+    ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg,
+};
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;

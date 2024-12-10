@@ -1,10 +1,10 @@
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 
-use amm::fee::Fee;
-use amm::fee::PoolFee;
-use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
-use amm::pool_manager::PoolType;
-use common_testing::multi_test::stargate_mock::StargateMock;
+use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+use mantra_dex_std::fee::Fee;
+use mantra_dex_std::fee::PoolFee;
+use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
+use mantra_dex_std::pool_manager::PoolType;
 
 use crate::ContractError;
 
@@ -163,7 +163,7 @@ fn deposit_and_withdraw_sanity_check() {
 }
 
 mod pool_creation_failures {
-    use common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 
     use super::*;
 
@@ -833,12 +833,12 @@ mod router {
         // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "o.whale.uluna".to_string(),
             },
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "o.uluna.uusd".to_string(),
@@ -1145,12 +1145,12 @@ mod router {
         // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "o.whale.uluna".to_string(),
             },
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "o.whale.uluna".to_string(),
@@ -1293,12 +1293,12 @@ mod router {
         // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "o.whale.uluna".to_string(),
             },
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "o.uluna.uusd".to_string(),
@@ -1509,12 +1509,12 @@ mod router {
         // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "o.whale.uluna".to_string(),
             },
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "o.uluna.uusd".to_string(),
@@ -1665,12 +1665,12 @@ mod router {
         // We will use the o.uluna.uusd pool as the intermediary pool
 
         let swap_operations = vec![
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "o.whale.uluna".to_string(),
             },
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "o.uluna.uusd".to_string(),
@@ -1755,7 +1755,7 @@ mod swapping {
 
     use cosmwasm_std::assert_approx_eq;
 
-    use amm::pool_manager::PoolType;
+    use mantra_dex_std::pool_manager::PoolType;
 
     use super::*;
 
@@ -2908,7 +2908,7 @@ mod swapping {
 }
 
 mod ownership {
-    use amm::pool_manager::FeatureToggle;
+    use mantra_dex_std::pool_manager::FeatureToggle;
 
     use super::*;
 
@@ -3047,11 +3047,11 @@ mod locking_lp {
 
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 
-    use amm::farm_manager::{Position, PositionsBy};
-    use amm::fee::{Fee, PoolFee};
-    use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
-    use amm::pool_manager::PoolType;
-    use common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_dex_std::farm_manager::{Position, PositionsBy};
+    use mantra_dex_std::fee::{Fee, PoolFee};
+    use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
+    use mantra_dex_std::pool_manager::PoolType;
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
@@ -3778,10 +3778,10 @@ mod provide_liquidity {
 
     use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, StdError, Uint128};
 
-    use amm::fee::{Fee, PoolFee};
-    use amm::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
-    use amm::pool_manager::PoolType;
-    use common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_dex_std::fee::{Fee, PoolFee};
+    use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
+    use mantra_dex_std::pool_manager::PoolType;
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
@@ -5698,9 +5698,9 @@ mod provide_liquidity {
 mod multiple_pools {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 
-    use amm::fee::{Fee, PoolFee};
-    use amm::pool_manager::{PoolInfo, PoolType};
-    use common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_dex_std::fee::{Fee, PoolFee};
+    use mantra_dex_std::pool_manager::{PoolInfo, PoolType};
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
@@ -6317,12 +6317,12 @@ mod multiple_pools {
 
         // swap via the router now
         let swap_operations = vec![
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uwhale".to_string(),
                 token_out_denom: "uluna".to_string(),
                 pool_identifier: "o.whale.uluna.pool.2".to_string(),
             },
-            amm::pool_manager::SwapOperation::MantraSwap {
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
                 token_in_denom: "uluna".to_string(),
                 token_out_denom: "uusd".to_string(),
                 pool_identifier: "o.uluna.uusd.pool.1".to_string(),

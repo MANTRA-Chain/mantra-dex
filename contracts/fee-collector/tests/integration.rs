@@ -1,7 +1,7 @@
-use amm::fee_collector::ExecuteMsg::UpdateOwnership;
-use amm::fee_collector::{InstantiateMsg, QueryMsg};
 use cosmwasm_std::{Empty, StdResult};
 use cw_multi_test::{App, Contract, ContractWrapper, Executor, IntoBech32};
+use mantra_dex_std::fee_collector::ExecuteMsg::UpdateOwnership;
+use mantra_dex_std::fee_collector::{InstantiateMsg, QueryMsg};
 
 pub fn fee_collector_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(

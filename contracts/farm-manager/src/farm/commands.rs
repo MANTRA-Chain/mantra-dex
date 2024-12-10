@@ -5,8 +5,8 @@ use cosmwasm_std::{
     Uint128,
 };
 
-use amm::coin::aggregate_coins;
-use amm::farm_manager::{EpochId, Farm, RewardsResponse};
+use mantra_dex_std::coin::aggregate_coins;
+use mantra_dex_std::farm_manager::{EpochId, Farm, RewardsResponse};
 
 use crate::helpers::get_unique_lp_asset_denoms_from_positions;
 use crate::state::{
@@ -31,7 +31,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
     ensure!(!open_positions.is_empty(), ContractError::NoOpenPositions);
 
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = amm::epoch_manager::get_current_epoch(
+    let current_epoch = mantra_dex_std::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.into_string(),
     )?;

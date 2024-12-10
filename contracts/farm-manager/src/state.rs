@@ -4,7 +4,7 @@ use std::string::ToString;
 use cosmwasm_std::{Addr, Order, StdResult, Storage, Uint128};
 use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 
-use amm::farm_manager::{Config, EpochId, Farm, Position};
+use mantra_dex_std::farm_manager::{Config, EpochId, Farm, Position};
 
 use crate::ContractError;
 

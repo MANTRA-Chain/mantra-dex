@@ -2,9 +2,9 @@ use cosmwasm_std::testing::mock_env;
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint64};
 use cw_multi_test::IntoBech32;
 
-use amm::epoch_manager::{EpochConfig, InstantiateMsg};
 use epoch_manager::contract::instantiate;
 use epoch_manager::ContractError;
+use mantra_dex_std::epoch_manager::{EpochConfig, InstantiateMsg};
 
 /// Mocks contract instantiation.
 #[allow(dead_code)]

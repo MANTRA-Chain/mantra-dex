@@ -1,9 +1,9 @@
-use amm::pool_manager::{
+use cosmwasm_std::testing::MockStorage;
+use mantra_dex_std::pool_manager::{
     Config, FeatureToggle, PoolsResponse, ReverseSimulateSwapOperationsResponse,
     ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
 };
-use amm::pool_manager::{InstantiateMsg, PoolType};
-use cosmwasm_std::testing::MockStorage;
+use mantra_dex_std::pool_manager::{InstantiateMsg, PoolType};
 use std::cell::RefCell;
 
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
@@ -13,11 +13,11 @@ use cw_multi_test::{
     WasmKeeper,
 };
 
-use amm::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
-use amm::epoch_manager::EpochConfig;
-use amm::farm_manager::PositionsResponse;
-use amm::fee::PoolFee;
-use common_testing::multi_test::stargate_mock::StargateMock;
+use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+use mantra_dex_std::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
+use mantra_dex_std::epoch_manager::EpochConfig;
+use mantra_dex_std::farm_manager::PositionsResponse;
+use mantra_dex_std::fee::PoolFee;
 
 /// Creates the pool manager contract
 fn contract_pool_manager() -> Box<dyn Contract<Empty>> {
@@ -222,7 +222,7 @@ impl TestingSuite {
         let fee_collector_contract = self.app.store_code(fee_collector_contract());
 
         // create fee collector
-        let msg = amm::fee_collector::InstantiateMsg {};
+        let msg = mantra_dex_std::fee_collector::InstantiateMsg {};
 
         let creator = self.creator().clone();
 
@@ -244,7 +244,7 @@ impl TestingSuite {
 
         let creator = self.creator().clone();
 
-        let msg = amm::epoch_manager::InstantiateMsg {
+        let msg = mantra_dex_std::epoch_manager::InstantiateMsg {
             owner: creator.to_string(),
             epoch_config: EpochConfig {
                 duration: Uint64::new(86_400),
@@ -274,7 +274,7 @@ impl TestingSuite {
         let epoch_manager_addr = self.epoch_manager_addr.to_string();
         let fee_collector_addr = self.fee_collector_addr.to_string();
 
-        let msg = amm::farm_manager::InstantiateMsg {
+        let msg = mantra_dex_std::farm_manager::InstantiateMsg {
             owner: creator.clone().to_string(),
             epoch_manager_addr,
             fee_collector_addr,
@@ -314,7 +314,7 @@ impl TestingSuite {
         action: cw_ownable::Action,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::pool_manager::ExecuteMsg::UpdateOwnership(action);
+        let msg = mantra_dex_std::pool_manager::ExecuteMsg::UpdateOwnership(action);
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -338,7 +338,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::pool_manager::ExecuteMsg::ProvideLiquidity {
+        let msg = mantra_dex_std::pool_manager::ExecuteMsg::ProvideLiquidity {
             pool_identifier,
             slippage_tolerance: None,
             max_spread,
@@ -370,7 +370,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::pool_manager::ExecuteMsg::Swap {
+        let msg = mantra_dex_std::pool_manager::ExecuteMsg::Swap {
             ask_asset_denom,
             belief_price,
             max_spread,
@@ -400,7 +400,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::pool_manager::ExecuteMsg::ExecuteSwapOperations {
+        let msg = mantra_dex_std::pool_manager::ExecuteMsg::ExecuteSwapOperations {
             operations,
             minimum_receive,
             receiver,
@@ -430,7 +430,7 @@ impl TestingSuite {
         pool_creation_fee_funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::pool_manager::ExecuteMsg::CreatePool {
+        let msg = mantra_dex_std::pool_manager::ExecuteMsg::CreatePool {
             asset_denoms,
             asset_decimals,
             pool_fees,
@@ -456,7 +456,7 @@ impl TestingSuite {
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = amm::pool_manager::ExecuteMsg::WithdrawLiquidity { pool_identifier };
+        let msg = mantra_dex_std::pool_manager::ExecuteMsg::WithdrawLiquidity { pool_identifier };
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -485,7 +485,7 @@ impl TestingSuite {
         result(self.app.execute_contract(
             sender.clone(),
             self.pool_manager_addr.clone(),
-            &amm::pool_manager::ExecuteMsg::UpdateConfig {
+            &mantra_dex_std::pool_manager::ExecuteMsg::UpdateConfig {
                 fee_collector_addr: new_fee_collector_addr.map(|addr| addr.to_string()),
                 farm_manager_addr: new_farm_manager_addr.map(|addr| addr.to_string()),
                 pool_creation_fee: new_pool_creation_fee,
@@ -511,7 +511,7 @@ impl TestingSuite {
         result(self.app.execute_contract(
             sender.clone(),
             self.farm_manager_addr.clone(),
-            &amm::farm_manager::ExecuteMsg::UpdateConfig {
+            &mantra_dex_std::farm_manager::ExecuteMsg::UpdateConfig {
                 fee_collector_addr: None,
                 epoch_manager_addr: None,
                 pool_manager_addr: Some(new_pool_manager_addr.to_string()),
@@ -539,7 +539,7 @@ impl TestingSuite {
         let ownership_response: StdResult<cw_ownable::Ownership<String>> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::Ownership {},
+                &mantra_dex_std::pool_manager::QueryMsg::Ownership {},
             );
 
         result(ownership_response);
@@ -581,7 +581,7 @@ impl TestingSuite {
     ) -> &Self {
         let pools_response: StdResult<PoolsResponse> = self.app.wrap().query_wasm_smart(
             &self.pool_manager_addr,
-            &amm::pool_manager::QueryMsg::Pools {
+            &mantra_dex_std::pool_manager::QueryMsg::Pools {
                 pool_identifier,
                 start_after,
                 limit,
@@ -602,7 +602,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let pool_info_response: StdResult<SimulationResponse> = self.app.wrap().query_wasm_smart(
             &self.pool_manager_addr,
-            &amm::pool_manager::QueryMsg::Simulation {
+            &mantra_dex_std::pool_manager::QueryMsg::Simulation {
                 offer_asset,
                 ask_asset_denom,
                 pool_identifier,
@@ -624,7 +624,7 @@ impl TestingSuite {
         let pool_info_response: StdResult<ReverseSimulationResponse> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::ReverseSimulation {
+                &mantra_dex_std::pool_manager::QueryMsg::ReverseSimulation {
                     ask_asset,
                     offer_asset_denom,
                     pool_identifier,
@@ -645,7 +645,7 @@ impl TestingSuite {
         let pool_info_response: StdResult<SimulateSwapOperationsResponse> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::SimulateSwapOperations {
+                &mantra_dex_std::pool_manager::QueryMsg::SimulateSwapOperations {
                     offer_amount,
                     operations,
                 },
@@ -665,7 +665,7 @@ impl TestingSuite {
         let pool_info_response: StdResult<ReverseSimulateSwapOperationsResponse> =
             self.app.wrap().query_wasm_smart(
                 &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::ReverseSimulateSwapOperations {
+                &mantra_dex_std::pool_manager::QueryMsg::ReverseSimulateSwapOperations {
                     ask_amount,
                     operations,
                 },
@@ -688,7 +688,7 @@ impl TestingSuite {
             .wrap()
             .query_wasm_smart(
                 &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::Pools {
+                &mantra_dex_std::pool_manager::QueryMsg::Pools {
                     pool_identifier: Some(identifier),
                     start_after: None,
                     limit: None,
@@ -715,7 +715,7 @@ impl TestingSuite {
             .wrap()
             .query_wasm_smart(
                 &self.pool_manager_addr,
-                &amm::pool_manager::QueryMsg::Config {},
+                &mantra_dex_std::pool_manager::QueryMsg::Config {},
             )
             .unwrap()
     }
@@ -723,7 +723,7 @@ impl TestingSuite {
     #[track_caller]
     pub(crate) fn query_farm_positions(
         &mut self,
-        filter_by: Option<amm::farm_manager::PositionsBy>,
+        filter_by: Option<mantra_dex_std::farm_manager::PositionsBy>,
         open_state: Option<bool>,
         start_after: Option<String>,
         limit: Option<u32>,
@@ -731,7 +731,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let positions_response: StdResult<PositionsResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
-            &amm::farm_manager::QueryMsg::Positions {
+            &mantra_dex_std::farm_manager::QueryMsg::Positions {
                 filter_by,
                 open_state,
                 start_after,

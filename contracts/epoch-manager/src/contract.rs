@@ -2,7 +2,7 @@ use cosmwasm_std::{ensure, entry_point, to_json_binary};
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
-use amm::epoch_manager::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use mantra_dex_std::epoch_manager::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use mantra_utils::validate_contract;
 
 use crate::error::ContractError;

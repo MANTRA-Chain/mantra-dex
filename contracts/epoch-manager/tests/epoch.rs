@@ -2,11 +2,11 @@ use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
 use cosmwasm_std::{from_json, Timestamp, Uint64};
 use cw_multi_test::IntoBech32;
 
-use amm::epoch_manager::{
-    ConfigResponse, Epoch, EpochConfig, EpochResponse, InstantiateMsg, QueryMsg,
-};
 use epoch_manager::contract::{instantiate, query};
 use epoch_manager::ContractError;
+use mantra_dex_std::epoch_manager::{
+    ConfigResponse, Epoch, EpochConfig, EpochResponse, InstantiateMsg, QueryMsg,
+};
 
 use crate::common::mock_instantiation;
 

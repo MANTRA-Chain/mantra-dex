@@ -6,10 +6,10 @@ use cosmwasm_std::{
     OverflowOperation, Uint128,
 };
 
-use amm::coin::{get_factory_token_creator, is_factory_token};
-use amm::constants::MONTH_IN_SECONDS;
-use amm::epoch_manager::{EpochResponse, QueryMsg};
-use amm::farm_manager::{Config, Farm, FarmParams, Position, DEFAULT_FARM_DURATION};
+use mantra_dex_std::coin::{get_factory_token_creator, is_factory_token};
+use mantra_dex_std::constants::MONTH_IN_SECONDS;
+use mantra_dex_std::epoch_manager::{EpochResponse, QueryMsg};
+use mantra_dex_std::farm_manager::{Config, Farm, FarmParams, Position, DEFAULT_FARM_DURATION};
 
 use crate::ContractError;
 

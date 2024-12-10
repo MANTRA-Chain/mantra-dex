@@ -126,6 +126,7 @@ function create_pool() {
 	echo -e "\e[1;32mCreating pool with the following configuration:\e[0m"
 	echo -e "\e[1;32mAsset 0: ${asset_denoms[0]} - decimals: ${asset_decimals[0]}\e[0m"
 	echo -e "\e[1;32mAsset 1: ${asset_denoms[1]} - decimals: ${asset_decimals[1]}\e[0m"
+	echo -e "\e[1;32mPool type: $pool_type\e[0m"
 	echo -e "\e[1;32mPool identifier: $pool_identifier\e[0m"
 	echo -e "\e[1;32mProtocol fee: $protocol_fee\e[0m"
 	echo -e "\e[1;32mSwap fee: $swap_fee\e[0m"

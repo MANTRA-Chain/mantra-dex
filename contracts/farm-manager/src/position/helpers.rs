@@ -3,7 +3,7 @@ use cosmwasm_std::{
     Order, StdError, Storage, Uint128,
 };
 
-use amm::farm_manager::{Config, EpochId, Position, RewardsResponse};
+use mantra_dex_std::farm_manager::{Config, EpochId, Position, RewardsResponse};
 
 use crate::farm::commands::sync_address_lp_weight_history;
 use crate::queries::query_rewards;
@@ -242,7 +242,7 @@ fn clear_lp_weight_history(
     lp_denom: &str,
 ) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    let current_epoch = amm::epoch_manager::get_current_epoch(
+    let current_epoch = mantra_dex_std::epoch_manager::get_current_epoch(
         deps.as_ref(),
         config.epoch_manager_addr.to_string(),
     )?;

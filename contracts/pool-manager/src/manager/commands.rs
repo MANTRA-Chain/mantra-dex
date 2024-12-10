@@ -2,11 +2,11 @@ use cosmwasm_std::{
     attr, ensure, Attribute, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
 };
 
-use amm::coin::is_factory_token;
-use amm::constants::LP_SYMBOL;
-use amm::fee::PoolFee;
-use amm::pool_manager::{PoolInfo, PoolType};
-use amm::tokenfactory::utils::get_factory_denom_creation_fee;
+use mantra_dex_std::coin::is_factory_token;
+use mantra_dex_std::constants::LP_SYMBOL;
+use mantra_dex_std::fee::PoolFee;
+use mantra_dex_std::pool_manager::{PoolInfo, PoolType};
+use mantra_dex_std::tokenfactory::utils::get_factory_denom_creation_fee;
 
 use crate::helpers::{
     validate_fees_are_paid, validate_no_additional_funds_sent_with_pool_creation,
@@ -35,13 +35,13 @@ pub const AUTO_POOL_ID_PREFIX: &str = "p.";
 ///
 /// ```rust
 /// # use cosmwasm_std::{DepsMut, Decimal, Env, MessageInfo, Response, CosmosMsg, WasmMsg, to_json_binary};
-/// # use amm::fee::PoolFee;
-/// # use amm::fee::Fee;
+/// # use mantra_dex_std::fee::PoolFee;
+/// # use mantra_dex_std::fee::Fee;
 /// # use pool_manager::error::ContractError;
 /// # use pool_manager::manager::commands::MAX_ASSETS_PER_POOL;
 /// # use pool_manager::manager::commands::create_pool;
 /// # use std::convert::TryInto;
-/// # use amm::pool_manager::PoolType;
+/// # use mantra_dex_std::pool_manager::PoolType;
 /// #
 /// # fn example(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
 /// let asset_infos = vec![
@@ -201,7 +201,7 @@ pub fn create_pool(
 
     attributes.push(attr("lp_asset", lp_asset));
 
-    messages.push(amm::tokenfactory::create_denom::create_denom(
+    messages.push(mantra_dex_std::tokenfactory::create_denom::create_denom(
         env.contract.address,
         lp_symbol,
     ));
