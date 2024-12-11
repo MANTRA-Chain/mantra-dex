@@ -381,7 +381,6 @@ pub fn compute_offer_amount(
         .compute(before_commission_deduction)?;
     let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(before_commission_deduction)?;
 
-    //todo test
     let mut extra_fees_amount: Uint256 = Uint256::zero();
     for extra_fee in pool_fees.extra_fees.iter() {
         extra_fees_amount =

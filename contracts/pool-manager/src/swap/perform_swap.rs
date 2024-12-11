@@ -23,6 +23,8 @@ pub struct SwapResult {
     pub protocol_fee_asset: Coin,
     /// The swap fee of `return_asset` associated with this swap transaction.
     pub swap_fee_asset: Coin,
+    /// The extra fees of `return_asset` associated with this swap transaction.
+    pub extra_fees_asset: Coin,
     /// The pool that was traded.
     pub pool_info: PoolInfo,
     /// The amount of spread that occurred during the swap from the original exchange rate.
@@ -109,6 +111,10 @@ pub fn perform_swap(
         denom: ask_asset_in_pool.denom.clone(),
         amount: swap_computation.protocol_fee_amount,
     };
+    let extra_fees_asset = Coin {
+        denom: ask_asset_in_pool.denom.clone(),
+        amount: swap_computation.extra_fees_amount,
+    };
 
     #[allow(clippy::redundant_clone)]
     let swap_fee_asset = Coin {
@@ -122,6 +128,7 @@ pub fn perform_swap(
         burn_fee_asset,
         protocol_fee_asset,
         pool_info,
+        extra_fees_asset,
         spread_amount: swap_computation.spread_amount,
     })
 }

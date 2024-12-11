@@ -4,9 +4,11 @@ use cosmwasm_std::{
     coin, ensure, Coin, Decimal256, Deps, Fraction, Order, StdResult, Uint128, Uint256,
 };
 use cw_storage_plus::Bound;
+use mantra_dex_std::coin::aggregate_coins;
 use mantra_dex_std::pool_manager::{
     AssetDecimalsResponse, Config, PoolInfoResponse, PoolType, PoolsResponse,
-    ReverseSimulationResponse, SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
+    ReverseSimulateSwapOperationsResponse, ReverseSimulationResponse,
+    SimulateSwapOperationsResponse, SimulationResponse, SwapOperation,
 };
 
 use crate::helpers::get_asset_indexes_in_pool;
@@ -100,7 +102,6 @@ pub fn query_reverse_simulation(
                 pool_fees,
             )?;
 
-            //todo test this
             Ok(ReverseSimulationResponse {
                 offer_amount: offer_amount_computation.offer_amount,
                 spread_amount: offer_amount_computation.spread_amount,
@@ -116,10 +117,16 @@ pub fn query_reverse_simulation(
             let ask_pool =
                 Decimal256::decimal_with_precision(ask_asset_in_pool.amount, ask_decimal)?;
 
+            let mut extra_fees = Decimal256::zero();
+            for extra_fee in pool_fees.extra_fees.iter() {
+                extra_fees = extra_fees.checked_add(extra_fee.to_decimal_256())?;
+            }
+
             let before_fees = (Decimal256::one()
                 .checked_sub(pool_fees.protocol_fee.to_decimal_256())?
                 .checked_sub(pool_fees.swap_fee.to_decimal_256())?
                 .checked_sub(pool_fees.burn_fee.to_decimal_256())?)
+            .checked_sub(extra_fees)?
             .inv()
             .unwrap_or_else(Decimal256::one)
             .checked_mul(Decimal256::decimal_with_precision(
@@ -169,7 +176,6 @@ pub fn query_reverse_simulation(
                     extra_fees_amount.checked_add(extra_fee.compute(before_fees_ask)?)?;
             }
 
-            //todo test this
             Ok(ReverseSimulationResponse {
                 offer_amount,
                 spread_amount,
@@ -239,6 +245,11 @@ pub fn simulate_swap_operations(
     ensure!(operations_len > 0, ContractError::NoSwapOperationsProvided);
 
     let mut amount = offer_amount;
+    let mut spreads: Vec<Coin> = vec![];
+    let mut swap_fees: Vec<Coin> = vec![];
+    let mut protocol_fees: Vec<Coin> = vec![];
+    let mut burn_fees: Vec<Coin> = vec![];
+    let mut extra_fees: Vec<Coin> = vec![];
 
     for operation in operations.into_iter() {
         match operation {
@@ -250,15 +261,44 @@ pub fn simulate_swap_operations(
                 let res = query_simulation(
                     deps,
                     coin(amount.u128(), token_in_denom),
-                    token_out_denom,
+                    token_out_denom.clone(),
                     pool_identifier,
                 )?;
                 amount = res.return_amount;
+
+                if res.spread_amount > Uint128::zero() {
+                    spreads.push(coin(res.spread_amount.u128(), &token_out_denom));
+                }
+                if res.swap_fee_amount > Uint128::zero() {
+                    swap_fees.push(coin(res.swap_fee_amount.u128(), &token_out_denom));
+                }
+                if res.protocol_fee_amount > Uint128::zero() {
+                    protocol_fees.push(coin(res.protocol_fee_amount.u128(), &token_out_denom));
+                }
+                if res.burn_fee_amount > Uint128::zero() {
+                    burn_fees.push(coin(res.burn_fee_amount.u128(), &token_out_denom));
+                }
+                if res.extra_fees_amount > Uint128::zero() {
+                    extra_fees.push(coin(res.extra_fees_amount.u128(), &token_out_denom));
+                }
             }
         }
     }
 
-    Ok(SimulateSwapOperationsResponse { amount })
+    spreads = aggregate_coins(spreads)?;
+    swap_fees = aggregate_coins(swap_fees)?;
+    protocol_fees = aggregate_coins(protocol_fees)?;
+    burn_fees = aggregate_coins(burn_fees)?;
+    extra_fees = aggregate_coins(extra_fees)?;
+
+    Ok(SimulateSwapOperationsResponse {
+        return_amount: amount,
+        spreads,
+        swap_fees,
+        protocol_fees,
+        burn_fees,
+        extra_fees,
+    })
 }
 
 /// This function iterates over the swap operations in the reverse order,
@@ -267,13 +307,18 @@ pub fn reverse_simulate_swap_operations(
     deps: Deps,
     ask_amount: Uint128,
     operations: Vec<SwapOperation>,
-) -> Result<SimulateSwapOperationsResponse, ContractError> {
+) -> Result<ReverseSimulateSwapOperationsResponse, ContractError> {
     let operations_len = operations.len();
     if operations_len == 0 {
         return Err(ContractError::NoSwapOperationsProvided);
     }
 
-    let mut amount = ask_amount;
+    let mut offer_in_needed = ask_amount;
+    let mut spreads: Vec<Coin> = vec![];
+    let mut swap_fees: Vec<Coin> = vec![];
+    let mut protocol_fees: Vec<Coin> = vec![];
+    let mut burn_fees: Vec<Coin> = vec![];
+    let mut extra_fees: Vec<Coin> = vec![];
 
     for operation in operations.into_iter().rev() {
         match operation {
@@ -282,16 +327,46 @@ pub fn reverse_simulate_swap_operations(
                 token_out_denom,
                 pool_identifier,
             } => {
-                let res = query_simulation(
+                let res = query_reverse_simulation(
                     deps,
-                    coin(amount.u128(), token_out_denom),
+                    coin(offer_in_needed.u128(), token_out_denom.clone()),
                     token_in_denom,
                     pool_identifier,
                 )?;
-                amount = res.return_amount;
+
+                if res.spread_amount > Uint128::zero() {
+                    spreads.push(coin(res.spread_amount.u128(), &token_out_denom));
+                }
+                if res.swap_fee_amount > Uint128::zero() {
+                    swap_fees.push(coin(res.swap_fee_amount.u128(), &token_out_denom));
+                }
+                if res.protocol_fee_amount > Uint128::zero() {
+                    protocol_fees.push(coin(res.protocol_fee_amount.u128(), &token_out_denom));
+                }
+                if res.burn_fee_amount > Uint128::zero() {
+                    burn_fees.push(coin(res.burn_fee_amount.u128(), &token_out_denom));
+                }
+                if res.extra_fees_amount > Uint128::zero() {
+                    extra_fees.push(coin(res.extra_fees_amount.u128(), &token_out_denom));
+                }
+
+                offer_in_needed = res.offer_amount;
             }
         }
     }
 
-    Ok(SimulateSwapOperationsResponse { amount })
+    spreads = aggregate_coins(spreads)?;
+    swap_fees = aggregate_coins(swap_fees)?;
+    protocol_fees = aggregate_coins(protocol_fees)?;
+    burn_fees = aggregate_coins(burn_fees)?;
+    extra_fees = aggregate_coins(extra_fees)?;
+
+    Ok(ReverseSimulateSwapOperationsResponse {
+        offer_amount: offer_in_needed,
+        spreads,
+        swap_fees,
+        protocol_fees,
+        burn_fees,
+        extra_fees,
+    })
 }
