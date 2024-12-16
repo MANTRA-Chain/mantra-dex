@@ -1,5 +1,8 @@
 # MANTRA DEX
 
+MANTRA DEX is a decentralized exchange (DEX) protocol that allows for permissionless pool and farm creation. The protocol
+is built around singleton contracts, which makes it easier to manage and integrate with other protocols.
+
 ## Getting started
 
 To get started with MANTRA DEX, please go through the [contributing guide](./docs/CONTRIBUTING.md) to see the
@@ -11,8 +14,6 @@ different ways to contribute to the project.
 2. [Docs](https://docs.mantrachain.io/mantra-smart-contracts/mantra_dex)
 
 ## Architecture
-
-The protocol is built around singleton contracts, which makes it easier to manage and integrate with other protocols.
 
 The following is the architecture of MANTRA DEX, and a general description of each contract:
 
