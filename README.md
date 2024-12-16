@@ -12,8 +12,7 @@ different ways to contribute to the project.
 
 ## Architecture
 
-MANTRA DEX is based on White Whale V2. The protocol is built around singleton contracts, which makes it easier to manage
-and integrate with other protocols.
+The protocol is built around singleton contracts, which makes it easier to manage and integrate with other protocols.
 
 The following is the architecture of MANTRA DEX, and a general description of each contract:
 
@@ -111,4 +110,20 @@ The MANTRA DEX contract's audit is currently in progress.
 
 [Security Policies and Procedures](./docs/SECURITY.md)
 
-[License](./LICENSE)
+## Acknowledgments and License
+
+This project is a fork of [White Whale V2](https://github.com/White-Whale-Defi-Platform/white-whale-core), which was
+originally licensed under the MIT License. You can find the original authors [here](https://github.com/White-Whale-Defi-Platform/white-whale-core/graphs/contributors).
+
+Functionality wise, the code in the original project has been modified, but not limited to, the following:
+
+- Epoch creation is now derived.
+- Hooks have been removed.
+- Pool, Farm and Positions ID derivation.
+- Farm position emergency withdrawals.
+- Emergency withdrawal fees distribution.
+
+This project is now licensed under the [Mozilla Public License 2.0](./LICENSE).
+
+Copyright (c) 2022-2024 White Whale
+Copyright (c) 2024-present MANTRA Chain
