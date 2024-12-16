@@ -8,7 +8,7 @@ different ways to contribute to the project.
 ## Resources
 
 1. [Website](https://mantra.zone/)
-2. [Docs]()
+2. [Docs](https://docs.mantrachain.io/mantra-smart-contracts/mantra_dex)
 
 ## Architecture
 
