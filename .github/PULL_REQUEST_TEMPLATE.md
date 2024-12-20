@@ -31,7 +31,7 @@
 
 -->
 
-- [ ] I have read [MANTRA's contribution guidelines](https://github.com/MANTRA-Finance/amm/blob/main/docs/CONTRIBUTING.md).
+- [ ] I have read [MANTRA's contribution guidelines](https://github.com/MANTRA-Chain/mantra-dex/blob/main/docs/CONTRIBUTING.md).
 - [ ] My pull request has a sound title and description (not something vague like `Update index.md`)
 - [ ] All existing and new tests are passing.
 - [ ] I updated/added relevant documentation.
