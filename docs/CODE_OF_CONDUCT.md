@@ -6,4 +6,3 @@
 - No flaming, trolling, or personal attacks.
 - Keep discussions constructive and on topic.
 - Treat others with kindness and professionalism.
-

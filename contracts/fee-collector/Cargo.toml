@@ -1,26 +1,26 @@
 [package]
-name = "fee-collector"
-description = "Fee collector contract for MANTRA. Fees accrued by pool and farm creation, in addition to swaps, are collected here."
-version = "1.0.0"
-authors = ["Javier C <javier.m.costa@mantra.finance>"]
+authors           = ["Javier C <javier.m.costa@mantra.finance>"]
+description       = "Fee collector contract for MANTRA. Fees accrued by pool and farm creation, in addition to swaps, are collected here."
 edition.workspace = true
+name              = "fee-collector"
+version           = "1.0.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-schema.workspace = true
-cosmwasm-std.workspace = true
-cw2.workspace = true
-schemars.workspace = true
-serde.workspace = true
-thiserror.workspace = true
-cw-ownable.workspace = true
-mantra-utils.workspace = true
+cosmwasm-schema.workspace         = true
+cosmwasm-std.workspace            = true
 cw-migrate-error-derive.workspace = true
-semver.workspace = true
-cw-utils.workspace = true
-mantra-dex-std.workspace = true
+cw-ownable.workspace              = true
+cw-utils.workspace                = true
+cw2.workspace                     = true
+mantra-dex-std.workspace          = true
+mantra-utils.workspace            = true
+schemars.workspace                = true
+semver.workspace                  = true
+serde.workspace                   = true
+thiserror.workspace               = true
 
 [dev-dependencies]
 cw-multi-test.workspace = true

@@ -1,14 +1,14 @@
 [package]
-name = "farm-manager"
-version = "1.0.0"
-authors = ["Kerber0x <kerber0x@protonmail.com>"]
-edition.workspace = true
-description = "The Farm Manager is a contract that allows to manage multiple pool farms in a single contract."
-license.workspace = true
-repository.workspace = true
-homepage.workspace = true
+authors                 = ["Kerber0x <kerber0x@protonmail.com>"]
+description             = "The Farm Manager is a contract that allows to manage multiple pool farms in a single contract."
 documentation.workspace = true
-publish.workspace = true
+edition.workspace       = true
+homepage.workspace      = true
+license.workspace       = true
+name                    = "farm-manager"
+publish.workspace       = true
+repository.workspace    = true
+version                 = "1.0.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,24 +16,24 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-schema.workspace = true
-cosmwasm-std.workspace = true
-cw-storage-plus.workspace = true
-cw2.workspace = true
-schemars.workspace = true
-semver.workspace = true
-serde.workspace = true
-thiserror.workspace = true
-mantra-dex-std.workspace = true
-mantra-utils.workspace = true
-cw-utils.workspace = true
-cw-ownable.workspace = true
+cosmwasm-schema.workspace         = true
+cosmwasm-std.workspace            = true
 cw-migrate-error-derive.workspace = true
+cw-ownable.workspace              = true
+cw-storage-plus.workspace         = true
+cw-utils.workspace                = true
+cw2.workspace                     = true
+mantra-dex-std.workspace          = true
+mantra-utils.workspace            = true
+schemars.workspace                = true
+semver.workspace                  = true
+serde.workspace                   = true
+thiserror.workspace               = true
 
 [dev-dependencies]
-cw-multi-test.workspace = true
+anyhow.workspace                = true
+cw-multi-test.workspace         = true
+epoch-manager.workspace         = true
+fee-collector.workspace         = true
 mantra-common-testing.workspace = true
-epoch-manager.workspace = true
-anyhow.workspace = true
-pool-manager.workspace = true
-fee-collector.workspace = true
+pool-manager.workspace          = true
