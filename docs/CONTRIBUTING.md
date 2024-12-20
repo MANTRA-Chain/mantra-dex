@@ -62,3 +62,7 @@ By contributing to MANTRA Dex, you agree that your contributions will be license
 ## Code of Conduct
 
 Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Reporting Security Issues
+
+To report a security issue, please follow our [Security Policies and Procedures](SECURITY.md).
