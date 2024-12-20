@@ -17,7 +17,7 @@ assignees: ""
      to what you're looking for, then fill out the template below.
 -->
 
-If you want to report a security issue, please follow our security policy: `https://github.com/MANTRA-Finance/amm/blob/main/docs/SECURITY.md`
+If you want to report a security issue, please follow our security policy: `https://github.com/MANTRA-Chain/mantra-dex/blob/main/docs/SECURITY.md`
 
 ---
 

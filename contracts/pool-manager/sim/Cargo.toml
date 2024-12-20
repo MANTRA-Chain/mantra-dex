@@ -1,9 +1,9 @@
 [package]
-name = "stable-swap-sim"
-version = "0.1.0"
+authors     = ["Paul Stelzig paul@irulast.com>"]
 description = "Simulations of the StableSwap invariant compared to Curve's reference implementation."
-authors = ["Paul Stelzig paul@irulast.com>"]
-edition = "2021"
+edition     = "2021"
+name        = "stable-swap-sim"
+version     = "0.1.0"
 
 [lib]
 name = "sim"

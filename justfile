@@ -81,3 +81,8 @@ store CHAIN='mantra-testnet' CONTRACT='all':
 # Deploys a pool on MANTRA Dex on the given CHAIN, default is mantra-testnet.
 deploy-pool CHAIN='mantra-testnet' POOL_FILE='pool.json' AMOUNTS='':
     ./scripts/deployment/deploy_pool.sh -c {{CHAIN}} -p {{POOL_FILE}} -a {{AMOUNTS}}
+
+# Installs pre-commit git hooks.
+install-git-hooks:
+    ./scripts/hooks/commit-msg.sh --install
+    ./scripts/hooks/pre-commit.sh --install
