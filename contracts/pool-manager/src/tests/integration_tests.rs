@@ -665,8 +665,9 @@ mod pool_creation_failures {
                 vec![
                     coin(8888u128, "uom".to_string()),
                     coin(1000u128, "utest".to_string()),
+                    coin(1000u128, "uusd".to_string()),
                 ],
-                "utest".to_string(),
+                "uusd".to_string(),
             ),
         );
         let creator = suite.creator();
@@ -716,14 +717,14 @@ mod pool_creation_failures {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(999, "utest")],
+                vec![coin(1000, "uusd"), coin(999, "uusd")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                     match err {
-                        ContractError::TokenFactoryFeeNotPaid => {}
+                        ContractError::InvalidPoolCreationFee { .. } => {}
                         _ => panic!(
-                            "Wrong error type, should return ContractError::TokenFactoryFeeNotPaid"
+                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
                         ),
                     }
                 },
@@ -754,7 +755,26 @@ mod pool_creation_failures {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(1000, "utest")],
+                vec![coin(1000, "uusd"), coin(999, "utest")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::TokenFactoryFeeNotPaid => {}
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::TokenFactoryFeeNotPaid"
+                        ),
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("o.whale.uluna.pool.1".to_string()),
+                vec![coin(2000, "uusd")],
                 |result| {
                     result.unwrap();
                 },
@@ -6023,7 +6043,7 @@ mod provide_liquidity {
                 coin(1_000u128 * 10u128.pow(18), "uweth".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new("uom".to_string(), "8888".to_string()),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())], "uom".to_string()),
         );
         let creator = suite.creator();
         let user = suite.senders[1].clone();
