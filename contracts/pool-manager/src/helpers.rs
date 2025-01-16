@@ -621,7 +621,7 @@ pub fn validate_fees_are_paid(
             amount: paid_pool_fee_amount,
         });
 
-        let tf_fee_paid = denom_creation_fee.iter().all(|fee| {
+        let tf_fee_paid = denom_creation_fee.iter().any(|fee| {
             let paid_fee_amount = info
                 .funds
                 .iter()
@@ -630,10 +630,12 @@ pub fn validate_fees_are_paid(
                 .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))
                 .unwrap_or(Uint128::zero());
 
-            total_fees.push(Coin {
-                denom: fee.denom.clone(),
-                amount: paid_fee_amount,
-            });
+            if paid_fee_amount > Uint128::zero() {
+                total_fees.push(Coin {
+                    denom: fee.denom.clone(),
+                    amount: paid_fee_amount,
+                });
+            }
 
             paid_fee_amount == fee.amount
         });

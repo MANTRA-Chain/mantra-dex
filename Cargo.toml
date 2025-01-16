@@ -45,7 +45,7 @@ test-case               = { version = "3.3.1" }
 thiserror               = { version = "1.0.43" }
 uint                    = { version = "0.10.0" }
 
-mantra-common-testing = { version = "1.0.0" }
+mantra-common-testing = { version = "1.1.1" }
 mantra-dex-std        = { version = "2.0.0" }
 mantra-utils          = { version = "1.0.0" }
 
