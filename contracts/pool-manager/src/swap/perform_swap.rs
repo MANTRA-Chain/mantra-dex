@@ -83,6 +83,8 @@ pub fn perform_swap(
         offer_asset.amount,
         return_asset.amount,
         swap_computation.spread_amount,
+        offer_decimal,
+        ask_decimal,
     )?;
 
     // State changes to the pools balances
@@ -148,6 +150,8 @@ pub fn assert_max_spread(
     offer_amount: Uint128,
     return_amount: Uint128,
     spread_amount: Uint128,
+    offer_decimals: u8,
+    ask_decimals: u8,
 ) -> StdResult<()> {
     let max_spread: Decimal256 = max_spread
         .unwrap_or(Decimal::from_str(DEFAULT_SLIPPAGE)?)
@@ -155,13 +159,20 @@ pub fn assert_max_spread(
         .into();
 
     if let Some(belief_price) = belief_price {
-        let expected_return = Decimal::from_ratio(offer_amount, Uint128::one())
-            .checked_mul(
-                belief_price
-                    .inv()
-                    .ok_or_else(|| StdError::generic_err("Belief price can't be zero"))?,
-            )?
-            .to_uint_floor();
+        let expected_return = Decimal::from_ratio(
+            offer_amount,
+            Uint128::from(10u128.pow(offer_decimals as u32)),
+        )
+        .checked_mul(
+            belief_price
+                .inv()
+                .ok_or_else(|| StdError::generic_err("Belief price can't be zero"))?,
+        )?
+        .checked_mul(Decimal::from_ratio(
+            Uint128::from(10u128.pow(ask_decimals as u32)),
+            Uint128::one(),
+        ))?
+        .to_uint_floor();
 
         let spread_amount = expected_return.saturating_sub(return_amount);
 
