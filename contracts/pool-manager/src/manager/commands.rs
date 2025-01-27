@@ -93,6 +93,14 @@ pub fn create_pool(
         ContractError::AssetMismatch
     );
 
+    // Ensure that the number of assets is 2 for ConstantProduct pools
+    if pool_type == PoolType::ConstantProduct {
+        ensure!(
+            asset_denoms.len() == 2,
+            ContractError::ConstantProductPoolAssetMismatch
+        );
+    }
+
     // Ensure that the number of assets is within the allowed range
     ensure!(
         asset_denoms.len() <= MAX_ASSETS_PER_POOL,
