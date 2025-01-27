@@ -5693,6 +5693,111 @@ mod provide_liquidity {
                 );
             });
     }
+
+    #[test]
+    fn belief_price_works_with_different_decimals() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000u128 * 10u128.pow(6), "uusd".to_string()),
+                coin(1_000u128 * 10u128.pow(18), "uweth".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new("uom".to_string(), "8888".to_string()),
+        );
+        let creator = suite.creator();
+        let user = suite.senders[1].clone();
+
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            // Create a uusd/uweth pool (uweth has 18 decimals, uusd has 6)
+            .create_pool(
+                &creator,
+                vec!["uusd".to_string(), "uweth".to_string()],
+                vec![6u8, 18u8],
+                PoolFee {
+                    protocol_fee: Fee {
+                        share: Decimal::zero(),
+                    },
+                    swap_fee: Fee {
+                        share: Decimal::zero(),
+                    },
+                    burn_fee: Fee {
+                        share: Decimal::zero(),
+                    },
+                    extra_fees: vec![],
+                },
+                PoolType::ConstantProduct,
+                Some("uusd.uweth".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            // Provide liquidity to the pool with 100 uusd and 100 uweth
+            .provide_liquidity(
+                &user,
+                "o.uusd.uweth".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(100 * 10u128.pow(6)),
+                    },
+                    Coin {
+                        denom: "uweth".to_string(),
+                        amount: Uint128::from(100 * 10u128.pow(18)),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            // Swap 10 uusd for uweth
+            .swap(
+                &user,
+                "uweth".to_string(),
+                Some(Decimal::percent(105)), // Expected return is around 9.52 uweth
+                None,
+                None,
+                "o.uusd.uweth".to_string(),
+                vec![coin(10u128 * 10u128.pow(6), "uusd".to_string())],
+                |result| {
+                    let binding = result.unwrap_err();
+                    let err = binding.downcast_ref::<ContractError>().unwrap();
+                    assert!(err.to_string().contains("Spread limit exceeded"))
+                },
+            )
+            .swap(
+                &user,
+                "uusd".to_string(),
+                Some(Decimal::percent(100)),
+                None,
+                None,
+                "o.uusd.uweth".to_string(),
+                vec![coin(10u128 * 10u128.pow(18), "uweth".to_string())],
+                |result| {
+                    let binding = result.unwrap_err();
+                    let err = binding.downcast_ref::<ContractError>().unwrap();
+                    assert!(err.to_string().contains("Spread limit exceeded"))
+                },
+            )
+            .swap(
+                &user,
+                "uusd".to_string(),
+                Some(Decimal::percent(110)),
+                None,
+                None,
+                "o.uusd.uweth".to_string(),
+                vec![coin(10u128 * 10u128.pow(18), "uweth".to_string())],
+                |result| {
+                    result.unwrap();
+                },
+            );
+    }
 }
 
 mod multiple_pools {
