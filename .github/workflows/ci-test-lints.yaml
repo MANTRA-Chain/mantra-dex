@@ -25,11 +25,19 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
 
-      - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
+#    - name: Run cargo-tarpaulin
+#      uses: actions-rs/tarpaulin@v0.1
+#      with:
+#        version: "0.22.0"
+#        args: '--locked -- --test-threads 4'
+
+      - name: Rune tests
+        uses: actions-rs/cargo@v1
         with:
-          version: "0.15.0"
-          args: '--locked -- --test-threads 4'
+          command: test
+          args: --no-fail-fast --locked
+        env:
+          RUST_BACKTRACE: 1
 
   lints:
     name: Lints
