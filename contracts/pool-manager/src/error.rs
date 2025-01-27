@@ -94,6 +94,9 @@ pub enum ContractError {
     #[error("The asset doesn't match the assets stored in contract")]
     AssetMismatch,
 
+    #[error("A constant product pool can only contain 2 assets")]
+    ConstantProductPoolAssetMismatch,
+
     #[error("Error computing the LP mint amount for the stable pool")]
     StableLpMintError,
 
