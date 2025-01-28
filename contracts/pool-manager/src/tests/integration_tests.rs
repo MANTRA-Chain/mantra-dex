@@ -6235,6 +6235,141 @@ mod provide_liquidity {
                 },
             );
     }
+    #[test]
+    fn provide_incomplete_liquidity_fails_on_stableswaps() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())], "uom".to_string()),
+        );
+        let creator = suite.creator();
+
+        let asset_infos = vec![
+            "uwhale".to_string(),
+            "uluna".to_string(),
+            "uusd".to_string(),
+        ];
+
+        // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::from_ratio(1u128, 1000u128),
+            },
+            swap_fee: Fee {
+                share: Decimal::from_ratio(1u128, 10_000_u128),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("whale.uluna.uusd".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // Add liquidity with only 2 tokens
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.whale.uluna.uusd".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::AssetMismatch => {}
+                        _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+                    }
+                },
+            )
+            // Add liquidity with 3 tokens but one of them's amount is zero
+            .provide_liquidity(
+                &creator,
+                "o.whale.uluna.uusd".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::zero(),
+                    },
+                ],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::AssetMismatch => {}
+                        _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+                    }
+                },
+            )
+            // Add liquidity with 3 tokens but one of them is not part of the pool
+            .provide_liquidity(
+                &creator,
+                "o.whale.uluna.uusd".to_string(),
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::AssetMismatch => {}
+                        _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
+                    }
+                },
+            );
+    }
 }
 
 mod multiple_pools {

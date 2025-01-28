@@ -3,7 +3,6 @@ use cosmwasm_std::{
     DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, Uint256,
 };
 use cosmwasm_std::{Decimal, Uint128};
-
 use mantra_dex_std::coin::{add_coins, aggregate_coins};
 use mantra_dex_std::common::validate_addr_or_default;
 use mantra_dex_std::farm_manager::{PositionsBy, PositionsResponse};
@@ -232,6 +231,16 @@ pub fn provide_liquidity(
             }
             PoolType::StableSwap { amp: amp_factor } => {
                 if total_share == Uint128::zero() {
+                    // ensure all assets in the pool are provided and the amounts are greater than zero
+                    ensure!(
+                        pool_assets.len() == deposits.len()
+                            && deposits.iter().all(|asset| pool_assets
+                                .iter()
+                                .any(|pool_asset| pool_asset.denom == asset.denom
+                                    && asset.amount > Uint128::zero())),
+                        ContractError::AssetMismatch
+                    );
+
                     // Make sure at least MINIMUM_LIQUIDITY_AMOUNT is deposited to mitigate the risk of the first
                     // depositor preventing small liquidity providers from joining the pool
                     let share = Uint128::try_from(compute_d(amp_factor, &deposits).unwrap())?
