@@ -145,6 +145,39 @@ fn create_farms() {
     let other = suite.senders[1].clone();
     let fee_collector = suite.fee_collector_addr.clone();
 
+    suite
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 0u64);
+        })
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    // current epoch is 0
+                    start_epoch: Some(0),
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::InvalidEpoch { which } => {
+                        assert_eq!(which, "start")
+                    }
+                    _ => panic!("Wrong error type, should return ContractError::InvalidEpoch"),
+                }
+            },
+        );
+
     for _ in 0..10 {
         suite.add_one_epoch();
     }
@@ -397,10 +430,38 @@ fn create_farms() {
             vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
                 match err {
-                    ContractError::FarmEndsInPast { .. } => {}
-                    _ => panic!("Wrong error type, should return ContractError::FarmEndsInPast"),
+                    ContractError::InvalidEpoch { which } => {
+                        assert_eq!(which, "start")
+                    }
+                    _ => panic!("Wrong error type, should return ContractError::InvalidEpoch"),
+                }
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    // current epoch is 10
+                    start_epoch: None,
+                    preliminary_end_epoch: Some(5),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
+                    ),
                 }
             },
         )
@@ -3449,7 +3510,7 @@ fn test_close_expired_farms() {
                     claimed_amount: Uint128::zero(),
                     emission_rate: Uint128::new(714),
                     curve: Curve::Linear,
-                    start_epoch: 49u64,
+                    start_epoch: 49u64, // the default of (current epoch + 1u64) was used
                     preliminary_end_epoch: 63u64,
                     last_epoch_claimed: 48u64,
                 }
@@ -8586,4 +8647,55 @@ fn farm_owners_get_penalty_fees() {
         .query_balance(lp_denom_1.clone(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
         });
+}
+
+#[test]
+fn farm_cant_be_created_in_the_past() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, invalid_lp_denom.clone()),
+    ]);
+    suite.instantiate_default();
+
+    let other = suite.senders[1].clone();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+    // current epoch is 10
+
+    // We can create a farm in a past epoch
+    suite.manage_farm(
+        &other,
+        FarmAction::Fill {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: Some(1), // start epoch in the past
+                preliminary_end_epoch: Some(28),
+                curve: None,
+                farm_asset: Coin {
+                    denom: "uusdy".to_string(),
+                    amount: Uint128::new(4_000u128),
+                },
+                farm_identifier: Some("farm_1".to_string()),
+            },
+        },
+        vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+            match err {
+                ContractError::InvalidEpoch { which } => {
+                    assert_eq!(which, "start")
+                }
+                _ => panic!("Wrong error type, should return ContractError::InvalidEpoch"),
+            }
+        },
+    );
 }
