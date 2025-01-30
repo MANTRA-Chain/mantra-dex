@@ -202,6 +202,11 @@ pub(crate) fn calculate_rewards(
                 .unwrap_or(&Uint128::zero())
                 .to_owned();
 
+            // skip epoch if the total lp weight is zero
+            if total_lp_weight.is_zero() {
+                continue;
+            }
+
             let user_share = (user_weight, total_lp_weight);
 
             let reward = farm_emissions
