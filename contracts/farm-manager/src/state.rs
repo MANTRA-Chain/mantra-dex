@@ -37,7 +37,7 @@ pub struct PositionIndexes<'a> {
     pub open_state_by_receiver: MultiIndex<'a, (Vec<u8>, u8), Position, String>,
 }
 
-impl<'a> IndexList<Position> for PositionIndexes<'a> {
+impl IndexList<Position> for PositionIndexes<'_> {
     fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Position>> + '_> {
         let v: Vec<&dyn Index<Position>> = vec![&self.receiver, &self.open_state_by_receiver];
         Box::new(v.into_iter())
@@ -73,7 +73,7 @@ pub struct FarmIndexes<'a> {
     pub farm_asset: MultiIndex<'a, String, Farm, String>,
 }
 
-impl<'a> IndexList<Farm> for FarmIndexes<'a> {
+impl IndexList<Farm> for FarmIndexes<'_> {
     fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Farm>> + '_> {
         let v: Vec<&dyn Index<Farm>> = vec![&self.lp_denom, &self.farm_asset];
         Box::new(v.into_iter())
@@ -159,7 +159,7 @@ pub fn get_farms_by_farm_asset(
 /// Gets the farm given its identifier
 pub fn get_farm_by_identifier(
     storage: &dyn Storage,
-    farm_identifier: &String,
+    farm_identifier: &str,
 ) -> Result<Farm, ContractError> {
     FARMS
         .may_load(storage, farm_identifier)?

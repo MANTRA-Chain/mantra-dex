@@ -3,7 +3,6 @@ use std::{env, error::Error};
 
 /// Traverses through the workspace and generates schemas
 /// Expects to be ran at the workspace.
-
 pub mod tasks {
     use std::{
         collections::HashMap,
