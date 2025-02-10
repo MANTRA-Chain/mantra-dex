@@ -63,7 +63,7 @@ pub struct PoolIndexes<'a> {
     pub lp_asset: UniqueIndex<'a, String, PoolInfo, String>,
 }
 
-impl<'a> IndexList<PoolInfo> for PoolIndexes<'a> {
+impl IndexList<PoolInfo> for PoolIndexes<'_> {
     fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<PoolInfo>> + '_> {
         let v: Vec<&dyn Index<PoolInfo>> = vec![&self.lp_asset];
         Box::new(v.into_iter())
