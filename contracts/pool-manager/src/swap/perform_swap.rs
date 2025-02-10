@@ -155,17 +155,17 @@ pub fn assert_max_spread(
         .into();
 
     if let Some(belief_price) = belief_price {
-        let expected_return = Decimal::from_ratio(offer_amount, Uint128::one())
-            .checked_mul(
-                belief_price
-                    .inv()
-                    .ok_or_else(|| StdError::generic_err("Belief price can't be zero"))?,
-            )?
-            .to_uint_floor();
+        let expected_return =
+            Decimal256::from_ratio(Uint256::from_uint128(offer_amount), Uint256::one())
+                .checked_mul(
+                    Decimal256::from(belief_price)
+                        .inv()
+                        .ok_or_else(|| StdError::generic_err("Belief price can't be zero"))?,
+                )?
+                .to_uint_floor();
+        let spread_amount = expected_return.saturating_sub(Uint256::from_uint128(return_amount));
 
-        let spread_amount = expected_return.saturating_sub(return_amount);
-
-        if return_amount < expected_return
+        if Uint256::from_uint128(return_amount) < expected_return
             && Decimal256::from_ratio(spread_amount, expected_return) > max_spread
         {
             return Err(StdError::generic_err("Spread limit exceeded"));
