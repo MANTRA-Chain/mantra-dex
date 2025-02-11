@@ -411,10 +411,10 @@ pub struct OfferAmountComputation {
 pub fn assert_slippage_tolerance(
     slippage_tolerance: &Option<Decimal>,
     deposits: &[Coin],
-    pools: &[Coin],
+    pool_assets: &mut [Coin],
     pool_type: PoolType,
-    amount: Uint128,
-    pool_token_supply: Uint128,
+    share: Uint128,
+    total_share: Uint128,
 ) -> Result<(), ContractError> {
     if let Some(slippage_tolerance) = *slippage_tolerance {
         let slippage_tolerance: Decimal256 = slippage_tolerance.into();
@@ -424,7 +424,12 @@ pub fn assert_slippage_tolerance(
 
         let one_minus_slippage_tolerance = Decimal256::one() - slippage_tolerance;
         let deposits: Vec<Uint256> = deposits.iter().map(|coin| coin.amount.into()).collect();
-        let pools: Vec<Uint256> = pools.iter().map(|coin| coin.amount.into()).collect();
+
+        // Sort assets by denom to ensure the order of the assets in the pool is the same as the
+        // deposits, which are sorted previously
+        pool_assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+
+        let pools: Vec<Uint256> = pool_assets.iter().map(|coin| coin.amount.into()).collect();
 
         // Ensure each prices are not dropped as much as slippage tolerance rate
         match pool_type {
@@ -436,8 +441,8 @@ pub fn assert_slippage_tolerance(
                     .into_iter()
                     .fold(Uint256::zero(), |acc, x| acc.checked_add(x).unwrap());
 
-                let pool_ratio = Decimal256::from_ratio(pools_total, pool_token_supply);
-                let deposit_ratio = Decimal256::from_ratio(deposits_total, amount);
+                let pool_ratio = Decimal256::from_ratio(pools_total, total_share);
+                let deposit_ratio = Decimal256::from_ratio(deposits_total, share);
 
                 // the slippage tolerance for the stableswap can't use a simple ratio for calculating
                 // slippage when adding liquidity. Due to the math behind the stableswap, the amp factor
@@ -453,6 +458,8 @@ pub fn assert_slippage_tolerance(
                         actual: deposits.len(),
                     });
                 }
+
+                // both deposits and pools are sorted by denom so the indexes match
                 if Decimal256::from_ratio(deposits[0], deposits[1]) * one_minus_slippage_tolerance
                     > Decimal256::from_ratio(pools[0], pools[1])
                     || Decimal256::from_ratio(deposits[1], deposits[0])

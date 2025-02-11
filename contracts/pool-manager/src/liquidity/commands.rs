@@ -280,7 +280,7 @@ pub fn provide_liquidity(
         helpers::assert_slippage_tolerance(
             &slippage_tolerance,
             &deposits,
-            &pool_assets,
+            &mut pool_assets,
             pool.pool_type.clone(),
             share,
             total_share,

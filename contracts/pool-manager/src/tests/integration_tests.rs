@@ -90,6 +90,7 @@ fn deposit_and_withdraw_sanity_check() {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -1068,6 +1069,7 @@ mod router {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -1089,6 +1091,7 @@ mod router {
         suite.provide_liquidity(
             &creator,
             "o.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -1255,6 +1258,7 @@ mod router {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -1276,6 +1280,7 @@ mod router {
         suite.provide_liquidity(
             &creator,
             "o.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -1392,6 +1397,7 @@ mod router {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -1413,6 +1419,7 @@ mod router {
         suite.provide_liquidity(
             &creator,
             "o.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -1546,6 +1553,7 @@ mod router {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -1567,6 +1575,7 @@ mod router {
         suite.provide_liquidity(
             &creator,
             "o.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -1768,6 +1777,7 @@ mod router {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -1789,6 +1799,7 @@ mod router {
         suite.provide_liquidity(
             &creator,
             "o.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -1930,6 +1941,7 @@ mod router {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -1951,6 +1963,7 @@ mod router {
         suite.provide_liquidity(
             &creator,
             "o.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -2135,6 +2148,7 @@ mod swapping {
             .provide_liquidity(
                 &creator,
                 "o.whale.uluna".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -2346,6 +2360,7 @@ mod swapping {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -2532,6 +2547,7 @@ mod swapping {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -2677,6 +2693,7 @@ mod swapping {
             .provide_liquidity(
                 &bob,
                 "p.1".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -2892,6 +2909,7 @@ mod swapping {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uusdc".to_string(),
@@ -2909,6 +2927,7 @@ mod swapping {
             .provide_liquidity(
                 &bob,
                 "p.1".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -3113,6 +3132,7 @@ mod swapping {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "pusdc".to_string(),
@@ -3295,6 +3315,7 @@ mod swapping {
             .provide_liquidity(
                 &user,
                 "o.uusd.uweth".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -3614,6 +3635,7 @@ mod locking_lp {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -3685,6 +3707,7 @@ mod locking_lp {
                 &creator,
                 "o.whale.uluna".to_string(),
                 Some(200_000u64),
+                None,
                 None,
                 None,
                 None,
@@ -3813,6 +3836,7 @@ mod locking_lp {
                 Some("farm_identifier".to_string()),
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -3885,6 +3909,7 @@ mod locking_lp {
                 "o.whale.uluna".to_string(),
                 Some(200_000u64),
                 Some("u-farm_identifier".to_string()),
+                None,
                 None,
                 None,
                 vec![
@@ -4005,6 +4030,7 @@ mod locking_lp {
                 Some("farm_identifier".to_string()),
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -4076,6 +4102,7 @@ mod locking_lp {
                 &creator,
                 "o.whale.uluna".to_string(),
                 Some(200_000u64),
+                None,
                 None,
                 None,
                 None,
@@ -4200,6 +4227,7 @@ mod locking_lp {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -4228,6 +4256,7 @@ mod locking_lp {
                 Some(86_400u64),
                 Some("spam_position".to_string()),
                 None,
+                None,
                 Some(victim.to_string()),
                 vec![
                     Coin {
@@ -4253,6 +4282,7 @@ mod locking_lp {
                 "o.whale.uluna".to_string(),
                 Some(86_400u64),
                 Some("legit_position".to_string()),
+                None,
                 None,
                 Some(attacker.to_string()),
                 vec![
@@ -4365,7 +4395,9 @@ mod provide_liquidity {
                 &creator,
                 "o.whale.uluna".to_string(),
                 None,
-                None, None,
+                None,
+                None,
+                None,
                 None,
                 vec![],
                 |result| {
@@ -4381,7 +4413,9 @@ mod provide_liquidity {
                 &creator,
                 "o.whale.uluna".to_string(),
                 None,
-                None, None,
+                None,
+                None,
+                None,
                 None,
                 vec![Coin {
                     denom: "uosmo".to_string(),
@@ -4400,7 +4434,9 @@ mod provide_liquidity {
                 &creator,
                 "o.whale.uluna".to_string(),
                 None,
-                None, None,
+                None,
+                None,
+                None,
                 None,
                 vec![Coin {
                     denom: "uwhale".to_string(),
@@ -4427,6 +4463,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uosmo".to_string(),
@@ -4449,6 +4486,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &creator,
                 "o.whale.uluna".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -4492,6 +4530,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -4513,6 +4552,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &other,
                 "o.whale.uluna".to_string(),
+                None,
                 None,
                 None,
                 Some(Decimal::percent(50)),
@@ -4847,6 +4887,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -4873,6 +4914,7 @@ mod provide_liquidity {
                 "o.whale.uluna".to_string(),
                 None,
                 None,
+                None,
                 Some(Decimal::percent(50)),
                 None,
                 vec![Coin {
@@ -4892,6 +4934,7 @@ mod provide_liquidity {
                 "o.whale.uluna".to_string(),
                 None,
                 None,
+                None,
                 Some(Decimal::percent(50)),
                 None,
                 vec![Coin {
@@ -4909,6 +4952,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &other,
                 "o.whale.uluna".to_string(),
+                None,
                 None,
                 None,
                 Some(Decimal::percent(50)),
@@ -4986,6 +5030,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -5024,6 +5069,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &other,
                 "o.whale.uluna".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -5113,6 +5159,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uom".to_string(),
@@ -5144,6 +5191,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &creator,
                 "p.1".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -5214,6 +5262,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &creator,
                 "p.1".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -5314,6 +5363,7 @@ mod provide_liquidity {
         suite.provide_liquidity(
             &creator,
             "o.whale.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -5614,6 +5664,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uusdc".to_string(),
@@ -5645,6 +5696,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &creator,
                 "o.uusdc.uusdt.uusdy".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -5892,6 +5944,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uusdc".to_string(),
@@ -5923,6 +5976,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &alice,
                 "o.uusdc.uusdt.uusdy".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -6016,6 +6070,7 @@ mod provide_liquidity {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "uwhale".to_string(),
@@ -6050,6 +6105,7 @@ mod provide_liquidity {
         suite.provide_liquidity(
             &creator,
             "o.whale.uluna.uusd".to_string(),
+            None,
             None,
             None,
             None,
@@ -6205,6 +6261,7 @@ mod provide_liquidity {
             None,
             None,
             None,
+            None,
             vec![
                 Coin {
                     denom: "pusdc".to_string(),
@@ -6316,6 +6373,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -6338,6 +6396,7 @@ mod provide_liquidity {
             .provide_liquidity(
                 &creator,
                 "o.whale.uluna.uusd".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -6372,6 +6431,7 @@ mod provide_liquidity {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -6394,6 +6454,99 @@ mod provide_liquidity {
                     }
                 },
             );
+    }
+
+    #[test]
+    fn assert_slippage_tolerance_correct_xyk() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())], "uom".to_string()),
+        );
+        let creator = suite.creator();
+        // Asset infos with uwhale and uluna
+
+        let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::from_ratio(1u128, 1000u128),
+            },
+            swap_fee: Fee {
+                share: Decimal::from_ratio(1u128, 10_000_u128),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a 2 token pool
+        suite.instantiate_default().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::ConstantProduct {},
+            Some("whale.uluna".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // first liquidity provided as uwhale,uluna
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(500_000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(1_000_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // second liquidity provided as uluna,uwhale
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna".to_string(),
+            None,
+            None,
+            Some(Decimal::percent(60)),
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(1_000_000u128),
+                },
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(200_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
     }
 }
 
@@ -6604,6 +6757,7 @@ mod multiple_pools {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -6629,6 +6783,7 @@ mod multiple_pools {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -6650,6 +6805,7 @@ mod multiple_pools {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -6667,6 +6823,7 @@ mod multiple_pools {
             .provide_liquidity(
                 &other,
                 "o.uluna.uusd.pool.1".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -7542,6 +7699,7 @@ mod query_simulations {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -7559,6 +7717,7 @@ mod query_simulations {
             .provide_liquidity(
                 &creator,
                 "o.uusd.uusdc".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -7776,6 +7935,7 @@ mod query_simulations {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
@@ -7793,6 +7953,7 @@ mod query_simulations {
             .provide_liquidity(
                 &creator,
                 "o.uusd.uusdc".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -8019,6 +8180,7 @@ mod query_simulations {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uom".to_string(),
@@ -8036,6 +8198,7 @@ mod query_simulations {
             .provide_liquidity(
                 &creator,
                 "o.uusdt.uusdc".to_string(),
+                None,
                 None,
                 None,
                 None,
@@ -8231,6 +8394,7 @@ mod query_simulations {
                 None,
                 None,
                 None,
+                None,
                 vec![
                     Coin {
                         denom: "uom".to_string(),
@@ -8248,6 +8412,7 @@ mod query_simulations {
             .provide_liquidity(
                 &creator,
                 "o.uusdt.uusdc".to_string(),
+                None,
                 None,
                 None,
                 None,

@@ -333,6 +333,7 @@ impl TestingSuite {
         pool_identifier: String,
         unlocking_duration: Option<u64>,
         lock_position_identifier: Option<String>,
+        slippage_tolerance: Option<Decimal>,
         max_spread: Option<Decimal>,
         receiver: Option<String>,
         funds: Vec<Coin>,
@@ -340,7 +341,7 @@ impl TestingSuite {
     ) -> &mut Self {
         let msg = mantra_dex_std::pool_manager::ExecuteMsg::ProvideLiquidity {
             pool_identifier,
-            slippage_tolerance: None,
+            slippage_tolerance,
             max_spread,
             receiver,
             unlocking_duration,
