@@ -546,135 +546,100 @@ pub fn validate_fees_are_paid(
     denom_creation_fee: Vec<Coin>,
     info: &MessageInfo,
 ) -> Result<Vec<Coin>, ContractError> {
-    let aggregated_funds_sent = aggregate_coins(info.funds.clone())?;
     let info = &MessageInfo {
         sender: info.sender.clone(),
-        funds: aggregated_funds_sent,
+        funds: aggregate_coins(info.funds.clone())?,
     };
 
-    let pool_fee_denom = &pool_creation_fee.denom;
-
-    // Check if the pool fee denom is found in the vector of the token factory possible fee denoms
-    if let Some(tf_fee) = denom_creation_fee
+    // Check if pool_creation_fee is in denom_creation_fee
+    let pool_fee_included = denom_creation_fee
         .iter()
-        .find(|fee| &fee.denom == pool_fee_denom)
-    {
-        // Calculate the total fee amount if the pool fee denom is found in the vector
-        let total_fee_amount = tf_fee.amount.checked_add(pool_creation_fee.amount)?;
+        .any(|fee| fee.denom == pool_creation_fee.denom);
 
-        return if denom_creation_fee.len() == 1 || info.funds.len() == 1 {
-            // If there's only one denom option or user paid in the same denom, ensure the amount matches
-            let paid_fee_amount = cw_utils::must_pay(info, pool_fee_denom)?;
+    // Calculate total pool creation fee amount
+    let total_pool_fee_amount = if pool_fee_included {
+        denom_creation_fee
+            .iter()
+            .find(|fee| fee.denom == pool_creation_fee.denom)
+            .map(|fee| {
+                fee.amount
+                    .checked_add(pool_creation_fee.amount)
+                    .unwrap_or_default()
+            })
+            .ok_or(ContractError::PoolCreationFeeMissing)?
+    } else {
+        pool_creation_fee.amount
+    };
 
-            ensure!(
-                paid_fee_amount == total_fee_amount,
-                ContractError::InvalidPoolCreationFee {
-                    amount: paid_fee_amount,
-                    expected: total_fee_amount,
-                }
-            );
-
-            Ok(vec![Coin {
-                denom: pool_fee_denom.to_string(),
-                amount: total_fee_amount,
-            }])
-        } else {
-            // If the token factory fee has multiple options, check each condition
-            check_fees(pool_creation_fee, &denom_creation_fee, info, pool_fee_denom)
-        };
-    }
-
-    // If the pool fee denom is not found in the vector, ensure the pool creation fee is paid separately
-    check_fees(pool_creation_fee, &denom_creation_fee, info, pool_fee_denom)
-}
-
-/// checks the fees paid by the user
-fn check_fees(
-    pool_creation_fee: &Coin,
-    denom_creation_fee: &[Coin],
-    info: &MessageInfo,
-    pool_fee_denom: &str,
-) -> Result<Vec<Coin>, ContractError> {
-    let paid_pool_fee_amount = get_paid_pool_fee_amount(info, pool_fee_denom)?;
-
+    // Ensure pool creation fee is paid
+    let paid_pool_fee_amount = get_paid_fee_amount(info, &pool_creation_fee.denom)?;
     ensure!(
-        paid_pool_fee_amount == pool_creation_fee.amount,
+        paid_pool_fee_amount == total_pool_fee_amount,
         ContractError::InvalidPoolCreationFee {
             amount: paid_pool_fee_amount,
-            expected: pool_creation_fee.amount,
+            expected: total_pool_fee_amount,
         }
     );
 
+    // Accumulate all fees paid
     let mut total_fees = vec![Coin {
-        denom: pool_fee_denom.to_string(),
+        denom: pool_creation_fee.denom.clone(),
         amount: paid_pool_fee_amount,
     }];
 
-    check_tf_fee_paid(denom_creation_fee, &mut total_fees, info, pool_fee_denom)?;
-
-    Ok(aggregate_coins(total_fees)?)
-}
-
-// checks the token factory fee paid by the user, not to be paid in the same denom as the pool fee
-fn check_tf_fee_paid(
-    denom_creation_fee: &[Coin],
-    total_fees: &mut Vec<Coin>,
-    info: &MessageInfo,
-    pool_fee_denom: &str,
-) -> Result<(), ContractError> {
-    let tf_fee_paid = denom_creation_fee
+    // Ensure all denom_creation_fee are paid, which is required by the token factory
+    // Filter out the pool_creation_fee from denom_creation_fee as it was accounted for above,
+    // and check the remaining fees
+    for fee in denom_creation_fee
         .iter()
-        .filter(|fee| fee.denom != pool_fee_denom)
-        .any(|fee| {
-            let paid_fee_amount = info
-                .funds
-                .iter()
-                .filter(|fund| fund.denom == fee.denom)
-                .map(|fund| fund.amount)
-                .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))
-                .unwrap_or(Uint128::zero());
-
-            total_fees.push(Coin {
+        .filter(|fee| fee.denom != pool_creation_fee.denom)
+    {
+        let paid_fee_amount = get_paid_fee_amount(info, &fee.denom)?;
+        ensure!(
+            paid_fee_amount == fee.amount,
+            ContractError::InvalidTokenFactoryFee {
                 denom: fee.denom.clone(),
                 amount: paid_fee_amount,
-            });
+                expected: fee.amount,
+            }
+        );
 
-            paid_fee_amount == fee.amount
+        total_fees.push(Coin {
+            denom: fee.denom.clone(),
+            amount: paid_fee_amount,
         });
+    }
 
-    ensure!(tf_fee_paid, ContractError::TokenFactoryFeeNotPaid);
-
-    Ok(())
+    Ok(total_fees)
 }
 
-/// gets the pool creation fee paid by the user
-fn get_paid_pool_fee_amount(
-    info: &MessageInfo,
-    pool_fee_denom: &str,
-) -> Result<Uint128, ContractError> {
+/// Gets the amount of a specific coin denom paid by the user
+fn get_paid_fee_amount(info: &MessageInfo, denom: &str) -> Result<Uint128, ContractError> {
     Ok(info
         .funds
         .iter()
-        .filter(|fund| fund.denom == pool_fee_denom)
+        .filter(|fund| fund.denom == denom)
         .map(|fund| fund.amount)
-        .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))?)
+        .try_fold(Uint128::zero(), |acc, amount| acc.checked_add(amount))
+        .unwrap_or(Uint128::zero()))
 }
 
-/// Validates that no additional funds besides the fees for the pool creation were sent with the transaction.
+/// Validates that no additional funds besides the fees for the pool creation and token factory
+/// were sent with the transaction.
 pub(crate) fn validate_no_additional_funds_sent_with_pool_creation(
     info: &MessageInfo,
     total_fees: Vec<Coin>,
 ) -> Result<(), ContractError> {
-    // check that the user didn't send more tokens in info.funds than the ones in total_fees
+    let aggregated_funds = aggregate_coins(info.funds.clone())?;
 
-    // check if there's any coins in info.funds that are not in total_fees
-    let extra_funds = info
-        .funds
-        .iter()
-        .filter(|fund| !total_fees.iter().any(|fee| fee.denom == fund.denom))
-        .collect::<Vec<_>>();
+    // Check that the user didn't send more tokens in info.funds than the ones in total_fees
+    let extra_funds_exist = aggregated_funds.iter().any(|fund| {
+        !total_fees
+            .iter()
+            .any(|fee| fee.denom == fund.denom && fee.amount == fund.amount)
+    });
 
-    ensure!(extra_funds.is_empty(), ContractError::ExtraFundsSent);
+    ensure!(!extra_funds_exist, ContractError::ExtraFundsSent);
 
     Ok(())
 }
