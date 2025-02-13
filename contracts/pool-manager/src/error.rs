@@ -163,8 +163,12 @@ pub enum ContractError {
     #[error("Invalid pool identifier {identifier}. Either too long or malformed, only alphanumeric characters, . and / are allowed.")]
     InvalidPoolIdentifier { identifier: String },
 
-    #[error("The token factory lp denom creation fee was not paid.")]
-    TokenFactoryFeeNotPaid,
+    #[error("The token factory denom creation fee was not paid for denom {denom}, expected {expected}, paid {amount}.")]
+    InvalidTokenFactoryFee {
+        denom: String,
+        amount: Uint128,
+        expected: Uint128,
+    },
 }
 
 impl From<semver::Error> for ContractError {

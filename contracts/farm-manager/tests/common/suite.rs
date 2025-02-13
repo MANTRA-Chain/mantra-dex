@@ -105,10 +105,7 @@ impl TestingSuite {
             .with_api(MockApiBech32::new("mantra"))
             .with_wasm(WasmKeeper::default())
             .with_bank(bank)
-            .with_stargate(StargateMock::new(
-                vec![coin(8888u128, "uom".to_string())],
-                "uom".to_string(),
-            ))
+            .with_stargate(StargateMock::new(vec![coin(8888u128, "uom".to_string())]))
             .build(|router, _api, storage| {
                 balances.into_iter().for_each(|(account, amount)| {
                     router.bank.init_balance(storage, &account, amount).unwrap()
