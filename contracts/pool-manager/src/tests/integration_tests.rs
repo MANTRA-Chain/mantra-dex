@@ -14,13 +14,10 @@ use super::suite::TestingSuite;
 fn instantiate_normal() {
     let mut suite = TestingSuite::default_with_balances(
         vec![],
-        StargateMock::new(
-            vec![
-                coin(8888u128, "uom".to_string()),
-                coin(1000u128, "utest".to_string()),
-            ],
-            "uom".to_string(),
-        ),
+        StargateMock::new(vec![
+            coin(8888u128, "uom".to_string()),
+            coin(1000u128, "utest".to_string()),
+        ]),
     );
 
     suite.instantiate(suite.senders[0].to_string(), suite.senders[1].to_string());
@@ -36,13 +33,7 @@ fn deposit_and_withdraw_sanity_check() {
             coin(10_000u128, "uom".to_string()),
             coin(10_000u128, "utest".to_string()),
         ],
-        StargateMock::new(
-            vec![
-                coin(8888u128, "uom".to_string()),
-                coin(1000u128, "utest".to_string()),
-            ],
-            "utest".to_string(),
-        ),
+        StargateMock::new(vec![coin(1000u128, "utest".to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
@@ -191,13 +182,10 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![
+                coin(8888u128, "uom".to_string()),
+                coin(1000u128, "utest".to_string()),
+            ]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -250,13 +238,7 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -337,13 +319,7 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uusdc".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -432,13 +408,7 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -480,12 +450,187 @@ mod pool_creation_failures {
             )
             .create_pool(
                 &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(8888, "uom"), coin(2000, "uusd")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidPoolCreationFee { amount, expected } => {
+                            assert_eq!(amount, Uint128::new(2000));
+                            assert_eq!(expected, Uint128::new(1000));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidPoolCreationFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(10_000, "uom"), coin(1000, "uusd")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "uom");
+                            assert_eq!(amount, Uint128::new(10_000));
+                            assert_eq!(expected, Uint128::new(8888));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidTokenFactoryFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
                 asset_infos,
                 vec![6u8, 6u8],
                 pool_fees,
                 PoolType::ConstantProduct,
                 None,
                 vec![coin(8888, "uom"), coin(1000, "uusd")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+    }
+    #[test]
+    fn sends_more_funds_than_needed_3_tf_denoms() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+                coin(1_000_000_001u128, "utest".to_string()),
+            ],
+            StargateMock::new(vec![
+                coin(8888u128, "uom".to_string()),
+                coin(1000u128, "utest".to_string()),
+                coin(1000u128, "uusd".to_string()),
+            ]),
+        );
+        let creator = suite.creator();
+
+        let asset_infos = vec!["uom".to_string(), "uusd".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(8888, "uom"), coin(2000, "uusd"), coin(1000, "utest"), coin(1000, "uluna")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::ExtraFundsSent { .. } => {}
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::ExtraFundsSent")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(8888, "uom"), coin(3000, "uusd"), coin(1000, "utest")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidPoolCreationFee { amount, expected } => {
+                            assert_eq!(amount, Uint128::new(3000));
+                            assert_eq!(expected, Uint128::new(2000));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidPoolCreationFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(8888, "uom"), coin(2000, "uusd"), coin(2000, "utest")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "utest");
+                            assert_eq!(amount, Uint128::new(2_000));
+                            assert_eq!(expected, Uint128::new(1_000));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidTokenFactoryFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(9000, "uom"), coin(2000, "uusd"), coin(1000, "utest")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "uom");
+                            assert_eq!(amount, Uint128::new(9000));
+                            assert_eq!(expected, Uint128::new(8888));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidTokenFactoryFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos,
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(8888, "uom"),coin(1000, "utest"), coin(2000, "uusd")],
                 |result| {
                     result.unwrap();
                 },
@@ -513,13 +658,7 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -595,13 +734,7 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -658,98 +791,7 @@ mod pool_creation_failures {
     }
 
     #[test]
-    fn cant_create_pool_without_paying_tf_fees() {
-        let mut suite = TestingSuite::default_with_balances(
-            vec![
-                coin(1_000_000_001u128, "uwhale".to_string()),
-                coin(1_000_000_000u128, "uluna".to_string()),
-                coin(1_000_000_001u128, "uusd".to_string()),
-                coin(1_000_000_001u128, "uom".to_string()),
-            ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
-        );
-        let creator = suite.creator();
-
-        let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
-
-        let pool_fees = PoolFee {
-            protocol_fee: Fee {
-                share: Decimal::percent(10),
-            },
-            swap_fee: Fee {
-                share: Decimal::percent(7),
-            },
-            burn_fee: Fee {
-                share: Decimal::percent(3),
-            },
-            extra_fees: vec![],
-        };
-
-        // Create a pool without paying the pool creation fee
-        suite
-            .instantiate_default()
-            .add_one_epoch()
-            .create_pool(
-                &creator,
-                asset_denoms.clone(),
-                vec![6u8, 6u8],
-                pool_fees.clone(),
-                PoolType::ConstantProduct,
-                Some("whale.uluna.pool.1".to_string()),
-                vec![coin(900, "uusd"), coin(8888, "uom")],
-                |result| {
-                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                    match err {
-                        ContractError::InvalidPoolCreationFee { .. } => {}
-                        _ => panic!(
-                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
-                        ),
-                    }
-                },
-            )
-            // add enough to cover the pool creation fee, but not token factory
-            .create_pool(
-                &creator,
-                asset_denoms.clone(),
-                vec![6u8, 6u8],
-                pool_fees.clone(),
-                PoolType::ConstantProduct,
-                Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(8887, "uom")],
-                |result| {
-                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
-                    match err {
-                        ContractError::TokenFactoryFeeNotPaid => {}
-                        _ => panic!(
-                            "Wrong error type, should return ContractError::TokenFactoryFeeNotPaid"
-                        ),
-                    }
-                },
-            )
-            // add enough to cover for the pool creation fee and token factory
-            .create_pool(
-                &creator,
-                asset_denoms.clone(),
-                vec![6u8, 6u8],
-                pool_fees.clone(),
-                PoolType::ConstantProduct,
-                Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(8888, "uom")],
-                |result| {
-                    result.unwrap();
-                },
-            );
-    }
-
-    #[test]
-    fn cant_create_pool_paying_multiple_tf_fees() {
+    fn cant_create_pool_not_paying_multiple_tf_fees() {
         let mut suite = TestingSuite::default_with_balances(
             vec![
                 coin(1_000_000_001u128, "uwhale".to_string()),
@@ -758,14 +800,10 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uom".to_string()),
                 coin(1_000_000_001u128, "utest".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                    coin(1000u128, "uusd".to_string()),
-                ],
-                "uusd".to_string(),
-            ),
+            StargateMock::new(vec![
+                coin(8888u128, "uom".to_string()),
+                coin(1000u128, "utest".to_string()),
+            ]),
         );
         let creator = suite.creator();
 
@@ -795,13 +833,17 @@ mod pool_creation_failures {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(1000, "utest"), coin(8888, "uom")],
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                     match err {
-                        ContractError::ExtraFundsSent { .. } => {}
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "utest");
+                            assert_eq!(amount, Uint128::zero());
+                            assert_eq!(expected, Uint128::new(1_000));
+                        }
                         _ => {
-                            panic!("Wrong error type, should return ContractError::ExtraFundsSent")
+                            panic!("Wrong error type, should return ContractError::InvalidTokenFactoryFee")
                         }
                     }
                 },
@@ -814,12 +856,64 @@ mod pool_creation_failures {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(999, "uusd")],
+                vec![coin(1000, "uusd"), coin(999, "utest"), coin(8888, "uom")],
                 |result| {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                     match err {
-                        ContractError::InvalidPoolCreationFee { .. } => {}
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "utest");
+                            assert_eq!(amount, Uint128::new(999));
+                            assert_eq!(expected, Uint128::new(1_000));
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
+                        ),
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("o.whale.uluna.pool.1".to_string()),
+                vec![coin(1000, "uusd"), coin(8887, "uom"), coin(1000, "utest")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "uom");
+                            assert_eq!(amount, Uint128::new(8887));
+                            assert_eq!(expected, Uint128::new(8888));
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
+                        ),
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("o.whale.uluna.pool.1".to_string()),
+                vec![coin(999, "uusd"), coin(1000, "utest"), coin(8888, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                    match err {
+                        ContractError::InvalidPoolCreationFee {
+                            amount,
+                            expected,
+                        } => {
+                            assert_eq!(amount, Uint128::new(999));
+                            assert_eq!(expected, Uint128::new(1000));
+                        }
                         _ => panic!(
                             "Wrong error type, should return ContractError::InvalidPoolCreationFee"
                         ),
@@ -833,45 +927,7 @@ mod pool_creation_failures {
                 pool_fees.clone(),
                 PoolType::ConstantProduct,
                 Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(8887, "uom")],
-                |result| {
-                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
-                    match err {
-                        ContractError::TokenFactoryFeeNotPaid => {}
-                        _ => panic!(
-                            "Wrong error type, should return ContractError::TokenFactoryFeeNotPaid"
-                        ),
-                    }
-                },
-            )
-            .create_pool(
-                &creator,
-                asset_denoms.clone(),
-                vec![6u8, 6u8],
-                pool_fees.clone(),
-                PoolType::ConstantProduct,
-                Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(1000, "uusd"), coin(999, "utest")],
-                |result| {
-                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
-                    match err {
-                        ContractError::TokenFactoryFeeNotPaid => {}
-                        _ => panic!(
-                            "Wrong error type, should return ContractError::TokenFactoryFeeNotPaid"
-                        ),
-                    }
-                },
-            )
-            .create_pool(
-                &creator,
-                asset_denoms.clone(),
-                vec![6u8, 6u8],
-                pool_fees.clone(),
-                PoolType::ConstantProduct,
-                Some("o.whale.uluna.pool.1".to_string()),
-                vec![coin(2000, "uusd")],
+                vec![coin(1000, "uusd"), coin(8888, "uom"), coin(1000, "utest")],
                 |result| {
                     result.unwrap();
                 },
@@ -887,7 +943,7 @@ mod pool_creation_failures {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(vec![coin(1000u128, "uusd".to_string())], "uusd".to_string()),
+            StargateMock::new(vec![coin(1000u128, "uusd".to_string())]),
         );
         let creator = suite.creator();
 
@@ -1003,13 +1059,7 @@ mod router {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -1191,13 +1241,7 @@ mod router {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -1330,13 +1374,7 @@ mod router {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -1485,13 +1523,7 @@ mod router {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -1711,13 +1743,7 @@ mod router {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -1875,13 +1901,7 @@ mod router {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -2092,13 +2112,7 @@ mod swapping {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -2309,13 +2323,7 @@ mod swapping {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -2496,13 +2504,7 @@ mod swapping {
                 coin(1_000_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -2643,13 +2645,7 @@ mod swapping {
                 ),
                 coin(150_000_000_000_000_000000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let alice = suite.creator();
         let bob = suite.senders[1].clone();
@@ -2858,13 +2854,7 @@ mod swapping {
                 ),
                 coin(150_000_000_000_000_000000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let alice = suite.creator();
         let bob = suite.senders[1].clone();
@@ -3083,13 +3073,7 @@ mod swapping {
                 ),
                 coin(1_000_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let alice = suite.creator();
         let bob = suite.senders[1].clone();
@@ -3281,7 +3265,7 @@ mod swapping {
                 coin(1_000_000_000_000u128 * 10u128.pow(18), "uweth".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(vec![coin(8888u128, "uom".to_string())], "uom".to_string()),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let user = suite.senders[1].clone();
@@ -3413,13 +3397,7 @@ mod ownership {
     fn verify_ownership() {
         let mut suite = TestingSuite::default_with_balances(
             vec![],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -3478,13 +3456,7 @@ mod ownership {
     fn checks_ownership_when_updating_config() {
         let mut suite = TestingSuite::default_with_balances(
             vec![],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let unauthorized = suite.senders[2].clone();
 
@@ -3511,13 +3483,7 @@ mod ownership {
     fn updates_config_fields() {
         let mut suite = TestingSuite::default_with_balances(
             vec![],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -3580,13 +3546,7 @@ mod locking_lp {
                 coin(10_000u128, "uusd".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -3781,13 +3741,7 @@ mod locking_lp {
                 coin(10_000u128, "uusd".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -3975,13 +3929,7 @@ mod locking_lp {
                 coin(10_000u128, "uusd".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -4177,13 +4125,7 @@ mod locking_lp {
                 coin(10_000u128, "uusd".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let attacker = suite.senders[1].clone();
@@ -4344,13 +4286,7 @@ mod provide_liquidity {
                 coin(10_000u128, "uusd".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -4834,13 +4770,7 @@ mod provide_liquidity {
                 coin(10_000u128, "uusd".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -4977,13 +4907,7 @@ mod provide_liquidity {
                 coin(10_000u128, "uusd".to_string()),
                 coin(10_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -5108,13 +5032,7 @@ mod provide_liquidity {
                 coin(1_000_000_000_000u128, "uusdc".to_string()),
                 coin(1_000_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -5312,13 +5230,7 @@ mod provide_liquidity {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -5608,13 +5520,7 @@ mod provide_liquidity {
                 coin(1_000_000_001u128, "uusdy".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let alice = suite.senders[1].clone();
@@ -6015,13 +5921,7 @@ mod provide_liquidity {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -6214,13 +6114,7 @@ mod provide_liquidity {
                 ),
                 coin(1_000_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let alice = suite.creator();
 
@@ -6326,7 +6220,7 @@ mod provide_liquidity {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(vec![coin(8888u128, "uom".to_string())], "uom".to_string()),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -6465,7 +6359,7 @@ mod provide_liquidity {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(vec![coin(8888u128, "uom".to_string())], "uom".to_string()),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         // Asset infos with uwhale and uluna
@@ -6570,13 +6464,7 @@ mod multiple_pools {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -6654,13 +6542,7 @@ mod multiple_pools {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let other = suite.senders[1].clone();
@@ -7389,13 +7271,7 @@ mod multiple_pools {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -7516,13 +7392,7 @@ mod multiple_pools {
                 coin(1_000_000_000u128, "uusd".to_string()),
                 coin(1_000_000_000u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -7627,13 +7497,7 @@ mod query_simulations {
                 coin(1_000_000_001u128, "uusdc".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
         let _other = suite.senders[1].clone();
@@ -7866,13 +7730,7 @@ mod query_simulations {
                 coin(1_000_000_001u128, "uusdc".to_string()),
                 coin(1_000_000_001u128, "uom".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -8111,13 +7969,7 @@ mod query_simulations {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uusdc".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
@@ -8325,13 +8177,7 @@ mod query_simulations {
                 coin(1_000_000_001u128, "uusd".to_string()),
                 coin(1_000_000_001u128, "uusdc".to_string()),
             ],
-            StargateMock::new(
-                vec![
-                    coin(8888u128, "uom".to_string()),
-                    coin(1000u128, "utest".to_string()),
-                ],
-                "uom".to_string(),
-            ),
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
         let creator = suite.creator();
 
