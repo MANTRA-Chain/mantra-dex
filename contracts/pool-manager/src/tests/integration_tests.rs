@@ -504,6 +504,145 @@ mod pool_creation_failures {
                 },
             );
     }
+
+    #[test]
+    fn sends_less_tf_denoms_than_needed_with_funds_in_pools() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![
+                coin(8888u128, "uom".to_string()),
+                coin(1000u128, "uusd".to_string()),
+            ]),
+        );
+        let creator = suite.creator();
+
+        let asset_infos = vec!["uom".to_string(), "uusd".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("uom.uusd".to_string()),
+                vec![coin(8888, "uom"), coin(2000, "uusd")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                "o.uom.uusd".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![coin(1_000_000, "uom"), coin(6_000_000, "uusd")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidPoolCreationFee { amount, expected } => {
+                            assert_eq!(amount, Uint128::zero());
+                            assert_eq!(expected, Uint128::new(2000));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidPoolCreationFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(2000, "uusd")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "uom");
+                            assert_eq!(amount, Uint128::zero());
+                            assert_eq!(expected, Uint128::new(8888));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidPoolCreationFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(2000, "uusd"), coin(8887, "uom")],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::InvalidTokenFactoryFee { denom, amount, expected } => {
+                            assert_eq!(denom, "uom");
+                            assert_eq!(amount, Uint128::new(8887));
+                            assert_eq!(expected, Uint128::new(8888));
+                        }
+                        _ => {
+                            panic!("Wrong error type, should return ContractError::InvalidPoolCreationFee")
+                        }
+                    }
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_infos.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                None,
+                vec![coin(2000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            ;
+    }
     #[test]
     fn sends_more_funds_than_needed_3_tf_denoms() {
         let mut suite = TestingSuite::default_with_balances(
