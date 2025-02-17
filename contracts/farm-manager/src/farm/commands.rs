@@ -17,7 +17,12 @@ use crate::state::{
 use crate::ContractError;
 
 /// Claims pending rewards for farms where the user has LP
-pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub(crate) fn claim(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    until_epoch: Option<EpochId>,
+) -> Result<Response, ContractError> {
     cw_utils::nonpayable(&info)?;
 
     // check if the user has any open LP positions
@@ -40,6 +45,18 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
 
     let lp_denoms = get_unique_lp_asset_denoms_from_positions(open_positions);
 
+    let until_epoch = if let Some(until_epoch) = until_epoch {
+        // ensure the user is not trying to claim rewards for the future
+        ensure!(
+            until_epoch <= current_epoch.id,
+            ContractError::InvalidUntilEpoch { until_epoch }
+        );
+        until_epoch
+    } else {
+        // if no until_epoch is provided, claim until the current epoch
+        current_epoch.id
+    };
+
     for lp_denom in &lp_denoms {
         // calculate the rewards for the lp denom
         let rewards_response = calculate_rewards(
@@ -47,7 +64,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
             &env,
             lp_denom,
             &info.sender,
-            current_epoch.id,
+            until_epoch,
             true,
         )?;
 
@@ -65,7 +82,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
                         &farm_identifier,
                         |farm| -> Result<_, ContractError> {
                             let mut farm = farm.unwrap();
-                            farm.last_epoch_claimed = current_epoch.id;
+                            farm.last_epoch_claimed = until_epoch;
                             farm.claimed_amount =
                                 farm.claimed_amount.checked_add(claimed_reward)?;
 
@@ -85,7 +102,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
                     deps.storage,
                     &info.sender,
                     lp_denom,
-                    &current_epoch.id,
+                    &until_epoch,
                     true,
                 )?;
             }
@@ -94,7 +111,7 @@ pub(crate) fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Respon
     }
 
     // update the last claimed epoch for the user
-    LAST_CLAIMED_EPOCH.save(deps.storage, &info.sender, &current_epoch.id)?;
+    LAST_CLAIMED_EPOCH.save(deps.storage, &info.sender, &until_epoch)?;
 
     let mut messages = vec![];
 
@@ -122,7 +139,7 @@ pub(crate) fn calculate_rewards(
     env: &Env,
     lp_denom: &str,
     receiver: &Addr,
-    current_epoch_id: EpochId,
+    until_epoch_id: EpochId,
     is_claim: bool,
 ) -> Result<RewardsResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
@@ -138,8 +155,16 @@ pub(crate) fn calculate_rewards(
 
     // Check if the user ever claimed before
     if let Some(last_claimed_epoch) = last_claimed_epoch_for_user {
+        // ensure the user is not trying to claim rewards that were already claimed
+        ensure!(
+            until_epoch_id >= last_claimed_epoch,
+            ContractError::InvalidUntilEpoch {
+                until_epoch: until_epoch_id
+            }
+        );
+
         // if the last claimed epoch is the same as the current epoch, then there is nothing to claim
-        if current_epoch_id == last_claimed_epoch {
+        if until_epoch_id == last_claimed_epoch {
             return if is_claim {
                 Ok(RewardsResponse::ClaimRewards {
                     rewards: vec![],
@@ -157,7 +182,7 @@ pub(crate) fn calculate_rewards(
 
     for farm in farms {
         // skip farms that have not started
-        if farm.start_epoch > current_epoch_id {
+        if farm.start_epoch > until_epoch_id {
             continue;
         }
 
@@ -175,7 +200,7 @@ pub(crate) fn calculate_rewards(
             receiver,
             lp_denom,
             &start_from_epoch,
-            &current_epoch_id,
+            &until_epoch_id,
         )?;
 
         // compute the weights of the contract for the epochs between start_from_epoch and current_epoch_id
@@ -184,12 +209,12 @@ pub(crate) fn calculate_rewards(
             &env.contract.address,
             lp_denom,
             &start_from_epoch,
-            &current_epoch_id,
+            &until_epoch_id,
         )?;
 
         // compute the farm emissions for the epochs between start_from_epoch and current_epoch_id
         let (farm_emissions, until_epoch) =
-            compute_farm_emissions(&farm, &start_from_epoch, &current_epoch_id)?;
+            compute_farm_emissions(&farm, &start_from_epoch, &until_epoch_id)?;
 
         for epoch_id in start_from_epoch..=until_epoch {
             if farm.start_epoch > epoch_id {

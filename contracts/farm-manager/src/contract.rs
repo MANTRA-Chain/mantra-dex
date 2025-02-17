@@ -106,7 +106,7 @@ pub fn execute(
             cw_utils::nonpayable(&info)?;
             mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
         }
-        ExecuteMsg::Claim {} => farm::commands::claim(deps, env, info),
+        ExecuteMsg::Claim { until_epoch } => farm::commands::claim(deps, env, info, until_epoch),
         ExecuteMsg::ManagePosition { action } => match action {
             PositionAction::Create {
                 identifier,

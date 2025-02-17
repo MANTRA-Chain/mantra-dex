@@ -165,6 +165,9 @@ pub enum ContractError {
 
     #[error("Invalid identifier provided: {identifier}.")]
     InvalidIdentifier { identifier: String },
+
+    #[error("Invalid epoch provided when claiming rewards: {until_epoch}. The epoch can't be ahead of the current epoch, nor can it be before the last claimed epoch.")]
+    InvalidUntilEpoch { until_epoch: EpochId },
 }
 
 impl From<semver::Error> for ContractError {
