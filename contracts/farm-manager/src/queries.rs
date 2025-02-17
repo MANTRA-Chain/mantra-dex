@@ -11,7 +11,7 @@ use crate::helpers::get_unique_lp_asset_denoms_from_positions;
 use crate::state::{
     get_farm_by_identifier, get_farms, get_farms_by_farm_asset, get_farms_by_lp_denom,
     get_position, get_positions, get_positions_by_receiver, CONFIG, LP_WEIGHT_HISTORY,
-    MAX_ITEMS_LIMIT,
+    MAX_POSITIONS_LIMIT,
 };
 use crate::ContractError;
 
@@ -86,7 +86,7 @@ pub(crate) fn query_rewards(
         receiver.as_str(),
         Some(true),
         None,
-        Some(MAX_ITEMS_LIMIT),
+        Some(MAX_POSITIONS_LIMIT),
     )?;
 
     if open_positions.is_empty() {

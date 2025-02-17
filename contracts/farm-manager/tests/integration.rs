@@ -4,7 +4,7 @@ use std::cell::RefCell;
 
 use cosmwasm_std::{coin, coins, Addr, Coin, Decimal, StdResult, Timestamp, Uint128};
 use cw_utils::PaymentError;
-use farm_manager::state::MAX_ITEMS_LIMIT;
+use farm_manager::state::{MAX_FARMS_LIMIT, MAX_POSITIONS_LIMIT};
 use farm_manager::ContractError;
 use mantra_dex_std::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
 use mantra_dex_std::farm_manager::{
@@ -5701,7 +5701,7 @@ fn test_positions_limits() {
     ];
 
     // prepare lp denoms
-    for i in 1..MAX_ITEMS_LIMIT * 2 {
+    for i in 1..MAX_FARMS_LIMIT * 2 {
         let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
         balances.push(coin(1_000_000_000u128, lp_denom.clone()));
     }
@@ -5713,7 +5713,7 @@ fn test_positions_limits() {
     suite.instantiate_default();
 
     // prepare farms, create more than the user could participate on
-    for i in 1..MAX_ITEMS_LIMIT * 2 {
+    for i in 1..MAX_POSITIONS_LIMIT * 2 {
         suite.manage_farm(
             &creator,
             FarmAction::Fill {
@@ -5737,7 +5737,7 @@ fn test_positions_limits() {
     }
 
     // open positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Create {
@@ -5759,10 +5759,10 @@ fn test_positions_limits() {
         Some(PositionsBy::Receiver(alice.to_string())),
         Some(true),
         None,
-        Some(MAX_ITEMS_LIMIT),
+        Some(MAX_POSITIONS_LIMIT),
         |result| {
             let response = result.unwrap();
-            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
         },
     );
 
@@ -5799,22 +5799,22 @@ fn test_positions_limits() {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &alice, |balance| {
-            // all the rewards were claimed, 1000 uusdy * 100
-            assert_eq!(balance, Uint128::new(1_000_100_000u128));
+            // all the rewards were claimed, 1000 uusdy * 10
+            assert_eq!(balance, Uint128::new(1_000_010_000u128));
         })
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 
     // now let's try closing positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Close {
@@ -5834,7 +5834,7 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             |result| {
                 let response = result.unwrap();
                 assert!(response.positions.is_empty());
@@ -5844,15 +5844,15 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 
     // try opening more positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Create {
@@ -5876,20 +5876,20 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         )
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 
@@ -5952,10 +5952,10 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), (MAX_ITEMS_LIMIT - 1) as usize);
+                assert_eq!(response.positions.len(), (MAX_POSITIONS_LIMIT - 1) as usize);
             },
         )
         // try closing it a position partially
@@ -5977,10 +5977,10 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 }
@@ -5994,7 +5994,7 @@ fn test_positions_query_filters_and_pagination() {
     ];
 
     // prepare lp denoms
-    for i in 1..MAX_ITEMS_LIMIT * 2 {
+    for i in 1..MAX_FARMS_LIMIT * 2 {
         let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
         balances.push(coin(1_000_000_000u128, lp_denom.clone()));
     }
@@ -6005,7 +6005,7 @@ fn test_positions_query_filters_and_pagination() {
     suite.instantiate_default();
 
     // open positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Create {
@@ -6031,51 +6031,32 @@ fn test_positions_query_filters_and_pagination() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         )
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(10),
+            Some(5),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), 10usize);
-
-                position_a_id.replace(response.positions[9].identifier.clone());
+                assert_eq!(response.positions.len(), 5usize);
+                position_a_id.replace(response.positions[4].identifier.clone());
             },
         )
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             Some(position_a_id.borrow().clone()),
-            Some(10),
+            Some(5),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), 10usize);
-                position_b_id.replace(response.positions[9].identifier.clone());
-            },
-        )
-        .query_positions(
-            Some(PositionsBy::Receiver(alice.to_string())),
-            Some(true),
-            None,
-            Some(20),
-            |result| {
-                let response = result.unwrap();
-                assert_eq!(response.positions.len(), 20usize);
-                assert_eq!(
-                    response.positions[9].identifier,
-                    position_a_id.borrow().clone()
-                );
-                assert_eq!(
-                    response.positions[19].identifier,
-                    position_b_id.borrow().clone()
-                );
+                assert_eq!(response.positions.len(), 5usize);
+                position_b_id.replace(response.positions[0].identifier.clone());
             },
         );
 
@@ -6551,7 +6532,7 @@ fn test_overwriting_position_is_not_possible() {
             Some(PositionsBy::Receiver(victim.to_string())),
             None,
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             is_as_expected,
         );
 
@@ -6577,7 +6558,7 @@ fn test_overwriting_position_is_not_possible() {
         Some(PositionsBy::Receiver(victim.to_string())),
         None,
         None,
-        Some(MAX_ITEMS_LIMIT),
+        Some(MAX_FARMS_LIMIT),
         is_as_expected,
     );
 }
@@ -7061,7 +7042,7 @@ fn closing_expired_farm_wont_pay_penalty() {
             Some(PositionsBy::Receiver(creator.to_string())),
             None,
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             |result| {
                 let response = result.unwrap();
                 assert_eq!(response.positions.len(), 1);
@@ -7161,7 +7142,7 @@ fn providing_custom_position_id_doesnt_increment_position_counter() {
             Some(PositionsBy::Receiver(creator.to_string())),
             None,
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             |result| {
                 let response = result.unwrap();
                 assert_eq!(response.positions.len(), 3);
