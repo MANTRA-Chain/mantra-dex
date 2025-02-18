@@ -1,15 +1,16 @@
-use std::cmp::Ordering;
-use std::collections::HashSet;
-
 use cosmwasm_std::{
     ensure, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, MessageInfo, OverflowError,
     OverflowOperation, Uint128,
 };
+use std::cmp::Ordering;
+use std::collections::HashSet;
 
 use mantra_dex_std::coin::{get_factory_token_creator, is_factory_token};
 use mantra_dex_std::constants::MONTH_IN_SECONDS;
-use mantra_dex_std::epoch_manager::{EpochResponse, QueryMsg};
-use mantra_dex_std::farm_manager::{Config, Farm, FarmParams, Position, DEFAULT_FARM_DURATION};
+use mantra_dex_std::epoch_manager::{Epoch, EpochResponse, QueryMsg};
+use mantra_dex_std::farm_manager::{
+    Config, EpochId, Farm, FarmParams, Position, DEFAULT_FARM_DURATION,
+};
 
 use crate::ContractError;
 
@@ -283,4 +284,23 @@ pub fn validate_identifier(identifier: &str) -> Result<(), ContractError> {
     );
 
     Ok(())
+}
+
+/// Validates the until_epoch parameter, ensuring the user is not trying to claim rewards for the future.
+pub fn until_epoch_or_current(
+    until_epoch: Option<EpochId>,
+    current_epoch: &Epoch,
+) -> Result<EpochId, ContractError> {
+    let until_epoch = if let Some(until_epoch) = until_epoch {
+        // ensure the user is not trying to claim rewards for the future
+        ensure!(
+            until_epoch <= current_epoch.id,
+            ContractError::InvalidUntilEpoch { until_epoch }
+        );
+        until_epoch
+    } else {
+        // if no until_epoch is provided, claim until the current epoch
+        current_epoch.id
+    };
+    Ok(until_epoch)
 }

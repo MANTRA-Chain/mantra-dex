@@ -14,7 +14,7 @@ use crate::state::{
     get_positions_by_receiver, CONFIG, FARMS, LAST_CLAIMED_EPOCH, LP_WEIGHT_HISTORY,
     MAX_POSITIONS_LIMIT,
 };
-use crate::ContractError;
+use crate::{helpers, ContractError};
 
 /// Claims pending rewards for farms where the user has LP
 pub(crate) fn claim(
@@ -45,17 +45,7 @@ pub(crate) fn claim(
 
     let lp_denoms = get_unique_lp_asset_denoms_from_positions(open_positions);
 
-    let until_epoch = if let Some(until_epoch) = until_epoch {
-        // ensure the user is not trying to claim rewards for the future
-        ensure!(
-            until_epoch <= current_epoch.id,
-            ContractError::InvalidUntilEpoch { until_epoch }
-        );
-        until_epoch
-    } else {
-        // if no until_epoch is provided, claim until the current epoch
-        current_epoch.id
-    };
+    let until_epoch = helpers::until_epoch_or_current(until_epoch, &current_epoch)?;
 
     for lp_denom in &lp_denoms {
         // calculate the rewards for the lp denom
@@ -153,6 +143,11 @@ pub(crate) fn calculate_rewards(
 
     let last_claimed_epoch_for_user = LAST_CLAIMED_EPOCH.may_load(deps.storage, receiver)?;
 
+    println!(
+        "last_claimed_epoch_for_user: {:?}",
+        last_claimed_epoch_for_user
+    );
+
     // Check if the user ever claimed before
     if let Some(last_claimed_epoch) = last_claimed_epoch_for_user {
         // ensure the user is not trying to claim rewards that were already claimed
@@ -185,6 +180,8 @@ pub(crate) fn calculate_rewards(
         if farm.start_epoch > until_epoch_id {
             continue;
         }
+
+        println!("here");
 
         // compute where the user can start claiming rewards for the farm
         let start_from_epoch = compute_start_from_epoch_for_address(

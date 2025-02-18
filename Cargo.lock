@@ -921,9 +921,9 @@ dependencies = [
 
 [[package]]
 name = "mantra-dex-std"
-version = "2.1.2"
+version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65ea6a5c118ca6855a693b025c786b2108a51858d33f07276925427ffe293fef"
+checksum = "25f0a92ae538ace9b1f5bc45b2be48ebee511861692a72a99185e9396a6b093f"
 dependencies = [
  "anybuf",
  "cosmwasm-schema",

@@ -192,8 +192,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             start_after,
             limit,
         )?)?),
-        QueryMsg::Rewards { address } => Ok(to_json_binary(&queries::query_rewards(
-            deps, &env, address,
+        QueryMsg::Rewards {
+            address,
+            until_epoch,
+        } => Ok(to_json_binary(&queries::query_rewards(
+            deps,
+            &env,
+            address,
+            until_epoch,
         )?)?),
         QueryMsg::LpWeight {
             address,

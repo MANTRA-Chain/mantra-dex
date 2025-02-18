@@ -13,7 +13,7 @@ use crate::state::{
     get_position, get_positions, get_positions_by_receiver, CONFIG, LP_WEIGHT_HISTORY,
     MAX_POSITIONS_LIMIT,
 };
-use crate::ContractError;
+use crate::{helpers, ContractError};
 
 /// Queries the manager config
 pub(crate) fn query_manager_config(deps: Deps) -> Result<Config, ContractError> {
@@ -78,6 +78,7 @@ pub(crate) fn query_rewards(
     deps: Deps,
     env: &Env,
     address: String,
+    until_epoch: Option<EpochId>,
 ) -> Result<RewardsResponse, ContractError> {
     let receiver = deps.api.addr_validate(&address)?;
     // check if the user has any open LP positions
@@ -103,6 +104,9 @@ pub(crate) fn query_rewards(
         config.epoch_manager_addr.into_string(),
     )?;
 
+    //todo dedup this logic
+    let until_epoch = helpers::until_epoch_or_current(until_epoch, &current_epoch)?;
+
     let mut total_rewards = vec![];
     let mut rewards_per_lp: Vec<(String, Vec<Coin>)> = vec![];
 
@@ -111,7 +115,7 @@ pub(crate) fn query_rewards(
     for lp_denom in &lp_denoms {
         // calculate the rewards for the lp denom
         let rewards_response =
-            calculate_rewards(deps, env, lp_denom, &receiver, current_epoch.id, false)?;
+            calculate_rewards(deps, env, lp_denom, &receiver, until_epoch, false)?;
         match rewards_response {
             RewardsResponse::QueryRewardsResponse { rewards } => {
                 total_rewards.append(&mut rewards.clone());

@@ -169,7 +169,7 @@ pub fn validate_no_pending_rewards(
     env: &Env,
     info: &MessageInfo,
 ) -> Result<(), ContractError> {
-    let rewards_response = query_rewards(deps, env, info.sender.clone().into_string())?;
+    let rewards_response = query_rewards(deps, env, info.sender.clone().into_string(), None)?;
 
     match rewards_response {
         RewardsResponse::RewardsResponse { total_rewards, .. } => {
