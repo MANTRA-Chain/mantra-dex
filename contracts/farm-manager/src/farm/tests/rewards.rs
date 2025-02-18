@@ -24,7 +24,6 @@ fn compute_start_from_epoch_for_user_successfully() {
         curve: Curve::Linear,
         start_epoch: 10,
         preliminary_end_epoch: 20,
-        last_epoch_claimed: 9,
     };
 
     // Mimics the scenario where the user has never claimed before, but opened a position before the farm

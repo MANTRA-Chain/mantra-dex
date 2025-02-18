@@ -106,7 +106,7 @@ pub fn execute(
             cw_utils::nonpayable(&info)?;
             mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
         }
-        ExecuteMsg::Claim {} => farm::commands::claim(deps, env, info),
+        ExecuteMsg::Claim { until_epoch } => farm::commands::claim(deps, env, info, until_epoch),
         ExecuteMsg::ManagePosition { action } => match action {
             PositionAction::Create {
                 identifier,
@@ -192,8 +192,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             start_after,
             limit,
         )?)?),
-        QueryMsg::Rewards { address } => Ok(to_json_binary(&queries::query_rewards(
-            deps, &env, address,
+        QueryMsg::Rewards {
+            address,
+            until_epoch,
+        } => Ok(to_json_binary(&queries::query_rewards(
+            deps,
+            &env,
+            address,
+            until_epoch,
         )?)?),
         QueryMsg::LpWeight {
             address,

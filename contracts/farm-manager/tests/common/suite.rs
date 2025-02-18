@@ -401,9 +401,10 @@ impl TestingSuite {
         &mut self,
         sender: &Addr,
         funds: Vec<Coin>,
+        until_epoch: Option<u64>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
-        let msg = mantra_dex_std::farm_manager::ExecuteMsg::Claim {};
+        let msg = mantra_dex_std::farm_manager::ExecuteMsg::Claim { until_epoch };
 
         result(self.app.execute_contract(
             sender.clone(),
@@ -494,12 +495,14 @@ impl TestingSuite {
     pub(crate) fn query_rewards(
         &mut self,
         address: &Addr,
+        until_epoch: Option<u64>,
         result: impl Fn(StdResult<RewardsResponse>),
     ) -> &mut Self {
         let rewards_response: StdResult<RewardsResponse> = self.app.wrap().query_wasm_smart(
             &self.farm_manager_addr,
             &mantra_dex_std::farm_manager::QueryMsg::Rewards {
                 address: address.to_string(),
+                until_epoch,
             },
         );
 

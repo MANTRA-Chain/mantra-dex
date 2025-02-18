@@ -9,7 +9,7 @@ use crate::farm::commands::sync_address_lp_weight_history;
 use crate::queries::query_rewards;
 use crate::state::{
     get_positions_by_receiver, has_any_lp_weight, CONFIG, LAST_CLAIMED_EPOCH, LP_WEIGHT_HISTORY,
-    MAX_ITEMS_LIMIT,
+    MAX_POSITIONS_LIMIT,
 };
 use crate::ContractError;
 
@@ -132,13 +132,13 @@ pub(crate) fn validate_positions_limit(
         receiver.as_str(),
         Some(open_state),
         None,
-        Some(MAX_ITEMS_LIMIT),
+        Some(MAX_POSITIONS_LIMIT),
     )?;
 
     ensure!(
-        existing_user_positions.len() < MAX_ITEMS_LIMIT as usize,
+        existing_user_positions.len() < MAX_POSITIONS_LIMIT as usize,
         ContractError::MaxPositionsPerUserExceeded {
-            max: MAX_ITEMS_LIMIT
+            max: MAX_POSITIONS_LIMIT
         }
     );
 
@@ -169,7 +169,7 @@ pub fn validate_no_pending_rewards(
     env: &Env,
     info: &MessageInfo,
 ) -> Result<(), ContractError> {
-    let rewards_response = query_rewards(deps, env, info.sender.clone().into_string())?;
+    let rewards_response = query_rewards(deps, env, info.sender.clone().into_string(), None)?;
 
     match rewards_response {
         RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -207,7 +207,7 @@ pub fn reconcile_user_state(
         receiver.as_ref(),
         Some(true),
         None,
-        Some(MAX_ITEMS_LIMIT),
+        Some(MAX_POSITIONS_LIMIT),
     )?;
 
     // if the user has no more open positions, clear the last claimed epoch

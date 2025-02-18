@@ -81,11 +81,12 @@ impl IndexList<Farm> for FarmIndexes<'_> {
 }
 
 // settings for pagination
-// MAX_ITEMS_LIMIT in the case of positions, is the maximum number of positions that a user can have
-// open or closed at a given time, i.e. there can be at most MAX_ITEMS_LIMIT open positions and
-// MAX_POSITIONS_LIMIT closed positions.
-// For farms, the MAX_ITEMS_LIMIT is the maximum number of farms that can be queried at a given time.
-pub const MAX_ITEMS_LIMIT: u32 = 100;
+
+// The maximum number of positions that a user can have open or closed at a given time, i.e. there
+// can be at most MAX_POSITIONS_LIMIT open positions and MAX_POSITIONS_LIMIT closed positions.
+pub const MAX_POSITIONS_LIMIT: u32 = 10;
+// The maximum number of farms that can be queried at a given time.
+pub const MAX_FARMS_LIMIT: u32 = 100;
 const DEFAULT_LIMIT: u32 = 10;
 
 /// Gets the farms in the contract
@@ -94,7 +95,7 @@ pub fn get_farms(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> Result<Vec<Farm>, ContractError> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_FARMS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     FARMS
@@ -115,7 +116,7 @@ pub fn get_farms_by_lp_denom(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Farm>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_FARMS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     FARMS
@@ -139,7 +140,7 @@ pub fn get_farms_by_farm_asset(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Farm>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_FARMS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     FARMS
@@ -172,7 +173,7 @@ pub(crate) fn get_positions(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> Result<Vec<Position>, ContractError> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_POSITIONS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     POSITIONS
@@ -208,7 +209,7 @@ pub fn get_positions_by_receiver(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Position>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_ITEMS_LIMIT) as usize;
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_POSITIONS_LIMIT) as usize;
     let start = cw_utils::calc_range_start_string(start_after).map(Bound::ExclusiveRaw);
 
     let index = if let Some(open_state) = open_state {

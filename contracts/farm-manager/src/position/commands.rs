@@ -16,7 +16,7 @@ use crate::position::helpers::{
     validate_positions_limit, validate_unlocking_duration_for_position,
 };
 use crate::state::{
-    get_farms_by_lp_denom, get_position, CONFIG, LP_WEIGHT_HISTORY, MAX_ITEMS_LIMIT, POSITIONS,
+    get_farms_by_lp_denom, get_position, CONFIG, LP_WEIGHT_HISTORY, MAX_FARMS_LIMIT, POSITIONS,
     POSITION_ID_COUNTER,
 };
 use crate::ContractError;
@@ -345,7 +345,7 @@ pub(crate) fn withdraw_position(
             deps.storage,
             &position.lp_asset.denom,
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
         )?;
 
         // get unique farm owners for this lp denom

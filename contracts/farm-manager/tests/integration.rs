@@ -4,7 +4,7 @@ use std::cell::RefCell;
 
 use cosmwasm_std::{coin, coins, Addr, Coin, Decimal, StdResult, Timestamp, Uint128};
 use cw_utils::PaymentError;
-use farm_manager::state::MAX_ITEMS_LIMIT;
+use farm_manager::state::{MAX_FARMS_LIMIT, MAX_POSITIONS_LIMIT};
 use farm_manager::ContractError;
 use mantra_dex_std::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
 use mantra_dex_std::farm_manager::{
@@ -1085,7 +1085,7 @@ fn close_farms() {
         .query_balance("uusdy".to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
-        .claim(&another, vec![], |result| {
+        .claim(&another, vec![], None, |result| {
             result.unwrap();
         })
         .query_farms(
@@ -1736,14 +1736,19 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .claim(&creator, vec![coin(4_000, lp_denom.clone())], |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-            match err {
-                ContractError::PaymentError { .. } => {}
-                _ => panic!("Wrong error type, should return ContractError::PaymentError"),
-            }
-        })
-        .claim(&other, vec![], |result| {
+        .claim(
+            &creator,
+            vec![coin(4_000, lp_denom.clone())],
+            None,
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::PaymentError { .. } => {}
+                    _ => panic!("Wrong error type, should return ContractError::PaymentError"),
+                }
+            },
+        )
+        .claim(&other, vec![], None, |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
                 ContractError::NoOpenPositions { .. } => {}
@@ -1753,7 +1758,7 @@ pub fn test_manage_position() {
         .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_992_000));
         })
-        .claim(&creator, vec![], |result| {
+        .claim(&creator, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &creator, |balance| {
@@ -1938,7 +1943,7 @@ pub fn test_manage_position() {
             assert_eq!(epoch_response.epoch.id, 5);
         })
         .add_one_epoch()
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -1972,7 +1977,7 @@ pub fn test_manage_position() {
         .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_994_000));
         })
-        .claim(&creator, vec![], |result| {
+        .claim(&creator, vec![], None, |result| {
             result.unwrap();
         })
         .query_farms(None, None, None, |result| {
@@ -1982,7 +1987,7 @@ pub fn test_manage_position() {
                 farms_response.farms[0].claimed_amount
             );
         })
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -2427,7 +2432,7 @@ pub fn test_withdrawing_open_positions_updates_weight() {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 2);
         })
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -2815,7 +2820,7 @@ fn claim_expired_farm_returns_nothing() {
         .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(&other, vec![], |result| {
+        .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
@@ -2829,7 +2834,7 @@ fn claim_expired_farm_returns_nothing() {
 
     // there shouldn't be anything to claim as the farm has expired, even though it still has some funds
     suite
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -2838,7 +2843,7 @@ fn claim_expired_farm_returns_nothing() {
                 _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
-        .claim(&other, vec![], |result| {
+        .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
@@ -3122,7 +3127,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .query_balance("uusdy".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(&other, vec![], |result| {
+        .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
@@ -3131,7 +3136,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .query_balance("uusdy".to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(&another, vec![], |result| {
+        .claim(&another, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &another, |balance| {
@@ -3219,7 +3224,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 12u64,
                         preliminary_end_epoch: 15u64,
-                        last_epoch_claimed: 13u64,
                     },
                     Farm {
                         identifier: "f-2".to_string(),
@@ -3234,7 +3238,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 15u64,
                         preliminary_end_epoch: 16u64,
-                        last_epoch_claimed: 14u64,
                     },
                     Farm {
                         identifier: "f-3".to_string(),
@@ -3249,7 +3252,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 14u64,
                         preliminary_end_epoch: 20u64,
-                        last_epoch_claimed: 13u64,
                     },
                     Farm {
                         identifier: "f-4".to_string(),
@@ -3264,7 +3266,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 16u64,
                         preliminary_end_epoch: 20u64,
-                        last_epoch_claimed: 15u64,
                     },
                 ]
             );
@@ -3350,7 +3351,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .query_balance("uosmo".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(&other, vec![], |result| {
+        .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
@@ -3388,7 +3389,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .query_balance("uosmo".to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(&another, vec![], |result| {
+        .claim(&another, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &another, |balance| {
@@ -3512,7 +3513,6 @@ fn test_close_expired_farms() {
                     curve: Curve::Linear,
                     start_epoch: 49u64, // the default of (current epoch + 1u64) was used
                     preliminary_end_epoch: 63u64,
-                    last_epoch_claimed: 48u64,
                 }
             );
         });
@@ -3572,7 +3572,6 @@ fn expand_expired_farm() {
                     curve: Curve::Linear,
                     start_epoch: 1u64,
                     preliminary_end_epoch: 15u64,
-                    last_epoch_claimed: 0u64,
                 }
             );
         });
@@ -3795,7 +3794,7 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
         .add_one_epoch()
         .add_one_epoch()
         // rewards are pending to be claimed
-        .query_rewards(&other, |result| {
+        .query_rewards(&other, None, |result| {
             let response = result.unwrap();
 
             match response {
@@ -4300,7 +4299,6 @@ fn test_multiple_farms_and_positions() {
                         curve: Curve::Linear,
                         start_epoch: 12u64,
                         preliminary_end_epoch: 16u64,
-                        last_epoch_claimed: 11u64,
                     }
                 );
             },
@@ -4308,7 +4306,7 @@ fn test_multiple_farms_and_positions() {
         .query_balance("uusdy".to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(999_920_000));
         })
-        .claim(&creator, vec![], |result| {
+        .claim(&creator, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &creator, |balance| {
@@ -4331,7 +4329,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 15u64,
                 }
             );
             assert_eq!(
@@ -4349,7 +4346,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 15u64,
                 }
             );
         });
@@ -4372,7 +4368,7 @@ fn test_multiple_farms_and_positions() {
         .query_balance("uosmo".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
-        .claim(&other, vec![], |result| {
+        .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &other, |balance| {
@@ -4398,7 +4394,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
             assert_eq!(
@@ -4416,7 +4411,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
         })
@@ -4498,7 +4492,7 @@ fn test_multiple_farms_and_positions() {
         });
 
     suite
-        .claim(&creator, vec![], |result| {
+        .claim(&creator, vec![], None, |result| {
             // creator claims from epoch 16 to 30
             // There's nothing to claim on farm 1
             // On farm 2, creator has a portion of the total weight until the epoch where other
@@ -4525,7 +4519,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
             assert_eq!(
@@ -4543,7 +4536,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4561,7 +4553,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 20u64,
                     preliminary_end_epoch: 23u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4579,11 +4570,10 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
         })
-        .claim(&another, vec![], |result| {
+        .claim(&another, vec![], None, |result| {
             result.unwrap();
         })
         .query_farms(None, None, None, |result| {
@@ -4603,7 +4593,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
             assert_eq!(
@@ -4621,7 +4610,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4639,7 +4627,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 20u64,
                     preliminary_end_epoch: 23u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4657,7 +4644,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
         });
@@ -4689,7 +4675,7 @@ fn test_multiple_farms_and_positions() {
         });
 
     suite
-        .claim(&creator, vec![], |result| {
+        .claim(&creator, vec![], None, |result| {
             result.unwrap();
         })
         .query_farms(None, None, None, |result| {
@@ -4709,11 +4695,10 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 35u64,
                 }
             );
         })
-        .claim(&another, vec![], |result| {
+        .claim(&another, vec![], None, |result| {
             result.unwrap();
         })
         .query_farms(None, None, None, |result| {
@@ -4733,7 +4718,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 35u64,
                 }
             );
         });
@@ -4908,7 +4892,7 @@ fn test_rewards_query_overlapping_farms() {
             assert_eq!(epoch_response.epoch.id, 13);
         });
 
-    suite.query_rewards(&creator, |result| {
+    suite.query_rewards(&creator, None, |result| {
         let rewards_response = result.unwrap();
 
         assert_eq!(
@@ -5701,7 +5685,7 @@ fn test_positions_limits() {
     ];
 
     // prepare lp denoms
-    for i in 1..MAX_ITEMS_LIMIT * 2 {
+    for i in 1..MAX_FARMS_LIMIT * 2 {
         let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
         balances.push(coin(1_000_000_000u128, lp_denom.clone()));
     }
@@ -5713,7 +5697,7 @@ fn test_positions_limits() {
     suite.instantiate_default();
 
     // prepare farms, create more than the user could participate on
-    for i in 1..MAX_ITEMS_LIMIT * 2 {
+    for i in 1..MAX_POSITIONS_LIMIT * 2 {
         suite.manage_farm(
             &creator,
             FarmAction::Fill {
@@ -5737,7 +5721,7 @@ fn test_positions_limits() {
     }
 
     // open positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Create {
@@ -5759,10 +5743,10 @@ fn test_positions_limits() {
         Some(PositionsBy::Receiver(alice.to_string())),
         Some(true),
         None,
-        Some(MAX_ITEMS_LIMIT),
+        Some(MAX_POSITIONS_LIMIT),
         |result| {
             let response = result.unwrap();
-            assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+            assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
         },
     );
 
@@ -5795,26 +5779,26 @@ fn test_positions_limits() {
         .query_balance("uusdy".to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(&alice, vec![], |result| {
+        .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &alice, |balance| {
-            // all the rewards were claimed, 1000 uusdy * 100
-            assert_eq!(balance, Uint128::new(1_000_100_000u128));
+            // all the rewards were claimed, 1000 uusdy * 10
+            assert_eq!(balance, Uint128::new(1_000_010_000u128));
         })
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 
     // now let's try closing positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Close {
@@ -5834,7 +5818,7 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             |result| {
                 let response = result.unwrap();
                 assert!(response.positions.is_empty());
@@ -5844,15 +5828,15 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 
     // try opening more positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Create {
@@ -5876,20 +5860,20 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         )
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 
@@ -5952,10 +5936,10 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), (MAX_ITEMS_LIMIT - 1) as usize);
+                assert_eq!(response.positions.len(), (MAX_POSITIONS_LIMIT - 1) as usize);
             },
         )
         // try closing it a position partially
@@ -5977,10 +5961,10 @@ fn test_positions_limits() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(false),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         );
 }
@@ -5994,7 +5978,7 @@ fn test_positions_query_filters_and_pagination() {
     ];
 
     // prepare lp denoms
-    for i in 1..MAX_ITEMS_LIMIT * 2 {
+    for i in 1..MAX_FARMS_LIMIT * 2 {
         let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
         balances.push(coin(1_000_000_000u128, lp_denom.clone()));
     }
@@ -6005,7 +5989,7 @@ fn test_positions_query_filters_and_pagination() {
     suite.instantiate_default();
 
     // open positions
-    for i in 1..=MAX_ITEMS_LIMIT {
+    for i in 1..=MAX_POSITIONS_LIMIT {
         suite.manage_position(
             &alice,
             PositionAction::Create {
@@ -6031,51 +6015,32 @@ fn test_positions_query_filters_and_pagination() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_POSITIONS_LIMIT),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), MAX_ITEMS_LIMIT as usize);
+                assert_eq!(response.positions.len(), MAX_POSITIONS_LIMIT as usize);
             },
         )
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(10),
+            Some(5),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), 10usize);
-
-                position_a_id.replace(response.positions[9].identifier.clone());
+                assert_eq!(response.positions.len(), 5usize);
+                position_a_id.replace(response.positions[4].identifier.clone());
             },
         )
         .query_positions(
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             Some(position_a_id.borrow().clone()),
-            Some(10),
+            Some(5),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), 10usize);
-                position_b_id.replace(response.positions[9].identifier.clone());
-            },
-        )
-        .query_positions(
-            Some(PositionsBy::Receiver(alice.to_string())),
-            Some(true),
-            None,
-            Some(20),
-            |result| {
-                let response = result.unwrap();
-                assert_eq!(response.positions.len(), 20usize);
-                assert_eq!(
-                    response.positions[9].identifier,
-                    position_a_id.borrow().clone()
-                );
-                assert_eq!(
-                    response.positions[19].identifier,
-                    position_b_id.borrow().clone()
-                );
+                assert_eq!(response.positions.len(), 5usize);
+                position_b_id.replace(response.positions[0].identifier.clone());
             },
         );
 
@@ -6362,7 +6327,6 @@ fn user_can_claim_expired_epochs() {
                     curve: Curve::Linear,
                     start_epoch: 10u64,
                     preliminary_end_epoch: 20u64,
-                    last_epoch_claimed: 9u64,
                 }
             );
         })
@@ -6439,14 +6403,13 @@ fn user_can_claim_expired_epochs() {
                     curve: Curve::Linear,
                     start_epoch: 10u64,
                     preliminary_end_epoch: 20u64,
-                    last_epoch_claimed: 9u64,
                 }
             );
         })
         .query_balance("uusdy".to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(2_000_000_000));
         })
-        .claim(&alice, vec![], |result| {
+        .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &alice, |balance| {
@@ -6470,7 +6433,6 @@ fn user_can_claim_expired_epochs() {
                     curve: Curve::Linear,
                     start_epoch: 10u64,
                     preliminary_end_epoch: 20u64,
-                    last_epoch_claimed: 100u64,
                 }
             );
         });
@@ -6551,7 +6513,7 @@ fn test_overwriting_position_is_not_possible() {
             Some(PositionsBy::Receiver(victim.to_string())),
             None,
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             is_as_expected,
         );
 
@@ -6577,7 +6539,7 @@ fn test_overwriting_position_is_not_possible() {
         Some(PositionsBy::Receiver(victim.to_string())),
         None,
         None,
-        Some(MAX_ITEMS_LIMIT),
+        Some(MAX_FARMS_LIMIT),
         is_as_expected,
     );
 }
@@ -7061,7 +7023,7 @@ fn closing_expired_farm_wont_pay_penalty() {
             Some(PositionsBy::Receiver(creator.to_string())),
             None,
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             |result| {
                 let response = result.unwrap();
                 assert_eq!(response.positions.len(), 1);
@@ -7161,7 +7123,7 @@ fn providing_custom_position_id_doesnt_increment_position_counter() {
             Some(PositionsBy::Receiver(creator.to_string())),
             None,
             None,
-            Some(MAX_ITEMS_LIMIT),
+            Some(MAX_FARMS_LIMIT),
             |result| {
                 let response = result.unwrap();
                 assert_eq!(response.positions.len(), 3);
@@ -7311,12 +7273,12 @@ fn test_query_rewards_divide_by_zero() {
             assert_eq!(epoch_response.epoch.id, 5);
         });
 
-    suite.query_rewards(&creator, |result| {
+    suite.query_rewards(&creator, None, |result| {
         result.unwrap();
     });
 
     suite
-        .claim(&creator, vec![], |result| {
+        .claim(&creator, vec![], None, |result| {
             result.unwrap();
         })
         .manage_position(
@@ -7333,7 +7295,7 @@ fn test_query_rewards_divide_by_zero() {
         .query_lp_weight(&farm_manager, &lp_denom_1, 6, |result| {
             result.unwrap();
         })
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7360,7 +7322,7 @@ fn test_query_rewards_divide_by_zero() {
     suite
         .add_one_epoch()
         .add_one_epoch()
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7395,7 +7357,7 @@ fn test_query_rewards_divide_by_zero() {
     // would be zero.
     // This is a case that the contract shouldn't compute rewards for anyway, so the epoch is skipped.
     suite
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7406,7 +7368,7 @@ fn test_query_rewards_divide_by_zero() {
                 }
             }
         })
-        .claim(&creator, vec![], |result| {
+        .claim(&creator, vec![], None, |result| {
             result.unwrap();
         })
         .query_lp_weight(&creator, &lp_denom_1, 7, |result| {
@@ -7423,7 +7385,7 @@ fn test_query_rewards_divide_by_zero() {
     suite
         .add_one_epoch()
         .add_one_epoch()
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7457,7 +7419,7 @@ fn test_query_rewards_divide_by_zero() {
         .query_lp_weight(&creator, &lp_denom_1, 11, |result| {
             result.unwrap_err();
         })
-        .query_rewards(&creator, |result| {
+        .query_rewards(&creator, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7588,7 +7550,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         );
 
     suite
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7600,7 +7562,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 }
             }
         })
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7611,7 +7573,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 }
             }
         })
-        .query_rewards(&carol, |result| {
+        .query_rewards(&carol, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7630,7 +7592,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 Uint128::new(1_000_000_000u128 - (8_888u128 + 666_666u128))
             );
         })
-        .claim(&alice, vec![], |result| {
+        .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &alice, |balance| {
@@ -7708,7 +7670,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         );
 
     suite
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7720,7 +7682,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 }
             }
         })
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7732,7 +7694,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 }
             }
         })
-        .query_rewards(&carol, |result| {
+        .query_rewards(&carol, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7757,7 +7719,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 result.unwrap();
             },
         )
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7769,7 +7731,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             }
         })
         // Bob's rewards should remain the same for the current epoch
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7787,7 +7749,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         assert_eq!(epoch_response.epoch.id, 9);
     });
 
-    suite.query_rewards(&bob, |result| {
+    suite.query_rewards(&bob, None, |result| {
         let rewards_response = result.unwrap();
         match rewards_response {
             RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7831,7 +7793,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
     suite.add_one_epoch();
 
     suite
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7843,7 +7805,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 }
             }
         })
-        .claim(&alice, vec![], |result| {
+        .claim(&alice, vec![], None, |result| {
             result.unwrap();
         });
 
@@ -7861,13 +7823,13 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 result.unwrap();
             },
         )
-        .claim(&alice, vec![], |result| {
+        .claim(&alice, vec![], None, |result| {
             result.unwrap();
         });
 
     suite
         .add_one_epoch()
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7882,7 +7844,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         .query_balance("uusdy".to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(999_328_756u128));
         })
-        .claim(&alice, vec![], |result| {
+        .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &alice, |balance| {
@@ -7944,7 +7906,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         });
 
     suite
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7967,7 +7929,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 result.unwrap();
             },
         )
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -7986,7 +7948,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             assert_eq!(lp_weight_response.lp_weight, Uint128::new(3000));
         })
         .add_one_epoch()
-        .query_rewards(&alice, |result| {
+        .query_rewards(&alice, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8000,7 +7962,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         });
 
     suite
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8021,7 +7983,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         .query_balance("uosmo".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
-        .claim(&bob, vec![], |result| {
+        .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance("uusdy".to_string(), &bob, |balance| {
@@ -8041,7 +8003,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         });
 
     suite
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8068,7 +8030,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 result.unwrap();
             },
         )
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8094,7 +8056,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 result.unwrap();
             },
         )
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8106,11 +8068,11 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 }
             }
         })
-        .claim(&bob, vec![], |result| {
+        .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
         .add_one_epoch()
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8370,7 +8332,7 @@ fn farm_owners_get_penalty_fees() {
 
     suite.add_one_epoch().add_one_epoch();
 
-    suite.query_rewards(&dan, |result| {
+    suite.query_rewards(&dan, None, |result| {
         let rewards_response = result.unwrap();
         match rewards_response {
             RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8809,12 +8771,12 @@ fn test_query_rewards_divide_by_zero_mitigated() {
             assert_eq!(epoch_response.epoch.id, 5);
         });
 
-    suite.query_rewards(&bob, |result| {
+    suite.query_rewards(&bob, None, |result| {
         result.unwrap();
     });
     let farm_manager = suite.farm_manager_addr.clone();
     suite
-        .claim(&bob, vec![], |result| {
+        .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
         .manage_position(
@@ -8831,7 +8793,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         .query_lp_weight(&farm_manager, &lp_denom_1, 6, |result| {
             result.unwrap();
         })
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -8878,7 +8840,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
     });
 
     // this would have failed if the divide by zero was not mitigated
-    suite.query_rewards(&bob, |result| {
+    suite.query_rewards(&bob, None, |result| {
         let rewards_response = result.unwrap();
         assert_eq!(
             rewards_response,
@@ -8892,6 +8854,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         );
     });
 }
+
 #[test]
 fn test_claim_rewards_divide_by_zero_mitigated() {
     let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
@@ -8991,12 +8954,12 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
             assert_eq!(epoch_response.epoch.id, 5);
         });
 
-    suite.query_rewards(&bob, |result| {
+    suite.query_rewards(&bob, None, |result| {
         result.unwrap();
     });
     let farm_manager = suite.farm_manager_addr.clone();
     suite
-        .claim(&bob, vec![], |result| {
+        .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
         .manage_position(
@@ -9013,7 +8976,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
         .query_lp_weight(&farm_manager, &lp_denom_1, 6, |result| {
             result.unwrap();
         })
-        .query_rewards(&bob, |result| {
+        .query_rewards(&bob, None, |result| {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
@@ -9060,7 +9023,564 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
     });
 
     // this would have failed if the divide by zero was not mitigated
-    suite.claim(&bob, vec![], |result| {
+    suite.claim(&bob, vec![], None, |result| {
         result.unwrap();
     });
+}
+
+#[test]
+fn test_claim_until_epoch() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000_000, lp_denom_1.clone()),
+        coin(1_000_000_000_000, lp_denom_2.clone()),
+    ]);
+
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+
+    suite.instantiate_default();
+
+    suite.add_one_epoch().add_one_epoch();
+    // epoch 2
+
+    // create overlapping farms
+    suite
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: Some(4),
+                    preliminary_end_epoch: Some(14),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(10),
+                    preliminary_end_epoch: Some(20),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // bob fills two positions in epoch 2
+    suite.manage_position(
+        &bob,
+        PositionAction::Create {
+            identifier: Some("creator_position".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(1_000, lp_denom_1.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite.manage_position(
+        &bob,
+        PositionAction::Create {
+            identifier: Some("creator_another_position".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(1_000, lp_denom_2.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite.add_one_epoch().query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 3);
+    });
+
+    //epoch 3
+
+    // try claiming in the future
+    suite.claim(&bob, vec![], Some(4), |result| {
+        let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+        match err {
+            ContractError::InvalidUntilEpoch { until_epoch } => {
+                assert_eq!(until_epoch, 4)
+            }
+            _ => {
+                panic!("Wrong error type, should return ContractError::InvalidUntilEpoch")
+            }
+        }
+    });
+
+    // try claiming in the past, in an epoch before the positions were created
+    suite
+        .query_rewards(&bob, Some(0), |result| {
+            let rewards_response: RewardsResponse = result.unwrap();
+
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
+
+    suite
+        .claim(&bob, vec![], Some(0), |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
+
+    // try claiming before the farms start
+    suite
+        .query_rewards(&bob, None, |result| {
+            let rewards_response: RewardsResponse = result.unwrap();
+
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
+
+    suite
+        .claim(&bob, vec![], None, |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 8);
+        });
+
+    // epoch 8
+
+    suite.query_rewards(&bob, None, |result| {
+        let rewards_response = result.unwrap();
+        match rewards_response {
+            RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                assert_eq!(total_rewards, coins(5_000, "uusdy"));
+            }
+            _ => {
+                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+            }
+        }
+    });
+    let _farm_manager = suite.farm_manager_addr.clone();
+
+    // claim only until epoch 5, so two epochs should be claimed
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        })
+        .claim(&bob, vec![], Some(5), |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000 + 1000 * 2));
+        })
+        // query rewards for epoch 5, which was claimed
+        .query_rewards(&bob, Some(5), |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .query_lp_weight(&bob, &lp_denom_1, 2, |result| {
+            result.unwrap_err();
+        })
+        .query_lp_weight(&bob, &lp_denom_1, 3, |result| {
+            result.unwrap_err();
+        });
+
+    // try claiming in the past again
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000 + 1000 * 2));
+        })
+        .claim(&bob, vec![], Some(4), |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::InvalidUntilEpoch { until_epoch } => {
+                    assert_eq!(until_epoch, 4)
+                }
+                _ => {
+                    panic!("Wrong error type, should return ContractError::InvalidUntilEpoch")
+                }
+            }
+        })
+        .claim(&bob, vec![], Some(5), |result| {
+            result.unwrap();
+        })
+        // nothing was transferred when trying to claim until epoch 5 again
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000 + 1000 * 2));
+        });
+
+    // try claiming in the future
+    suite.claim(&bob, vec![], Some(9), |result| {
+        let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+        match err {
+            ContractError::InvalidUntilEpoch { until_epoch } => {
+                assert_eq!(until_epoch, 9)
+            }
+            _ => {
+                panic!("Wrong error type, should return ContractError::InvalidUntilEpoch")
+            }
+        }
+    });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 14);
+        });
+
+    suite
+        .query_rewards(&bob, None, |result| {
+            let rewards_response = result.unwrap();
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert_eq!(total_rewards, coins(8_000 + 5_000, "uusdy"));
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
+            }
+        })
+        .claim(&bob, vec![], None, |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(
+                balance,
+                Uint128::new(1_000_000_000 + (1000 * 2) + 8_000 + 5_000)
+            );
+        });
+}
+
+#[test]
+fn test_claim_until_epoch_closing_positions() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000_000, lp_denom_1.clone()),
+        coin(1_000_000_000_000, lp_denom_2.clone()),
+    ]);
+
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+
+    suite.instantiate_default();
+
+    // create overlapping farms
+    suite
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: Some(11),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: Some(11),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // bob fills three positions
+    suite.manage_position(
+        &bob,
+        PositionAction::Create {
+            identifier: Some("lp_denom_1".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(1_000, lp_denom_1.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("lp_denom_2_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(500, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("lp_denom_2_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(500, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &alice,
+            PositionAction::Create {
+                identifier: Some("alice_lp_denom_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 2);
+        });
+
+    suite.manage_position(
+        &bob,
+        PositionAction::Close {
+            identifier: "u-lp_denom_1_1".to_string(),
+            lp_asset: None,
+        },
+        vec![],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::PendingRewards { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
+            }
+        },
+    );
+
+    // claim some rewards, but not all
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        })
+        .claim(&bob, vec![], Some(1), |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000 + 1_000 + 500));
+        });
+
+    // still can't close the position as the current epoch is 2, but claimed until epoch 1
+    suite.manage_position(
+        &bob,
+        PositionAction::Close {
+            identifier: "u-lp_denom_1_1".to_string(),
+            lp_asset: None,
+        },
+        vec![],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::PendingRewards { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
+            }
+        },
+    );
+
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000 + 1_000 + 500));
+        })
+        .claim(&bob, vec![], None, |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_001_500 + 1_000 + 500));
+        });
+
+    suite.manage_position(
+        &bob,
+        PositionAction::Close {
+            identifier: "u-lp_denom_2_1".to_string(),
+            lp_asset: None,
+        },
+        vec![],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    let farm_manager = suite.farm_manager_addr.clone();
+
+    suite
+        .query_lp_weight(&farm_manager, &lp_denom_2, 3, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1500),
+                    epoch_id: 3,
+                }
+            );
+        })
+        .query_lp_weight(&bob, &lp_denom_2, 3, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(500),
+                    epoch_id: 3,
+                }
+            );
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 4);
+        });
+
+    suite.query_rewards(&bob, None, |result| {
+        let rewards_response = result.unwrap();
+        match rewards_response {
+            RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                // 666 comes from 2 epochs of 333 rewards, 2 * 1000 * (500 / 1500)
+                assert_eq!(total_rewards, coins(2000 + 666, "uusdy"));
+            }
+            _ => {
+                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+            }
+        }
+    });
+
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_001_500 + 1_000 + 500));
+        })
+        .claim(&bob, vec![], Some(1), |result| {
+            // can't claim in the past
+            result.unwrap_err();
+        })
+        .claim(&bob, vec![], None, |result| {
+            // can't claim in the past
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_003_000 + 2_000 + 666));
+        })
+        .claim(&bob, vec![], Some(3), |result| {
+            // can't claim in the past
+            result.unwrap_err();
+        })
+        .claim(&bob, vec![], Some(5), |result| {
+            // can't claim in the future
+            result.unwrap_err();
+        })
+        .claim(&bob, vec![], Some(4), |result| {
+            // can "claim" the current epoch, but it will return nothing as it was already claimed.
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_003_000 + 2_000 + 666));
+        });
 }

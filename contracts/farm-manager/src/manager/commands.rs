@@ -146,7 +146,6 @@ fn create_farm(
         owner: info.sender,
         claimed_amount: Uint128::zero(),
         emission_rate,
-        last_epoch_claimed: start_epoch - 1,
     };
 
     FARMS.save(deps.storage, &farm.identifier, &farm)?;
