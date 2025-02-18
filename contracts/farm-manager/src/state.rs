@@ -82,11 +82,10 @@ impl IndexList<Farm> for FarmIndexes<'_> {
 
 // settings for pagination
 
-// MAX_POSITIONS_LIMIT in the case of positions, is the maximum number of positions that a user can have
-// open or closed at a given time, i.e. there can be at most MAX_POSITIONS_LIMIT open positions and
-// MAX_POSITIONS_LIMIT closed positions.
+// The maximum number of positions that a user can have open or closed at a given time, i.e. there
+// can be at most MAX_POSITIONS_LIMIT open positions and MAX_POSITIONS_LIMIT closed positions.
 pub const MAX_POSITIONS_LIMIT: u32 = 10;
-// For farms, the MAX_ITEMS_LIMIT is the maximum number of farms that can be queried at a given time.
+// The maximum number of farms that can be queried at a given time.
 pub const MAX_FARMS_LIMIT: u32 = 100;
 const DEFAULT_LIMIT: u32 = 10;
 

@@ -104,7 +104,6 @@ pub(crate) fn query_rewards(
         config.epoch_manager_addr.into_string(),
     )?;
 
-    //todo dedup this logic
     let until_epoch = helpers::until_epoch_or_current(until_epoch, &current_epoch)?;
 
     let mut total_rewards = vec![];

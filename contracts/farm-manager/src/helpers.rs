@@ -286,20 +286,20 @@ pub fn validate_identifier(identifier: &str) -> Result<(), ContractError> {
     Ok(())
 }
 
-/// Validates the until_epoch parameter, ensuring the user is not trying to claim rewards for the future.
+/// Validates and returns the until_epoch id parameter if Some, otherwise return the current epoch id.
 pub fn until_epoch_or_current(
     until_epoch: Option<EpochId>,
     current_epoch: &Epoch,
 ) -> Result<EpochId, ContractError> {
     let until_epoch = if let Some(until_epoch) = until_epoch {
-        // ensure the user is not trying to claim rewards for the future
+        // ensure the until_epoch is not in the future
         ensure!(
             until_epoch <= current_epoch.id,
             ContractError::InvalidUntilEpoch { until_epoch }
         );
         until_epoch
     } else {
-        // if no until_epoch is provided, claim until the current epoch
+        // if no until_epoch is provided, return the current epoch id
         current_epoch.id
     };
     Ok(until_epoch)

@@ -3224,7 +3224,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 12u64,
                         preliminary_end_epoch: 15u64,
-                        last_epoch_claimed: 13u64,
                     },
                     Farm {
                         identifier: "f-2".to_string(),
@@ -3239,7 +3238,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 15u64,
                         preliminary_end_epoch: 16u64,
-                        last_epoch_claimed: 14u64,
                     },
                     Farm {
                         identifier: "f-3".to_string(),
@@ -3254,7 +3252,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 14u64,
                         preliminary_end_epoch: 20u64,
-                        last_epoch_claimed: 13u64,
                     },
                     Farm {
                         identifier: "f-4".to_string(),
@@ -3269,7 +3266,6 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         curve: Curve::Linear,
                         start_epoch: 16u64,
                         preliminary_end_epoch: 20u64,
-                        last_epoch_claimed: 15u64,
                     },
                 ]
             );
@@ -3517,7 +3513,6 @@ fn test_close_expired_farms() {
                     curve: Curve::Linear,
                     start_epoch: 49u64, // the default of (current epoch + 1u64) was used
                     preliminary_end_epoch: 63u64,
-                    last_epoch_claimed: 48u64,
                 }
             );
         });
@@ -3577,7 +3572,6 @@ fn expand_expired_farm() {
                     curve: Curve::Linear,
                     start_epoch: 1u64,
                     preliminary_end_epoch: 15u64,
-                    last_epoch_claimed: 0u64,
                 }
             );
         });
@@ -4305,7 +4299,6 @@ fn test_multiple_farms_and_positions() {
                         curve: Curve::Linear,
                         start_epoch: 12u64,
                         preliminary_end_epoch: 16u64,
-                        last_epoch_claimed: 11u64,
                     }
                 );
             },
@@ -4336,7 +4329,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 15u64,
                 }
             );
             assert_eq!(
@@ -4354,7 +4346,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 15u64,
                 }
             );
         });
@@ -4403,7 +4394,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
             assert_eq!(
@@ -4421,7 +4411,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
         })
@@ -4530,7 +4519,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
             assert_eq!(
@@ -4548,7 +4536,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4566,7 +4553,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 20u64,
                     preliminary_end_epoch: 23u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4584,7 +4570,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
         })
@@ -4608,7 +4593,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 12u64,
                     preliminary_end_epoch: 16u64,
-                    last_epoch_claimed: 19u64,
                 }
             );
             assert_eq!(
@@ -4626,7 +4610,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 14u64,
                     preliminary_end_epoch: 24u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4644,7 +4627,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 20u64,
                     preliminary_end_epoch: 23u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
             assert_eq!(
@@ -4662,7 +4644,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 30u64,
                 }
             );
         });
@@ -4714,7 +4695,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 35u64,
                 }
             );
         })
@@ -4738,7 +4718,6 @@ fn test_multiple_farms_and_positions() {
                     curve: Curve::Linear,
                     start_epoch: 23u64,
                     preliminary_end_epoch: 37u64,
-                    last_epoch_claimed: 35u64,
                 }
             );
         });
@@ -6348,7 +6327,6 @@ fn user_can_claim_expired_epochs() {
                     curve: Curve::Linear,
                     start_epoch: 10u64,
                     preliminary_end_epoch: 20u64,
-                    last_epoch_claimed: 9u64,
                 }
             );
         })
@@ -6425,7 +6403,6 @@ fn user_can_claim_expired_epochs() {
                     curve: Curve::Linear,
                     start_epoch: 10u64,
                     preliminary_end_epoch: 20u64,
-                    last_epoch_claimed: 9u64,
                 }
             );
         })
@@ -6456,7 +6433,6 @@ fn user_can_claim_expired_epochs() {
                     curve: Curve::Linear,
                     start_epoch: 10u64,
                     preliminary_end_epoch: 20u64,
-                    last_epoch_claimed: 100u64,
                 }
             );
         });
@@ -9164,41 +9140,56 @@ fn test_claim_until_epoch() {
     });
 
     // try claiming in the past, in an epoch before the positions were created
-    suite.query_rewards(&bob, Some(0), |result| {
-        let rewards_response: RewardsResponse = result.unwrap();
+    suite
+        .query_rewards(&bob, Some(0), |result| {
+            let rewards_response: RewardsResponse = result.unwrap();
 
-        match rewards_response {
-            RewardsResponse::RewardsResponse { total_rewards, .. } => {
-                assert!(total_rewards.is_empty());
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
             }
-            _ => {
-                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
-            }
-        }
-    });
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
 
-    // todo check the balances didn't change here
-    suite.claim(&bob, vec![], Some(0), |result| {
-        result.unwrap();
-    });
+    suite
+        .claim(&bob, vec![], Some(0), |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
 
     // try claiming before the farms start
-    suite.query_rewards(&bob, None, |result| {
-        let rewards_response: RewardsResponse = result.unwrap();
+    suite
+        .query_rewards(&bob, None, |result| {
+            let rewards_response: RewardsResponse = result.unwrap();
 
-        match rewards_response {
-            RewardsResponse::RewardsResponse { total_rewards, .. } => {
-                assert!(total_rewards.is_empty());
+            match rewards_response {
+                RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                    assert!(total_rewards.is_empty());
+                }
+                _ => {
+                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+                }
             }
-            _ => {
-                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
-            }
-        }
-    });
-    suite.claim(&bob, vec![], None, |result| {
-        result.unwrap();
-    });
-    //todo again, check balance
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
+
+    suite
+        .claim(&bob, vec![], None, |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        });
 
     suite
         .add_one_epoch()
@@ -9325,5 +9316,271 @@ fn test_claim_until_epoch() {
                 balance,
                 Uint128::new(1_000_000_000 + (1000 * 2) + 8_000 + 5_000)
             );
+        });
+}
+
+#[test]
+fn test_claim_until_epoch_closing_positions() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000_000, lp_denom_1.clone()),
+        coin(1_000_000_000_000, lp_denom_2.clone()),
+    ]);
+
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+
+    suite.instantiate_default();
+
+    // create overlapping farms
+    suite
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: Some(11),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &alice,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: Some(11),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(10_000u128),
+                    },
+                    farm_identifier: None,
+                },
+            },
+            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // bob fills three positions
+    suite.manage_position(
+        &bob,
+        PositionAction::Create {
+            identifier: Some("lp_denom_1".to_string()),
+            unlocking_duration: 86_400,
+            receiver: None,
+        },
+        vec![coin(1_000, lp_denom_1.clone())],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("lp_denom_2_1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(500, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &bob,
+            PositionAction::Create {
+                identifier: Some("lp_denom_2_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(500, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &alice,
+            PositionAction::Create {
+                identifier: Some("alice_lp_denom_2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 2);
+        });
+
+    suite.manage_position(
+        &bob,
+        PositionAction::Close {
+            identifier: "u-lp_denom_1_1".to_string(),
+            lp_asset: None,
+        },
+        vec![],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::PendingRewards { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
+            }
+        },
+    );
+
+    // claim some rewards, but not all
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000));
+        })
+        .claim(&bob, vec![], Some(1), |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000 + 1_000 + 500));
+        });
+
+    // still can't close the position as the current epoch is 2, but claimed until epoch 1
+    suite.manage_position(
+        &bob,
+        PositionAction::Close {
+            identifier: "u-lp_denom_1_1".to_string(),
+            lp_asset: None,
+        },
+        vec![],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::PendingRewards { .. } => {}
+                _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
+            }
+        },
+    );
+
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000 + 1_000 + 500));
+        })
+        .claim(&bob, vec![], None, |result| {
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_001_500 + 1_000 + 500));
+        });
+
+    suite.manage_position(
+        &bob,
+        PositionAction::Close {
+            identifier: "u-lp_denom_2_1".to_string(),
+            lp_asset: None,
+        },
+        vec![],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    let farm_manager = suite.farm_manager_addr.clone();
+
+    suite
+        .query_lp_weight(&farm_manager, &lp_denom_2, 3, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(1500),
+                    epoch_id: 3,
+                }
+            );
+        })
+        .query_lp_weight(&bob, &lp_denom_2, 3, |result| {
+            let lp_weight = result.unwrap();
+            assert_eq!(
+                lp_weight,
+                LpWeightResponse {
+                    lp_weight: Uint128::new(500),
+                    epoch_id: 3,
+                }
+            );
+        });
+
+    suite
+        .add_one_epoch()
+        .add_one_epoch()
+        .query_current_epoch(|result| {
+            let epoch_response = result.unwrap();
+            assert_eq!(epoch_response.epoch.id, 4);
+        });
+
+    suite.query_rewards(&bob, None, |result| {
+        let rewards_response = result.unwrap();
+        match rewards_response {
+            RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                // 666 comes from 2 epochs of 333 rewards, 2 * 1000 * (500 / 1500)
+                assert_eq!(total_rewards, coins(2000 + 666, "uusdy"));
+            }
+            _ => {
+                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+            }
+        }
+    });
+
+    suite
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_001_500 + 1_000 + 500));
+        })
+        .claim(&bob, vec![], Some(1), |result| {
+            // can't claim in the past
+            result.unwrap_err();
+        })
+        .claim(&bob, vec![], None, |result| {
+            // can't claim in the past
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_003_000 + 2_000 + 666));
+        })
+        .claim(&bob, vec![], Some(3), |result| {
+            // can't claim in the past
+            result.unwrap_err();
+        })
+        .claim(&bob, vec![], Some(5), |result| {
+            // can't claim in the future
+            result.unwrap_err();
+        })
+        .claim(&bob, vec![], Some(4), |result| {
+            // can "claim" the current epoch, but it will return nothing as it was already claimed.
+            result.unwrap();
+        })
+        .query_balance("uusdy".to_string(), &bob, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_003_000 + 2_000 + 666));
         });
 }

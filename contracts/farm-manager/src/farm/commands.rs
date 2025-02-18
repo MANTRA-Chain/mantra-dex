@@ -72,7 +72,6 @@ pub(crate) fn claim(
                         &farm_identifier,
                         |farm| -> Result<_, ContractError> {
                             let mut farm = farm.unwrap();
-                            farm.last_epoch_claimed = until_epoch;
                             farm.claimed_amount =
                                 farm.claimed_amount.checked_add(claimed_reward)?;
 
@@ -143,11 +142,6 @@ pub(crate) fn calculate_rewards(
 
     let last_claimed_epoch_for_user = LAST_CLAIMED_EPOCH.may_load(deps.storage, receiver)?;
 
-    println!(
-        "last_claimed_epoch_for_user: {:?}",
-        last_claimed_epoch_for_user
-    );
-
     // Check if the user ever claimed before
     if let Some(last_claimed_epoch) = last_claimed_epoch_for_user {
         // ensure the user is not trying to claim rewards that were already claimed
@@ -180,8 +174,6 @@ pub(crate) fn calculate_rewards(
         if farm.start_epoch > until_epoch_id {
             continue;
         }
-
-        println!("here");
 
         // compute where the user can start claiming rewards for the farm
         let start_from_epoch = compute_start_from_epoch_for_address(
