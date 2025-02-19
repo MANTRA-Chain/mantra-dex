@@ -1,5 +1,7 @@
 use cosmwasm_std::testing::MockStorage;
-use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{
+    coin, Addr, BankMsg, Coin, Decimal, Empty, StdResult, Timestamp, Uint128, Uint64,
+};
 use cw_multi_test::{
     App, AppBuilder, AppResponse, BankKeeper, DistributionKeeper, Executor, FailingModule,
     GovFailingModule, IbcFailingModule, MockApiBech32, StakeKeeper, WasmKeeper,
@@ -289,6 +291,19 @@ impl TestingSuite {
             "Farm Manager",
             Some(creator.into_string()),
         ));
+
+        self
+    }
+    #[track_caller]
+    pub(crate) fn burn_tokens(
+        &mut self,
+        address: &Addr,
+        coin: Vec<Coin>,
+        result: impl Fn(Result<AppResponse, anyhow::Error>),
+    ) -> &mut Self {
+        let msg = BankMsg::Burn { amount: coin };
+
+        result(self.app.execute(address.clone(), msg.into()));
 
         self
     }

@@ -8,6 +8,7 @@ pub fn farm_manager_contract() -> Box<dyn Contract<Empty>> {
         farm_manager::contract::instantiate,
         farm_manager::contract::query,
     )
+    .with_reply(farm_manager::contract::reply)
     .with_migrate(farm_manager::contract::migrate);
 
     Box::new(contract)
