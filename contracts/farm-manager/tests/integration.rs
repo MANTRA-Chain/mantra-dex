@@ -1124,6 +1124,124 @@ fn close_farms() {
         );
 }
 
+/// This test recreates the scenario where a malicious TF token freezes token transfers via hooks,
+/// which would brick the rewards claiming mechanism and prevent closing the farm (in case the contract owner
+/// would like to salvage the contract).
+#[test]
+#[allow(clippy::inconsistent_digit_grouping)]
+fn close_farms_wont_fail_with_malicious_tf_token() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    suite.instantiate_default();
+
+    let other = suite.senders[1].clone();
+
+    // create two farms
+    suite
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm_1".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm_2".to_string()),
+                },
+            },
+            vec![coin(4_000, "uosmo"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    let farm_manager = suite.farm_manager_addr.clone();
+
+    suite
+        .query_balance("uusdy".to_string(), &farm_manager, |balance| {
+            assert_eq!(balance, Uint128::new(4_000));
+        })
+        .query_balance("uosmo".to_string(), &farm_manager, |balance| {
+            assert_eq!(balance, Uint128::new(4_000));
+        });
+
+    // let's burn tokens from the contract to simulate the case where a malicious TF token freezes
+    // token transfers
+    suite
+        .burn_tokens(&farm_manager, coins(1_000, "uosmo"), |result| {
+            result.unwrap();
+        })
+        .query_balance("uosmo".to_string(), &farm_manager, |balance| {
+            assert_eq!(balance, Uint128::new(3_000));
+        });
+
+    // closing the farm would have failed and bricked the rewards claiming, but not anymore
+    suite.manage_farm(
+        &other,
+        FarmAction::Close {
+            farm_identifier: "m-farm_2".to_string(),
+        },
+        vec![],
+        |result| {
+            assert!(result.unwrap().events.iter().any(|event| {
+                event
+                    .attributes
+                    .iter()
+                    .any(|attr| attr.key == "reason" && !attr.value.is_empty())
+            }));
+        },
+    );
+
+    suite.query_farms(
+        Some(FarmsBy::Identifier("m-farm_2".to_string())),
+        None,
+        None,
+        |result| {
+            let err = result.unwrap_err();
+            assert!(err.to_string().contains("Farm doesn't exist"));
+        },
+    );
+
+    suite.query_farms(None, None, None, |result| {
+        let farms_response = result.unwrap();
+        assert_eq!(farms_response.farms.len(), 1);
+        assert_eq!(farms_response.farms[0].identifier, "m-farm_1");
+    });
+}
+
 #[test]
 fn verify_ownership() {
     let mut suite = TestingSuite::default_with_balances(vec![]);

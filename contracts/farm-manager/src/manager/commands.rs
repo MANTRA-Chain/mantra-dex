@@ -1,8 +1,9 @@
 use cosmwasm_std::{
     ensure, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
-    Storage, Uint128, Uint64,
+    Storage, SubMsg, Uint128, Uint64,
 };
 
+use crate::contract::CLOSE_FARMS_ERR_REPLY_CODE;
 use mantra_dex_std::farm_manager::MIN_FARM_AMOUNT;
 use mantra_dex_std::farm_manager::{Curve, Farm, FarmParams};
 
@@ -67,10 +68,11 @@ fn create_farm(
         .partition(|farm| is_farm_expired(farm, deps.as_ref(), &env, &config).unwrap_or(false));
 
     let mut messages: Vec<CosmosMsg> = vec![];
+    let mut submessages: Vec<SubMsg> = vec![];
 
     // close expired farms if there are any
     if !expired_farms.is_empty() {
-        messages.append(&mut close_farms(deps.storage, expired_farms)?);
+        submessages.append(&mut close_farms(deps.storage, expired_farms)?);
     }
 
     // check if more farms can be created for this particular LP asset
@@ -152,6 +154,7 @@ fn create_farm(
 
     Ok(Response::default()
         .add_messages(messages)
+        .add_submessages(submessages)
         .add_attributes(vec![
             ("action", "create_farm".to_string()),
             ("farm_creator", farm.owner.to_string()),
@@ -187,7 +190,7 @@ pub(crate) fn close_farm(
     );
 
     Ok(Response::default()
-        .add_messages(close_farms(deps.storage, vec![farm])?)
+        .add_submessages(close_farms(deps.storage, vec![farm])?)
         .add_attributes(vec![
             ("action", "close_farm".to_string()),
             ("farm_identifier", farm_identifier),
@@ -195,11 +198,10 @@ pub(crate) fn close_farm(
 }
 
 /// Closes a list of farms. Does not validate the sender, do so before calling this function.
-fn close_farms(
-    storage: &mut dyn Storage,
-    farms: Vec<Farm>,
-) -> Result<Vec<CosmosMsg>, ContractError> {
-    let mut messages: Vec<CosmosMsg> = vec![];
+/// Execute the BankMsg using a SubMsg with reply on error, in case a malicious TF token tries
+/// to block token transfers via hooks.
+fn close_farms(storage: &mut dyn Storage, farms: Vec<Farm>) -> Result<Vec<SubMsg>, ContractError> {
+    let mut messages: Vec<SubMsg> = vec![];
 
     for mut farm in farms {
         // remove the farm from the storage
@@ -209,13 +211,13 @@ fn close_farms(
         farm.farm_asset.amount = farm.farm_asset.amount.saturating_sub(farm.claimed_amount);
 
         if farm.farm_asset.amount > Uint128::zero() {
-            messages.push(
-                BankMsg::Send {
+            messages.push(SubMsg::reply_on_error(
+                CosmosMsg::Bank(BankMsg::Send {
                     to_address: farm.owner.into_string(),
                     amount: vec![farm.farm_asset],
-                }
-                .into(),
-            );
+                }),
+                CLOSE_FARMS_ERR_REPLY_CODE,
+            ));
         }
     }
 

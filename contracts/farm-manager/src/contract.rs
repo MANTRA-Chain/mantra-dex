@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    ensure, entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    ensure, entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply,
+    Response, StdError,
 };
 use cw2::set_contract_version;
 
@@ -17,6 +18,8 @@ use crate::{farm, manager, position, queries};
 
 const CONTRACT_NAME: &str = "mantra:farm-manager";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub const CLOSE_FARMS_ERR_REPLY_CODE: u64 = 1u64;
 
 #[entry_point]
 pub fn instantiate(
@@ -86,6 +89,30 @@ pub fn instantiate(
             config.emergency_unlock_penalty.to_string(),
         ),
     ]))
+}
+
+#[entry_point]
+pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        // this would only get triggered if the bank transfer fails, which can happen
+        // if a TF token uses hooks to freeze token transfers
+        CLOSE_FARMS_ERR_REPLY_CODE => {
+            let reason = if msg.result.is_err() {
+                msg.result.unwrap_err()
+            } else {
+                // should never happen, given that this reply is only triggered by a failure
+                // It's done in case is_err would return false not to brick the tx
+                "success".to_string()
+            };
+
+            Ok(Response::default().add_attributes(vec![
+                ("action", "reply".to_string()),
+                ("reply_id", CLOSE_FARMS_ERR_REPLY_CODE.to_string()),
+                ("reason", reason),
+            ]))
+        }
+        _ => Err(StdError::generic_err("reply id not found").into()),
+    }
 }
 
 #[entry_point]
