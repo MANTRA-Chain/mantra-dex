@@ -2176,7 +2176,7 @@ mod router {
             swap_operations.clone(),
             |result| {
                 let result = result.unwrap();
-                assert_approx_eq!(result.offer_amount.u128(), 1000, "0.004");
+                assert_approx_eq!(result.offer_amount.u128(), 1000, "0.006");
             },
         );
 
@@ -3524,6 +3524,114 @@ mod swapping {
                 result.unwrap();
             },
         );
+    }
+
+    #[test]
+    fn compute_offer_amount_floor() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(100_000_000u128 * 10u128.pow(6), "uluna".to_string()),
+                coin(100_000_000u128 * 10u128.pow(6), "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let user = suite.senders[1].clone();
+        let pool_id = "o.uluna.uusd".to_string();
+
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                vec!["uluna".to_string(), "uusd".to_string()],
+                vec![6u8, 6u8],
+                PoolFee {
+                    protocol_fee: Fee {
+                        share: Decimal::percent(0),
+                    },
+                    swap_fee: Fee {
+                        share: Decimal::percent(0),
+                    },
+                    burn_fee: Fee {
+                        share: Decimal::percent(0),
+                    },
+                    extra_fees: vec![],
+                },
+                PoolType::ConstantProduct,
+                Some("uluna.uusd".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                pool_id.clone(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(100_000u128 * 10u128.pow(6)),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(100_000u128 * 10u128.pow(6)),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        // Need uusd amount (amount out)
+        let needed_uusd = Uint128::from(99_900_099u128);
+        let offer_uluna = std::cell::RefCell::new(Uint128::zero());
+
+        suite
+            .query_reverse_simulation(
+                pool_id.clone(),
+                Coin {
+                    denom: "uusd".to_string(),
+                    amount: needed_uusd,
+                },
+                "uluna".to_string(),
+                |result| {
+                    // Computed the amount of uluna (amount in)
+                    *offer_uluna.borrow_mut() = result.unwrap().offer_amount;
+                },
+            )
+            // Swap using the computed amount in
+            .swap(
+                &user,
+                "uusd".to_string(),
+                None,
+                None,
+                None,
+                pool_id.clone(),
+                vec![coin((*offer_uluna.borrow()).into(), "uluna".to_string())],
+                |result| {
+                    for event in result.unwrap().events {
+                        if event.ty == "wasm" {
+                            for attribute in event.attributes {
+                                match attribute.key.as_str() {
+                                    "return_amount" => {
+                                        let return_amount =
+                                            attribute.value.parse::<Uint128>().unwrap();
+                                        assert!(return_amount >= needed_uusd);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                },
+            );
     }
 }
 
@@ -8437,12 +8545,12 @@ mod query_simulations {
                 let response = result.unwrap();
 
                 // this is the value we got in the previous test for the regular simulation
-                assert_eq!(response.offer_amount, Uint128::from(1000u128));
+                assert_approx_eq!(response.offer_amount, Uint128::from(1000u128), "0.001");
                 assert_eq!(
                     response.spreads,
                     vec![
                         coin(1u128, "uusdc".to_string()),
-                        coin(1u128, "uusdt".to_string()),
+                        coin(5u128, "uusdt".to_string()),
                     ]
                 );
                 assert_eq!(
@@ -8515,11 +8623,11 @@ mod query_simulations {
                     }
                 }
 
-                // return amount must be approximately equal to the value returned by the simulation
+                // return amount must be approximately equal (a bit higher) to the value returned by the simulation
                 assert_approx_eq!(
                     desired_output_amount.u128(),
                     return_amount.parse::<u128>().unwrap(),
-                    "0.00000001"
+                    "0.001"
                 );
             },
         );

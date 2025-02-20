@@ -355,11 +355,13 @@ pub fn compute_offer_amount(
     let offer_amount: Uint256 = Uint256::one()
         .multiply_ratio(
             cp,
-            ask_asset_in_pool.checked_sub(
-                Decimal256::from_ratio(ask_amount, Uint256::one())
-                    .checked_mul(inv_one_minus_commission)?
-                    .to_uint_floor(),
-            )?,
+            ask_asset_in_pool
+                .checked_sub(
+                    Decimal256::from_ratio(ask_amount, Uint256::one())
+                        .checked_mul(inv_one_minus_commission)?
+                        .to_uint_floor(),
+                )?
+                .checked_sub(Uint256::one())?,
         )
         .checked_sub(offer_asset_in_pool)?;
 
