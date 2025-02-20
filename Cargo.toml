@@ -15,7 +15,7 @@ authors = [
   "Javier C <javier.m.costa@mantra.finance",
 ]
 documentation = "https://docs.mantrachain.io/mantra-smart-contracts/mantra_dex"
-edition = "2021"
+edition = "2024"
 homepage = "https://mantra.zone"
 license = "MPL-2.0"
 publish = false
