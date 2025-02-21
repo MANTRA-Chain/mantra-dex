@@ -1,5 +1,4 @@
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
-
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
@@ -2237,7 +2236,6 @@ mod swapping {
     use std::cell::RefCell;
 
     use cosmwasm_std::assert_approx_eq;
-
     use mantra_dex_std::pool_manager::PoolType;
 
     use super::*;
@@ -3774,7 +3772,6 @@ mod locking_lp {
     use std::cell::RefCell;
 
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
-
     use mantra_common_testing::multi_test::stargate_mock::StargateMock;
     use mantra_dex_std::farm_manager::{Position, PositionsBy};
     use mantra_dex_std::fee::{Fee, PoolFee};
@@ -4465,6 +4462,27 @@ mod locking_lp {
                     }
                 },
             )
+            // try creating a position in the farm with a single-sided lp
+            .provide_liquidity(
+                &attacker,
+                "o.whale.uluna".to_string(),
+                Some(86_400u64),
+                Some("spam_position".to_string()),
+                None,
+                Some(Decimal::percent(50)),
+                Some(victim.to_string()),
+                vec![Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1_000_000u128),
+                }],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::Unauthorized => {}
+                        _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                    }
+                },
+            )
             // user can only create positions in farm for himself
             .provide_liquidity(
                 &attacker,
@@ -4514,7 +4532,6 @@ mod provide_liquidity {
     use std::cell::RefCell;
 
     use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, StdError, Uint128};
-
     use mantra_common_testing::multi_test::stargate_mock::StargateMock;
     use mantra_dex_std::fee::{Fee, PoolFee};
     use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
@@ -5005,6 +5022,166 @@ mod provide_liquidity {
                     ]
                 );
             });
+    }
+
+    #[test]
+    fn provide_liquidity_with_single_asset_to_third_party() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(10_000_000u128, "uwhale".to_string()),
+                coin(10_000_000u128, "uluna".to_string()),
+                coin(10_000_000u128, "uosmo".to_string()),
+                coin(10_000u128, "uusd".to_string()),
+                coin(10_000u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let other = suite.senders[1].clone();
+        let another = suite.senders[2].clone();
+
+        // Asset denoms with uwhale and uluna
+        let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::percent(1),
+            },
+            swap_fee: Fee {
+                share: Decimal::percent(1),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_denoms,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::ConstantProduct,
+            Some("whale.uluna".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let contract_addr = suite.pool_manager_addr.clone();
+        let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
+
+        // Let's try to add liquidity
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(1_000_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&creator.to_string(), |result| {
+                let balances = result.unwrap();
+
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom && coin.amount == Uint128::from(999_000u128)
+                }));
+            })
+            // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+            });
+
+        // now let's provide liquidity with a single asset
+        suite
+            .provide_liquidity(
+                &other,
+                "o.whale.uluna".to_string(),
+                None,
+                None,
+                None,
+                Some(Decimal::percent(50)),
+                Some(another.to_string()),
+                vec![
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000u128),
+                    },
+                    Coin {
+                        denom: "uwhale".to_string(),
+                        amount: Uint128::from(1_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .query_all_balances(&other.to_string(), |result| {
+                let balances = result.unwrap();
+                //other should not have any LP tokens as it provided for another
+                assert!(!balances.iter().any(|coin| coin.denom == lp_denom));
+            })
+            .query_all_balances(&another.to_string(), |result| {
+                let balances = result.unwrap();
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom && coin.amount == Uint128::from(981u128)
+                }));
+            })
+            .query_all_balances(&contract_addr.to_string(), |result| {
+                let balances = result.unwrap();
+                // check that balances has 999_000 factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP
+                assert!(balances.iter().any(|coin| {
+                    coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
+                }));
+            });
+
+        suite.provide_liquidity(
+            &other,
+            "o.whale.uluna".to_string(),
+            Some(86_400u64),
+            None,
+            None,
+            Some(Decimal::percent(50)),
+            Some(another.to_string()),
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1_000u128),
+                },
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1_000u128),
+                },
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::Unauthorized => {}
+                    _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
+                }
+            },
+        );
     }
 
     #[test]
@@ -6693,7 +6870,6 @@ mod provide_liquidity {
 
 mod multiple_pools {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
-
     use mantra_common_testing::multi_test::stargate_mock::StargateMock;
     use mantra_dex_std::fee::{Fee, PoolFee};
     use mantra_dex_std::pool_manager::{PoolInfo, PoolType};
@@ -7727,12 +7903,14 @@ mod multiple_pools {
 }
 
 mod query_simulations {
-    use crate::tests::suite::TestingSuite;
+    use std::cell::RefCell;
+
     use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
     use mantra_common_testing::multi_test::stargate_mock::StargateMock;
     use mantra_dex_std::fee::{Fee, PoolFee};
     use mantra_dex_std::pool_manager::{PoolType, SwapOperation};
-    use std::cell::RefCell;
+
+    use crate::tests::suite::TestingSuite;
 
     #[test]
     fn simulation_queries_fees_verification() {
