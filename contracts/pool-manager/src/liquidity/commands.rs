@@ -68,11 +68,19 @@ pub fn provide_liquidity(
     let receiver =
         validate_addr_or_default(&deps.as_ref(), receiver, info.sender.clone()).to_string();
 
-    //let receiver = receiver.unwrap_or_else(|| info.sender.to_string());
     // check if the user is providing liquidity with a single asset
     let is_single_asset_provision = deposits.len() == 1usize;
 
     if is_single_asset_provision {
+        // ensure the receiver is the same as the sender if the the intention is to lock the LP tokens
+        // on the farm manager
+        if unlocking_duration.is_some() {
+            ensure!(
+                receiver == info.sender.to_string(),
+                ContractError::Unauthorized
+            );
+        }
+
         ensure!(
             !pool_assets.iter().any(|asset| asset.amount.is_zero()),
             ContractError::EmptyPoolForSingleSideLiquidityProvision
@@ -288,9 +296,12 @@ pub fn provide_liquidity(
 
         // if the unlocking duration is set, lock the LP tokens in the farm manager
         if let Some(unlocking_duration) = unlocking_duration {
-            // check if receiver is the same as the sender of the tx
+            // check if receiver is the same as the sender of the tx.
+            // In case the liquidity was provided via the single-side liquidity provision, the receiver
+            // will be the contract address. In that case, when providing the single-side liquidity,
+            // the receiver must be the same as the sender of the tx.
             ensure!(
-                receiver == info.sender.to_string(),
+                receiver == info.sender.to_string() || info.sender == env.contract.address,
                 ContractError::Unauthorized
             );
 
