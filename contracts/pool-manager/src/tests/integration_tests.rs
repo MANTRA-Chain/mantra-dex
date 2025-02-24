@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
@@ -6863,6 +6865,115 @@ mod provide_liquidity {
             ],
             |result| {
                 result.unwrap();
+            },
+        );
+    }
+
+    #[test]
+    fn provide_liquidity_stable_invalid_slippage_check() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000_000u128, "uusd".to_string()),
+                coin(
+                    200_000_000_000_000_000000000000000000000u128,
+                    "uusdc".to_string(),
+                ),
+                coin(
+                    200_000_000_000_000_000000000000000000u128,
+                    "ausdy".to_string(),
+                ),
+                coin(150_000_000_000_000_000000u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let bob = suite.senders[1].clone();
+        // Asset infos with uwhale and uluna
+
+        let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::permille(30),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 10 },
+            Some("whale.uluna".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // set the pool state
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1000000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(1000000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        //user sets 0.01% strict slippage tolerance, should fail
+        let slippage: Decimal = Decimal::bps(1);
+        suite.provide_liquidity(
+            &bob,
+            "o.whale.uluna".to_string(),
+            None,
+            None,
+            Some(slippage),
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1000000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(200000u128),
+                },
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::MaxSlippageAssertion => {}
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::MaxSlippageAssertion"
+                    ),
+                }
             },
         );
     }

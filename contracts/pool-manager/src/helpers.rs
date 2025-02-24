@@ -445,11 +445,9 @@ pub fn assert_slippage_tolerance(
 
                 let pool_ratio = Decimal256::from_ratio(pools_total, total_share);
                 let deposit_ratio = Decimal256::from_ratio(deposits_total, share);
+                let difference = pool_ratio.abs_diff(deposit_ratio);
 
-                // the slippage tolerance for the stableswap can't use a simple ratio for calculating
-                // slippage when adding liquidity. Due to the math behind the stableswap, the amp factor
-                // needs to be in as well, much like when swaps are done
-                if pool_ratio * one_minus_slippage_tolerance > deposit_ratio {
+                if pool_ratio * one_minus_slippage_tolerance > difference {
                     return Err(ContractError::MaxSlippageAssertion);
                 }
             }
