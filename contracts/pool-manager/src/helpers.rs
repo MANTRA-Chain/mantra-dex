@@ -166,12 +166,10 @@ pub fn calculate_stableswap_y(
 /// computes a swap
 #[allow(clippy::too_many_arguments)]
 pub fn compute_swap(
-    n_coins: Uint256,
+    pool_info: &PoolInfo,
     offer_pool: Uint128,
     ask_pool: Uint128,
     offer_amount: Uint128,
-    pool_fees: PoolFee,
-    swap_type: &PoolType,
     offer_precision: u8,
     ask_precision: u8,
 ) -> Result<SwapComputation, ContractError> {
@@ -179,7 +177,7 @@ pub fn compute_swap(
     let ask_pool: Uint256 = ask_pool.into();
     let offer_amount: Uint256 = offer_amount.into();
 
-    match swap_type {
+    match &pool_info.pool_type {
         PoolType::ConstantProduct => {
             // offer => ask
             // ask_amount = (ask_pool * offer_amount / (offer_pool + offer_amount)) - swap_fee - protocol_fee - burn_fee
@@ -195,7 +193,7 @@ pub fn compute_swap(
                 .to_uint_floor())
             .checked_sub(return_amount)?;
 
-            let fees_computation = compute_fees(pool_fees, return_amount)?;
+            let fees_computation = compute_fees(&pool_info.pool_fees, return_amount)?;
 
             Ok(get_swap_computation(
                 return_amount,
@@ -207,6 +205,7 @@ pub fn compute_swap(
             let offer_pool = Decimal256::decimal_with_precision(offer_pool, offer_precision)?;
             let ask_pool = Decimal256::decimal_with_precision(ask_pool, ask_precision)?;
             let offer_amount = Decimal256::decimal_with_precision(offer_amount, offer_precision)?;
+            let n_coins = Uint256::from(pool_info.assets.len() as u128);
 
             let new_pool = calculate_stableswap_y(
                 n_coins,
@@ -228,7 +227,7 @@ pub fn compute_swap(
                 .to_uint256_with_precision(u32::from(ask_precision))?
                 .saturating_sub(return_amount);
 
-            let fees_computation = compute_fees(pool_fees, return_amount)?;
+            let fees_computation = compute_fees(&pool_info.pool_fees, return_amount)?;
 
             Ok(get_swap_computation(
                 return_amount,
@@ -240,7 +239,7 @@ pub fn compute_swap(
 }
 
 /// Computes the pool fees for a given (return) amount
-fn compute_fees(pool_fees: PoolFee, amount: Uint256) -> Result<FeesComputation, ContractError> {
+fn compute_fees(pool_fees: &PoolFee, amount: Uint256) -> Result<FeesComputation, ContractError> {
     let swap_fee_amount: Uint256 = pool_fees.swap_fee.compute(amount)?;
     let protocol_fee_amount: Uint256 = pool_fees.protocol_fee.compute(amount)?;
     let burn_fee_amount: Uint256 = pool_fees.burn_fee.compute(amount)?;
@@ -248,7 +247,7 @@ fn compute_fees(pool_fees: PoolFee, amount: Uint256) -> Result<FeesComputation, 
     let extra_fees_amount: Uint256 = if !pool_fees.extra_fees.is_empty() {
         let mut extra_fees_amount: Uint256 = Uint256::zero();
 
-        for extra_fee in pool_fees.extra_fees {
+        for extra_fee in &pool_fees.extra_fees {
             extra_fees_amount = extra_fees_amount.checked_add(extra_fee.compute(amount)?)?;
         }
 
