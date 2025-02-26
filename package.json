@@ -1,0 +1,21 @@
+{
+  "name": "mantra-dex",
+  "version": "1.0.0",
+  "description": "MANTRA DEX is a decentralized exchange (DEX) protocol that allows for permissionless pool and farm creation. The protocol is built around singleton contracts, which makes it easier to manage and integrate with other protocols.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.33.0",
+    "@cosmjs/encoding": "^0.33.0",
+    "@cosmjs/proto-signing": "^0.33.0",
+    "dotenv": "^16.4.7"
+  }
+}
