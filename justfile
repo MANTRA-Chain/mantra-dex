@@ -79,8 +79,11 @@ store CHAIN='mantra-testnet' CONTRACT='all':
     ./scripts/deployment/deploy_mantra_dex.sh -c {{CHAIN}} -s {{CONTRACT}}
 
 # Deploys a pool on MANTRA Dex on the given CHAIN, default is mantra-testnet.
-deploy-pool CHAIN='mantra-testnet' POOL_FILE='pool.json' AMOUNTS='':
-    ./scripts/deployment/deploy_pool.sh -c {{CHAIN}} -p {{POOL_FILE}} -a {{AMOUNTS}}
+deploy-pool CHAIN='mantra-testnet' POOL_FILE='pool.json' AMOUNT_DENOM_0='0' AMOUNT_DENOM_1='0':
+    @# Ensure package.json exists, install dependencies if needed, then run the script
+    @[ -f package.json ] || npm init -y; \
+    [ -d node_modules ] || npm install @cosmjs/encoding @cosmjs/proto-signing @cosmjs/cosmwasm-stargate dotenv; \
+    node scripts/deployment/deploy_pool.js {{CHAIN}} {{POOL_FILE}} {{AMOUNT_DENOM_0}} {{AMOUNT_DENOM_1}}
 
 # Installs pre-commit git hooks.
 install-git-hooks:

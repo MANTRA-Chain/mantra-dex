@@ -25,3 +25,6 @@ artifacts
 /scripts/testing/output/
 
 tarpaulin-report.html
+
+# in case the deploy_pool.js script is used
+node_modules/
