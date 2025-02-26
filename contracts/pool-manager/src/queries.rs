@@ -58,12 +58,10 @@ pub fn query_simulation(
         get_asset_indexes_in_pool(&pool_info, offer_asset.denom, ask_asset_denom)?;
 
     let swap_computation = helpers::compute_swap(
-        Uint256::from(pool_info.assets.len() as u128),
+        &pool_info,
         offer_asset_in_pool.amount,
         ask_asset_in_pool.amount,
         offer_asset.amount,
-        pool_info.pool_fees,
-        &pool_info.pool_type,
         offer_decimal,
         ask_decimal,
     )?;
