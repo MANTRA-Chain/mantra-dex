@@ -59,8 +59,8 @@ pub fn query_simulation(
 
     let swap_computation = helpers::compute_swap(
         &pool_info,
-        offer_asset_in_pool.amount,
-        ask_asset_in_pool.amount,
+        offer_asset_in_pool,
+        ask_asset_in_pool,
         offer_asset.amount,
         offer_decimal,
         ask_decimal,
@@ -84,20 +84,25 @@ pub fn query_reverse_simulation(
     offer_asset_denom: String,
     pool_identifier: String,
 ) -> Result<ReverseSimulationResponse, ContractError> {
+    println!("*****");
+    println!("query_reverse_simulation");
+    println!("ask_asset: {:?}", ask_asset);
+    println!("offer_asset_denom: {:?}", offer_asset_denom);
+    println!("pool_identifier: {:?}", pool_identifier);
+    println!("*****");
+
     let pool_info = get_pool_by_identifier(&deps, &pool_identifier)?;
 
-    let (offer_asset_in_pool, ask_asset_in_pool, _, _, offer_decimal, ask_decimal) =
+    let (offer_asset_pool, ask_asset_pool, _, _, offer_decimal, ask_decimal) =
         get_asset_indexes_in_pool(&pool_info, offer_asset_denom, ask_asset.denom)?;
 
-    let pool_fees = pool_info.pool_fees;
-
-    match pool_info.pool_type {
+    match &pool_info.pool_type {
         PoolType::ConstantProduct => {
             let offer_amount_computation = helpers::compute_offer_amount(
-                offer_asset_in_pool.amount,
-                ask_asset_in_pool.amount,
+                offer_asset_pool.amount,
+                ask_asset_pool.amount,
                 ask_asset.amount,
-                pool_fees,
+                pool_info.pool_fees,
             )?;
 
             Ok(ReverseSimulationResponse {
@@ -111,19 +116,18 @@ pub fn query_reverse_simulation(
         }
         PoolType::StableSwap { amp } => {
             let offer_pool =
-                Decimal256::decimal_with_precision(offer_asset_in_pool.amount, offer_decimal)?;
-            let ask_pool =
-                Decimal256::decimal_with_precision(ask_asset_in_pool.amount, ask_decimal)?;
+                Decimal256::decimal_with_precision(offer_asset_pool.amount, offer_decimal)?;
+            let ask_pool = Decimal256::decimal_with_precision(ask_asset_pool.amount, ask_decimal)?;
 
             let mut extra_fees = Decimal256::zero();
-            for extra_fee in pool_fees.extra_fees.iter() {
+            for extra_fee in pool_info.pool_fees.extra_fees.iter() {
                 extra_fees = extra_fees.checked_add(extra_fee.to_decimal_256())?;
             }
 
             let before_fees = (Decimal256::one()
-                .checked_sub(pool_fees.protocol_fee.to_decimal_256())?
-                .checked_sub(pool_fees.swap_fee.to_decimal_256())?
-                .checked_sub(pool_fees.burn_fee.to_decimal_256())?)
+                .checked_sub(pool_info.pool_fees.protocol_fee.to_decimal_256())?
+                .checked_sub(pool_info.pool_fees.swap_fee.to_decimal_256())?
+                .checked_sub(pool_info.pool_fees.burn_fee.to_decimal_256())?)
             .checked_sub(extra_fees)?
             .inv()
             .unwrap_or_else(Decimal256::one)
@@ -135,10 +139,16 @@ pub fn query_reverse_simulation(
             let before_fees_offer = before_fees.to_uint256_with_precision(offer_decimal.into())?;
             let before_fees_ask = before_fees.to_uint256_with_precision(ask_decimal.into())?;
 
-            let max_precision = offer_decimal.max(ask_decimal);
+            let max_precision = pool_info
+                .asset_decimals
+                .iter()
+                .max()
+                .unwrap_or(&offer_decimal.max(ask_decimal))
+                .to_owned();
 
             let new_offer_pool_amount = calculate_stableswap_y(
-                Uint256::from(pool_info.assets.len() as u128),
+                &pool_info,
+                (offer_asset_pool.denom, ask_asset_pool.denom),
                 offer_pool,
                 ask_pool,
                 before_fees,
@@ -162,12 +172,12 @@ pub fn query_reverse_simulation(
                 ))?,
             };
             let spread_amount = offer_amount.saturating_sub(before_fees_offer);
-            let swap_fee_amount = pool_fees.swap_fee.compute(before_fees_ask)?;
-            let protocol_fee_amount = pool_fees.protocol_fee.compute(before_fees_ask)?;
-            let burn_fee_amount = pool_fees.burn_fee.compute(before_fees_ask)?;
+            let swap_fee_amount = pool_info.pool_fees.swap_fee.compute(before_fees_ask)?;
+            let protocol_fee_amount = pool_info.pool_fees.protocol_fee.compute(before_fees_ask)?;
+            let burn_fee_amount = pool_info.pool_fees.burn_fee.compute(before_fees_ask)?;
 
             let mut extra_fees_amount: Uint256 = Uint256::zero();
-            for extra_fee in pool_fees.extra_fees.iter() {
+            for extra_fee in pool_info.pool_fees.extra_fees.iter() {
                 extra_fees_amount =
                     extra_fees_amount.checked_add(extra_fee.compute(before_fees_ask)?)?;
             }
