@@ -61,8 +61,8 @@ pub fn perform_swap(
     // compute the swap
     let swap_computation = helpers::compute_swap(
         &pool_info,
-        offer_asset_in_pool.amount,
-        ask_asset_in_pool.amount,
+        offer_asset_in_pool,
+        ask_asset_in_pool.clone(),
         offer_asset.amount,
         offer_decimal,
         ask_decimal,
