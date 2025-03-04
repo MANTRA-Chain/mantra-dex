@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
@@ -1333,7 +1331,7 @@ mod router {
             swap_operations,
             None,
             None,
-            None,
+            Some(Decimal::percent(2)),
             vec![coin(1000u128, "uwhale".to_string())],
             |result| {
                 result.unwrap();
@@ -2018,7 +2016,7 @@ mod router {
             swap_operations,
             Some(Uint128::new(975)),
             None,
-            None,
+            Some(Decimal::percent(2)),
             vec![coin(1000u128, "uwhale".to_string())],
             |result| {
                 assert_eq!(
@@ -2893,7 +2891,7 @@ mod swapping {
                 &carol,
                 "uom".to_string(),
                 None,
-                Some(Decimal::percent(3)),
+                Some(Decimal::percent(5)),
                 None,
                 "p.1".to_string(),
                 vec![coin(
@@ -3108,7 +3106,7 @@ mod swapping {
                 &carol,
                 "ausdy".to_string(),
                 None,
-                Some(Decimal::percent(5)),
+                Some(Decimal::percent(6)),
                 None,
                 "p.1".to_string(),
                 vec![coin(10_000_000_000_000_000000u128, "uusdc".to_string())],
@@ -7070,11 +7068,11 @@ mod multiple_pools {
     fn provide_liquidity_to_multiple_pools_check_fees() {
         let mut suite = TestingSuite::default_with_balances(
             vec![
-                coin(1_000_000_000u128, "uwhale".to_string()),
-                coin(1_000_000_000u128, "uluna".to_string()),
-                coin(1_000_000_000u128, "uosmo".to_string()),
-                coin(1_000_000_000u128, "uusd".to_string()),
-                coin(1_000_000_000u128, "uom".to_string()),
+                coin(1_000_000_000_000u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_000u128, "uosmo".to_string()),
+                coin(1_000_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000_000u128, "uom".to_string()),
             ],
             StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
@@ -7297,7 +7295,7 @@ mod multiple_pools {
                 &creator,
                 "uluna".to_string(),
                 None,
-                None,
+                Some(Decimal::percent(20)),
                 None,
                 "o.whale.uluna.pool.1".to_string(),
                 vec![coin(1000u128, "uwhale".to_string())],
@@ -7341,7 +7339,7 @@ mod multiple_pools {
                 &creator,
                 "uwhale".to_string(),
                 None,
-                None,
+                Some(Decimal::percent(21)),
                 None,
                 "o.whale.uluna.pool.1".to_string(),
                 vec![coin(2_000u128, "uluna".to_string())],
@@ -7387,7 +7385,7 @@ mod multiple_pools {
                 &creator,
                 "uluna".to_string(),
                 None,
-                None,
+                Some(Decimal::percent(21)),
                 None,
                 "o.whale.uluna.pool.2".to_string(),
                 vec![coin(1000u128, "uwhale".to_string())],
@@ -7424,7 +7422,7 @@ mod multiple_pools {
                 &creator,
                 "uwhale".to_string(),
                 None,
-                None,
+                Some(Decimal::percent(21)),
                 None,
                 "o.whale.uluna.pool.2".to_string(),
                 vec![coin(2_000u128, "uluna".to_string())],
@@ -7471,7 +7469,7 @@ mod multiple_pools {
                 &creator,
                 "uusd".to_string(),
                 None,
-                None,
+                Some(Decimal::percent(21)),
                 None,
                 "o.uluna.uusd.pool.1".to_string(),
                 vec![coin(3000u128, "uluna".to_string())],
@@ -7513,7 +7511,7 @@ mod multiple_pools {
                 &creator,
                 "uluna".to_string(),
                 None,
-                None,
+                Some(Decimal::percent(21)),
                 None,
                 "o.uluna.uusd.pool.1".to_string(),
                 vec![coin(1_500u128, "uusd".to_string())],
@@ -7621,7 +7619,7 @@ mod multiple_pools {
             swap_operations,
             None,
             None,
-            None,
+            Some(Decimal::percent(21)),
             vec![coin(5_000u128, "uwhale".to_string())],
             |result| {
                 result.unwrap();
@@ -8169,7 +8167,7 @@ mod query_simulations {
             &creator,
             "uluna".to_string(),
             None,
-            None,
+            Some(Decimal::percent(10)),
             None,
             "o.whale.uluna".to_string(),
             vec![coin(1000u128, "uwhale".to_string())],
@@ -8207,7 +8205,7 @@ mod query_simulations {
             |result| {
                 let response = result.as_ref().unwrap();
 
-                assert_eq!(response.spread_amount, Uint128::zero());
+                assert_eq!(response.spread_amount, Uint128::new(100u128));
 
                 // the protocol fee is 1% of the output amount
                 assert_approx_eq!(response.protocol_fee_amount, Uint128::new(10u128), "0.1");
@@ -8229,7 +8227,7 @@ mod query_simulations {
             &creator,
             "uusdc".to_string(),
             None,
-            None,
+            Some(Decimal::percent(10)),
             None,
             "o.uusd.uusdc".to_string(),
             vec![coin(1000u128, "uusd".to_string())],
@@ -8260,11 +8258,11 @@ mod query_simulations {
     fn reverse_simulation_queries_fees_verification() {
         let mut suite = TestingSuite::default_with_balances(
             vec![
-                coin(1_000_000_001u128, "uwhale".to_string()),
-                coin(1_000_000_000u128, "uluna".to_string()),
-                coin(1_000_000_001u128, "uusd".to_string()),
-                coin(1_000_000_001u128, "uusdc".to_string()),
-                coin(1_000_000_001u128, "uom".to_string()),
+                coin(1_000_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_000_001u128, "uusdc".to_string()),
+                coin(1_000_000_000_001u128, "uom".to_string()),
             ],
             StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
@@ -8333,11 +8331,11 @@ mod query_simulations {
                 vec![
                     Coin {
                         denom: "uwhale".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1000000000u128),
                     },
                     Coin {
                         denom: "uluna".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1000000000u128),
                     },
                 ],
                 |result| {
@@ -8355,11 +8353,11 @@ mod query_simulations {
                 vec![
                     Coin {
                         denom: "uusdc".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1000000000u128),
                     },
                     Coin {
                         denom: "uusd".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1000000000u128),
                     },
                 ],
                 |result| {
@@ -8377,6 +8375,7 @@ mod query_simulations {
             },
             "uluna".to_string(),
             |result| {
+                println!(">>>> {:?}", result);
                 let response = result.as_ref().unwrap();
 
                 // the fees should be the same as the previous test, as we requested
@@ -8399,7 +8398,7 @@ mod query_simulations {
             &creator,
             "uwhale".to_string(),
             None,
-            None,
+            Some(Decimal::percent(11)),
             None,
             "o.whale.uluna".to_string(),
             vec![coin(
@@ -8441,6 +8440,7 @@ mod query_simulations {
             },
             "uusdc".to_string(),
             |result| {
+                println!(">>>> {:?}", result);
                 let response = result.as_ref().unwrap();
 
                 // the fees should be the same as the previous test, as we requested
@@ -8463,7 +8463,7 @@ mod query_simulations {
             &creator,
             "uusd".to_string(),
             None,
-            None,
+            Some(Decimal::percent(10)),
             None,
             "o.uusd.uusdc".to_string(),
             vec![coin(
@@ -8500,10 +8500,10 @@ mod query_simulations {
     fn simulate_swap_operations_query_verification() {
         let mut suite = TestingSuite::default_with_balances(
             vec![
-                coin(1_000_000_001u128, "uom".to_string()),
-                coin(1_000_000_000u128, "uusdt".to_string()),
-                coin(1_000_000_001u128, "uusd".to_string()),
-                coin(1_000_000_001u128, "uusdc".to_string()),
+                coin(1_000_000_000_001u128, "uom".to_string()),
+                coin(1_000_000_000_000u128, "uusdt".to_string()),
+                coin(1_000_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_000_001u128, "uusdc".to_string()),
             ],
             StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
@@ -8572,11 +8572,11 @@ mod query_simulations {
                 vec![
                     Coin {
                         denom: "uom".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1_000_000_000u128),
                     },
                     Coin {
                         denom: "uusdt".to_string(),
-                        amount: Uint128::from(4000000u128),
+                        amount: Uint128::from(4_000_000_000u128),
                     },
                 ],
                 |result| {
@@ -8594,11 +8594,11 @@ mod query_simulations {
                 vec![
                     Coin {
                         denom: "uusdt".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1_000_000_000u128),
                     },
                     Coin {
                         denom: "uusdc".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1_000_000_000u128),
                     },
                 ],
                 |result| {
@@ -8622,10 +8622,17 @@ mod query_simulations {
                 },
             ],
             |result| {
+                println!("{:?}", result);
                 let response = result.unwrap();
 
-                assert_eq!(response.return_amount, Uint128::from(3240u128));
-                assert_eq!(response.spreads, vec![coin(4u128, "uusdt".to_string()),]);
+                assert_eq!(response.return_amount, Uint128::from(3243u128));
+                assert_eq!(
+                    response.spreads,
+                    vec![
+                        coin(360u128, "uusdc".to_string()),
+                        coin(397u128, "uusdt".to_string())
+                    ]
+                );
                 assert_eq!(
                     response.swap_fees,
                     vec![
@@ -8678,7 +8685,7 @@ mod query_simulations {
             ],
             None,
             None,
-            None,
+            Some(Decimal::percent(10)),
             vec![coin(1000u128, "uom".to_string())],
             |result| {
                 println!("{:?}", result);
@@ -8708,10 +8715,10 @@ mod query_simulations {
     fn reverse_simulate_swap_operations_query_verification() {
         let mut suite = TestingSuite::default_with_balances(
             vec![
-                coin(1_000_000_001u128, "uom".to_string()),
-                coin(1_000_000_000u128, "uusdt".to_string()),
-                coin(1_000_000_001u128, "uusd".to_string()),
-                coin(1_000_000_001u128, "uusdc".to_string()),
+                coin(1_000_000_000_001u128, "uom".to_string()),
+                coin(1_000_000_000_000u128, "uusdt".to_string()),
+                coin(1_000_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_000_001u128, "uusdc".to_string()),
             ],
             StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
         );
@@ -8780,11 +8787,11 @@ mod query_simulations {
                 vec![
                     Coin {
                         denom: "uom".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1000000000u128),
                     },
                     Coin {
                         denom: "uusdt".to_string(),
-                        amount: Uint128::from(4000000u128),
+                        amount: Uint128::from(4000000000u128),
                     },
                 ],
                 |result| {
@@ -8802,11 +8809,11 @@ mod query_simulations {
                 vec![
                     Coin {
                         denom: "uusdt".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1000000000u128),
                     },
                     Coin {
                         denom: "uusdc".to_string(),
-                        amount: Uint128::from(1000000u128),
+                        amount: Uint128::from(1000000000u128),
                     },
                 ],
                 |result| {
@@ -8839,7 +8846,7 @@ mod query_simulations {
                     response.spreads,
                     vec![
                         coin(1u128, "uusdc".to_string()),
-                        coin(5u128, "uusdt".to_string()),
+                        coin(1u128, "uusdt".to_string()),
                     ]
                 );
                 assert_eq!(
@@ -8894,7 +8901,7 @@ mod query_simulations {
             ],
             None,
             None,
-            None,
+            Some(Decimal::percent(10)),
             vec![coin(
                 simulated_input_amount.borrow().u128(),
                 "uom".to_string(),
