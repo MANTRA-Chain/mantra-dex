@@ -266,6 +266,12 @@ fn get_swap_computation(
         .checked_sub(fees_computation.burn_fee_amount)?
         .checked_sub(fees_computation.extra_fees_amount)?;
 
+    let spread_amount = spread_amount
+        .checked_add(fees_computation.swap_fee_amount)?
+        .checked_add(fees_computation.protocol_fee_amount)?
+        .checked_add(fees_computation.burn_fee_amount)?
+        .checked_add(fees_computation.extra_fees_amount)?;
+
     Ok(SwapComputation {
         return_amount: return_amount
             .try_into()
