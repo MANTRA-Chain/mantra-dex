@@ -60,12 +60,10 @@ pub fn perform_swap(
 
     // compute the swap
     let swap_computation = helpers::compute_swap(
-        Uint256::from(pool_info.assets.len() as u128),
-        offer_asset_in_pool.amount,
-        ask_asset_in_pool.amount,
+        &pool_info,
+        offer_asset_in_pool,
+        ask_asset_in_pool.clone(),
         offer_asset.amount,
-        pool_info.pool_fees.clone(),
-        &pool_info.pool_type,
         offer_decimal,
         ask_decimal,
     )?;
