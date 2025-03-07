@@ -237,6 +237,18 @@ fn expand_farm(
 
     let config = CONFIG.load(deps.storage)?;
 
+    let current_epoch = mantra_dex_std::epoch_manager::get_current_epoch(
+        deps.as_ref(),
+        config.epoch_manager_addr.clone().into_string(),
+    )?;
+
+    // ensure the current epoch is at least the preliminary_end_epoch - 1
+    // to prevent edge case of users losing rewards if they entered at the wrong time
+    ensure!(
+        current_epoch.id < farm.preliminary_end_epoch,
+        ContractError::FarmAlreadyExpired
+    );
+
     // check if the farm has already expired, can't be expanded
     ensure!(
         !is_farm_expired(&farm, deps.as_ref(), &env, &config)?,
