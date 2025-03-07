@@ -161,6 +161,35 @@ impl TestingSuite {
         self
     }
 
+    #[track_caller]
+    pub(crate) fn instantiate_long_epoch_buffer(&mut self) -> &mut Self {
+        self.create_epoch_manager();
+        self.create_fee_collector();
+
+        // April 4th 2024 15:00:00 UTC
+        let timestamp = Timestamp::from_seconds(1_712_242_800u64);
+        self.set_time(timestamp);
+
+        // instantiates the farm manager contract
+        self.instantiate(
+            self.fee_collector_addr.to_string(),
+            self.epoch_manager_addr.to_string(),
+            self.pool_manager_addr.to_string(),
+            Coin {
+                denom: "uom".to_string(),
+                amount: Uint128::new(1_000u128),
+            },
+            2,
+            40,
+            86_400,
+            31_556_926u64,
+            MONTH_IN_SECONDS,
+            Decimal::percent(10), //10% penalty
+        );
+
+        self
+    }
+
     #[allow(clippy::inconsistent_digit_grouping)]
     fn create_epoch_manager(&mut self) {
         let epoch_manager_contract = self.app.store_code(epoch_manager_contract());
