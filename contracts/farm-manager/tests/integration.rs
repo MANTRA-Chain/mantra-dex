@@ -2339,7 +2339,7 @@ pub fn test_manage_position() {
             },
         )
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(250));
+            assert_eq!(balance, Uint128::new(500));
         });
 
     // trying to open a position with an invalid lp which has not been created by the pool manager
@@ -4387,7 +4387,7 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
 }
 
 #[test]
-fn emergency_withdrawal_shares_penalty_with_farm_owners() {
+fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
@@ -4484,6 +4484,7 @@ fn emergency_withdrawal_shares_penalty_with_farm_owners() {
                 );
             },
         )
+        .add_one_epoch()
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
@@ -5009,7 +5010,7 @@ fn test_multiple_farms_and_positions() {
             &fee_collector_addr,
             |balance| {
                 // 10% of the lp the user input initially
-                assert_eq!(balance, Uint128::new(4_000));
+                assert_eq!(balance, Uint128::new(8_000));
             },
         );
 
