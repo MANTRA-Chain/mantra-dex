@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 use mantra_dex_std::farm_manager::Position;
 
-use crate::helpers::{validate_identifier, validate_lp_denom};
+use crate::helpers::{is_farm_expired, validate_identifier, validate_lp_denom};
 use crate::position::helpers::{
     calculate_weight, create_penalty_share_msg, get_latest_address_weight, reconcile_user_state,
     validate_no_pending_rewards, AUTO_POSITION_ID_PREFIX, EXPLICIT_POSITION_ID_PREFIX,
@@ -339,14 +339,27 @@ pub(crate) fn withdraw_position(
         let mut penalty_fee_fee_collector =
             total_penalty_fee.saturating_sub(owner_penalty_fee_comission);
 
-        let fee_collector_addr = CONFIG.load(deps.storage)?.fee_collector_addr;
+        let config = CONFIG.load(deps.storage)?;
+        let fee_collector_addr = &config.fee_collector_addr;
+
+        let current_epoch = mantra_dex_std::epoch_manager::get_current_epoch(
+            deps.as_ref(),
+            config.epoch_manager_addr.to_string(),
+        )?;
 
         let farms = get_farms_by_lp_denom(
             deps.storage,
             &position.lp_asset.denom,
             None,
             Some(MAX_FARMS_LIMIT),
-        )?;
+        )?
+        .into_iter()
+        // filter out farms that are not active, i.e. have not started yet or have expired
+        .filter(|farm| {
+            farm.start_epoch <= current_epoch.id
+                && !is_farm_expired(farm, deps.as_ref(), &env, &config).unwrap_or(false)
+        })
+        .collect::<Vec<_>>();
 
         // get unique farm owners for this lp denom
         let unique_farm_owners: Vec<Addr> = farms
@@ -391,7 +404,7 @@ pub(crate) fn withdraw_position(
             messages.push(create_penalty_share_msg(
                 position.lp_asset.denom.to_string(),
                 penalty_fee_fee_collector,
-                &fee_collector_addr,
+                fee_collector_addr,
             ));
         }
 

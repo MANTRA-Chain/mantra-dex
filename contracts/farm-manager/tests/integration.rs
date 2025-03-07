@@ -3807,7 +3807,11 @@ fn test_emergency_withdrawal() {
                     }
                 );
             },
-        )
+        );
+
+    suite.add_one_epoch();
+
+    suite
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_999_000));
         })
@@ -3832,6 +3836,275 @@ fn test_emergency_withdrawal() {
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::new(50));
+        });
+}
+
+/// creates 4 farms:
+/// Farm-1 and Farm-2 for LP.1: epoch 1 to 2 and 35 to 36
+/// Farm-3 and Farm-4 for LP.2: epoch 1 to 2 and 35 to 36
+/// Positions are closed and emergency withdrawal penalty distributed only to active farms
+#[test]
+fn test_emergency_withdrawal_penalty_only_to_active_farms() {
+    let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom_1.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator_1 = suite.senders[0].clone();
+    let creator_2 = suite.senders[1].clone();
+    let other = suite.senders[2].clone();
+
+    suite.instantiate_long_epoch_buffer();
+
+    let fee_collector = suite.fee_collector_addr.clone();
+
+    suite
+        .manage_farm(
+            &creator_1,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: Some(2),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm-1".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator_2,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_1.clone(),
+                    start_epoch: Some(35),
+                    preliminary_end_epoch: Some(36),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm-2".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator_1,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: Some(2),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm-3".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator_2,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: Some(35),
+                    preliminary_end_epoch: Some(36),
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm-4".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Create {
+                identifier: Some("position-1".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_1.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Create {
+                identifier: Some("position-2".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_positions(
+            Some(PositionsBy::Receiver(other.to_string())),
+            Some(true),
+            None,
+            None,
+            |result| {
+                let positions = result.unwrap();
+                assert_eq!(positions.positions.len(), 2);
+                assert_eq!(
+                    positions.positions,
+                    vec![
+                        Position {
+                            identifier: "u-position-1".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: other.clone(),
+                        },
+                        Position {
+                            identifier: "u-position-2".to_string(),
+                            lp_asset: Coin {
+                                denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}")
+                                    .to_string(),
+                                amount: Uint128::new(1_000),
+                            },
+                            unlocking_duration: 86400,
+                            open: true,
+                            expiring_at: None,
+                            receiver: other.clone(),
+                        }
+                    ]
+                );
+            },
+        );
+
+    suite.add_one_epoch().query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 1);
+    });
+
+    suite
+        .query_balance(lp_denom_1.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_000));
+        })
+        .query_balance(lp_denom_1.clone().to_string(), &creator_1, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance(lp_denom_1.clone().to_string(), &creator_2, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance(lp_denom_1.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &other,
+            PositionAction::Withdraw {
+                identifier: "u-position-1".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_1.clone().to_string(), &other, |balance| {
+            //emergency unlock penalty is 10% of the position amount, so the user gets 1000 - 100 = 900
+            assert_eq!(balance, Uint128::new(999_999_900));
+        })
+        .query_balance(lp_denom_1.clone().to_string(), &fee_collector, |balance| {
+            //50% of the penalty goes to the fee collector
+            assert_eq!(balance, Uint128::new(50));
+        })
+        .query_balance(lp_denom_1.clone().to_string(), &creator_1, |balance| {
+            //50% of the penalty goes to the active farm creator
+            assert_eq!(balance, Uint128::new(1_000_000_050u128));
+        })
+        .query_balance(lp_denom_1.clone().to_string(), &creator_2, |balance| {
+            // creator_2 didn't get anything of the penalty since its farm starts in the future
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        });
+
+    for _ in 0..33 {
+        suite.add_one_epoch();
+    }
+
+    suite.query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 34);
+    });
+
+    // at this time no farm is active. Farm-3 expired on epoch 32, and farm-4 has not started
+    // withdrawing now won't give any penalty fees to the farm creators as they are inactive
+    suite
+        .query_balance(lp_denom_2.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_000));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &creator_1, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &creator_2, |balance| {
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .manage_position(
+            &other,
+            PositionAction::Withdraw {
+                identifier: "u-position-2".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom_2.clone().to_string(), &other, |balance| {
+            //emergency unlock penalty is 10% of the position amount, so the user gets 1000 - 100 = 900
+            assert_eq!(balance, Uint128::new(999_999_900));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &fee_collector, |balance| {
+            //100% of the penalty goes to the fee collector
+            assert_eq!(balance, Uint128::new(100));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &creator_1, |balance| {
+            // creator_2 didn't get anything of the penalty since its farm ended in the past
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &creator_2, |balance| {
+            // creator_2 didn't get anything of the penalty since its farm starts in the future
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
         });
 }
 
