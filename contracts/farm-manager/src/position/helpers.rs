@@ -253,3 +253,141 @@ fn clear_lp_weight_history(
 
     Ok(())
 }
+
+/// Gets the percentage of the remaining duration for a position.
+fn get_position_remaining_duration(
+    position: &Position,
+    current_time: u64,
+) -> Result<Decimal, ContractError> {
+    let remaining_duration = match position.expiring_at {
+        Some(expiring_at) => expiring_at.saturating_sub(current_time),
+        None => position.unlocking_duration,
+    };
+
+    ensure!(
+        position.unlocking_duration > 0,
+        ContractError::InvalidUnlockingDuration {
+            min: 1,
+            max: 31556926,
+            specified: position.unlocking_duration
+        }
+    );
+    Ok(Decimal::from_ratio(
+        remaining_duration,
+        position.unlocking_duration,
+    ))
+}
+
+/// The maximum penalty cap that can be applied to a position with doing an emergency withdraw.
+const MAX_PENALTY_CAP: Decimal = Decimal::percent(90);
+/// Calculates the emergency penalty for a position.
+pub(crate) fn calculate_emergency_penalty(
+    position: &Position,
+    base_emergency_penalty: Decimal,
+    current_time: u64,
+) -> Result<Decimal, ContractError> {
+    let position_remaining_duration = get_position_remaining_duration(position, current_time)?;
+    let position_weight = Decimal::new(calculate_weight(
+        &position.lp_asset,
+        position.unlocking_duration,
+    )?);
+    let position_multiplier =
+        position_weight.checked_div(Decimal::new(position.lp_asset.amount))?;
+    let emergency_penalty = base_emergency_penalty
+        .checked_mul(position_remaining_duration)?
+        .checked_mul(position_multiplier)?;
+
+    Ok(emergency_penalty.min(MAX_PENALTY_CAP))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+    use std::str::FromStr;
+
+    // Helper to create a default Positino
+    fn default_position(unlocking_duration: u64, expiring_at: Option<u64>) -> Position {
+        Position {
+            identifier: "1".to_string(),
+            lp_asset: Coin {
+                denom: "uwhale".to_string(),
+                amount: Uint128::new(1000),
+            },
+            unlocking_duration,
+            open: true,
+            expiring_at,
+            receiver: Addr::unchecked("user"),
+        }
+    }
+
+    // Test 1: Unlocking halfway through a 1-year lockup
+    #[test]
+    fn test_emergency_penalty_halfway() {
+        let position = default_position(31556926, Some(31556926)); //locking for a year
+        let base_penalty = Decimal::percent(2);
+        let current_time = 15778463; // ~6 months
+
+        let penalty = calculate_emergency_penalty(&position, base_penalty, current_time).unwrap();
+
+        // Expected: 0.02 * 0.5 * 16 ≈ 0.16 (16%)
+        let expected = Decimal::from_str("0.16").unwrap();
+
+        assert!(penalty.abs_diff(expected) < Decimal::from_str("0.0001").unwrap());
+    }
+
+    // Test 2: Unlocking right after locking
+    #[test]
+    fn test_emergency_penalty_immediately() {
+        let position = default_position(31556926, Some(31556926)); //locking for a year
+        let base_penalty = Decimal::percent(2); // 2%
+        let current_time = 1; // 1 second after start
+
+        let penalty = calculate_emergency_penalty(&position, base_penalty, current_time).unwrap();
+
+        // Expected: 0.02 * ~1 * 16 ≈ 0.32 (32%)
+        let expected = Decimal::from_str("0.32").unwrap();
+        assert!(penalty.abs_diff(expected) < Decimal::from_str("0.0001").unwrap());
+    }
+
+    // Test 3: Unlocking near the end (1 day before)
+    #[test]
+    fn test_emergency_penalty_near_end() {
+        let position = default_position(31556926, Some(31556926)); // 1 year, start at time 0
+        let base_penalty = Decimal::percent(2); // 2%
+        let current_time = 31556926 - 86400; // 1 day before end
+
+        let penalty = calculate_emergency_penalty(&position, base_penalty, current_time).unwrap();
+
+        // Expected: 0.02 * (86400 / 31556926) * 16 ≈ 0.000876 (0.0876%)
+        let expected = Decimal::from_ratio(86400u64 * 16 * 2, 31556926u64 * 100);
+        assert!(penalty.abs_diff(expected) < Decimal::from_str("0.0001").unwrap());
+    }
+
+    // Test 4: Minimum lockup duration (1 day), halfway
+    #[test]
+    fn test_emergency_penalty_min_lockup() {
+        let position = default_position(86400, Some(86400));
+        let base_penalty = Decimal::percent(2); // 2%
+        let current_time = 43200; // Halfway (12 hours)
+
+        let penalty = calculate_emergency_penalty(&position, base_penalty, current_time).unwrap();
+
+        // Expected: 0.02 * 0.5 * 1 = 0.01 (1%)
+        let expected = Decimal::from_str("0.01").unwrap();
+        assert!(penalty.abs_diff(expected) < Decimal::from_str("0.0001").unwrap());
+    }
+
+    // Test 5: Unlocking exactly at the end
+    #[test]
+    fn test_emergency_penalty_at_end() {
+        let position = default_position(31556926, Some(31556926)); // 1 year, start at time 0
+        let base_penalty = Decimal::percent(2); // 2%
+        let current_time = 31556926; // Exactly at end
+
+        let penalty = calculate_emergency_penalty(&position, base_penalty, current_time).unwrap();
+
+        // Expected: 0 (remaining_duration = 0)
+        assert_eq!(penalty, Decimal::zero());
+    }
+}
