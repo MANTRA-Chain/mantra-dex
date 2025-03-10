@@ -7,6 +7,7 @@ use std::collections::HashSet;
 use mantra_dex_std::farm_manager::Position;
 
 use crate::helpers::{validate_identifier, validate_lp_denom};
+use crate::position::helpers;
 use crate::position::helpers::{
     calculate_weight, create_penalty_share_msg, get_latest_address_weight, reconcile_user_state,
     validate_no_pending_rewards, AUTO_POSITION_ID_PREFIX, EXPLICIT_POSITION_ID_PREFIX,
@@ -319,10 +320,13 @@ pub(crate) fn withdraw_position(
     // emergency_unlock is requested
     if emergency_unlock.is_some() && emergency_unlock.unwrap() && !position.is_expired(current_time)
     {
-        let emergency_unlock_penalty = CONFIG.load(deps.storage)?.emergency_unlock_penalty;
+        let base_emergency_penalty = CONFIG.load(deps.storage)?.emergency_unlock_penalty;
+
+        let emergency_penalty =
+            helpers::calculate_emergency_penalty(&position, base_emergency_penalty, current_time)?;
 
         let total_penalty_fee = Decimal::from_ratio(position.lp_asset.amount, Uint128::one())
-            .checked_mul(emergency_unlock_penalty)?
+            .checked_mul(emergency_penalty)?
             .to_uint_floor();
 
         // sanity check
