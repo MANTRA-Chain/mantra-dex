@@ -2194,7 +2194,7 @@ mod router {
 
                     assert_eq!(
                         err,
-                        ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                        ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                     );
                 },
             )
@@ -2346,9 +2346,10 @@ mod swapping {
             },
             "uluna".to_string(),
             |result| {
-                // Ensure that the return amount is 1_000 minus spread
+                // Ensure that the return amount is 1_000 minus slippage
                 assert_eq!(
-                    result.as_ref().unwrap().return_amount + result.as_ref().unwrap().spread_amount,
+                    result.as_ref().unwrap().return_amount
+                        + result.as_ref().unwrap().slippage_amount,
                     Uint128::from(1000u128)
                 );
                 *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
@@ -2705,7 +2706,7 @@ mod swapping {
             },
         );
 
-        // Now Let's try a swap, max spread is set to 1%
+        // Now Let's try a swap, max slippage is set to 1%
         // With 1000 of each token and a swap of 10 WHALE
         // We should expect a return of 9900792 of ULUNA
         // Applying Fees on the swap:
@@ -2713,11 +2714,11 @@ mod swapping {
         //    - Swap Fee: 0.002% on uLUNA -> 198.
         // Total Fees: 297 uLUNA
 
-        // Spread Amount: 99,010 uLUNA.
+        // Slippage Amount: 99,010 uLUNA.
         // Swap Fee Amount: 198 uLUNA.
         // Protocol Fee Amount: 99 uLUNA.
         // Burn Fee Amount: 0 uLUNA (as expected since burn fee is set to 0%).
-        // Total -> 9,900,693 (Returned Amount) + 99,010 (Spread)(0.009x%) + 198 (Swap Fee) + 99 (Protocol Fee) = 10,000,000 uLUNA
+        // Total -> 9,900,693 (Returned Amount) + 99,010 (Slippage)(0.009x%) + 198 (Swap Fee) + 99 (Protocol Fee) = 10,000,000 uLUNA
         suite.swap(
             &creator,
             "uluna".to_string(),
@@ -4745,7 +4746,7 @@ mod provide_liquidity {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                     assert_eq!(
                         err,
-                        ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                        ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                     );
                 },
             )
@@ -5279,7 +5280,7 @@ mod provide_liquidity {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                     assert_eq!(
                         err,
-                        ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                        ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                     );
                 },
             )
@@ -5299,7 +5300,7 @@ mod provide_liquidity {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                     assert_eq!(
                         err,
-                        ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                        ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                     );
                 },
             )
@@ -7645,7 +7646,7 @@ mod multiple_pools {
 
                 // the swap above was:
                 // SwapComputation { return_amount: Uint128(3988),
-                // spread_amount: Uint128(25), swap_fee_amount: Uint128(747),
+                // slippage_amount: Uint128(25), swap_fee_amount: Uint128(747),
                 // protocol_fee_amount: Uint128(0), burn_fee_amount: Uint128(249) }
 
                 assert_eq!(pool_info, PoolInfo {
@@ -7663,7 +7664,7 @@ mod multiple_pools {
 
             // the swap above was:
             // SwapComputation { return_amount: Uint128(3169),
-            // spread_amount: Uint128(16), swap_fee_amount: Uint128(277),
+            // slippage_amount: Uint128(16), swap_fee_amount: Uint128(277),
             // protocol_fee_amount: Uint128(396), burn_fee_amount: Uint128(118) }
 
             assert_eq!(pool_info, PoolInfo {
@@ -8205,7 +8206,7 @@ mod query_simulations {
             |result| {
                 let response = result.as_ref().unwrap();
 
-                assert_eq!(response.spread_amount, Uint128::new(100u128));
+                assert_eq!(response.slippage_amount, Uint128::new(100u128));
 
                 // the protocol fee is 1% of the output amount
                 assert_approx_eq!(response.protocol_fee_amount, Uint128::new(10u128), "0.1");
@@ -8627,7 +8628,7 @@ mod query_simulations {
 
                 assert_eq!(response.return_amount, Uint128::from(3243u128));
                 assert_eq!(
-                    response.spreads,
+                    response.slippage_amounts,
                     vec![
                         coin(360u128, "uusdc".to_string()),
                         coin(397u128, "uusdt".to_string())
@@ -8843,7 +8844,7 @@ mod query_simulations {
                 // this is the value we got in the previous test for the regular simulation
                 assert_approx_eq!(response.offer_amount, Uint128::from(1000u128), "0.001");
                 assert_eq!(
-                    response.spreads,
+                    response.slippage_amounts,
                     vec![
                         coin(1u128, "uusdc".to_string()),
                         coin(1u128, "uusdt".to_string()),

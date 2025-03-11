@@ -70,7 +70,7 @@ pub fn query_simulation(
 
     Ok(SimulationResponse {
         return_amount: swap_computation.return_amount,
-        slippage_amount: swap_computation.spread_amount,
+        slippage_amount: swap_computation.slippage_amount,
         swap_fee_amount: swap_computation.swap_fee_amount,
         protocol_fee_amount: swap_computation.protocol_fee_amount,
         burn_fee_amount: swap_computation.burn_fee_amount,
@@ -104,7 +104,7 @@ pub fn query_reverse_simulation(
 
             Ok(ReverseSimulationResponse {
                 offer_amount: offer_amount_computation.offer_amount,
-                slippage_amount: offer_amount_computation.spread_amount,
+                slippage_amount: offer_amount_computation.slippage_amount,
                 swap_fee_amount: offer_amount_computation.swap_fee_amount,
                 protocol_fee_amount: offer_amount_computation.protocol_fee_amount,
                 burn_fee_amount: offer_amount_computation.burn_fee_amount,
@@ -165,7 +165,8 @@ pub fn query_reverse_simulation(
                 ))?,
             };
 
-            let spread_amount = offer_amount.saturating_sub(Uint128::try_from(before_fees_offer)?);
+            let slippage_amount =
+                offer_amount.saturating_sub(Uint128::try_from(before_fees_offer)?);
             let swap_fee_amount = pool_fees.swap_fee.compute(before_fees_ask)?;
             let protocol_fee_amount = pool_fees.protocol_fee.compute(before_fees_ask)?;
             let burn_fee_amount = pool_fees.burn_fee.compute(before_fees_ask)?;
@@ -178,7 +179,7 @@ pub fn query_reverse_simulation(
 
             Ok(ReverseSimulationResponse {
                 offer_amount,
-                slippage_amount: spread_amount,
+                slippage_amount,
                 swap_fee_amount: swap_fee_amount.try_into()?,
                 protocol_fee_amount: protocol_fee_amount.try_into()?,
                 burn_fee_amount: burn_fee_amount.try_into()?,
@@ -245,7 +246,7 @@ pub fn simulate_swap_operations(
     ensure!(operations_len > 0, ContractError::NoSwapOperationsProvided);
 
     let mut amount = offer_amount;
-    let mut spreads: Vec<Coin> = vec![];
+    let mut slippage_amounts: Vec<Coin> = vec![];
     let mut swap_fees: Vec<Coin> = vec![];
     let mut protocol_fees: Vec<Coin> = vec![];
     let mut burn_fees: Vec<Coin> = vec![];
@@ -267,7 +268,7 @@ pub fn simulate_swap_operations(
                 amount = res.return_amount;
 
                 if res.slippage_amount > Uint128::zero() {
-                    spreads.push(coin(res.slippage_amount.u128(), &token_out_denom));
+                    slippage_amounts.push(coin(res.slippage_amount.u128(), &token_out_denom));
                 }
                 if res.swap_fee_amount > Uint128::zero() {
                     swap_fees.push(coin(res.swap_fee_amount.u128(), &token_out_denom));
@@ -285,7 +286,7 @@ pub fn simulate_swap_operations(
         }
     }
 
-    spreads = aggregate_coins(spreads)?;
+    slippage_amounts = aggregate_coins(slippage_amounts)?;
     swap_fees = aggregate_coins(swap_fees)?;
     protocol_fees = aggregate_coins(protocol_fees)?;
     burn_fees = aggregate_coins(burn_fees)?;
@@ -293,7 +294,7 @@ pub fn simulate_swap_operations(
 
     Ok(SimulateSwapOperationsResponse {
         return_amount: amount,
-        slippage_amounts: spreads,
+        slippage_amounts,
         swap_fees,
         protocol_fees,
         burn_fees,
@@ -314,7 +315,7 @@ pub fn reverse_simulate_swap_operations(
     }
 
     let mut offer_in_needed = ask_amount;
-    let mut spreads: Vec<Coin> = vec![];
+    let mut slippage_amounts: Vec<Coin> = vec![];
     let mut swap_fees: Vec<Coin> = vec![];
     let mut protocol_fees: Vec<Coin> = vec![];
     let mut burn_fees: Vec<Coin> = vec![];
@@ -335,7 +336,7 @@ pub fn reverse_simulate_swap_operations(
                 )?;
 
                 if res.slippage_amount > Uint128::zero() {
-                    spreads.push(coin(res.slippage_amount.u128(), &token_out_denom));
+                    slippage_amounts.push(coin(res.slippage_amount.u128(), &token_out_denom));
                 }
                 if res.swap_fee_amount > Uint128::zero() {
                     swap_fees.push(coin(res.swap_fee_amount.u128(), &token_out_denom));
@@ -355,7 +356,7 @@ pub fn reverse_simulate_swap_operations(
         }
     }
 
-    spreads = aggregate_coins(spreads)?;
+    slippage_amounts = aggregate_coins(slippage_amounts)?;
     swap_fees = aggregate_coins(swap_fees)?;
     protocol_fees = aggregate_coins(protocol_fees)?;
     burn_fees = aggregate_coins(burn_fees)?;
@@ -363,7 +364,7 @@ pub fn reverse_simulate_swap_operations(
 
     Ok(ReverseSimulateSwapOperationsResponse {
         offer_amount: offer_in_needed,
-        slippage_amounts: spreads,
+        slippage_amounts,
         swap_fees,
         protocol_fees,
         burn_fees,

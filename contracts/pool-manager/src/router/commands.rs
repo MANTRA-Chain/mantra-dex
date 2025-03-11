@@ -37,7 +37,7 @@ pub fn execute_swap_operations(
     operations: Vec<SwapOperation>,
     minimum_receive: Option<Uint128>,
     receiver: Option<String>,
-    max_spread: Option<Decimal>,
+    max_slippage: Option<Decimal>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     // check if the swap feature is enabled
@@ -94,7 +94,7 @@ pub fn execute_swap_operations(
                     token_out_denom,
                     pool_identifier,
                     None,
-                    max_spread,
+                    max_slippage,
                 )?;
                 swap_attributes.push((
                     "swap",

@@ -75,8 +75,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             Ok(Response::default().add_message(wasm_execute(
                 env.contract.address.into_string(),
                 &ExecuteMsg::ProvideLiquidity {
-                    slippage_tolerance: liquidity_provision_data.slippage_tolerance,
-                    max_slippage: liquidity_provision_data.max_spread,
+                    slippage_tolerance: liquidity_provision_data.liquidity_max_slippage,
+                    max_slippage: liquidity_provision_data.swap_max_slippage,
                     receiver: Some(receiver),
                     pool_identifier: liquidity_provision_data.pool_identifier,
                     unlocking_duration: liquidity_provision_data.unlocking_duration,
