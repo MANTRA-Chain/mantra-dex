@@ -4234,11 +4234,11 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
             assert_eq!(balance, Uint128::new(999_999_950));
         })
         .query_balance(lp_denom.clone().to_string(), &creator, |balance| {
-            // The creator of the farm gets a cut
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+            // Since the farm is not active, the creator of the farm does not gets a cut
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(25));
+            assert_eq!(balance, Uint128::new(50));
         });
 
     suite
@@ -4269,11 +4269,11 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
             assert_eq!(balance, Uint128::new(999_999_100));
         })
         .query_balance(lp_denom_2.clone().to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(450));
+            assert_eq!(balance, Uint128::new(900));
         })
         .query_balance(lp_denom_2.clone().to_string(), &creator, |balance| {
-            // The creator of the farm gets a cut
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 450));
+            // The creator of the farm does not gets a cut since the farm is not active
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
         });
 }
 
