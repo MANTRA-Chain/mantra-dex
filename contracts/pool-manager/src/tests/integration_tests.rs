@@ -3631,6 +3631,458 @@ mod swapping {
                 },
             );
     }
+
+    #[test]
+    fn stableswap_3pool_swap_6_decimals() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let _other = suite.senders[1].clone();
+        let _unauthorized = suite.senders[2].clone();
+
+        let asset_infos = vec![
+            "uwhale".to_string(),
+            "uluna".to_string(),
+            "uusd".to_string(),
+        ];
+
+        // All fees are 0%, for simplicity
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a stableswap pool with amp = 100
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("whale.uluna.uusd".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // Let's try to add liquidity
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna.uusd".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(100_000_000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(300_000_000u128),
+                },
+                Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::from(200_000_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let simulated_return_amount = RefCell::new(Uint128::zero());
+        suite.query_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uwhale".to_string(),
+                amount: Uint128::from(50_000_000u128),
+            },
+            "uluna".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
+            },
+        );
+
+        // as computed
+        let expected_return: Uint128 = Uint128::new(50_526_517);
+
+        // the returned amount is less 10 times than the expected return
+        assert_approx_eq!(
+            simulated_return_amount.clone().take(),
+            expected_return,
+            "0.01"
+        );
+
+        suite.query_reverse_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uluna".to_string(),
+                amount: simulated_return_amount.borrow().clone(),
+            },
+            "uwhale".to_string(),
+            |result| {
+                println!("result reverse query::: {:?}", result);
+
+                assert_approx_eq!(
+                    result.unwrap().offer_amount,
+                    Uint128::new(50_000_000u128),
+                    "0.00001"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn stableswap_3pool_swap_6_decimals_11() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let _other = suite.senders[1].clone();
+        let _unauthorized = suite.senders[2].clone();
+
+        let asset_infos = vec![
+            "uwhale".to_string(),
+            "uluna".to_string(),
+            "uusd".to_string(),
+        ];
+
+        // All fees are 0%, for simplicity
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a stableswap pool with amp = 100
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("whale.uluna.uusd".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // Let's try to add liquidity
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna.uusd".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(100_000_000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(200_000_000u128),
+                },
+                Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::from(150_000_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let simulated_return_amount = RefCell::new(Uint128::zero());
+        suite.query_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uwhale".to_string(),
+                amount: Uint128::from(10_000_000u128),
+            },
+            "uluna".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
+            },
+        );
+
+        // as computed
+        let expected_return: Uint128 = Uint128::new(10071937);
+
+        // the returned amount is less 10 times than the expected return
+        assert_approx_eq!(
+            simulated_return_amount.clone().take(),
+            expected_return,
+            "0.01"
+        );
+
+        suite.query_reverse_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uluna".to_string(),
+                amount: simulated_return_amount.borrow().clone(),
+            },
+            "uwhale".to_string(),
+            |result| {
+                assert_approx_eq!(
+                    result.unwrap().offer_amount,
+                    Uint128::new(10_000_000u128),
+                    "0.00001"
+                );
+            },
+        );
+
+        suite.query_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uwhale".to_string(),
+                amount: Uint128::from(50_000_000u128),
+            },
+            "uusd".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
+            },
+        );
+
+        // as computed
+        let expected_return: Uint128 = Uint128::new(50_000_000u128);
+
+        // the returned amount is less 10 times than the expected return
+        assert_approx_eq!(
+            simulated_return_amount.clone().take(),
+            expected_return,
+            "0.011"
+        );
+
+        suite.query_reverse_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uusd".to_string(),
+                amount: simulated_return_amount.borrow().clone(),
+            },
+            "uwhale".to_string(),
+            |result| {
+                assert_approx_eq!(
+                    result.unwrap().offer_amount,
+                    Uint128::new(50_000_000u128),
+                    "0.00001"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn stableswap_3pool_swap_different_decimals() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_000_000_000_000_000u128, "uusd".to_string()),
+                coin(1_000_000_000_000_000_000u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let _other = suite.senders[1].clone();
+        let _unauthorized = suite.senders[2].clone();
+
+        let asset_infos = vec![
+            "uwhale".to_string(),
+            "uluna".to_string(),
+            "uusd".to_string(),
+        ];
+
+        // All fees are 0%, for simplicity
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a stableswap pool with amp = 100
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8, 18u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("whale.uluna.uusd".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // Let's try to add liquidity
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna.uusd".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(100_000_000u128), // 100
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(100_000_000u128), // 100
+                },
+                Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::from(100_000_000_000_000_000_000u128), // 100
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let simulated_return_amount = RefCell::new(Uint128::zero());
+        suite.query_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uwhale".to_string(),
+                amount: Uint128::from(20_000_000u128),
+            },
+            "uusd".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
+            },
+        );
+
+        let expected_return: Uint128 = Uint128::new(19_955_338_000_000_000_000);
+
+        assert_approx_eq!(
+            simulated_return_amount.clone().take(),
+            expected_return,
+            "0.0002"
+        );
+
+        suite.query_reverse_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uusd".to_string(),
+                amount: simulated_return_amount.borrow().clone(),
+            },
+            "uwhale".to_string(),
+            |result| {
+                assert_approx_eq!(
+                    result.unwrap().offer_amount,
+                    Uint128::new(20_000_000u128),
+                    "0.00001"
+                );
+            },
+        );
+
+        println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        suite.query_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uwhale".to_string(),
+                amount: Uint128::from(20_000_000u128),
+            },
+            "uluna".to_string(),
+            |result| {
+                *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
+            },
+        );
+
+        let expected_return: Uint128 = Uint128::new(19_955_338);
+
+        assert_approx_eq!(
+            simulated_return_amount.clone().take(),
+            expected_return,
+            "0.0001"
+        );
+
+        suite.query_reverse_simulation(
+            "o.whale.uluna.uusd".to_string(),
+            Coin {
+                denom: "uluna".to_string(),
+                amount: simulated_return_amount.borrow().clone(),
+            },
+            "uwhale".to_string(),
+            |result| {
+                assert_approx_eq!(
+                    result.unwrap().offer_amount,
+                    Uint128::new(20_000_000u128),
+                    "0.00001"
+                );
+            },
+        );
+
+        // suite.swap(
+        //     &creator,
+        //     "uluna".to_string(),
+        //     None,
+        //     None,
+        //     None,
+        //     "o.whale.uluna.uusd".to_string(),
+        //     vec![coin(20_000_000u128, "uwhale".to_string())],
+        //     |result| {
+        //         result.unwrap();
+        //     },
+        // );
+        //
+        // suite.query_pools(None, None, None, |result| {
+        //     let response = result.unwrap();
+        //     assert_eq!(response.pools.len(), 1);
+        //     assert_eq!(
+        //         response.pools[0].pool_info.assets,
+        //         vec![
+        //             coin(120000000, "uwhale"),
+        //             coin(100000000 - simulated_return_amount.take().u128(), "uluna"),
+        //             coin(100000000, "uusd"),
+        //         ]
+        //     );
+        // });
+    }
 }
 
 mod ownership {
