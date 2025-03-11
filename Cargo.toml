@@ -45,12 +45,9 @@ test-case               = { version = "3.3.1" }
 thiserror               = { version = "1.0.43" }
 uint                    = { version = "0.10.0" }
 
-# mantra-common-testing = { version = "1.1.3" }
-# mantra-dex-std        = { version = "2.1.4" }
-# mantra-utils          = { version = "1.0.0" }
-mantra-common-testing = { path = "../mantrachain-rust/packages/mantra-common-testing" }
-mantra-dex-std = { path = "../mantrachain-rust/packages/mantra-dex-std" }
-mantra-utils = { path = "../mantrachain-rust/packages/mantra-utils" }
+mantra-common-testing = { version = "1.1.3" }
+mantra-dex-std        = { version = "3.0.0" }
+mantra-utils          = { version = "1.0.0" }
 
 # contracts
 epoch-manager = { path = "contracts/epoch-manager" }
