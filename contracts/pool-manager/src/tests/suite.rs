@@ -334,7 +334,7 @@ impl TestingSuite {
         unlocking_duration: Option<u64>,
         lock_position_identifier: Option<String>,
         slippage_tolerance: Option<Decimal>,
-        max_spread: Option<Decimal>,
+        max_slippage: Option<Decimal>,
         receiver: Option<String>,
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
@@ -342,7 +342,7 @@ impl TestingSuite {
         let msg = mantra_dex_std::pool_manager::ExecuteMsg::ProvideLiquidity {
             pool_identifier,
             slippage_tolerance,
-            max_spread,
+            max_slippage,
             receiver,
             unlocking_duration,
             lock_position_identifier,
@@ -365,7 +365,7 @@ impl TestingSuite {
         sender: &Addr,
         ask_asset_denom: String,
         belief_price: Option<Decimal>,
-        max_spread: Option<Decimal>,
+        max_slippage: Option<Decimal>,
         receiver: Option<String>,
         pool_identifier: String,
         funds: Vec<Coin>,
@@ -374,7 +374,7 @@ impl TestingSuite {
         let msg = mantra_dex_std::pool_manager::ExecuteMsg::Swap {
             ask_asset_denom,
             belief_price,
-            max_spread,
+            max_slippage,
             receiver,
             pool_identifier,
         };
@@ -397,7 +397,7 @@ impl TestingSuite {
         operations: Vec<SwapOperation>,
         minimum_receive: Option<Uint128>,
         receiver: Option<String>,
-        max_spread: Option<Decimal>,
+        max_slippage: Option<Decimal>,
         funds: Vec<Coin>,
         result: impl Fn(Result<AppResponse, anyhow::Error>),
     ) -> &mut Self {
@@ -405,7 +405,7 @@ impl TestingSuite {
             operations,
             minimum_receive,
             receiver,
-            max_spread,
+            max_slippage,
         };
 
         result(self.app.execute_contract(

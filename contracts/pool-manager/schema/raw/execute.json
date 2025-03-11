@@ -83,8 +83,8 @@
                 "null"
               ]
             },
-            "max_spread": {
-              "description": "The maximum allowable spread between the bid and ask prices for the pool. When provided, if the spread exceeds this value, the liquidity provision will not be executed.",
+            "max_slippage": {
+              "description": "The maximum allowable slippage between the bid and ask prices for the pool. When provided, if the slippage exceeds this value, the liquidity provision will not be executed.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"
@@ -160,8 +160,8 @@
                 }
               ]
             },
-            "max_spread": {
-              "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
+            "max_slippage": {
+              "description": "The maximum slippage to incur when performing the swap. If the slippage exceeds this value, the swap will not be executed. Max 50%.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"
@@ -223,8 +223,8 @@
             "operations"
           ],
           "properties": {
-            "max_spread": {
-              "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
+            "max_slippage": {
+              "description": "The maximum slippage to incur when performing the swap. If the slippage exceeds this value, the swap will not be executed. Max 50%.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"

@@ -138,8 +138,8 @@
                   "null"
                 ]
               },
-              "max_spread": {
-                "description": "The maximum allowable spread between the bid and ask prices for the pool. When provided, if the spread exceeds this value, the liquidity provision will not be executed.",
+              "max_slippage": {
+                "description": "The maximum allowable slippage between the bid and ask prices for the pool. When provided, if the slippage exceeds this value, the liquidity provision will not be executed.",
                 "anyOf": [
                   {
                     "$ref": "#/definitions/Decimal"
@@ -215,8 +215,8 @@
                   }
                 ]
               },
-              "max_spread": {
-                "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
+              "max_slippage": {
+                "description": "The maximum slippage to incur when performing the swap. If the slippage exceeds this value, the swap will not be executed. Max 50%.",
                 "anyOf": [
                   {
                     "$ref": "#/definitions/Decimal"
@@ -278,8 +278,8 @@
               "operations"
             ],
             "properties": {
-              "max_spread": {
-                "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
+              "max_slippage": {
+                "description": "The maximum slippage to incur when performing the swap. If the slippage exceeds this value, the swap will not be executed. Max 50%.",
                 "anyOf": [
                   {
                     "$ref": "#/definitions/Decimal"
@@ -1461,7 +1461,7 @@
         "extra_fees",
         "offer_amount",
         "protocol_fees",
-        "spreads",
+        "slippage_amounts",
         "swap_fees"
       ],
       "properties": {
@@ -1494,8 +1494,8 @@
             "$ref": "#/definitions/Coin"
           }
         },
-        "spreads": {
-          "description": "The spreads of the swap.",
+        "slippage_amounts": {
+          "description": "The slippage amounts of the swap.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
@@ -1543,7 +1543,7 @@
         "extra_fees_amount",
         "offer_amount",
         "protocol_fee_amount",
-        "spread_amount",
+        "slippage_amount",
         "swap_fee_amount"
       ],
       "properties": {
@@ -1579,8 +1579,8 @@
             }
           ]
         },
-        "spread_amount": {
-          "description": "The spread amount of the swap.",
+        "slippage_amount": {
+          "description": "The slippage amount of the swap.",
           "allOf": [
             {
               "$ref": "#/definitions/Uint128"
@@ -1614,7 +1614,7 @@
         "extra_fees",
         "protocol_fees",
         "return_amount",
-        "spreads",
+        "slippage_amounts",
         "swap_fees"
       ],
       "properties": {
@@ -1647,8 +1647,8 @@
             }
           ]
         },
-        "spreads": {
-          "description": "The spreads of the swap.",
+        "slippage_amounts": {
+          "description": "The slippage amounts of the swap.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
@@ -1696,7 +1696,7 @@
         "extra_fees_amount",
         "protocol_fee_amount",
         "return_amount",
-        "spread_amount",
+        "slippage_amount",
         "swap_fee_amount"
       ],
       "properties": {
@@ -1732,8 +1732,8 @@
             }
           ]
         },
-        "spread_amount": {
-          "description": "The spread amount of the swap.",
+        "slippage_amount": {
+          "description": "The slippage amount of the swap.",
           "allOf": [
             {
               "$ref": "#/definitions/Uint128"

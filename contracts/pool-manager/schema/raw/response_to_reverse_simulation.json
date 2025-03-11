@@ -8,7 +8,7 @@
     "extra_fees_amount",
     "offer_amount",
     "protocol_fee_amount",
-    "spread_amount",
+    "slippage_amount",
     "swap_fee_amount"
   ],
   "properties": {
@@ -44,8 +44,8 @@
         }
       ]
     },
-    "spread_amount": {
-      "description": "The spread amount of the swap.",
+    "slippage_amount": {
+      "description": "The slippage amount of the swap.",
       "allOf": [
         {
           "$ref": "#/definitions/Uint128"

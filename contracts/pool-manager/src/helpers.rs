@@ -176,10 +176,10 @@ pub fn compute_swap(
                 Decimal256::from_ratio(ask_pool.mul(offer_amount), offer_pool + offer_amount)
                     .to_uint_floor();
 
-            // calculate spread, swap and protocol fees
+            // calculate slippage, swap and protocol fees
             let exchange_rate = Decimal256::checked_from_ratio(ask_pool, offer_pool)
                 .map_err(|_| ContractError::PoolHasNoAssets)?;
-            let spread_amount: Uint256 = (Decimal256::from_ratio(offer_amount, Uint256::one())
+            let slippage_amount: Uint256 = (Decimal256::from_ratio(offer_amount, Uint256::one())
                 .checked_mul(exchange_rate)?
                 .to_uint_floor())
             .checked_sub(return_amount)?;
@@ -188,7 +188,7 @@ pub fn compute_swap(
 
             Ok(get_swap_computation(
                 return_amount,
-                spread_amount,
+                slippage_amount,
                 fees_computation,
             )?)
         }
@@ -211,9 +211,9 @@ pub fn compute_swap(
                 .to_uint256_with_precision(u32::from(ask_precision))?
                 .checked_sub(Uint256::from_uint128(new_pool))?;
 
-            // the spread is the loss from 1:1 conversion
+            // the slippage is the loss from 1:1 conversion
             // thus is it the offer_amount - return_amount
-            let spread_amount = offer_amount
+            let slippage_amount = offer_amount
                 .to_uint256_with_precision(u32::from(ask_precision))?
                 .saturating_sub(return_amount);
 
@@ -221,7 +221,7 @@ pub fn compute_swap(
 
             Ok(get_swap_computation(
                 return_amount,
-                spread_amount,
+                slippage_amount,
                 fees_computation,
             )?)
         }
@@ -257,7 +257,7 @@ fn compute_fees(pool_fees: PoolFee, amount: Uint256) -> Result<FeesComputation, 
 /// Builds the swap computation struct, subtracting the fees from the return amount.
 fn get_swap_computation(
     return_amount: Uint256,
-    spread_amount: Uint256,
+    slippage_amount: Uint256,
     fees_computation: FeesComputation,
 ) -> Result<SwapComputation, ContractError> {
     let return_amount = return_amount
@@ -266,7 +266,7 @@ fn get_swap_computation(
         .checked_sub(fees_computation.burn_fee_amount)?
         .checked_sub(fees_computation.extra_fees_amount)?;
 
-    let spread_amount = spread_amount
+    let slippage_amount = slippage_amount
         .checked_add(fees_computation.swap_fee_amount)?
         .checked_add(fees_computation.protocol_fee_amount)?
         .checked_add(fees_computation.burn_fee_amount)?
@@ -276,7 +276,7 @@ fn get_swap_computation(
         return_amount: return_amount
             .try_into()
             .map_err(|_| ContractError::SwapOverflowError)?,
-        spread_amount: spread_amount
+        slippage_amount: slippage_amount
             .try_into()
             .map_err(|_| ContractError::SwapOverflowError)?,
         swap_fee_amount: fees_computation
@@ -311,7 +311,7 @@ pub struct FeesComputation {
 #[cw_serde]
 pub struct SwapComputation {
     pub return_amount: Uint128,
-    pub spread_amount: Uint128,
+    pub slippage_amount: Uint128,
     pub swap_fee_amount: Uint128,
     pub protocol_fee_amount: Uint128,
     pub burn_fee_amount: Uint128,
@@ -323,7 +323,7 @@ impl SwapComputation {
     pub fn to_simulation_response(&self) -> SimulationResponse {
         SimulationResponse {
             return_amount: self.return_amount,
-            spread_amount: self.spread_amount,
+            slippage_amount: self.slippage_amount,
             swap_fee_amount: self.swap_fee_amount,
             protocol_fee_amount: self.protocol_fee_amount,
             burn_fee_amount: self.burn_fee_amount,
@@ -374,14 +374,14 @@ pub fn compute_offer_amount(
     let before_commission_deduction: Uint256 = Decimal256::from_ratio(ask_amount, Uint256::one())
         .checked_mul(inv_one_minus_commission)?
         .to_uint_floor();
-    let before_spread_deduction: Uint256 = Decimal256::from_ratio(offer_amount, Uint256::one())
+    let before_slippage_deduction: Uint256 = Decimal256::from_ratio(offer_amount, Uint256::one())
         .checked_mul(Decimal256::from_ratio(
             ask_asset_in_pool,
             offer_asset_in_pool,
         ))?
         .to_uint_floor();
 
-    let spread_amount = before_spread_deduction.saturating_sub(before_commission_deduction);
+    let slippage_amount = before_slippage_deduction.saturating_sub(before_commission_deduction);
 
     let swap_fee_amount: Uint256 = pool_fees.swap_fee.compute(before_commission_deduction)?;
     let protocol_fee_amount: Uint256 = pool_fees
@@ -397,7 +397,7 @@ pub fn compute_offer_amount(
 
     Ok(OfferAmountComputation {
         offer_amount: offer_amount.try_into()?,
-        spread_amount: spread_amount.try_into()?,
+        slippage_amount: slippage_amount.try_into()?,
         swap_fee_amount: swap_fee_amount.try_into()?,
         protocol_fee_amount: protocol_fee_amount.try_into()?,
         burn_fee_amount: burn_fee_amount.try_into()?,
@@ -409,7 +409,7 @@ pub fn compute_offer_amount(
 #[cw_serde]
 pub struct OfferAmountComputation {
     pub offer_amount: Uint128,
-    pub spread_amount: Uint128,
+    pub slippage_amount: Uint128,
     pub swap_fee_amount: Uint128,
     pub protocol_fee_amount: Uint128,
     pub burn_fee_amount: Uint128,
