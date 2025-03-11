@@ -1012,7 +1012,7 @@ fn query_swap_operations() {
 
                 assert_eq!(
                     err,
-                    ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                    ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                 );
             },
         )

@@ -16,7 +16,7 @@ pub fn swap(
     sender: Addr,
     ask_asset_denom: String,
     belief_price: Option<Decimal>,
-    max_spread: Option<Decimal>,
+    max_slippage: Option<Decimal>,
     receiver: Option<String>,
     pool_identifier: String,
 ) -> Result<Response, ContractError> {
@@ -52,7 +52,7 @@ pub fn swap(
         ask_asset_denom,
         &pool_identifier,
         belief_price,
-        max_spread,
+        max_slippage,
     )?;
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -98,7 +98,7 @@ pub fn swap(
         ("ask_denom", swap_result.return_asset.denom),
         ("offer_amount", offer_asset.amount.to_string()),
         ("return_amount", swap_result.return_asset.amount.to_string()),
-        ("spread_amount", swap_result.spread_amount.to_string()),
+        ("slippage_amount", swap_result.slippage_amount.to_string()),
         (
             "swap_fee_amount",
             swap_result.swap_fee_asset.amount.to_string(),

@@ -212,7 +212,7 @@ fn provide_liquidity_with_single_asset() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 assert_eq!(
                     err,
-                    ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                    ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                 );
             },
         )
@@ -746,7 +746,7 @@ fn provide_liquidity_with_single_asset_edge_case() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 assert_eq!(
                     err,
-                    ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                    ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                 );
             },
         )
@@ -766,7 +766,7 @@ fn provide_liquidity_with_single_asset_edge_case() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 assert_eq!(
                     err,
-                    ContractError::Std(StdError::generic_err("Spread limit exceeded"))
+                    ContractError::Std(StdError::generic_err("Slippage limit exceeded"))
                 );
             },
         )

@@ -32,19 +32,22 @@ cw-ownable              = { version = "2.0.0" }
 cw-storage-plus         = { version = "2.0.0" }
 cw-utils                = { version = "2.0.0" }
 cw2                     = { version = "2.0.0" }
-proptest                = { version = "1.5.0" }
-rand                    = { version = "0.8.5" }
-schemars                = { version = "0.8.12" }
-semver                  = { version = "1.0.12" }
-serde                   = { version = "1.0.145", default-features = false, features = ["derive"] }
-serde_json              = { version = "1.0.127" }
-sha2                    = { version = "=0.10.8", default-features = false }
-test-case               = { version = "3.3.1" }
-thiserror               = { version = "1.0.43" }
+hex                     = { version = "0.4.3" }
+# osmosis-std             = { version = "0.26.0" }
+proptest   = { version = "1.5.0" }
+rand       = { version = "0.8.5" }
+schemars   = { version = "0.8.12" }
+semver     = { version = "1.0.12" }
+serde      = { version = "1.0.145", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0.127" }
+sha2       = { version = "=0.10.8", default-features = false }
+test-case  = { version = "3.3.1" }
+thiserror  = { version = "1.0.43" }
+uint       = { version = "0.10.0" }
 
 mantra-common-testing = { version = "1.2.0" }
-mantra-dex-std        = { version = "2.2.0" }
-mantra-utils          = { version = "1.0.0" }
+mantra-dex-std        = { version = "3.0.0" }
+mantra-utils          = { version = "1.1.1" }
 
 # contracts
 epoch-manager = { path = "contracts/epoch-manager" }

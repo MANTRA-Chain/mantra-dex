@@ -117,7 +117,7 @@ fn basic_swapping_test() {
         |result| {
             // Ensure that the return amount is 1_000 minus spread
             assert_eq!(
-                result.as_ref().unwrap().return_amount + result.as_ref().unwrap().spread_amount,
+                result.as_ref().unwrap().return_amount + result.as_ref().unwrap().slippage_amount,
                 Uint128::from(1000u128)
             );
             *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
@@ -2349,7 +2349,7 @@ fn simulation_vs_reverse_simulation_3pool() {
                     .clone_from(&response.return_amount);
                 simulated_spread
                     .borrow_mut()
-                    .clone_from(&response.spread_amount);
+                    .clone_from(&response.slippage_amount);
             },
         );
 
@@ -2368,7 +2368,7 @@ fn simulation_vs_reverse_simulation_3pool() {
                     .clone_from(&response.offer_amount);
                 reverse_simulated_spread
                     .borrow_mut()
-                    .clone_from(&response.spread_amount);
+                    .clone_from(&response.slippage_amount);
             },
         );
 

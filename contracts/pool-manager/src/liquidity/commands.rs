@@ -36,8 +36,8 @@ pub fn provide_liquidity(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    slippage_tolerance: Option<Decimal>,
-    max_spread: Option<Decimal>,
+    liquidity_max_slippage: Option<Decimal>,
+    swap_max_slippage: Option<Decimal>,
     receiver: Option<String>,
     pool_identifier: String,
     unlocking_duration: Option<u64>,
@@ -132,12 +132,12 @@ pub fn provide_liquidity(
             .amount
             .saturating_sub(aggregate_outgoing_fees(&swap_simulation_response)?);
 
-        // sanity check. Theoretically, with the given conditions of min LP, pool fees and max spread assertion,
+        // sanity check. Theoretically, with the given conditions of min LP, pool fees and max slippage assertion,
         // the expected ask asset balance in the contract will always be greater than zero after
         // subtracting the fees.
         ensure!(
             !expected_ask_asset_balance_in_contract.amount.is_zero(),
-            ContractError::MaxSpreadAssertion
+            ContractError::MaxSlippageAssertion
         );
 
         SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER.save(
@@ -152,8 +152,8 @@ pub fn provide_liquidity(
                     ask_asset_denom.clone(),
                 ),
                 liquidity_provision_data: LiquidityProvisionData {
-                    max_spread,
-                    slippage_tolerance,
+                    swap_max_slippage,
+                    liquidity_max_slippage,
                     pool_identifier: pool_identifier.clone(),
                     unlocking_duration,
                     lock_position_identifier,
@@ -168,7 +168,7 @@ pub fn provide_liquidity(
                     &ExecuteMsg::Swap {
                         ask_asset_denom,
                         belief_price: None,
-                        max_spread,
+                        max_slippage: swap_max_slippage,
                         receiver: None,
                         pool_identifier,
                     },
@@ -278,7 +278,7 @@ pub fn provide_liquidity(
 
         // assert slippage tolerance
         helpers::assert_slippage_tolerance(
-            &slippage_tolerance,
+            &liquidity_max_slippage,
             &deposits,
             &mut pool_assets,
             pool.pool_type.clone(),

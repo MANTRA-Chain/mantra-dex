@@ -38,7 +38,7 @@ pub fn execute_swap_operations(
     operations: Vec<SwapOperation>,
     minimum_receive: Option<Uint128>,
     receiver: Option<String>,
-    max_spread: Option<Decimal>,
+    max_slippage: Option<Decimal>,
 ) -> Result<Response, ContractError> {
     // ensure that there was at least one operation
     // and retrieve the output token info
@@ -95,7 +95,7 @@ pub fn execute_swap_operations(
                     token_out_denom,
                     &pool_identifier,
                     None,
-                    max_spread,
+                    max_slippage,
                 )?;
 
                 let pool_reserves: String = swap_result

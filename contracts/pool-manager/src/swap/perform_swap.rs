@@ -27,8 +27,8 @@ pub struct SwapResult {
     pub extra_fees_asset: Coin,
     /// The pool that was traded.
     pub pool_info: PoolInfo,
-    /// The amount of spread that occurred during the swap from the original exchange rate.
-    pub spread_amount: Uint128,
+    /// The amount of slippage that occurred during the swap from the original exchange rate.
+    pub slippage_amount: Uint128,
 }
 
 /// Attempts to perform a swap from `offer_asset` to the relevant opposing
@@ -38,14 +38,14 @@ pub struct SwapResult {
 ///
 /// The resulting [`SwapResult`] has actions that should be taken, as the swap has been performed.
 /// In other words, the caller of the `perform_swap` function _should_ make use
-/// of each field in [`SwapResult`] (besides fields like `spread_amount`).
+/// of each field in [`SwapResult`] (besides fields like `slippage_amount`).
 pub fn perform_swap(
     deps: DepsMut,
     offer_asset: Coin,
     ask_asset_denom: String,
     pool_identifier: &str,
     belief_price: Option<Decimal>,
-    max_spread: Option<Decimal>,
+    max_slippage: Option<Decimal>,
 ) -> Result<SwapResult, ContractError> {
     let mut pool_info = get_pool_by_identifier(&deps.as_ref(), pool_identifier)?;
 
@@ -59,14 +59,14 @@ pub fn perform_swap(
         amount: swap_computation.return_amount,
     };
 
-    // Assert spread and other operations
-    // check max spread limit if exist
-    assert_max_spread(
+    // Assert slippage and other operations
+    // check max slippage limit if exist
+    assert_max_slippage(
         belief_price,
-        max_spread,
+        max_slippage,
         offer_asset.amount,
         return_asset.amount,
-        swap_computation.spread_amount,
+        swap_computation.slippage_amount,
     )?;
 
     // State changes to the pools balances
@@ -113,27 +113,27 @@ pub fn perform_swap(
         protocol_fee_asset,
         pool_info,
         extra_fees_asset,
-        spread_amount: swap_computation.spread_amount,
+        slippage_amount: swap_computation.slippage_amount,
     })
 }
 
-/// Default swap slippage in case max_spread is not specified
+/// Default swap slippage in case max_slippage is not specified
 pub const DEFAULT_SLIPPAGE: &str = "0.01";
-/// Cap on the maximum swap slippage that is allowed. If max_spread goes over this limit, it will
+/// Cap on the maximum swap slippage that is allowed. If max_slippage goes over this limit, it will
 /// be capped to this value.
 pub const MAX_ALLOWED_SLIPPAGE: &str = "0.5";
 
-/// If `belief_price` and `max_spread` both are given,
-/// we compute new spread else we just use pool network
-/// spread to check `max_spread`
-pub fn assert_max_spread(
+/// If `belief_price` and `max_slippage` both are given,
+/// we compute new slippage else we just use pool network
+/// slippage to check `max_slippage`
+pub fn assert_max_slippage(
     belief_price: Option<Decimal>,
-    max_spread: Option<Decimal>,
+    max_slippage: Option<Decimal>,
     offer_amount: Uint128,
     return_amount: Uint128,
-    spread_amount: Uint128,
+    slippage_amount: Uint128,
 ) -> StdResult<()> {
-    let max_spread: Decimal256 = max_spread
+    let max_slippage: Decimal256 = max_slippage
         .unwrap_or(Decimal::from_str(DEFAULT_SLIPPAGE)?)
         .min(Decimal::from_str(MAX_ALLOWED_SLIPPAGE)?)
         .into();
@@ -147,15 +147,17 @@ pub fn assert_max_spread(
                         .ok_or_else(|| StdError::generic_err("Belief price can't be zero"))?,
                 )?
                 .to_uint_floor();
-        let spread_amount = expected_return.saturating_sub(Uint256::from_uint128(return_amount));
+        let slippage_amount = expected_return.saturating_sub(Uint256::from_uint128(return_amount));
 
         if Uint256::from_uint128(return_amount) < expected_return
-            && Decimal256::from_ratio(spread_amount, expected_return) > max_spread
+            && Decimal256::from_ratio(slippage_amount, expected_return) > max_slippage
         {
-            return Err(StdError::generic_err("Spread limit exceeded"));
+            return Err(StdError::generic_err("Slippage limit exceeded"));
         }
-    } else if Decimal256::from_ratio(spread_amount, return_amount + spread_amount) > max_spread {
-        return Err(StdError::generic_err("Spread limit exceeded"));
+    } else if Decimal256::from_ratio(slippage_amount, return_amount + slippage_amount)
+        > max_slippage
+    {
+        return Err(StdError::generic_err("Slippage limit exceeded"));
     }
 
     Ok(())

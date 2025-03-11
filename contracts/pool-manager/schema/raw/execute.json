@@ -76,15 +76,8 @@
             "pool_identifier"
           ],
           "properties": {
-            "lock_position_identifier": {
-              "description": "The identifier of the position to lock the LP tokens in the farm manager, if any.",
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "max_spread": {
-              "description": "The maximum allowable spread between the bid and ask prices for the pool. When provided, if the spread exceeds this value, the liquidity provision will not be executed.",
+            "liquidity_max_slippage": {
+              "description": "A percentage value representing the acceptable slippage for the add liquidity operation. When provided, if the slippage exceeds this value, the liquidity provision will not be executed.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"
@@ -92,6 +85,13 @@
                 {
                   "type": "null"
                 }
+              ]
+            },
+            "lock_position_identifier": {
+              "description": "The identifier of the position to lock the LP tokens in the farm manager, if any.",
+              "type": [
+                "string",
+                "null"
               ]
             },
             "pool_identifier": {
@@ -105,8 +105,8 @@
                 "null"
               ]
             },
-            "slippage_tolerance": {
-              "description": "A percentage value representing the acceptable slippage for the operation. When provided, if the slippage exceeds this value, the liquidity provision will not be executed.",
+            "swap_max_slippage": {
+              "description": "The maximum allowable slippage for the swap before providing liquidity. This is used when providing liquidity with a single asset. When provided, if the slippage exceeds this value, the liquidity provision will not be executed.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"
@@ -160,8 +160,8 @@
                 }
               ]
             },
-            "max_spread": {
-              "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
+            "max_slippage": {
+              "description": "The maximum allowable slippage for the pool. When provided, if the slippage exceeds this value, the swap will not be executed.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"
@@ -223,8 +223,8 @@
             "operations"
           ],
           "properties": {
-            "max_spread": {
-              "description": "The maximum spread to incur when performing the swap. If the spread exceeds this value, the swap will not be executed. Max 50%.",
+            "max_slippage": {
+              "description": "The maximum allowable slippage for the pool. When provided, if the slippage exceeds this value, the swap will not be executed.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"
