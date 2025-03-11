@@ -73,6 +73,14 @@ impl TestingSuite {
         self
     }
 
+    pub(crate) fn add_hours(&mut self, hours: u64) -> &mut Self {
+        let mut block_info = self.app.block_info();
+        block_info.time = block_info.time.plus_hours(hours);
+        self.app.set_block(block_info);
+
+        self
+    }
+
     pub(crate) fn send_tokens(
         &mut self,
         sender: &Addr,

@@ -3836,6 +3836,175 @@ fn test_emergency_withdrawal() {
 }
 
 #[test]
+fn test_emergency_withdrawal_with_proportional_penalty() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+    let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(1_000_000_000u128, lp_denom_2.clone()),
+    ]);
+
+    let creator = suite.senders[0].clone();
+    let other = suite.senders[1].clone();
+
+    suite.instantiate_default();
+
+    let fee_collector = suite.fee_collector_addr.clone();
+
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_farm(
+            &creator,
+            FarmAction::Fill {
+                params: FarmParams {
+                    lp_denom: lp_denom_2.clone(),
+                    start_epoch: None,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: "uusdy".to_string(),
+                        amount: Uint128::new(4_000u128),
+                    },
+                    farm_identifier: Some("farm2".to_string()),
+                },
+            },
+            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Create {
+                identifier: Some("other_position".to_string()),
+                unlocking_duration: 86_400,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom.clone())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .manage_position(
+            &other,
+            PositionAction::Create {
+                identifier: Some("other_position_max".to_string()),
+                unlocking_duration: 31_556_926,
+                receiver: None,
+            },
+            vec![coin(1_000, lp_denom_2.clone())],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    suite.manage_position(
+        &other,
+        PositionAction::Close {
+            identifier: "u-other_position".to_string(),
+            lp_asset: None,
+        },
+        vec![],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // move half of the unlocking period
+    suite
+        .add_hours(12)
+        .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_000));
+        })
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .query_balance(lp_denom.clone().to_string(), &creator, |balance| {
+            // The creator of the farm gets a cut
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        .manage_position(
+            &other,
+            PositionAction::Withdraw {
+                identifier: "u-other_position".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_950));
+        })
+        .query_balance(lp_denom.clone().to_string(), &creator, |balance| {
+            // The creator of the farm gets a cut
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+        })
+        .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(25));
+        });
+
+    suite
+        .query_balance(lp_denom_2.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_000));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::zero());
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &creator, |balance| {
+            // The creator of the farm gets a cut
+            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+        })
+        // withdraw all without closing the position, highest penalty
+        .manage_position(
+            &other,
+            PositionAction::Withdraw {
+                identifier: "u-other_position_max".to_string(),
+                emergency_unlock: Some(true),
+            },
+            vec![],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // penalty would be 0.1 * ~1 * ~16 = 1.6. Since that would exceed the max cap, the penalty would be 90%
+        .query_balance(lp_denom_2.clone().to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(999_999_100));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(450));
+        })
+        .query_balance(lp_denom_2.clone().to_string(), &creator, |balance| {
+            // The creator of the farm gets a cut
+            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 450));
+        });
+}
+
+#[test]
 fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
