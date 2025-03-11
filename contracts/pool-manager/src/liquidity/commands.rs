@@ -169,7 +169,7 @@ pub fn provide_liquidity(
                     &ExecuteMsg::Swap {
                         ask_asset_denom,
                         belief_price: None,
-                        max_spread,
+                        max_slippage: max_spread,
                         receiver: None,
                         pool_identifier,
                     },

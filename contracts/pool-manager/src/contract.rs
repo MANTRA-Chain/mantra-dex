@@ -76,7 +76,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                 env.contract.address.into_string(),
                 &ExecuteMsg::ProvideLiquidity {
                     slippage_tolerance: liquidity_provision_data.slippage_tolerance,
-                    max_spread: liquidity_provision_data.max_spread,
+                    max_slippage: liquidity_provision_data.max_spread,
                     receiver: Some(receiver),
                     pool_identifier: liquidity_provision_data.pool_identifier,
                     unlocking_duration: liquidity_provision_data.unlocking_duration,
@@ -114,7 +114,7 @@ pub fn execute(
             pool_identifier,
         ),
         ExecuteMsg::ProvideLiquidity {
-            max_spread,
+            max_slippage,
             slippage_tolerance,
             receiver,
             pool_identifier,
@@ -125,7 +125,7 @@ pub fn execute(
             env,
             info,
             slippage_tolerance,
-            max_spread,
+            max_slippage,
             receiver,
             pool_identifier,
             unlocking_duration,
@@ -134,7 +134,7 @@ pub fn execute(
         ExecuteMsg::Swap {
             ask_asset_denom,
             belief_price,
-            max_spread,
+            max_slippage,
             receiver,
             pool_identifier,
         } => swap::commands::swap(
@@ -143,7 +143,7 @@ pub fn execute(
             info.sender,
             ask_asset_denom,
             belief_price,
-            max_spread,
+            max_slippage,
             receiver,
             pool_identifier,
         ),
@@ -157,14 +157,14 @@ pub fn execute(
             operations,
             minimum_receive,
             receiver,
-            max_spread,
+            max_slippage,
         } => router::commands::execute_swap_operations(
             deps,
             info,
             operations,
             minimum_receive,
             receiver,
-            max_spread,
+            max_slippage,
         ),
         ExecuteMsg::UpdateConfig {
             fee_collector_addr,

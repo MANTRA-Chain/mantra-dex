@@ -323,7 +323,7 @@ impl SwapComputation {
     pub fn to_simulation_response(&self) -> SimulationResponse {
         SimulationResponse {
             return_amount: self.return_amount,
-            spread_amount: self.spread_amount,
+            slippage_amount: self.spread_amount,
             swap_fee_amount: self.swap_fee_amount,
             protocol_fee_amount: self.protocol_fee_amount,
             burn_fee_amount: self.burn_fee_amount,
