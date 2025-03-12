@@ -43,11 +43,11 @@ pub fn perform_swap(
     deps: DepsMut,
     offer_asset: Coin,
     ask_asset_denom: String,
-    pool_identifier: String,
+    pool_identifier: &str,
     belief_price: Option<Decimal>,
     max_spread: Option<Decimal>,
 ) -> Result<SwapResult, ContractError> {
-    let mut pool_info = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
+    let mut pool_info = get_pool_by_identifier(&deps.as_ref(), pool_identifier)?;
 
     let (
         offer_asset_in_pool,
@@ -100,7 +100,7 @@ pub fn perform_swap(
             .checked_sub(return_asset.amount)?
             .checked_sub(outgoing_fees)?;
 
-        POOLS.save(deps.storage, &pool_identifier, &pool_info)?;
+        POOLS.save(deps.storage, &pool_identifier.to_string(), &pool_info)?;
     }
 
     let burn_fee_asset = Coin {

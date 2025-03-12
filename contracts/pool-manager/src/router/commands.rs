@@ -92,10 +92,19 @@ pub fn execute_swap_operations(
                     deps.branch(),
                     previous_swap_output.clone(),
                     token_out_denom,
-                    pool_identifier,
+                    &pool_identifier,
                     None,
                     max_spread,
                 )?;
+
+                let pool_reserves: String = swap_result
+                    .pool_info
+                    .assets
+                    .iter()
+                    .map(|coin| format!("{coin}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
                 swap_attributes.push((
                     "swap",
                     format!(
@@ -107,6 +116,9 @@ pub fn execute_swap_operations(
                         swap_result.swap_fee_asset
                     ),
                 ));
+
+                swap_attributes.push(("pool_identifier", pool_identifier));
+                swap_attributes.push(("pool_reserves", pool_reserves));
 
                 // update the previous swap output
                 previous_swap_output = swap_result.return_asset;

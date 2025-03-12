@@ -52,7 +52,7 @@ pub fn swap(
         deps.branch(),
         offer_asset.clone(),
         ask_asset_denom,
-        pool_identifier,
+        &pool_identifier,
         belief_price,
         max_spread,
     )?;
@@ -83,6 +83,14 @@ pub fn swap(
         );
     }
 
+    let pool_reserves: String = swap_result
+        .pool_info
+        .assets
+        .iter()
+        .map(|coin| format!("{coin}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("action", "swap".to_string()),
         ("sender", sender.into_string()),
@@ -112,5 +120,7 @@ pub fn swap(
             "swap_type",
             swap_result.pool_info.pool_type.get_label().to_string(),
         ),
+        ("pool_identifier", pool_identifier),
+        ("pool_reserves", pool_reserves),
     ]))
 }
