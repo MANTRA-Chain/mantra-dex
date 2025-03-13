@@ -103,6 +103,7 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
             result.unwrap();
         },
     );
+
     // Sqrt(asset_1_amount * asset_2_amount) - MIN_LIQUIDITY_AMOUNT
     let expected_lp_amount = (U256::from(asset_1_amount)
         .checked_mul(U256::from(asset_2_amount))
@@ -110,8 +111,7 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
         .integer_sqrt()
         .as_u128())
         - MINIMUM_LIQUIDITY_AMOUNT.u128();
-    println!("Expected LP amount: {}", expected_lp_amount);
-
+    
     // Verify initial LP token supply
     suite.query_amount_of_lp_token(pool_id.to_string(), &creator.to_string(), |result| {
         let lp_amount = result.unwrap();
@@ -119,7 +119,6 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
     });
 
     // Front-runner performs 10 swaps to skew the pool ratio
-    /*
     for _ in 0..10 {
         suite.swap(
             &front_runner,
@@ -135,7 +134,6 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
             },
         );
     }
-     */
 
     // Create RefCell to hold the balances
     let pool_balances = RefCell::new(vec![]);
@@ -164,16 +162,14 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
             .amount;
         let balances = vec![uwhale_balance, uusdc_balance];
         *pool_balances.borrow_mut() = balances; // Use borrow_mut() to modify
-                                                /*
-                                                assert!(
-                                                    uwhale_balance > Uint128::from(150_000_000u128),
-                                                    "uwhale balance should increase significantly"
-                                                );
-                                                assert!(
-                                                    uusdc_balance < Uint128::from(60_000_000u128),
-                                                    "uusdc balance should decrease significantly"
-                                                );
-                                                */
+        assert!(
+            uwhale_balance > Uint128::from(150_000_000u128),
+            "uwhale balance should increase significantly"
+        );
+        assert!(
+            uusdc_balance < Uint128::from(60_000_000u128),
+            "uusdc balance should decrease significantly"
+        );
     });
 
     println!(
@@ -189,33 +185,14 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
         None,
         None,
         None,
-        Some(Decimal::percent(5)),
+        None,
         None,
         vec![coin(10_000_000u128, "uusdc")],
         |result| {
             // expect error
-            // assert!(result.is_err());
-            // expect success
-            assert!(result.is_ok());
+            assert!(result.is_err());
+            let error_msg_str = format!("{:?}", result.err().unwrap());
+            assert!(error_msg_str.contains("Spread limit exceeded"));
         },
     );
-
-    // Verify LP tokens received by the victim
-    /*
-    let expected_lp_tokens = Uint128::from(10_000_000u128);
-    suite.query_amount_of_lp_token(pool_id.to_string(), &victim.to_string(), |result| {
-        let lp_tokens_received: Uint128 = result.unwrap();
-        assert!(
-            lp_tokens_received > Uint128::zero(),
-            "Victim should receive some LP tokens"
-        );
-        let slippage_pct = Decimal::from_ratio(lp_tokens_received, expected_lp_tokens) * Decimal::percent(100);
-
-        println!(
-            "Victim received {} LP tokens; slippage protection failed with max_slippage of 5%, actually got {}",
-            lp_tokens_received,
-            slippage_pct
-        );
-    });
-    */
 }
