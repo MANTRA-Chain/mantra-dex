@@ -1,11 +1,11 @@
+use crate::ContractError;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::{PoolType, SimulationResponse};
-
-use crate::ContractError;
+use std::str::FromStr;
 
 use super::suite::TestingSuite;
 
@@ -2449,6 +2449,291 @@ mod swapping {
                 assert_approx_eq!(1000u128, return_amount.parse::<u128>().unwrap(), "0.003");
             },
         );
+    }
+
+    #[test]
+    fn basic_swapping_pool_reserves_event_test() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        // Asset infos with uwhale and uluna
+
+        // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::from_ratio(1u128, 100_000u128),
+            },
+            swap_fee: Fee {
+                share: Decimal::from_ratio(1u128, 100_000u128),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                vec!["uom".to_string(), "uusd".to_string()],
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("uom.uusd".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                vec!["uluna".to_string(), "uusd".to_string()],
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::ConstantProduct,
+                Some("uluna.uusd".to_string()),
+                vec![coin(1000, "uusd"), coin(8888, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                "o.uom.uusd".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(6000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .provide_liquidity(
+                &creator,
+                "o.uluna.uusd".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uluna".to_string(),
+                        amount: Uint128::from(3000000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(1000000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        let expected_pool_reserve = RefCell::<Vec<Coin>>::new(vec![]);
+
+        // Now Let's try a swap
+        suite
+            .swap(
+                &creator,
+                "uom".to_string(),
+                None,
+                None,
+                None,
+                "o.uom.uusd".to_string(),
+                vec![coin(1000u128, "uusd".to_string())],
+                |result| {
+                    for event in result.unwrap().events {
+                        if event.ty == "wasm" {
+                            for attribute in event.attributes {
+                                match attribute.key.as_str() {
+                                    "pool_reserves" => {
+                                        expected_pool_reserve.borrow_mut().clear();
+                                        for reserve in attribute.value.split(",") {
+                                            expected_pool_reserve
+                                                .borrow_mut()
+                                                .push(Coin::from_str(reserve).unwrap());
+                                            expected_pool_reserve
+                                                .borrow_mut()
+                                                .sort_by(|a, b| a.denom.cmp(&b.denom));
+                                        }
+                                    }
+                                    "pool_identifier" => {
+                                        assert_eq!(attribute.value, "o.uom.uusd");
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                },
+            )
+            .query_pools(Some("o.uom.uusd".to_string()), None, None, |result| {
+                let response = result.unwrap();
+                let mut assets = response.pools[0].pool_info.assets.clone();
+                assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+                assert_eq!(assets, *expected_pool_reserve.borrow());
+            })
+            .query_pools(Some("o.uluna.uusd".to_string()), None, None, |result| {
+                let response = result.unwrap();
+                let mut assets = response.pools[0].pool_info.assets.clone();
+                assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+                assert_eq!(
+                    assets,
+                    vec![
+                        coin(3000000u128, "uluna".to_string()),
+                        coin(1000000u128, "uusd".to_string())
+                    ]
+                );
+            });
+
+        // now a swap via the router, single and multiswap
+        let swap_operations = vec![mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
+            token_in_denom: "uom".to_string(),
+            token_out_denom: "uusd".to_string(),
+            pool_identifier: "o.uom.uusd".to_string(),
+        }];
+
+        suite
+            .execute_swap_operations(
+                &creator,
+                swap_operations,
+                None,
+                None,
+                Some(Decimal::percent(10)),
+                vec![coin(1_000u128, "uom".to_string())],
+                |result| {
+                    for event in result.unwrap().events {
+                        if event.ty == "wasm" {
+                            for attribute in event.attributes {
+                                match attribute.key.as_str() {
+                                    "pool_reserves" => {
+                                        expected_pool_reserve.borrow_mut().clear();
+                                        for reserve in attribute.value.split(",") {
+                                            expected_pool_reserve
+                                                .borrow_mut()
+                                                .push(Coin::from_str(reserve).unwrap());
+                                            expected_pool_reserve
+                                                .borrow_mut()
+                                                .sort_by(|a, b| a.denom.cmp(&b.denom));
+                                        }
+                                    }
+                                    "pool_identifier" => {
+                                        assert_eq!(attribute.value, "o.uom.uusd");
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                },
+            )
+            .query_pools(Some("o.uom.uusd".to_string()), None, None, |result| {
+                let response = result.unwrap();
+                let mut assets = response.pools[0].pool_info.assets.clone();
+                assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+                assert_eq!(assets, *expected_pool_reserve.borrow());
+            })
+            .query_pools(Some("o.uluna.uusd".to_string()), None, None, |result| {
+                let response = result.unwrap();
+                let mut assets = response.pools[0].pool_info.assets.clone();
+                assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+                assert_eq!(
+                    assets,
+                    vec![
+                        coin(3000000u128, "uluna".to_string()),
+                        coin(1000000u128, "uusd".to_string())
+                    ]
+                );
+            });
+
+        let swap_operations = vec![
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
+                token_in_denom: "uom".to_string(),
+                token_out_denom: "uusd".to_string(),
+                pool_identifier: "o.uom.uusd".to_string(),
+            },
+            mantra_dex_std::pool_manager::SwapOperation::MantraSwap {
+                token_in_denom: "uusd".to_string(),
+                token_out_denom: "uluna".to_string(),
+                pool_identifier: "o.uluna.uusd".to_string(),
+            },
+        ];
+
+        let expected_pool_reserves = RefCell::<Vec<Vec<Coin>>>::new(vec![]);
+
+        suite
+            .execute_swap_operations(
+                &creator,
+                swap_operations,
+                None,
+                None,
+                Some(Decimal::percent(10)),
+                vec![coin(1_000u128, "uom".to_string())],
+                |result| {
+                    let mut pool_reserves = vec![];
+                    let mut pool_identifiers = vec![];
+
+                    expected_pool_reserves.borrow_mut().clear();
+                    for event in result.unwrap().events {
+                        if event.ty == "wasm" {
+                            for attribute in event.attributes {
+                                match attribute.key.as_str() {
+                                    "pool_reserves" => {
+                                        pool_reserves.clear();
+                                        for reserve in attribute.value.split(",") {
+                                            pool_reserves.push(Coin::from_str(reserve).unwrap());
+                                        }
+                                        pool_reserves.sort_by(|a, b| a.denom.cmp(&b.denom));
+                                        expected_pool_reserves
+                                            .borrow_mut()
+                                            .push(pool_reserves.clone());
+                                    }
+                                    "pool_identifier" => {
+                                        pool_identifiers.push(attribute.value.clone());
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                    assert_eq!(pool_identifiers, vec!["o.uom.uusd", "o.uluna.uusd"]);
+                },
+            )
+            .query_pools(Some("o.uom.uusd".to_string()), None, None, |result| {
+                let response = result.unwrap();
+                let mut assets = response.pools[0].pool_info.assets.clone();
+                assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+                assert_eq!(assets, expected_pool_reserves.borrow()[0]);
+            })
+            .query_pools(Some("o.uluna.uusd".to_string()), None, None, |result| {
+                let response = result.unwrap();
+                let mut assets = response.pools[0].pool_info.assets.clone();
+                assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+                assert_eq!(assets, expected_pool_reserves.borrow()[1]);
+            });
     }
 
     #[test]

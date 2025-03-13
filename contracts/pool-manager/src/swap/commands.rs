@@ -89,7 +89,7 @@ pub fn swap(
         .iter()
         .map(|coin| format!("{coin}"))
         .collect::<Vec<_>>()
-        .join(", ");
+        .join(",");
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("action", "swap".to_string()),

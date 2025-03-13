@@ -103,7 +103,7 @@ pub fn execute_swap_operations(
                     .iter()
                     .map(|coin| format!("{coin}"))
                     .collect::<Vec<_>>()
-                    .join(", ");
+                    .join(",");
 
                 swap_attributes.push((
                     "swap",

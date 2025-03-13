@@ -100,7 +100,7 @@ pub fn perform_swap(
             .checked_sub(return_asset.amount)?
             .checked_sub(outgoing_fees)?;
 
-        POOLS.save(deps.storage, &pool_identifier.to_string(), &pool_info)?;
+        POOLS.save(deps.storage, pool_identifier, &pool_info)?;
     }
 
     let burn_fee_asset = Coin {
