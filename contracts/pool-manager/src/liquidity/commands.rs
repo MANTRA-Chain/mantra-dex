@@ -36,7 +36,7 @@ pub fn provide_liquidity(
     env: Env,
     info: MessageInfo,
     slippage_tolerance: Option<Decimal>,
-    max_spread: Option<Decimal>,
+    swap_max_slippage: Option<Decimal>, // For single-sided liquidity provision, the max slippage for the swap
     receiver: Option<String>,
     pool_identifier: String,
     unlocking_duration: Option<u64>,
@@ -153,7 +153,7 @@ pub fn provide_liquidity(
                     ask_asset_denom.clone(),
                 ),
                 liquidity_provision_data: LiquidityProvisionData {
-                    max_spread,
+                    max_spread: swap_max_slippage,
                     slippage_tolerance,
                     pool_identifier: pool_identifier.clone(),
                     unlocking_duration,
@@ -169,7 +169,7 @@ pub fn provide_liquidity(
                     &ExecuteMsg::Swap {
                         ask_asset_denom,
                         belief_price: None,
-                        max_spread,
+                        max_spread: swap_max_slippage,
                         receiver: None,
                         pool_identifier,
                     },
