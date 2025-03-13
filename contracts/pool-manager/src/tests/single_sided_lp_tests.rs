@@ -1,7 +1,9 @@
 use cosmwasm_std::{coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::{Fee, PoolFee};
+use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::PoolType;
+use mantra_dex_std::U256;
 use std::cell::RefCell;
 
 use crate::tests::suite::TestingSuite;
@@ -82,6 +84,8 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
 
     // Use the correct pool identifier format (o.whale.usdc) in all subsequent operations
     let pool_id = "o.whale.usdc";
+    let asset_1_amount = 100_000_000u128;
+    let asset_2_amount = 100_000_000u128;
 
     suite.provide_liquidity(
         &creator,
@@ -92,21 +96,26 @@ fn test_single_sided_liquidity_provision_slippage_vulnerability() {
         None,
         None,
         vec![
-            coin(100_000_000u128, "uwhale"),
-            coin(100_000_000u128, "uusdc"),
+            coin(asset_1_amount, "uwhale"),
+            coin(asset_2_amount, "uusdc"),
         ],
         |result| {
             result.unwrap();
         },
     );
+    // Sqrt(asset_1_amount * asset_2_amount) - MIN_LIQUIDITY_AMOUNT
+    let expected_lp_amount = (U256::from(asset_1_amount)
+        .checked_mul(U256::from(asset_2_amount))
+        .unwrap()
+        .integer_sqrt()
+        .as_u128())
+        - MINIMUM_LIQUIDITY_AMOUNT.u128();
+    println!("Expected LP amount: {}", expected_lp_amount);
 
     // Verify initial LP token supply
     suite.query_amount_of_lp_token(pool_id.to_string(), &creator.to_string(), |result| {
         let lp_amount = result.unwrap();
-        assert!(
-            lp_amount > Uint128::zero(),
-            "Initial LP token supply should be positive"
-        );
+        assert_eq!(lp_amount.u128(), expected_lp_amount);
     });
 
     // Front-runner performs 10 swaps to skew the pool ratio
