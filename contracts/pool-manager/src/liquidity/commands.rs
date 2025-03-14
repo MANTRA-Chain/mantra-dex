@@ -290,8 +290,6 @@ pub fn provide_liquidity(
             &deposits,
             &mut pool_assets,
             pool.pool_type.clone(),
-            shares,
-            total_shares,
         )?;
 
         // if the unlocking duration is set, lock the LP tokens in the farm manager
@@ -406,7 +404,7 @@ pub fn provide_liquidity(
                 .checked_add(asset.amount)?;
         }
 
-        pool.assets = pool_assets.clone();
+        pool.assets.clone_from(&pool_assets);
 
         POOLS.save(deps.storage, &pool_identifier, &pool)?;
 

@@ -93,7 +93,7 @@ pub mod tasks {
                 )
             });
             schema.contract_version = contract.version;
-            schema.contract_name = contract.name.clone();
+            schema.contract_name.clone_from(&contract.name);
 
             let mut out_dir = contract_path.to_path_buf();
             out_dir.push("schema");

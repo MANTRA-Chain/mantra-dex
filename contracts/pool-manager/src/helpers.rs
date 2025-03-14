@@ -2,10 +2,10 @@ use std::ops::Mul;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, StdError,
-    StdResult, Uint128, Uint256, Uint512,
+    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Isqrt, MessageInfo,
+    StdError, StdResult, Uint128, Uint256, Uint512,
 };
-use mantra_dex_std::coin::{aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
+use mantra_dex_std::coin::{add_coins, aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
 use mantra_dex_std::constants::LP_SYMBOL;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::pool_manager::{PoolInfo, PoolType, SimulationResponse};
@@ -421,8 +421,6 @@ pub fn assert_slippage_tolerance(
     deposits: &[Coin],
     pool_assets: &mut [Coin],
     pool_type: PoolType,
-    share: Uint128,
-    total_share: Uint128,
 ) -> Result<(), ContractError> {
     if let Some(slippage_tolerance) = *slippage_tolerance {
         let slippage_tolerance: Decimal256 = slippage_tolerance.into();
@@ -431,7 +429,8 @@ pub fn assert_slippage_tolerance(
         }
 
         let one_minus_slippage_tolerance = Decimal256::one() - slippage_tolerance;
-        let deposits: Vec<Uint256> = deposits.iter().map(|coin| coin.amount.into()).collect();
+        let deposit_amounts: Vec<Uint256> =
+            deposits.iter().map(|coin| coin.amount.into()).collect();
 
         // Sort assets by denom to ensure the order of the assets in the pool is the same as the
         // deposits, which are sorted previously
@@ -441,34 +440,34 @@ pub fn assert_slippage_tolerance(
 
         // Ensure each prices are not dropped as much as slippage tolerance rate
         match pool_type {
-            PoolType::StableSwap { .. } => {
-                let pools_total: Uint256 = pools
-                    .into_iter()
-                    .fold(Uint256::zero(), |acc, x| acc.checked_add(x).unwrap());
-                let deposits_total: Uint256 = deposits
-                    .into_iter()
-                    .fold(Uint256::zero(), |acc, x| acc.checked_add(x).unwrap());
+            PoolType::StableSwap { amp: amp_factor } => {
+                let d_initial = compute_d(&amp_factor, pool_assets).unwrap();
+                let final_pool_assets = add_coins(pool_assets.to_vec(), deposits.to_vec())?;
+                let d_final = compute_d(&amp_factor, &final_pool_assets).unwrap();
 
-                let pool_ratio = Decimal256::from_ratio(pools_total, total_share);
-                let deposit_ratio = Decimal256::from_ratio(deposits_total, share);
-                let difference = pool_ratio.abs_diff(deposit_ratio);
+                // Safe conversion to Uint256, since a Sqrt of a Uint512 will always fit into a Uint256
+                let d_initial_sqrt: Uint256 = d_initial.isqrt().try_into().unwrap();
+                let d_final_sqrt: Uint256 = d_final.isqrt().try_into().unwrap();
+                // Determine the ratio of the final and initial D values by squaring the ratio of the square roots
+                let d_ratio_delta = Decimal256::from_ratio(d_final_sqrt, d_initial_sqrt).pow(2);
 
-                if pool_ratio * one_minus_slippage_tolerance > difference {
+                if d_ratio_delta > slippage_tolerance {
                     return Err(ContractError::MaxSlippageAssertion);
                 }
             }
             PoolType::ConstantProduct => {
-                if deposits.len() != 2 || pools.len() != 2 {
+                if deposit_amounts.len() != 2 || pools.len() != 2 {
                     return Err(ContractError::InvalidPoolAssetsLength {
                         expected: 2,
-                        actual: deposits.len(),
+                        actual: deposit_amounts.len(),
                     });
                 }
 
                 // both deposits and pools are sorted by denom so the indexes match
-                if Decimal256::from_ratio(deposits[0], deposits[1]) * one_minus_slippage_tolerance
+                if Decimal256::from_ratio(deposit_amounts[0], deposit_amounts[1])
+                    * one_minus_slippage_tolerance
                     > Decimal256::from_ratio(pools[0], pools[1])
-                    || Decimal256::from_ratio(deposits[1], deposits[0])
+                    || Decimal256::from_ratio(deposit_amounts[1], deposit_amounts[0])
                         * one_minus_slippage_tolerance
                         > Decimal256::from_ratio(pools[1], pools[0])
                 {
