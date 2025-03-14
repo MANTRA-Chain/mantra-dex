@@ -185,6 +185,7 @@ pub fn provide_liquidity(
 
         // Compute share and other logic based on the number of assets
         let total_share = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
+        let mut pool_amp_factor: Option<u64> = None;
 
         let share = match &pool.pool_type {
             PoolType::ConstantProduct => {
@@ -238,6 +239,7 @@ pub fn provide_liquidity(
                 }
             }
             PoolType::StableSwap { amp: amp_factor } => {
+                pool_amp_factor = Some(*amp_factor);
                 if total_share == Uint128::zero() {
                     // ensure all assets in the pool are provided and the amounts are greater than zero
                     ensure!(
@@ -290,8 +292,7 @@ pub fn provide_liquidity(
             &deposits,
             &mut pool_assets,
             pool.pool_type.clone(),
-            share,
-            total_share,
+            pool_amp_factor,
         )?;
 
         // if the unlocking duration is set, lock the LP tokens in the farm manager
