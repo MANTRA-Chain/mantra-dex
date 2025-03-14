@@ -449,8 +449,8 @@ pub fn assert_slippage_tolerance(
                     .into());
                 }
                 let amp_factor = amp_factor.unwrap();
-                let d_initial = compute_d(&amp_factor, &pool_assets).unwrap();
-                let d_final = compute_d(&amp_factor, &deposits).unwrap();
+                let d_initial = compute_d(&amp_factor, pool_assets).unwrap();
+                let d_final = compute_d(&amp_factor, deposits).unwrap();
 
                 // Safe conversion to Uint256, since a Sqrt of a Uint512 will always fit into a Uint256
                 let d_initial_sqrt: Uint256 = d_initial.isqrt().try_into().unwrap();
