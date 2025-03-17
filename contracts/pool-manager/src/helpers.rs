@@ -1,11 +1,13 @@
+use std::cmp::Ordering;
 use std::ops::Mul;
+use std::str::FromStr;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, StdError,
-    StdResult, Uint128, Uint256, Uint512,
+    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    StdError, StdResult, Uint128, Uint256, Uint512,
 };
-use mantra_dex_std::coin::{aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
+use mantra_dex_std::coin::{add_coins, aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
 use mantra_dex_std::constants::LP_SYMBOL;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::pool_manager::{PoolInfo, PoolType, SimulationResponse};
@@ -766,32 +768,174 @@ fn compute_next_d(
     Some(numerator.checked_div(denominator).unwrap())
 }
 
+#[cw_serde]
+pub struct DepositResult {
+    /// Amount of lp tokens to mint
+    pub mint_amount: Uint128,
+    /// Deposits added to the pool after fees
+    pub net_deposits: Vec<Coin>,
+    /// Fees charged
+    pub fees: Vec<Coin>,
+}
+
+const FEE_DENOMINATOR: Uint128 = Uint128::new(1_000_000);
+const OFFPEG_FEE_DENOMINATOR: Uint128 = Uint128::new(2_000_000u128);
+
 /// Computes the amount of lp tokens to mint after a deposit for a stableswap pool.
 /// Assumes the deposits have already been credited to the pool_assets.
 #[allow(clippy::unwrap_used, clippy::too_many_arguments)]
 pub fn compute_lp_mint_amount_for_stableswap_deposit(
     amp_factor: &u64,
     old_pool_assets: &[Coin],
-    new_pool_assets: &[Coin],
+    deposits: &[Coin],
     pool_lp_token_total_supply: Uint128,
-) -> Result<Option<Uint128>, ContractError> {
+    swap_fee: Decimal,
+) -> Result<DepositResult, ContractError> {
     // Initial invariant
     let d_0 = compute_d(amp_factor, old_pool_assets).ok_or(ContractError::StableInvariantError)?;
 
-    // Invariant after change, i.e. after deposit
-    // notice that new_pool_assets already added the new deposits to the pool
-    let d_1 = compute_d(amp_factor, new_pool_assets).ok_or(ContractError::StableInvariantError)?;
+    let mut full_new_assets = add_coins(old_pool_assets.to_vec(), deposits.to_vec())?;
+    let d_1 = compute_d(amp_factor, &full_new_assets).ok_or(ContractError::StableInvariantError)?;
 
-    // If the invariant didn't change, return None
-    if d_1 <= d_0 {
-        Ok(None)
-    } else {
-        let amount = Uint512::from(pool_lp_token_total_supply)
-            .checked_mul(d_1.checked_sub(d_0)?)?
-            .checked_div(d_0)?;
-        Ok(Some(Uint128::try_from(amount)?))
+    ensure!(d_1 > d_0, ContractError::StableInvariantError);
+
+    let n_coins = old_pool_assets.len();
+    // average invariant
+    let ys : Uint128 = d_0
+        .checked_add(d_1)?
+        .checked_div(Uint512::from(n_coins as u8))?.try_into()?;
+
+    let base_fee = swap_fee
+        .checked_mul(Decimal::from_ratio(
+            Uint128::from(n_coins as u8),
+            Uint128::one(),
+        ))?
+        .checked_div(Decimal::from_ratio(
+            Uint128::from(4 * (n_coins as u8 - 1u8)),
+            Uint128::one(),
+        ))?;
+
+    let mut fees = Vec::with_capacity(n_coins as usize);
+    let mut net_deposits = Vec::with_capacity(old_pool_assets.len());
+
+    for i in 0..n_coins {
+        let ideal_balance = Uint512::from(old_pool_assets[i].amount)
+            .checked_mul(d_1)?
+            .checked_div(d_0)?
+            .try_into()?;
+        let new_balance = full_new_assets[i].amount;
+
+        let difference = match new_balance.cmp(&ideal_balance) {
+            Ordering::Greater => new_balance.checked_sub(ideal_balance)?,
+            Ordering::Less => ideal_balance.checked_sub(new_balance)?,
+            Ordering::Equal => Uint128::zero(),
+        };
+
+        println!("ideal_balance:: {:?}", ideal_balance);
+        println!("new_balance:: {:?}", new_balance);
+        println!("difference:: {:?}", difference);
+
+        let xpi = old_pool_assets[i].amount
+            .checked_add(new_balance)?;
+            //.checked_mul(PRECISION)?;
+
+        let dynamic_fee = if OFFPEG_FEE_DENOMINATOR <= FEE_DENOMINATOR {
+            println!("here");
+            base_fee
+        } else {
+            println!("dynamic");
+            let xpj = ys;//.checked_mul(PRECISION)?;  // Since ys was D-based
+
+            let xps2 = xpi.checked_add(xpj)?.pow(2);
+            let numerator = base_fee.checked_mul(Decimal::from_ratio(OFFPEG_FEE_DENOMINATOR, Uint128::one()))?;
+
+            let denominator_part = OFFPEG_FEE_DENOMINATOR
+                .checked_sub(FEE_DENOMINATOR)?
+                .checked_mul(Uint128::new(4u128))?
+                .checked_mul(xpi)?
+                .checked_mul(xpj)?
+                .checked_div(xps2)?;
+
+            println!("--");
+            println!("xpi:: {:?}", xpi);
+            println!("xpj:: {:?}", xpj);
+            println!("xps2:: {:?}", xps2);
+            println!("numerator:: {:?}", numerator);
+            println!("denominator_part:: {:?}", denominator_part);
+            println!("--");
+            
+            numerator.checked_div(Decimal::from_ratio(denominator_part.checked_add(FEE_DENOMINATOR)?, Uint128::one()))?
+        };
+
+        println!("base_fee:: {:?}", base_fee);
+        println!("dynamic_fee:: {:?}", dynamic_fee);
+  
+        let fee = dynamic_fee
+            .checked_mul(Decimal::from_ratio(difference.checked_div(FEE_DENOMINATOR)?, Uint128::one()))?;
+
+        println!("fee:: {:?}", fee);
+
+        let net_amount = if new_balance > ideal_balance {
+            // If new_balance > ideal_balance, subtract the fee from the deposit
+            let fee = Decimal256::from_ratio(deposits[i].amount, Uint256::one())
+                .checked_mul(Decimal256::from(fee))
+                .map_err(|e| StdError::generic_err(e.to_string()))?
+                .to_uint_floor().try_into()?;
+            
+            fees.push(Coin {
+                denom: deposits[i].denom.clone(),
+                amount: fee,
+            });
+            
+            deposits[i].amount.saturating_sub(fee)
+        } else {
+            // If new_balance <= ideal_balance, the deposit isn’t reduced by the fee
+            deposits[i].amount
+        };
+
+        println!("net_amount:: {:?}", net_amount);
+        
+        net_deposits.push(Coin {
+            denom: deposits[i].denom.clone(),
+            amount: net_amount,
+        });
     }
+
+
+    let adjusted_new_assets = add_coins(old_pool_assets.to_vec(), net_deposits.clone())?;
+    let d_2 =
+        compute_d(amp_factor, &adjusted_new_assets).ok_or(ContractError::StableInvariantError)?;
+
+
+    println!("adjusted_new_assets:: {:?}", adjusted_new_assets);
+    println!("d_2:: {:?}", d_2);
+
+    if d_2 <= d_0 {
+        return Err(ContractError::StableLpMintError);
+    }
+
+    let mint_amount = Uint512::from(pool_lp_token_total_supply)
+        .checked_mul(d_2.checked_sub(d_0)?)?
+        .checked_div(Uint512::from(d_0))?;
+
+    println!("mint_amount:: {:?}", mint_amount);
+
+    ensure!(!mint_amount.is_zero(), ContractError::StableLpMintError);
+
+    Ok(DepositResult {
+        mint_amount: Uint128::try_from(mint_amount)?,
+        net_deposits: net_deposits
+            .into_iter()
+            .filter(|coin| !coin.amount.is_zero())
+            .collect(),
+        fees: fees
+            .into_iter()
+            .filter(|coin| !coin.amount.is_zero())
+            .collect(),
+    })
+
 }
+
 
 /// Compute the swap amount `y` in proportion to `x`.
 ///
@@ -1019,11 +1163,15 @@ mod tests {
             &deposits,
             &pool_assets,
             pool_token_supply,
+            Decimal::percent(1),
         )
         .unwrap();
         let expected_mint_amount = Some(MAX_TOKENS_IN);
 
-        assert_eq!(actual_mint_amount, expected_mint_amount);
+        assert_eq!(
+            actual_mint_amount.mint_amount,
+            expected_mint_amount.unwrap()
+        );
     }
 
     #[test]
@@ -1250,14 +1398,15 @@ mod tests {
                 coin(pool_token_c_amount + deposit_amount_c, "denom3"),
             ];
 
-            let mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
+            let deposit_response = compute_lp_mint_amount_for_stableswap_deposit(
                 &amp_factor,
                 &deposits,
                 &new_pool_assets,
                 Uint128::new(pool_token_supply),
+                Decimal::percent(0),
                 ).unwrap();
 
-            prop_assume!(mint_amount.is_some());
+            prop_assume!(deposit_response.mint_amount > Uint128::zero());
 
             let d1 = compute_d(&amp_factor, &new_pool_assets).unwrap();
 

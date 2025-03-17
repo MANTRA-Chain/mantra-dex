@@ -4540,6 +4540,354 @@ mod provide_liquidity {
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
 
+    fn print_diff(init_bal: [Uint128; 3], final_bal: [Uint128; 3]) -> [i128; 3] {
+        let diffs = [
+            final_bal[0].u128() as i128 - init_bal[0].u128() as i128,
+            final_bal[1].u128() as i128 - init_bal[1].u128() as i128,
+            final_bal[2].u128() as i128 - init_bal[2].u128() as i128,
+            //final_bal[3].u128() as i128 - init_bal[3].u128() as i128,
+        ];
+
+        println!("==Balance deltas==");
+        if diffs[0] != 0 {
+            println!("uwhale delta: {}", diffs[0]);
+        }
+        if diffs[1] != 0 {
+            println!("uluna delta : {}", diffs[1]);
+        }
+        // if diffs[2] != 0 {
+        //     println!("uusd delta  : {}", diffs[2]);
+        // }
+        if diffs[2] != 0 {
+            println!("lp delta    : {}", diffs[2]);
+        }
+        println!("==Balance deltas==\n");
+
+        diffs
+    }
+    fn calc_state(suite: &mut TestingSuite, creator: &str) -> [Uint128; 3] {
+        let uwhale_balance = RefCell::new(Uint128::zero());
+        let uluna_balance = RefCell::new(Uint128::zero());
+        let uusd_balance = RefCell::new(Uint128::zero());
+        let lp_shares = RefCell::new(Uint128::zero());
+
+        suite.query_balance(&creator.to_string(), "uwhale".to_string(), |result| {
+            *uwhale_balance.borrow_mut() = result.unwrap().amount;
+        });
+
+        suite.query_balance(&creator.to_string(), "uluna".to_string(), |result| {
+            *uluna_balance.borrow_mut() = result.unwrap().amount;
+        });
+
+        suite.query_balance(&creator.to_string(), "uusd".to_string(), |result| {
+            *uusd_balance.borrow_mut() = result.unwrap().amount;
+        });
+
+        suite.query_all_balances(&creator.to_string(), |balances| {
+            for coin in balances.unwrap().iter() {
+                if coin.denom.contains("o.whale.uluna") {
+                    *lp_shares.borrow_mut() = coin.amount;
+                }
+            }
+        });
+
+        let uwhale = *uwhale_balance.borrow();
+        let uluna = *uluna_balance.borrow();
+        let uusd = *uusd_balance.borrow();
+        let lp = *lp_shares.borrow();
+        // [uwhale, uluna, uusd, lp]
+        [uwhale, uluna, lp]
+    }
+
+    #[test]
+    fn twopool_test() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let other = suite.senders[1].clone();
+        let _unauthorized = suite.senders[2].clone();
+
+        let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::from_ratio(1u128, 1000u128),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("whale.uluna".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // Initial liquidity
+        println!("===Liq addition===");
+        let initial_balances = calc_state(&mut suite, &creator.to_string());
+        suite.provide_liquidity(
+            &other,
+            "o.whale.uluna".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1_000_000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(1_000_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+        let final_balances = calc_state(&mut suite, &other.to_string());
+        let diffs = print_diff(initial_balances, final_balances);
+
+        let lp_shares_other = RefCell::new(Coin::new(0u128, "".to_string()));
+        suite.query_all_balances(&other.to_string(), |balances| {
+            for coin in balances.unwrap().iter() {
+                if coin.denom.contains("o.whale.uluna") {
+                    *lp_shares_other.borrow_mut() = coin.clone();
+                }
+            }
+        });
+
+
+        //single sided liquidity
+        println!("===Liq addition 2 offpeg===");
+        let initial_balances = calc_state(&mut suite, &creator.to_string());
+        let lp_shares_creator = RefCell::new(Coin::new(0u128, "".to_string()));
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(2_000_000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(0u128),
+                },
+            ],
+            |result| {
+                println!("result:: {:?}", result);
+                result.unwrap();
+            },
+        );
+
+        suite.query_all_balances(&creator.to_string(), |balances| {
+            for coin in balances.unwrap().iter() {
+                if coin.denom.contains("o.whale.uluna") {
+                    *lp_shares_creator.borrow_mut() = coin.clone();
+                }
+            }
+        });
+
+        let final_balances = calc_state(&mut suite, &creator.to_string());
+        let diffs = print_diff(initial_balances, final_balances);
+
+        println!("diffs:: {:?}", diffs);
+        println!("lp_shares_other:: {:?}", lp_shares_other);
+        println!("lp_shares_creator:: {:?}", lp_shares_creator);
+
+
+        suite.withdraw_liquidity(
+            &other,
+            "o.whale.uluna".to_string(),
+            vec![Coin {
+                denom: lp_shares_other.borrow().denom.to_string(),
+                amount: lp_shares_other.borrow().amount.clone(),
+            }],
+            |result| {
+                println!("result:::: {:?}", result);
+                result.unwrap();
+            },
+        );
+        
+        println!("===Liq Removal===");
+        let initial_balances = calc_state(&mut suite, &creator.to_string());
+        suite.withdraw_liquidity(
+            &creator,
+            "o.whale.uluna".to_string(),
+            vec![Coin {
+                denom: lp_shares_creator.borrow().denom.to_string(),
+                amount:  lp_shares_creator.borrow().amount.clone(),
+            }],
+            |result| {
+                println!("result:::: {:?}", result);
+                result.unwrap();
+            },
+        );
+        let final_balances = calc_state(&mut suite, &creator.to_string());
+        print_diff(initial_balances, final_balances);
+
+        // 499_051 uluna
+        // 2_494_753 uwhale
+        println!(">>>>>>>>");
+
+    }
+
+    #[test]
+    fn twopool_test_1() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_001u128, "uwhale".to_string()),
+                coin(1_000_000_000u128, "uluna".to_string()),
+                coin(1_000_000_001u128, "uusd".to_string()),
+                coin(1_000_000_001u128, "uom".to_string()),
+            ],
+            StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+        let _other = suite.senders[1].clone();
+        let _unauthorized = suite.senders[2].clone();
+        // Asset infos with uwhale and uluna
+
+        let asset_infos = vec!["uwhale".to_string(), "uluna".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::from_ratio(1u128, 1000u128),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create a pool
+        suite.instantiate_default().create_pool(
+            &creator,
+            asset_infos,
+            vec![6u8, 6u8],
+            pool_fees,
+            PoolType::StableSwap { amp: 100 },
+            Some("whale.uluna.uusd".to_string()),
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        // Initial liquidity
+        println!("===Liq addition===");
+        let initial_balances = calc_state(&mut suite, &creator.to_string());
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna.uusd".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1_000_000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(1_000_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+        let final_balances = calc_state(&mut suite, &creator.to_string());
+        let diffs = print_diff(initial_balances, final_balances);
+
+        let lp_shares = RefCell::new(Coin::new(0u128, "".to_string()));
+        suite.query_all_balances(&creator.to_string(), |balances| {
+            for coin in balances.unwrap().iter() {
+                if coin.denom.contains("o.whale.uluna.uusd") {
+                    *lp_shares.borrow_mut() = coin.clone();
+                }
+            }
+        });
+
+        //single sided liquidity
+        println!("===Liq addition 2===");
+        let initial_balances = calc_state(&mut suite, &creator.to_string());
+        suite.provide_liquidity(
+            &creator,
+            "o.whale.uluna.uusd".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uwhale".to_string(),
+                    amount: Uint128::from(1_500_000u128),
+                },
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(1_500_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+        let final_balances = calc_state(&mut suite, &creator.to_string());
+        let diffs = print_diff(initial_balances, final_balances);
+
+        println!("===Liq Removal===");
+        let initial_balances = calc_state(&mut suite, &creator.to_string());
+        suite.withdraw_liquidity(
+            &creator,
+            "o.whale.uluna.uusd".to_string(),
+            vec![Coin {
+                denom: lp_shares.borrow().denom.to_string(),
+                amount: Uint128::from(diffs[2].max(0) as u128),
+            }],
+            |result| {
+                result.unwrap();
+            },
+        );
+        let final_balances = calc_state(&mut suite, &creator.to_string());
+        print_diff(initial_balances, final_balances);
+    }
+
     #[test]
     fn provide_liquidity_with_single_asset() {
         let mut suite = TestingSuite::default_with_balances(

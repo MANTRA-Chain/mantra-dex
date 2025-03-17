@@ -23,6 +23,7 @@ use crate::{
 use crate::contract::SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID;
 use crate::helpers::{
     aggregate_outgoing_fees, compute_d, compute_lp_mint_amount_for_stableswap_deposit,
+    DepositResult,
 };
 use crate::queries::query_simulation;
 use crate::state::{
@@ -53,6 +54,9 @@ pub fn provide_liquidity(
     let mut pool = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
 
     let mut pool_assets = pool.assets.clone();
+    // sort assets by denom
+    pool_assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+
     let deposits = aggregate_coins(info.funds.clone())?;
 
     ensure!(!deposits.is_empty(), ContractError::EmptyAssets);
@@ -271,15 +275,30 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    compute_lp_mint_amount_for_stableswap_deposit(
+                    let deposit_result = compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
                         // pool_assets hold the balances before the deposit was made
                         &pool_assets,
                         // add the deposit to the pool_assets to calculate the new balances
-                        &add_coins(pool_assets.clone(), deposits.clone())?,
+                        &deposits,
                         total_share,
-                    )?
-                    .ok_or(ContractError::StableLpMintError)?
+                        pool.pool_fees.swap_fee.share,
+                    )?;
+
+                    println!("deposit_result:: {:?}", deposit_result);
+
+                    // Update pool with net deposits
+                    pool_assets = add_coins(pool_assets.clone(), deposit_result.net_deposits)?;
+
+                    // bank transfer to fee collector deposit_result.fees
+                    if !deposit_result.fees.is_empty() {
+                        messages.push(CosmosMsg::Bank(BankMsg::Send {
+                            to_address: config.fee_collector_addr.to_string(),
+                            amount: deposit_result.fees.clone(),
+                        }));
+                    }
+                        
+                    deposit_result.mint_amount
                 }
             }
         };
@@ -502,7 +521,7 @@ pub fn withdraw_liquidity(
             .amount
             .checked_sub(refund_asset.amount)?;
     }
-
+    
     POOLS.save(deps.storage, &pool_identifier, &pool)?;
 
     // Burn the LP tokens
@@ -511,6 +530,7 @@ pub fn withdraw_liquidity(
         env.contract.address,
         amount,
     )?);
+
     // update pool info
     Ok(Response::new()
         .add_messages(messages)
