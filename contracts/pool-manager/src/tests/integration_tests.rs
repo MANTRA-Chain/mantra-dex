@@ -5,6 +5,7 @@ use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::{PoolType, SimulationResponse};
+use std::cell::RefCell;
 use std::str::FromStr;
 
 use super::suite::TestingSuite;
@@ -20,6 +21,18 @@ fn instantiate_normal() {
     );
 
     suite.instantiate(suite.senders[0].to_string(), suite.senders[1].to_string());
+}
+
+fn extract_pool_reserves(
+    attribute: &cosmwasm_std::Attribute,
+    expected_pool_reserves: &RefCell<Vec<Vec<Coin>>>,
+) {
+    let mut pool_reserves = vec![];
+    for reserve in attribute.value.split(",") {
+        pool_reserves.push(Coin::from_str(reserve).unwrap());
+    }
+    pool_reserves.sort_by(|a, b| a.denom.cmp(&b.denom));
+    expected_pool_reserves.borrow_mut().push(pool_reserves);
 }
 
 #[test]
@@ -70,6 +83,7 @@ fn deposit_and_withdraw_sanity_check() {
 
     let contract_addr = suite.pool_manager_addr.clone();
     let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
+    let expected_pool_reserves = RefCell::<Vec<Vec<Coin>>>::new(vec![]);
 
     // Let's try to add liquidity
     suite
@@ -92,10 +106,21 @@ fn deposit_and_withdraw_sanity_check() {
                 },
             ],
             |result| {
+                let events = result.unwrap().events;
                 // Ensure we got 999_000 in the response which is 1_000_000 less the initial liquidity amount
-                assert!(result.unwrap().events.iter().any(|event| {
+                assert!(events.iter().any(|event| {
+                    if event.ty == "wasm" {
+                        for attribute in &event.attributes {
+                            match attribute.key.as_str() {
+                                "pool_reserves" => {
+                                    extract_pool_reserves(&attribute, &expected_pool_reserves);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
                     event.attributes.iter().any(|attr| {
-                        attr.key == "share"
+                        attr.key == "added_shares"
                             && attr.value
                                 == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
@@ -118,9 +143,16 @@ fn deposit_and_withdraw_sanity_check() {
             assert!(balances.iter().any(|coin| {
                 coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
             }));
+        })
+        .query_pools(Some("o.whale.uluna".to_string()), None, None, |result| {
+            let response = result.unwrap();
+            let mut assets = response.pools[0].pool_info.assets.clone();
+            assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+            assert_eq!(assets, expected_pool_reserves.borrow()[0]);
         });
 
     // Let's try to withdraw liquidity
+    expected_pool_reserves.borrow_mut().clear();
     suite
         .withdraw_liquidity(
             &creator,
@@ -130,10 +162,29 @@ fn deposit_and_withdraw_sanity_check() {
                 amount: Uint128::from(999_000u128),
             }],
             |result| {
+                let events = result.unwrap().events;
+                for event in &events {
+                    match event.ty.as_str() {
+                        "wasm" => {
+                            for attribute in &event.attributes {
+                                match attribute.key.as_str() {
+                                    "pool_reserves" => {
+                                        extract_pool_reserves(&attribute, &expected_pool_reserves);
+                                    }
+                                    "pool_identifier" => {
+                                        assert_eq!(attribute.value, "o.whale.uluna");
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 // we're trading 999_000 shares for 1_000_000 of our liquidity
-                assert!(result.unwrap().events.iter().any(|event| {
+                assert!(events.iter().any(|event| {
                     event.attributes.iter().any(|attr| {
-                        attr.key == "withdrawn_share"
+                        attr.key == "withdrawn_shares"
                             && attr.value
                                 == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
@@ -163,6 +214,12 @@ fn deposit_and_withdraw_sanity_check() {
                 coin.denom == *"uluna"
                     && coin.amount == Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT
             }));
+        })
+        .query_pools(Some("o.whale.uluna".to_string()), None, None, |result| {
+            let response = result.unwrap();
+            let mut assets = response.pools[0].pool_info.assets.clone();
+            assets.sort_by(|a, b| a.denom.cmp(&b.denom));
+            assert_eq!(assets, expected_pool_reserves.borrow()[0]);
         });
 }
 
@@ -1271,7 +1328,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1297,7 +1356,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1454,7 +1515,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1480,7 +1543,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1587,7 +1652,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1613,7 +1680,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1737,7 +1806,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1763,7 +1834,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1955,7 +2028,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -1981,7 +2056,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -2113,7 +2190,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -2139,7 +2218,9 @@ mod router {
             |result| {
                 // ensure we got 999,000 in the response (1m - initial liquidity amount)
                 let result = result.unwrap();
-                assert!(result.has_event(&Event::new("wasm").add_attribute("share", "999000")));
+                assert!(
+                    result.has_event(&Event::new("wasm").add_attribute("added_shares", "999000"))
+                );
             },
         );
 
@@ -2318,7 +2399,7 @@ mod swapping {
                     // Ensure we got 999_000 in the response which is 1mil less the initial liquidity amount
                     assert!(result.unwrap().events.iter().any(|event| {
                         event.attributes.iter().any(|attr| {
-                            attr.key == "share"
+                            attr.key == "added_shares"
                                 && attr.value
                                     == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
                                         .to_string()
@@ -2552,7 +2633,7 @@ mod swapping {
                 },
             );
 
-        let expected_pool_reserve = RefCell::<Vec<Coin>>::new(vec![]);
+        let expected_pool_reserves = RefCell::<Vec<Vec<Coin>>>::new(vec![]);
 
         // Now Let's try a swap
         suite
@@ -2570,15 +2651,12 @@ mod swapping {
                             for attribute in event.attributes {
                                 match attribute.key.as_str() {
                                     "pool_reserves" => {
-                                        expected_pool_reserve.borrow_mut().clear();
-                                        for reserve in attribute.value.split(",") {
-                                            expected_pool_reserve
-                                                .borrow_mut()
-                                                .push(Coin::from_str(reserve).unwrap());
-                                            expected_pool_reserve
-                                                .borrow_mut()
-                                                .sort_by(|a, b| a.denom.cmp(&b.denom));
-                                        }
+                                        expected_pool_reserves.borrow_mut().clear();
+                                        extract_pool_reserves(&attribute, &expected_pool_reserves);
+                                        println!(
+                                            "pool_reserves: {:?}",
+                                            expected_pool_reserves.borrow()
+                                        );
                                     }
                                     "pool_identifier" => {
                                         assert_eq!(attribute.value, "o.uom.uusd");
@@ -2594,7 +2672,7 @@ mod swapping {
                 let response = result.unwrap();
                 let mut assets = response.pools[0].pool_info.assets.clone();
                 assets.sort_by(|a, b| a.denom.cmp(&b.denom));
-                assert_eq!(assets, *expected_pool_reserve.borrow());
+                assert_eq!(assets, expected_pool_reserves.borrow()[0]);
             })
             .query_pools(Some("o.uluna.uusd".to_string()), None, None, |result| {
                 let response = result.unwrap();
@@ -2630,15 +2708,8 @@ mod swapping {
                             for attribute in event.attributes {
                                 match attribute.key.as_str() {
                                     "pool_reserves" => {
-                                        expected_pool_reserve.borrow_mut().clear();
-                                        for reserve in attribute.value.split(",") {
-                                            expected_pool_reserve
-                                                .borrow_mut()
-                                                .push(Coin::from_str(reserve).unwrap());
-                                            expected_pool_reserve
-                                                .borrow_mut()
-                                                .sort_by(|a, b| a.denom.cmp(&b.denom));
-                                        }
+                                        expected_pool_reserves.borrow_mut().clear();
+                                        extract_pool_reserves(&attribute, &expected_pool_reserves);
                                     }
                                     "pool_identifier" => {
                                         assert_eq!(attribute.value, "o.uom.uusd");
@@ -2654,7 +2725,7 @@ mod swapping {
                 let response = result.unwrap();
                 let mut assets = response.pools[0].pool_info.assets.clone();
                 assets.sort_by(|a, b| a.denom.cmp(&b.denom));
-                assert_eq!(assets, *expected_pool_reserve.borrow());
+                assert_eq!(assets, expected_pool_reserves.borrow()[0]);
             })
             .query_pools(Some("o.uluna.uusd".to_string()), None, None, |result| {
                 let response = result.unwrap();
@@ -2693,7 +2764,6 @@ mod swapping {
                 Some(Decimal::percent(10)),
                 vec![coin(1_000u128, "uom".to_string())],
                 |result| {
-                    let mut pool_reserves = vec![];
                     let mut pool_identifiers = vec![];
 
                     expected_pool_reserves.borrow_mut().clear();
@@ -2702,14 +2772,7 @@ mod swapping {
                             for attribute in event.attributes {
                                 match attribute.key.as_str() {
                                     "pool_reserves" => {
-                                        pool_reserves.clear();
-                                        for reserve in attribute.value.split(",") {
-                                            pool_reserves.push(Coin::from_str(reserve).unwrap());
-                                        }
-                                        pool_reserves.sort_by(|a, b| a.denom.cmp(&b.denom));
-                                        expected_pool_reserves
-                                            .borrow_mut()
-                                            .push(pool_reserves.clone());
+                                        extract_pool_reserves(&attribute, &expected_pool_reserves);
                                     }
                                     "pool_identifier" => {
                                         pool_identifiers.push(attribute.value.clone());
@@ -4139,7 +4202,7 @@ mod locking_lp {
                     // Ensure we got 999_000 in the response which is 1_000_000 less the initial liquidity amount
                     assert!(result.unwrap().events.iter().any(|event| {
                         event.attributes.iter().any(|attr| {
-                            attr.key == "share"
+                            attr.key == "added_shares"
                                 && attr.value
                                     == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
                                         .to_string()
@@ -4334,7 +4397,7 @@ mod locking_lp {
                     // Ensure we got 999_000 in the response which is 1_000_000 less the initial liquidity amount
                     assert!(result.unwrap().events.iter().any(|event| {
                         event.attributes.iter().any(|attr| {
-                            attr.key == "share"
+                            attr.key == "added_shares"
                                 && attr.value
                                     == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
                                         .to_string()
@@ -4522,7 +4585,7 @@ mod locking_lp {
                     // Ensure we got 999_000 in the response which is 1_000_000 less the initial liquidity amount
                     assert!(result.unwrap().events.iter().any(|event| {
                         event.attributes.iter().any(|attr| {
-                            attr.key == "share"
+                            attr.key == "added_shares"
                                 && attr.value
                                     == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
                                         .to_string()
@@ -4713,7 +4776,7 @@ mod locking_lp {
                     // Ensure we got 999_000 in the response which is 1_000_000 less the initial liquidity amount
                     assert!(result.unwrap().events.iter().any(|event| {
                         event.attributes.iter().any(|attr| {
-                            attr.key == "share"
+                            attr.key == "added_shares"
                                 && attr.value
                                     == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
                                         .to_string()

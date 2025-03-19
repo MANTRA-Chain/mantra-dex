@@ -184,11 +184,11 @@ pub fn provide_liquidity(
         let liquidity_token = pool.lp_denom.clone();
 
         // Compute share and other logic based on the number of assets
-        let total_share = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
+        let total_shares = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
 
-        let share = match &pool.pool_type {
+        let shares = match &pool.pool_type {
             PoolType::ConstantProduct => {
-                if total_share == Uint128::zero() {
+                if total_shares == Uint128::zero() {
                     // Make sure at least MINIMUM_LIQUIDITY_AMOUNT is deposited to mitigate the risk of the first
                     // depositor preventing small liquidity providers from joining the pool
                     let share = Uint128::new(
@@ -230,7 +230,7 @@ pub fn provide_liquidity(
                         asset_shares.push(
                             deposit
                                 .amount
-                                .multiply_ratio(total_share, pool_assets[pool_asset_index].amount),
+                                .multiply_ratio(total_shares, pool_assets[pool_asset_index].amount),
                         );
                     }
 
@@ -238,7 +238,7 @@ pub fn provide_liquidity(
                 }
             }
             PoolType::StableSwap { amp: amp_factor } => {
-                if total_share == Uint128::zero() {
+                if total_shares == Uint128::zero() {
                     // ensure all assets in the pool are provided and the amounts are greater than zero
                     ensure!(
                         pool_assets.len() == deposits.len()
@@ -277,7 +277,7 @@ pub fn provide_liquidity(
                         &pool_assets,
                         // add the deposit to the pool_assets to calculate the new balances
                         &add_coins(pool_assets.clone(), deposits.clone())?,
-                        total_share,
+                        total_shares,
                     )?
                     .ok_or(ContractError::StableLpMintError)?
                 }
@@ -290,8 +290,8 @@ pub fn provide_liquidity(
             &deposits,
             &mut pool_assets,
             pool.pool_type.clone(),
-            share,
-            total_share,
+            shares,
+            total_shares,
         )?;
 
         // if the unlocking duration is set, lock the LP tokens in the farm manager
@@ -310,7 +310,7 @@ pub fn provide_liquidity(
                 liquidity_token.clone(),
                 &env.contract.address,
                 &env.contract.address,
-                share,
+                shares,
             )?);
 
             // if the lock_position_identifier is set
@@ -344,7 +344,7 @@ pub fn provide_liquidity(
                                     identifier: position_identifier,
                                 },
                             },
-                            coins(share.u128(), liquidity_token),
+                            coins(shares.u128(), liquidity_token),
                         )?
                         .into(),
                     );
@@ -361,7 +361,7 @@ pub fn provide_liquidity(
                                     receiver: Some(receiver.clone()),
                                 },
                             },
-                            coins(share.u128(), liquidity_token),
+                            coins(shares.u128(), liquidity_token),
                         )?
                         .into(),
                     );
@@ -378,7 +378,7 @@ pub fn provide_liquidity(
                                 receiver: Some(receiver.clone()),
                             },
                         },
-                        coins(share.u128(), liquidity_token),
+                        coins(shares.u128(), liquidity_token),
                     )?
                     .into(),
                 );
@@ -389,7 +389,7 @@ pub fn provide_liquidity(
                 liquidity_token,
                 &deps.api.addr_validate(&receiver)?,
                 &env.contract.address,
-                share,
+                shares,
             )?);
         }
 
@@ -410,6 +410,13 @@ pub fn provide_liquidity(
 
         POOLS.save(deps.storage, &pool_identifier, &pool)?;
 
+        let pool_reserves = pool
+            .assets
+            .iter()
+            .map(|asset| asset.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+
         Ok(Response::new().add_messages(messages).add_attributes(vec![
             ("action", "provide_liquidity"),
             ("sender", info.sender.as_str()),
@@ -422,7 +429,9 @@ pub fn provide_liquidity(
                     .collect::<Vec<_>>()
                     .join(", "),
             ),
-            ("share", &share.to_string()),
+            ("added_shares", &shares.to_string()),
+            ("pool_identifier", &pool_identifier),
+            ("pool_reserves", &pool_reserves),
         ]))
     }
 }
@@ -450,10 +459,10 @@ pub fn withdraw_liquidity(
     let amount = cw_utils::must_pay(&info, &liquidity_token)?;
 
     // Get the total share of the pool
-    let total_share = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
+    let total_shares = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
 
     // Get the ratio of the amount to withdraw to the total share
-    let share_ratio: Decimal256 = Decimal256::from_ratio(amount, total_share);
+    let share_ratio: Decimal256 = Decimal256::from_ratio(amount, total_shares);
 
     // sanity check, the share_ratio cannot possibly be greater than 1
     ensure!(
@@ -505,6 +514,13 @@ pub fn withdraw_liquidity(
 
     POOLS.save(deps.storage, &pool_identifier, &pool)?;
 
+    let pool_reserves = pool
+        .assets
+        .iter()
+        .map(|asset| asset.to_string())
+        .collect::<Vec<_>>()
+        .join(",");
+
     // Burn the LP tokens
     messages.push(mantra_dex_std::lp_common::burn_lp_asset_msg(
         liquidity_token,
@@ -518,6 +534,8 @@ pub fn withdraw_liquidity(
         .add_attributes(vec![
             ("action", "withdraw_liquidity"),
             ("sender", info.sender.as_str()),
-            ("withdrawn_share", &amount.to_string()),
+            ("withdrawn_shares", &amount.to_string()),
+            ("pool_identifier", &pool_identifier),
+            ("pool_reserves", &pool_reserves),
         ]))
 }
