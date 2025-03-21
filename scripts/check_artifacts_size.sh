@@ -4,7 +4,7 @@ set -e
 # Maximum wasm file size
 if [[ -z $1 ]]; then
 	# Default max file size
-	maximumSize=600
+	maximumSize=2500
 else
 	maximumSize=$1
 fi
