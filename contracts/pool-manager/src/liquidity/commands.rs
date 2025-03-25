@@ -419,14 +419,6 @@ pub fn provide_liquidity(
             ("action", "provide_liquidity"),
             ("sender", info.sender.as_str()),
             ("receiver", receiver.as_str()),
-            (
-                "assets",
-                &pool_assets
-                    .iter()
-                    .map(|asset| asset.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            ),
             ("added_shares", &shares.to_string()),
             ("pool_identifier", &pool_identifier),
             ("pool_reserves", &pool_reserves),
