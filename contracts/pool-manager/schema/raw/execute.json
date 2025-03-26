@@ -283,7 +283,7 @@
               ]
             },
             "feature_toggle": {
-              "description": "The new feature toggles of the contract, allowing fine-tuned control over which operations are allowed.",
+              "description": "Toggles features for a given pool, allowing fine-tuned control over which operations are allowed, i.e. swap, deposits, withdrawals",
               "anyOf": [
                 {
                   "$ref": "#/definitions/FeatureToggle"
@@ -454,22 +454,33 @@
       "description": "Pool feature toggle, can control whether swaps, deposits, and withdrawals are enabled.",
       "type": "object",
       "required": [
-        "deposits_enabled",
-        "swaps_enabled",
-        "withdrawals_enabled"
+        "pool_identifier"
       ],
       "properties": {
         "deposits_enabled": {
           "description": "Whether or not deposits are enabled",
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "pool_identifier": {
+          "description": "The identifier of the pool to toggle the status of.",
+          "type": "string"
         },
         "swaps_enabled": {
           "description": "Whether or not swaps are enabled",
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "withdrawals_enabled": {
           "description": "Whether or not swaps are enabled",
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "additionalProperties": false

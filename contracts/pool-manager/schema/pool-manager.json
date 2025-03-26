@@ -1,6 +1,6 @@
 {
   "contract_name": "pool-manager",
-  "contract_version": "1.2.0",
+  "contract_version": "1.3.0",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -338,7 +338,7 @@
                 ]
               },
               "feature_toggle": {
-                "description": "The new feature toggles of the contract, allowing fine-tuned control over which operations are allowed.",
+                "description": "Toggles features for a given pool, allowing fine-tuned control over which operations are allowed, i.e. swap, deposits, withdrawals",
                 "anyOf": [
                   {
                     "$ref": "#/definitions/FeatureToggle"
@@ -509,22 +509,33 @@
         "description": "Pool feature toggle, can control whether swaps, deposits, and withdrawals are enabled.",
         "type": "object",
         "required": [
-          "deposits_enabled",
-          "swaps_enabled",
-          "withdrawals_enabled"
+          "pool_identifier"
         ],
         "properties": {
           "deposits_enabled": {
             "description": "Whether or not deposits are enabled",
-            "type": "boolean"
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pool_identifier": {
+            "description": "The identifier of the pool to toggle the status of.",
+            "type": "string"
           },
           "swaps_enabled": {
             "description": "Whether or not swaps are enabled",
-            "type": "boolean"
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "withdrawals_enabled": {
             "description": "Whether or not swaps are enabled",
-            "type": "boolean"
+            "type": [
+              "boolean",
+              "null"
+            ]
           }
         },
         "additionalProperties": false
@@ -1064,7 +1075,6 @@
           "type": "object",
           "required": [
             "farm_manager_addr",
-            "feature_toggle",
             "fee_collector_addr",
             "pool_creation_fee"
           ],
@@ -1076,9 +1086,6 @@
                   "$ref": "#/definitions/Addr"
                 }
               ]
-            },
-            "feature_toggle": {
-              "$ref": "#/definitions/FeatureToggle"
             },
             "fee_collector_addr": {
               "description": "The address where the collected fees go to.",
@@ -1095,30 +1102,6 @@
                   "$ref": "#/definitions/Coin"
                 }
               ]
-            }
-          },
-          "additionalProperties": false
-        },
-        "FeatureToggle": {
-          "description": "Pool feature toggle, can control whether swaps, deposits, and withdrawals are enabled.",
-          "type": "object",
-          "required": [
-            "deposits_enabled",
-            "swaps_enabled",
-            "withdrawals_enabled"
-          ],
-          "properties": {
-            "deposits_enabled": {
-              "description": "Whether or not deposits are enabled",
-              "type": "boolean"
-            },
-            "swaps_enabled": {
-              "description": "Whether or not swaps are enabled",
-              "type": "boolean"
-            },
-            "withdrawals_enabled": {
-              "description": "Whether or not swaps are enabled",
-              "type": "boolean"
             }
           },
           "additionalProperties": false
@@ -1329,7 +1312,8 @@
             "lp_denom",
             "pool_fees",
             "pool_identifier",
-            "pool_type"
+            "pool_type",
+            "status"
           ],
           "properties": {
             "asset_decimals": {
@@ -1378,6 +1362,14 @@
                   "$ref": "#/definitions/PoolType"
                 }
               ]
+            },
+            "status": {
+              "description": "The status of the pool",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/PoolStatus"
+                }
+              ]
             }
           },
           "additionalProperties": false
@@ -1404,6 +1396,30 @@
                   "$ref": "#/definitions/Coin"
                 }
               ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "PoolStatus": {
+          "description": "The pool status tells what actions are enabled for this pool.",
+          "type": "object",
+          "required": [
+            "deposits_enabled",
+            "swaps_enabled",
+            "withdrawals_enabled"
+          ],
+          "properties": {
+            "deposits_enabled": {
+              "description": "Whether deposits are enabled",
+              "type": "boolean"
+            },
+            "swaps_enabled": {
+              "description": "Whether swaps are enabled",
+              "type": "boolean"
+            },
+            "withdrawals_enabled": {
+              "description": "Whether withdrawals are enabled",
+              "type": "boolean"
             }
           },
           "additionalProperties": false
