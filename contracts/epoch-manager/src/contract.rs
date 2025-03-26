@@ -57,7 +57,7 @@ pub fn execute(
     match msg {
         ExecuteMsg::UpdateConfig { epoch_config } => {
             cw_utils::nonpayable(&info)?;
-            commands::update_config(deps, &info, epoch_config)
+            commands::update_config(deps, env, &info, epoch_config)
         }
         ExecuteMsg::UpdateOwnership(action) => {
             cw_utils::nonpayable(&info)?;
