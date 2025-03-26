@@ -20,23 +20,22 @@ pub fn swap(
     receiver: Option<String>,
     pool_identifier: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
+    let pool = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
+
     // check if the swap feature is enabled
     ensure!(
-        config.feature_toggle.swaps_enabled,
+        pool.status.swaps_enabled,
         ContractError::OperationDisabled("swap".to_string())
     );
 
-    let offer_asset = cw_utils::one_coin(&info)?;
-
     // ensure offer asset is not the same as ask asset
+    let offer_asset = cw_utils::one_coin(&info)?;
     ensure!(
         offer_asset.denom != ask_asset_denom,
         ContractError::SameAsset
     );
 
     // verify that the assets sent match the ones from the pool
-    let pool = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
     ensure!(
         [ask_asset_denom.clone(), offer_asset.denom.clone()]
             .iter()
@@ -47,7 +46,6 @@ pub fn swap(
         ContractError::AssetMismatch
     );
 
-    // perform the swap
     let swap_result = perform_swap(
         deps.branch(),
         offer_asset.clone(),
@@ -57,7 +55,6 @@ pub fn swap(
         max_spread,
     )?;
 
-    // add messages
     let mut messages: Vec<CosmosMsg> = vec![];
 
     let receiver = validate_addr_or_default(&deps.as_ref(), receiver, info.sender);
@@ -74,6 +71,8 @@ pub fn swap(
     }
 
     if !swap_result.protocol_fee_asset.amount.is_zero() {
+        let config = CONFIG.load(deps.storage)?;
+
         messages.push(
             BankMsg::Send {
                 to_address: config.fee_collector_addr.to_string(),

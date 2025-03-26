@@ -6,6 +6,7 @@ pub mod helpers;
 pub mod liquidity;
 pub mod manager;
 pub mod math;
+mod migrations;
 pub mod queries;
 pub mod router;
 pub mod swap;

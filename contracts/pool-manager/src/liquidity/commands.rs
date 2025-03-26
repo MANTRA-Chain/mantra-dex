@@ -42,15 +42,13 @@ pub fn provide_liquidity(
     unlocking_duration: Option<u64>,
     lock_position_identifier: Option<String>,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
+    let mut pool = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
+
     // check if the deposit feature is enabled
     ensure!(
-        config.feature_toggle.deposits_enabled,
+        pool.status.deposits_enabled,
         ContractError::OperationDisabled("provide_liquidity".to_string())
     );
-
-    // Get the pool by the pool_identifier
-    let mut pool = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
 
     let mut pool_assets = pool.assets.clone();
     let deposits = aggregate_coins(info.funds.clone())?;
@@ -72,7 +70,7 @@ pub fn provide_liquidity(
     let is_single_asset_provision = deposits.len() == 1usize;
 
     if is_single_asset_provision {
-        // ensure the receiver is the same as the sender if the the intention is to lock the LP tokens
+        // ensure the receiver is the same as the sender if  the intention is to lock the LP tokens
         // on the farm manager
         if unlocking_duration.is_some() {
             ensure!(
@@ -311,6 +309,8 @@ pub fn provide_liquidity(
                 shares,
             )?);
 
+            let config = CONFIG.load(deps.storage)?;
+
             // if the lock_position_identifier is set
             if let Some(position_identifier) = lock_position_identifier {
                 let positions_result: StdResult<PositionsResponse> = deps.querier.query_wasm_smart(
@@ -434,18 +434,16 @@ pub fn withdraw_liquidity(
     info: MessageInfo,
     pool_identifier: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    // check if the withdraw feature is enabled
-    if !config.feature_toggle.withdrawals_enabled {
-        return Err(ContractError::OperationDisabled(
-            "withdraw_liquidity".to_string(),
-        ));
-    }
-
-    // Get the pool by the pool_identifier
     let mut pool = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
-    let liquidity_token = pool.lp_denom.clone();
+
+    // check if the withdraw feature is enabled
+    ensure!(
+        pool.status.withdrawals_enabled,
+        ContractError::OperationDisabled("withdraw_liquidity".to_string())
+    );
+
     // Verify that the LP token was sent
+    let liquidity_token = pool.lp_denom.clone();
     let amount = cw_utils::must_pay(&info, &liquidity_token)?;
 
     // Get the total share of the pool
