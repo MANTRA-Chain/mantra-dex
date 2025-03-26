@@ -211,11 +211,7 @@ pub fn create_pool(
             asset_decimals,
             pool_fees,
             assets,
-            status: PoolStatus {
-                swaps_enabled: true,
-                deposits_enabled: true,
-                withdrawals_enabled: true,
-            },
+            status: PoolStatus::default(),
         },
     )?;
 

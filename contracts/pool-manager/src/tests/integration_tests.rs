@@ -4038,8 +4038,6 @@ mod swapping {
 }
 
 mod ownership {
-    use mantra_dex_std::pool_manager::FeatureToggle;
-
     use super::*;
 
     #[test]
@@ -4154,11 +4152,7 @@ mod ownership {
                     .u128(),
                 current_pool_creation_fee.denom,
             )),
-            Some(FeatureToggle {
-                deposits_enabled: false,
-                swaps_enabled: false,
-                withdrawals_enabled: false,
-            }),
+            None,
             |res| {
                 res.unwrap();
             },
@@ -4167,7 +4161,6 @@ mod ownership {
         let config = suite.query_config();
         assert_ne!(config.fee_collector_addr, initial_config.fee_collector_addr);
         assert_ne!(config.pool_creation_fee, initial_config.pool_creation_fee);
-        assert_ne!(config.feature_toggle, initial_config.feature_toggle);
         assert_ne!(config.farm_manager_addr, initial_config.farm_manager_addr);
     }
 }
@@ -7390,7 +7383,7 @@ mod multiple_pools {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
     use mantra_common_testing::multi_test::stargate_mock::StargateMock;
     use mantra_dex_std::fee::{Fee, PoolFee};
-    use mantra_dex_std::pool_manager::{PoolInfo, PoolType};
+    use mantra_dex_std::pool_manager::{PoolInfo, PoolStatus, PoolType};
 
     use crate::tests::suite::TestingSuite;
     use crate::ContractError;
@@ -7732,6 +7725,7 @@ mod multiple_pools {
                     assets: vec![coin(1001000, "uwhale"), coin(999070, "uluna")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_1.clone(),
+                    status: PoolStatus::default(),
                 });
             })
         ;
@@ -7776,6 +7770,7 @@ mod multiple_pools {
                     assets: vec![coin(999_140, "uwhale"), coin(1_001_070, "uluna")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_1.clone(),
+                    status: PoolStatus::default(),
                 });
             })
         ;
@@ -7822,6 +7817,7 @@ mod multiple_pools {
                     assets: vec![coin(1001000, "uwhale"), coin(999_150, "uluna")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_2.clone(),
+                    status: PoolStatus::default(),
                 });
             })
         ;
@@ -7859,6 +7855,7 @@ mod multiple_pools {
                     assets: vec![coin(999_300, "uwhale"), coin(1_001_150, "uluna")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_2.clone(),
+                    status: PoolStatus::default(),
                 });
             });
 
@@ -7906,6 +7903,7 @@ mod multiple_pools {
                     assets: vec![coin(1003000, "uluna"), coin(997_218, "uusd")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_1.clone(),
+                    status: PoolStatus::default(),
                 });
             })
         ;
@@ -7948,6 +7946,7 @@ mod multiple_pools {
                     assets: vec![coin(1_001_599, "uluna"), coin(998_718, "uusd")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_1.clone(),
+                    status: PoolStatus::default(),
                 });
             })
         ;
@@ -8046,6 +8045,7 @@ mod multiple_pools {
                 assets: vec![coin(999_140, "uwhale"), coin(1_001_070, "uluna")],
                 pool_type: PoolType::ConstantProduct,
                 pool_fees: pool_fees_1.clone(),
+                status: PoolStatus::default(),
             });
         })
             .query_pools(Some("o.whale.uluna.pool.2".to_string()), None, None, |result| {
@@ -8065,6 +8065,7 @@ mod multiple_pools {
                     assets: vec![coin(1_004_300, "uwhale"), coin(996_913, "uluna")],
                     pool_type: PoolType::ConstantProduct,
                     pool_fees: pool_fees_2.clone(),
+                    status: PoolStatus::default(),
                 });
             }).query_pools(Some("o.uluna.uusd.pool.1".to_string()), None, None, |result| {
             let response = result.unwrap();
@@ -8083,6 +8084,7 @@ mod multiple_pools {
                 assets: vec![coin(1_005_587, "uluna"), coin(995_035, "uusd")],
                 pool_type: PoolType::ConstantProduct,
                 pool_fees: pool_fees_1.clone(),
+                status: PoolStatus::default(),
             });
         });
 
@@ -9889,6 +9891,371 @@ mod query_simulations {
                     return_amount.parse::<u128>().unwrap(),
                     "0.001"
                 );
+            },
+        );
+    }
+}
+
+mod pool_status {
+    use crate::tests::suite::TestingSuite;
+    use crate::ContractError;
+    use cosmwasm_std::{coin, Coin, Decimal, Uint128};
+    use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+    use mantra_dex_std::fee::{Fee, PoolFee};
+    use mantra_dex_std::pool_manager::{FeatureToggle, PoolType};
+
+    #[test]
+    fn lock_single_pool() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uom".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+            ],
+            StargateMock::new(vec![coin(1000u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+
+        let asset_denoms = vec!["uom".to_string(), "uusd".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        // Create two pools, one will be locked, the other won't be
+        suite
+            .instantiate_default()
+            .add_one_epoch()
+            .create_pool(
+                &creator,
+                asset_denoms.clone(),
+                vec![6u8, 6u8],
+                pool_fees.clone(),
+                PoolType::ConstantProduct,
+                Some("uom.uusd.1".to_string()),
+                vec![coin(1000, "uusd"), coin(1000, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .create_pool(
+                &creator,
+                asset_denoms,
+                vec![6u8, 6u8],
+                pool_fees,
+                PoolType::ConstantProduct,
+                Some("uom.uusd.2".to_string()),
+                vec![coin(1000, "uusd"), coin(1000, "uom")],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        suite.provide_liquidity(
+            &creator,
+            "o.uom.uusd.1".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uom".to_string(),
+                    amount: Uint128::from(1_000u128),
+                },
+                Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::from(8_000u128),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        let lp_denom_1 = suite.get_lp_denom("o.uom.uusd.1".to_string());
+        let lp_denom_2 = suite.get_lp_denom("o.uom.uusd.2".to_string());
+
+        suite.update_config(
+            &creator,
+            None,
+            None,
+            None,
+            Some(FeatureToggle {
+                pool_identifier: "o.uom.uusd.1".to_string(),
+                withdrawals_enabled: Some(false),
+                deposits_enabled: Some(false),
+                swaps_enabled: Some(false),
+            }),
+            |res| {
+                res.unwrap();
+            },
+        );
+
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.uom.uusd.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1_000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(8_000u128),
+                    },
+                ],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::OperationDisabled(o) => {
+                            assert_eq!(o, "provide_liquidity")
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::OperationDisabled"
+                        ),
+                    }
+                },
+            )
+            .swap(
+                &creator,
+                "uom".to_string(),
+                None,
+                None,
+                None,
+                "o.uom.uusd.1".to_string(),
+                vec![coin(1000u128, "uusd".to_string())],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::OperationDisabled(o) => {
+                            assert_eq!(o, "swap")
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::OperationDisabled"
+                        ),
+                    }
+                },
+            )
+            .withdraw_liquidity(
+                &creator,
+                "o.uom.uusd.1".to_string(),
+                vec![Coin {
+                    denom: lp_denom_1.clone(),
+                    amount: Uint128::from(100u128),
+                }],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::OperationDisabled(o) => {
+                            assert_eq!(o, "withdraw_liquidity")
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::OperationDisabled"
+                        ),
+                    }
+                },
+            );
+
+        // the second pool should still work
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.uom.uusd.2".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1_000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(8_000u128),
+                    },
+                ],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .swap(
+                &creator,
+                "uom".to_string(),
+                None,
+                None,
+                None,
+                "o.uom.uusd.2".to_string(),
+                vec![coin(100u128, "uusd".to_string())],
+                |result| {
+                    result.unwrap();
+                },
+            )
+            .withdraw_liquidity(
+                &creator,
+                "o.uom.uusd.2".to_string(),
+                vec![Coin {
+                    denom: lp_denom_2.clone(),
+                    amount: Uint128::from(100u128),
+                }],
+                |result| {
+                    result.unwrap();
+                },
+            );
+
+        suite.update_config(
+            &creator,
+            None,
+            None,
+            None,
+            Some(FeatureToggle {
+                pool_identifier: "o.uom.uusd.1".to_string(),
+                withdrawals_enabled: None,
+                deposits_enabled: None,
+                swaps_enabled: Some(true),
+            }),
+            |res| {
+                res.unwrap();
+            },
+        );
+
+        suite
+            .provide_liquidity(
+                &creator,
+                "o.uom.uusd.1".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                vec![
+                    Coin {
+                        denom: "uom".to_string(),
+                        amount: Uint128::from(1_000u128),
+                    },
+                    Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128::from(8_000u128),
+                    },
+                ],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::OperationDisabled(o) => {
+                            assert_eq!(o, "provide_liquidity")
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::OperationDisabled"
+                        ),
+                    }
+                },
+            )
+            .swap(
+                &creator,
+                "uom".to_string(),
+                None,
+                None,
+                None,
+                "o.uom.uusd.1".to_string(),
+                vec![coin(50u128, "uusd".to_string())],
+                |result| {
+                    // should work, as it was enabled
+                    result.unwrap();
+                },
+            )
+            .withdraw_liquidity(
+                &creator,
+                "o.uom.uusd.1".to_string(),
+                vec![Coin {
+                    denom: lp_denom_1.clone(),
+                    amount: Uint128::from(100u128),
+                }],
+                |result| {
+                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                    match err {
+                        ContractError::OperationDisabled(o) => {
+                            assert_eq!(o, "withdraw_liquidity")
+                        }
+                        _ => panic!(
+                            "Wrong error type, should return ContractError::OperationDisabled"
+                        ),
+                    }
+                },
+            );
+    }
+    #[test]
+    fn cant_toggle_unexisting_pool() {
+        let mut suite = TestingSuite::default_with_balances(
+            vec![
+                coin(1_000_000_000u128, "uom".to_string()),
+                coin(1_000_000_000u128, "uusd".to_string()),
+            ],
+            StargateMock::new(vec![coin(1000u128, "uom".to_string())]),
+        );
+        let creator = suite.creator();
+
+        let asset_denoms = vec!["uom".to_string(), "uusd".to_string()];
+
+        let pool_fees = PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        };
+
+        suite.instantiate_default().add_one_epoch().create_pool(
+            &creator,
+            asset_denoms.clone(),
+            vec![6u8, 6u8],
+            pool_fees.clone(),
+            PoolType::ConstantProduct,
+            Some("uom.uusd.1".to_string()),
+            vec![coin(1000, "uusd"), coin(1000, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+        suite.update_config(
+            &creator,
+            None,
+            None,
+            None,
+            Some(FeatureToggle {
+                pool_identifier: "xxx".to_string(),
+                withdrawals_enabled: Some(false),
+                deposits_enabled: Some(false),
+                swaps_enabled: Some(false),
+            }),
+            |res| {
+                let err = res.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::UnExistingPool => {}
+                    _ => panic!("Wrong error type, should return ContractError::UnExistingPool"),
+                }
             },
         );
     }

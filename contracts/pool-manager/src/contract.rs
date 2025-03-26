@@ -12,9 +12,7 @@ use crate::state::{
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
 use crate::{liquidity, manager, queries, router, swap};
-use mantra_dex_std::pool_manager::{
-    ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg,
-};
+use mantra_dex_std::pool_manager::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use mantra_utils::validate_contract;
 use semver::Version;
 
@@ -35,11 +33,6 @@ pub fn instantiate(
         fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
         farm_manager_addr: deps.api.addr_validate(&msg.farm_manager_addr)?,
         pool_creation_fee: msg.pool_creation_fee.clone(),
-        feature_toggle: FeatureToggle {
-            withdrawals_enabled: true,
-            deposits_enabled: true,
-            swaps_enabled: true,
-        },
     };
     CONFIG.save(deps.storage, &config)?;
     // initialize pool counter

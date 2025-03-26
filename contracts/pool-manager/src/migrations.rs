@@ -59,11 +59,7 @@ pub fn migrate_to_v130(deps: DepsMut) -> Result<(), StdError> {
                     withdrawals_enabled: true,
                 }
             } else {
-                PoolStatus {
-                    swaps_enabled: true,
-                    deposits_enabled: true,
-                    withdrawals_enabled: true,
-                }
+                PoolStatus::default()
             };
 
             POOLS.save(
