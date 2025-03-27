@@ -43,7 +43,6 @@
       "type": "object",
       "required": [
         "farm_manager_addr",
-        "feature_toggle",
         "fee_collector_addr",
         "pool_creation_fee"
       ],
@@ -55,9 +54,6 @@
               "$ref": "#/definitions/Addr"
             }
           ]
-        },
-        "feature_toggle": {
-          "$ref": "#/definitions/FeatureToggle"
         },
         "fee_collector_addr": {
           "description": "The address where the collected fees go to.",
@@ -74,30 +70,6 @@
               "$ref": "#/definitions/Coin"
             }
           ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "FeatureToggle": {
-      "description": "Pool feature toggle, can control whether swaps, deposits, and withdrawals are enabled.",
-      "type": "object",
-      "required": [
-        "deposits_enabled",
-        "swaps_enabled",
-        "withdrawals_enabled"
-      ],
-      "properties": {
-        "deposits_enabled": {
-          "description": "Whether or not deposits are enabled",
-          "type": "boolean"
-        },
-        "swaps_enabled": {
-          "description": "Whether or not swaps are enabled",
-          "type": "boolean"
-        },
-        "withdrawals_enabled": {
-          "description": "Whether or not swaps are enabled",
-          "type": "boolean"
         }
       },
       "additionalProperties": false

@@ -6,7 +6,7 @@ use cosmwasm_std::{
 use mantra_dex_std::coin::is_factory_token;
 use mantra_dex_std::constants::LP_SYMBOL;
 use mantra_dex_std::fee::PoolFee;
-use mantra_dex_std::pool_manager::{PoolInfo, PoolType};
+use mantra_dex_std::pool_manager::{PoolInfo, PoolStatus, PoolType};
 use mantra_dex_std::tokenfactory::utils::get_factory_denom_creation_fee;
 
 use crate::helpers::{
@@ -211,6 +211,7 @@ pub fn create_pool(
             asset_decimals,
             pool_fees,
             assets,
+            status: PoolStatus::default(),
         },
     )?;
 

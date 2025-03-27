@@ -11,7 +11,7 @@
 
 <!--
 
-    Add the list of issues related to this PR from the [issue tracker](https://github.com/MANTRA-Finance/amm/issues).
+    Add the list of issues related to this PR from the [issue tracker](https://github.com/MANTRA-Chain/mantra-dex/issues).
     Indicate, which of these issues are resolved or fixed by this PR, like #XXXX, where XXXX is the issue number.
 
 -->

@@ -2,20 +2,19 @@ use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 };
 use cosmwasm_std::{wasm_execute, Reply, StdError};
-use cw2::set_contract_version;
-
-use mantra_dex_std::pool_manager::{
-    ExecuteMsg, FeatureToggle, InstantiateMsg, MigrateMsg, QueryMsg,
-};
-use mantra_utils::validate_contract;
+use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
 use crate::helpers::validate_asset_balance;
+use crate::migrations::migrate_to_v130;
 use crate::state::{
     Config, SingleSideLiquidityProvisionBuffer, CONFIG, POOL_COUNTER,
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
 use crate::{liquidity, manager, queries, router, swap};
+use mantra_dex_std::pool_manager::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use mantra_utils::validate_contract;
+use semver::Version;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "mantra:pool-manager";
@@ -34,11 +33,6 @@ pub fn instantiate(
         fee_collector_addr: deps.api.addr_validate(&msg.fee_collector_addr)?,
         farm_manager_addr: deps.api.addr_validate(&msg.farm_manager_addr)?,
         pool_creation_fee: msg.pool_creation_fee.clone(),
-        feature_toggle: FeatureToggle {
-            withdrawals_enabled: true,
-            deposits_enabled: true,
-            swaps_enabled: true,
-        },
     };
     CONFIG.save(deps.storage, &config)?;
     // initialize pool counter
@@ -151,6 +145,7 @@ pub fn execute(
             liquidity::commands::withdraw_liquidity(deps, env, info, pool_identifier)
         }
         ExecuteMsg::UpdateOwnership(action) => {
+            cw_utils::nonpayable(&info)?;
             mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
         }
         ExecuteMsg::ExecuteSwapOperations {
@@ -171,14 +166,17 @@ pub fn execute(
             farm_manager_addr,
             pool_creation_fee,
             feature_toggle,
-        } => manager::update_config(
-            deps,
-            info,
-            fee_collector_addr,
-            farm_manager_addr,
-            pool_creation_fee,
-            feature_toggle,
-        ),
+        } => {
+            cw_utils::nonpayable(&info)?;
+            manager::update_config(
+                deps,
+                info,
+                fee_collector_addr,
+                farm_manager_addr,
+                pool_creation_fee,
+                feature_toggle,
+            )
+        }
     }
 }
 
@@ -243,8 +241,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 }
 
 #[entry_point]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(mut deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     validate_contract!(deps, CONTRACT_NAME, CONTRACT_VERSION);
+
+    let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
+    if storage_version <= Version::parse("1.2.0")? {
+        migrate_to_v130(deps.branch())?;
+    }
+
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }

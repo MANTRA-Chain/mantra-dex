@@ -6,6 +6,7 @@ use mantra_dex_std::coin::burn_coin_msg;
 use mantra_dex_std::common::validate_addr_or_default;
 use mantra_dex_std::pool_manager::SwapOperation;
 
+use crate::state::get_pool_by_identifier;
 use crate::{state::CONFIG, swap::perform_swap::perform_swap, ContractError};
 
 /// Checks that the output of each [`SwapOperation`] acts as the input of the next swap.
@@ -39,13 +40,6 @@ pub fn execute_swap_operations(
     receiver: Option<String>,
     max_spread: Option<Decimal>,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    // check if the swap feature is enabled
-    ensure!(
-        config.feature_toggle.swaps_enabled,
-        ContractError::OperationDisabled("swap".to_string())
-    );
-
     // ensure that there was at least one operation
     // and retrieve the output token info
     let target_asset_denom = operations
@@ -88,6 +82,13 @@ pub fn execute_swap_operations(
                 // inside assert_operations() we have already checked that
                 // the output of each swap is the input of the next swap.
 
+                let pool_info = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
+
+                ensure!(
+                    pool_info.status.swaps_enabled,
+                    ContractError::OperationDisabled("swap".to_string())
+                );
+
                 let swap_result = perform_swap(
                     deps.branch(),
                     previous_swap_output.clone(),
@@ -128,6 +129,7 @@ pub fn execute_swap_operations(
                     fee_messages.push(burn_coin_msg(swap_result.burn_fee_asset));
                 }
                 if !swap_result.protocol_fee_asset.amount.is_zero() {
+                    let config = CONFIG.load(deps.storage)?;
                     fee_messages.push(
                         BankMsg::Send {
                             to_address: config.fee_collector_addr.to_string(),
