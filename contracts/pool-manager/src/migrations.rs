@@ -44,11 +44,11 @@ pub fn migrate_to_v130(deps: DepsMut) -> Result<(), StdError> {
         },
     );
 
-    let all_values = OLD_POOLS
+    let old_values = OLD_POOLS
         .range(deps.storage, None, None, Order::Ascending)
         .collect::<Result<Vec<_>, _>>()?;
 
-    all_values
+    old_values
         .into_iter()
         .try_for_each(|(key, old_pool_info)| -> Result<(), StdError> {
             let pool_status = if old_pool_info.pool_identifier == *"o.ausdy.uusdc" {
@@ -61,6 +61,8 @@ pub fn migrate_to_v130(deps: DepsMut) -> Result<(), StdError> {
             } else {
                 PoolStatus::default()
             };
+
+            OLD_POOLS.remove(deps.storage, &key)?;
 
             POOLS.save(
                 deps.storage,
