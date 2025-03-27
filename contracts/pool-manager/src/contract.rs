@@ -145,6 +145,7 @@ pub fn execute(
             liquidity::commands::withdraw_liquidity(deps, env, info, pool_identifier)
         }
         ExecuteMsg::UpdateOwnership(action) => {
+            cw_utils::nonpayable(&info)?;
             mantra_utils::ownership::update_ownership(deps, env, info, action).map_err(Into::into)
         }
         ExecuteMsg::ExecuteSwapOperations {
@@ -165,14 +166,17 @@ pub fn execute(
             farm_manager_addr,
             pool_creation_fee,
             feature_toggle,
-        } => manager::update_config(
-            deps,
-            info,
-            fee_collector_addr,
-            farm_manager_addr,
-            pool_creation_fee,
-            feature_toggle,
-        ),
+        } => {
+            cw_utils::nonpayable(&info)?;
+            manager::update_config(
+                deps,
+                info,
+                fee_collector_addr,
+                farm_manager_addr,
+                pool_creation_fee,
+                feature_toggle,
+            )
+        }
     }
 }
 
