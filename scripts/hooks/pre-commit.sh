@@ -2,7 +2,7 @@
 export PATH=$PATH:/usr/local/bin
 
 #
-# White Whale contracts pre-commit hook, used to perform static analysis checks on changed files.
+# MANTRA pre-commit hook, used to perform static analysis checks on changed files.
 #
 # Install the hook with the --install option.
 #
@@ -109,8 +109,7 @@ format_file() {
 # clippy checks
 lint_check() {
 	printf "Starting clippy check...\n"
-	RUSTFLAGS="-Dwarnings"
-	cargo clippy --quiet -- -D warnings
+	RUSTFLAGS="-Dwarnings" cargo clippy --quiet -- -D warnings
 	clippy_exit_code=$?
 	if [ $clippy_exit_code -ne 0 ]; then
 		printf "\nclippy found some issues. Fix them manually and try again :)"
