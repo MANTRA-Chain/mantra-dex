@@ -174,12 +174,9 @@ pub fn query_reverse_simulation(
                     extra_fees_amount.checked_add(extra_fee.compute(before_fees_ask)?)?;
             }
 
-            let offer_amount = offer_amount.try_into()?;
-            let spread_amount = spread_amount.try_into()?;
-
             Ok(ReverseSimulationResponse {
-                offer_amount,
-                spread_amount,
+                offer_amount: offer_amount.try_into()?,
+                spread_amount: spread_amount.try_into()?,
                 swap_fee_amount: swap_fee_amount.try_into()?,
                 protocol_fee_amount: protocol_fee_amount.try_into()?,
                 burn_fee_amount: burn_fee_amount.try_into()?,
