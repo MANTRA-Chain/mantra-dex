@@ -152,11 +152,9 @@ pub fn calculate_stableswap_y(
 
         if y >= previous_y {
             if y.checked_sub(previous_y)? <= Uint512::one() {
-                println!("y: {}", y);
                 return y.try_into().map_err(|_| ContractError::SwapOverflowError);
             }
         } else if y < previous_y && previous_y.checked_sub(y)? <= Uint512::one() {
-            println!("y: {}", y);
             return y.try_into().map_err(|_| ContractError::SwapOverflowError);
         }
     }
