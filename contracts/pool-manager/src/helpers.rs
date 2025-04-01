@@ -1302,4 +1302,68 @@ mod tests {
             assert!(d0 <= d1);  // Pool token supply not changed on swaps
         }
     }
+
+    #[test]
+    fn test_stableswap_large_amounts_overflow() {
+        let min_amp = 1;
+        // The test demonstrates that calculate_stableswap_y function overflows with Uint256
+        // when dealing with large token amounts, especially for tokens with high decimal places (18)
+
+        // Define large pool amounts - 1M tokens with 18 decimals (1e24)
+        let large_pool = Uint128::new(1_000_000_000_000_000_000_000_000u128);
+
+        // Define large swap amount - 100k tokens with 18 decimals (1e23)
+        let large_amount = Uint128::new(100_000_000_000_000_000_000_000u128);
+
+        let amp = min_amp;
+        let offer_pool = large_pool;
+        let ask_pool = large_pool;
+        let offer_amount = large_amount;
+
+        println!(
+            "Parameters: amp={}, offer_pool={}, ask_pool={}, offer_amount={}",
+            amp, offer_pool, ask_pool, offer_amount
+        );
+
+        // Convert to Decimal256 for precision
+        let offer_pool_dec = Decimal256::from_ratio(offer_pool, Uint128::new(1));
+        let ask_pool_dec = Decimal256::from_ratio(ask_pool, Uint128::new(1));
+        let offer_amount_dec = Decimal256::from_ratio(offer_amount, Uint128::new(1));
+
+        // This will panic with a CheckedMultiplyRatioError(Overflow) because intermediate
+        // calculations in calculate_stableswap_y overflow Uint256 when dealing with large values
+        let result = calculate_stableswap_y(
+            Uint256::from(2u8), // 2 coins
+            offer_pool_dec,
+            ask_pool_dec,
+            offer_amount_dec,
+            &amp,
+            18, // 18 decimals precision
+            StableSwapDirection::Simulate,
+        );
+
+        match result {
+            Ok(value) => {
+                println!("Result: {}", value);
+                // If we get here, the test is failing because we should get an overflow error
+                panic!(
+                    "Expected overflow error but got successful result: {}",
+                    value
+                );
+            }
+            Err(e) => {
+                // We expect a CheckedMultiplyRatioError due to overflow
+                match e {
+                    crate::error::ContractError::CheckedMultiplyRatioError(_) => {
+                        // This is the expected error
+                        println!("Expected error received: {:?}", e);
+                    }
+                    _ => {
+                        // Any other error is unexpected
+                        panic!("Unexpected error: {:?}", e);
+                    }
+                }
+            }
+        }
+    }
 }
