@@ -111,8 +111,10 @@ pub fn calculate_stableswap_y(
     amp: &u64,
     ask_precision: u8,
     direction: StableSwapDirection,
-) -> Result<Uint128, ContractError> {
-    let ann = Uint512::from_uint256(Uint256::from_u128((*amp).into()).checked_mul(n_coins)?);
+) -> Result<Uint256, ContractError> {
+    let amp_512 = Uint512::from_uint256(Uint256::from_u128((*amp).into()));
+    let n_coins_512 = Uint512::from_uint256(n_coins);
+    let ann = amp_512.checked_mul(n_coins_512)?;
 
     let d = calculate_stableswap_d(n_coins, offer_pool, ask_pool, amp, ask_precision)?
         .to_uint256_with_precision(u32::from(ask_precision))?;
@@ -123,17 +125,18 @@ pub fn calculate_stableswap_y(
     }
     .to_uint256_with_precision(u32::from(ask_precision))?;
 
-    // Convert all values to Uint512
-    let d_512 = Uint512::from_uint256(d);
-    let n_coins_512 = Uint512::from_uint256(n_coins);
+    let ann_times_n_coins = ann.checked_mul(n_coins_512)?;
     let pool_sum_512 = Uint512::from_uint256(pool_sum);
+    let d_512 = Uint512::from_uint256(d);
+    let ann_times_n_coins_512 = ann_times_n_coins.checked_mul(n_coins_512)?;
+    let pool_sum_times_n_coins_512 = pool_sum_512.checked_mul(n_coins_512)?;
 
-    // Calculate coefficients for Newton-Raphson method
-    let c = d_512
-        .checked_mul(ann)?
-        .checked_mul(n_coins_512.checked_mul(n_coins_512)?)?
+    let mut c_512 = d_512
         .checked_mul(d_512)?
-        .checked_div(pool_sum_512.checked_mul(n_coins_512)?)?;
+        .checked_div(pool_sum_times_n_coins_512)?;
+    c_512 = c_512
+        .checked_mul(d_512)?
+        .checked_div(ann_times_n_coins_512)?;
 
     let b = pool_sum_512.checked_add(d_512.checked_div(ann)?)?;
 
@@ -144,14 +147,16 @@ pub fn calculate_stableswap_y(
         // y = (y^2 + c) / (2y + b - d)
         y = y
             .checked_mul(y)?
-            .checked_add(c)?
+            .checked_add(c_512)?
             .checked_div(y.checked_add(y)?.checked_add(b)?.checked_sub(d_512)?)?;
 
         if y >= previous_y {
             if y.checked_sub(previous_y)? <= Uint512::one() {
+                println!("y: {}", y);
                 return y.try_into().map_err(|_| ContractError::SwapOverflowError);
             }
         } else if y < previous_y && previous_y.checked_sub(y)? <= Uint512::one() {
+            println!("y: {}", y);
             return y.try_into().map_err(|_| ContractError::SwapOverflowError);
         }
     }
@@ -217,7 +222,7 @@ pub fn compute_swap(
 
             let return_amount = ask_pool
                 .to_uint256_with_precision(u32::from(ask_precision))?
-                .checked_sub(Uint256::from_uint128(new_pool))?;
+                .checked_sub(new_pool)?;
 
             // the spread is the loss from 1:1 conversion
             // thus is it the offer_amount - return_amount
