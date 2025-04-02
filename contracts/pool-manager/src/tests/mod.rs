@@ -1,2 +1,2 @@
-pub mod integration_tests;
+pub mod integration;
 pub mod suite;
