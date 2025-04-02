@@ -111,8 +111,10 @@ pub fn calculate_stableswap_y(
     amp: &u64,
     ask_precision: u8,
     direction: StableSwapDirection,
-) -> Result<Uint128, ContractError> {
-    let ann = Uint256::from_u128((*amp).into()).checked_mul(n_coins)?;
+) -> Result<Uint256, ContractError> {
+    let amp_512 = Uint512::from_uint256(Uint256::from_u128((*amp).into()));
+    let n_coins_512 = Uint512::from_uint256(n_coins);
+    let ann = amp_512.checked_mul(n_coins_512)?;
 
     let d = calculate_stableswap_d(n_coins, offer_pool, ask_pool, amp, ask_precision)?
         .to_uint256_with_precision(u32::from(ask_precision))?;
@@ -123,27 +125,36 @@ pub fn calculate_stableswap_y(
     }
     .to_uint256_with_precision(u32::from(ask_precision))?;
 
-    let c = d
-        .checked_multiply_ratio(d, pool_sum.checked_mul(n_coins)?)?
-        .checked_multiply_ratio(d, ann.checked_mul(n_coins)?)?;
+    let ann_times_n_coins = ann.checked_mul(n_coins_512)?;
+    let pool_sum_512 = Uint512::from_uint256(pool_sum);
+    let d_512 = Uint512::from_uint256(d);
+    let ann_times_n_coins_512 = ann_times_n_coins.checked_mul(n_coins_512)?;
+    let pool_sum_times_n_coins_512 = pool_sum_512.checked_mul(n_coins_512)?;
 
-    let b = pool_sum.checked_add(d.checked_div(ann)?)?;
+    let mut c_512 = d_512
+        .checked_mul(d_512)?
+        .checked_div(pool_sum_times_n_coins_512)?;
+    c_512 = c_512
+        .checked_mul(d_512)?
+        .checked_div(ann_times_n_coins_512)?;
+
+    let b = pool_sum_512.checked_add(d_512.checked_div(ann)?)?;
 
     // attempt to converge solution using Newton-Raphson method
-    let mut y = d;
+    let mut y = d_512;
     for _ in 0..NEWTON_ITERATIONS {
         let previous_y = y;
         // y = (y^2 + c) / (2y + b - d)
         y = y
             .checked_mul(y)?
-            .checked_add(c)?
-            .checked_div(y.checked_add(y)?.checked_add(b)?.checked_sub(d)?)?;
+            .checked_add(c_512)?
+            .checked_div(y.checked_add(y)?.checked_add(b)?.checked_sub(d_512)?)?;
 
         if y >= previous_y {
-            if y.checked_sub(previous_y)? <= Uint256::one() {
+            if y.checked_sub(previous_y)? <= Uint512::one() {
                 return y.try_into().map_err(|_| ContractError::SwapOverflowError);
             }
-        } else if y < previous_y && previous_y.checked_sub(y)? <= Uint256::one() {
+        } else if y < previous_y && previous_y.checked_sub(y)? <= Uint512::one() {
             return y.try_into().map_err(|_| ContractError::SwapOverflowError);
         }
     }
@@ -209,7 +220,7 @@ pub fn compute_swap(
 
             let return_amount = ask_pool
                 .to_uint256_with_precision(u32::from(ask_precision))?
-                .checked_sub(Uint256::from_uint128(new_pool))?;
+                .checked_sub(new_pool)?;
 
             // the spread is the loss from 1:1 conversion
             // thus is it the offer_amount - return_amount
@@ -1300,6 +1311,64 @@ mod tests {
             let d1 = compute_d(&amp_factor, &swaps).unwrap();
 
             assert!(d0 <= d1);  // Pool token supply not changed on swaps
+        }
+    }
+
+    #[test]
+    fn test_stableswap_large_amounts_overflow() {
+        let min_amp = 1;
+        // The test demonstrates that calculate_stableswap_y function works well with large token amounts
+        // especially for tokens with high decimal places (18)
+
+        // Define large pool amounts - 1M tokens with 18 decimals (1e24)
+        let large_pool = Uint128::new(1_000_000_000_000_000_000_000_000u128);
+
+        // Define large swap amount - 100k tokens with 18 decimals (1e23)
+        let large_amount = Uint128::new(100_000_000_000_000_000_000_000u128);
+
+        let amp = min_amp;
+        let offer_pool = large_pool;
+        let ask_pool = large_pool;
+        let offer_amount = large_amount;
+
+        println!(
+            "Parameters: amp={}, offer_pool={}, ask_pool={}, offer_amount={}",
+            amp, offer_pool, ask_pool, offer_amount
+        );
+
+        // Convert to Decimal256 for precision
+        let offer_pool_dec = Decimal256::from_ratio(offer_pool, Uint128::new(1));
+        let ask_pool_dec = Decimal256::from_ratio(ask_pool, Uint128::new(1));
+        let offer_amount_dec = Decimal256::from_ratio(offer_amount, Uint128::new(1));
+
+        // This will panic with a CheckedMultiplyRatioError(Overflow) because intermediate
+        // calculations in calculate_stableswap_y overflow Uint256 when dealing with large values
+        let result = calculate_stableswap_y(
+            Uint256::from(2u8), // 2 coins
+            offer_pool_dec,
+            ask_pool_dec,
+            offer_amount_dec,
+            &amp,
+            18, // 18 decimals precision
+            StableSwapDirection::Simulate,
+        );
+
+        match result {
+            Ok(_) => {
+                // If we get here, the test is successful
+            }
+            Err(e) => {
+                // We expect a CheckedMultiplyRatioError due to overflow
+                match e {
+                    crate::error::ContractError::CheckedMultiplyRatioError(_) => {
+                        panic!("Error received: {:?}", e);
+                    }
+                    _ => {
+                        // Any other error is unexpected
+                        panic!("Unexpected error: {:?}", e);
+                    }
+                }
+            }
         }
     }
 }

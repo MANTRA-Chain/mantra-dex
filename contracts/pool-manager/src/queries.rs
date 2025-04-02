@@ -149,23 +149,21 @@ pub fn query_reverse_simulation(
                 StableSwapDirection::ReverseSimulate,
             )?;
 
-            let offer_amount = new_offer_pool_amount.checked_sub(Uint128::try_from(
-                offer_pool.to_uint256_with_precision(u32::from(max_precision))?,
-            )?)?;
+            let offer_amount = new_offer_pool_amount
+                .checked_sub(offer_pool.to_uint256_with_precision(u32::from(max_precision))?)?;
 
             // convert into the original offer precision
             let offer_amount = match max_precision.cmp(&offer_decimal) {
                 Ordering::Equal => offer_amount,
                 // note that Less should never happen (as max_precision = max(offer_decimal, ask_decimal))
-                Ordering::Less => offer_amount.checked_mul(Uint128::new(
+                Ordering::Less => offer_amount.checked_mul(Uint256::from(
                     10u128.pow((offer_decimal - max_precision).into()),
                 ))?,
-                Ordering::Greater => offer_amount.checked_div(Uint128::new(
+                Ordering::Greater => offer_amount.checked_div(Uint256::from(
                     10u128.pow((max_precision - offer_decimal).into()),
                 ))?,
             };
-
-            let spread_amount = offer_amount.saturating_sub(Uint128::try_from(before_fees_offer)?);
+            let spread_amount = offer_amount.saturating_sub(before_fees_offer);
             let swap_fee_amount = pool_fees.swap_fee.compute(before_fees_ask)?;
             let protocol_fee_amount = pool_fees.protocol_fee.compute(before_fees_ask)?;
             let burn_fee_amount = pool_fees.burn_fee.compute(before_fees_ask)?;
@@ -177,8 +175,8 @@ pub fn query_reverse_simulation(
             }
 
             Ok(ReverseSimulationResponse {
-                offer_amount,
-                spread_amount,
+                offer_amount: offer_amount.try_into()?,
+                spread_amount: spread_amount.try_into()?,
                 swap_fee_amount: swap_fee_amount.try_into()?,
                 protocol_fee_amount: protocol_fee_amount.try_into()?,
                 burn_fee_amount: burn_fee_amount.try_into()?,
