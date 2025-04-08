@@ -369,12 +369,7 @@ pub fn compute_swap(
                 Decimal256::decimal_with_precision(ask_pool_amount, ask_precision)?;
             let offer_amount = Decimal256::decimal_with_precision(offer_amount, offer_precision)?;
 
-            let max_precision = pool_info
-                .asset_decimals
-                .iter()
-                .max()
-                .unwrap_or(&offer_precision.max(ask_precision))
-                .to_owned();
+            let max_precision = pool_info.asset_decimals.iter().max().unwrap().to_owned();
 
             //todo refactor this, perhaps pass the coins amounts, denoms and decimals all together
             // in a single structure?
@@ -880,10 +875,11 @@ pub fn get_asset_indexes_in_pool(
     ))
 }
 
-//todo consolidate compute_stableswap_d with this one
+//todo consolidate calculate_stableswap_d with this one
 #[allow(clippy::unwrap_used)]
 pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
     let n_coins = Uint128::from(deposits.len() as u128);
+    //todo use decimals in this one?! see curve https://github.com/curvefi/stableswap-ng/blob/fd54b9a1a110d0e2e4f962583761d9e236b70967/contracts/main/CurveStableSwapNG.vy#L570
 
     // sum(x_i), a.k.a S
     let sum_x = deposits

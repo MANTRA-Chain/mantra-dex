@@ -1434,6 +1434,152 @@ fn swap_large_digits_stable_18_digits() {
         });
 }
 
+#[allow(clippy::inconsistent_digit_grouping)]
+#[test]
+fn swap_stableswap_xxxxxxx() {
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusd".to_string(),
+            ),
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusdc".to_string(),
+            ),
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusdt".to_string(),
+            ),
+            coin(1_000_000_000_000u128, "uom".to_string()),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+    let carol = suite.senders[2].clone();
+
+    let asset_denoms = vec!["uusd".to_string(), "uusdc".to_string(), "uusdt".to_string()];
+
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::zero(),
+        },
+        swap_fee: Fee {
+            share: Decimal::permille(5),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    // Create a pool
+    suite.instantiate_default().add_one_epoch().create_pool(
+        &alice,
+        asset_denoms,
+        vec![6u8, 6u8, 6u8],
+        pool_fees,
+        PoolType::StableSwap { amp: 85 },
+        None,
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // let's provide liquidity 300T pusdc, 300T uusdc
+    suite.provide_liquidity(
+        &alice,
+        "p.1".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::new(1_000_000_000u128),
+            },
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::new(1_000_000_000u128),
+            },
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: Uint128::new(1_000_000_000u128),
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // swap 100T uusdc for uusdt
+    suite
+        // .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+        //     assert_eq!(
+        //         result.unwrap().amount,
+        //         Uint128::new(300_000_000_000_000_000000000000000000u128)
+        //     );
+        // })
+        // .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+        //     assert_eq!(
+        //         result.unwrap().amount,
+        //         Uint128::new(300_000_000_000_000_000000000000000000u128)
+        //     );
+        // })
+        // .query_simulation(
+        //     "p.1".to_string(),
+        //     Coin {
+        //         denom: "uusdc".to_string(),
+        //         amount: Uint128::new(100_000_000_000_000_000000000000000000u128),
+        //     },
+        //     "uusdt".to_string(),
+        //     |result| {
+        //         assert_eq!(
+        //             result.unwrap().return_amount,
+        //             Uint128::new(74_625_000_000_000_000000000000000000u128)
+        //         );
+        //     },
+        // )
+        .swap(
+            &bob,
+            "uusdt".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(
+                200_000_000u128,
+                "uusdc".to_string(),
+            )],
+            |result| {
+                result.unwrap();
+            },
+        )
+        // .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+        //     assert_eq!(
+        //         result.unwrap().amount,
+        //         Uint128::new(
+        //             300_000_000_000_000_000000000000000000u128
+        //                 + 74_625_000_000_000_000000000000000000u128
+        //         )
+        //     );
+        // })
+        // .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+        //     assert_eq!(
+        //         result.unwrap().amount,
+        //         Uint128::new(
+        //             300_000_000_000_000_000000000000000000u128
+        //                 - 100_000_000_000_000_000000000000000000u128
+        //         )
+        //     );
+        // })
+    ;
+}
+
 #[test]
 fn belief_price_works_decimals_independent() {
     let mut suite = TestingSuite::default_with_balances(
