@@ -1,5 +1,5 @@
 N_COINS = 3
-xp_ = [100, 100, 100]
+xp_ = [1000, 1000, 1000]
 
 def get_D(xp, amp):
     S: uint256 = 0
@@ -87,4 +87,4 @@ def get_y(i, j, x, xp_):
                 break
     return y
 
-print("Swap amount: ", xp_[2] - get_y(0, 2, 120, xp_))
+print("Swap amount: ", xp_[2] - get_y(0, 2, 1200, xp_))
