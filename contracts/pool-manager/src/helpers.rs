@@ -617,8 +617,8 @@ pub struct OfferAmountComputation {
 pub fn assert_slippage_tolerance(
     slippage_tolerance: &Option<Decimal>,
     deposits: &[Coin],
+    pool_info: &PoolInfo,
     pool_assets: &mut [Coin],
-    pool_type: PoolType,
 ) -> Result<(), ContractError> {
     if let Some(slippage_tolerance) = *slippage_tolerance {
         let slippage_tolerance: Decimal256 = slippage_tolerance.into();
@@ -637,11 +637,11 @@ pub fn assert_slippage_tolerance(
         let pools: Vec<Uint256> = pool_assets.iter().map(|coin| coin.amount.into()).collect();
 
         // Ensure each prices are not dropped as much as slippage tolerance rate
-        match pool_type {
+        match pool_info.pool_type {
             PoolType::StableSwap { amp: amp_factor } => {
-                let d_initial = compute_d(&amp_factor, pool_assets).unwrap();
+                let d_initial = compute_d(&amp_factor, pool_info, pool_assets).unwrap();
                 let final_pool_assets = add_coins(pool_assets.to_vec(), deposits.to_vec())?;
-                let d_final = compute_d(&amp_factor, &final_pool_assets).unwrap();
+                let d_final = compute_d(&amp_factor, pool_info, &final_pool_assets).unwrap();
 
                 // Safe conversion to Uint256, since a Sqrt of a Uint512 will always fit into a Uint256
                 let d_initial_sqrt: Uint256 = d_initial.isqrt().try_into().unwrap();
@@ -887,99 +887,158 @@ pub fn get_asset_indexes_in_pool(
 
 //todo consolidate calculate_stableswap_d with this one
 #[allow(clippy::unwrap_used)]
-pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
+pub fn compute_d(
+    amp_factor: &u64,
+    pool_info: &PoolInfo,
+    deposits: &[Coin],
+) -> Result<Uint512, ContractError> {
     let n_coins = Uint128::from(deposits.len() as u128);
-    //todo use decimals in this one?! see curve https://github.com/curvefi/stableswap-ng/blob/fd54b9a1a110d0e2e4f962583761d9e236b70967/contracts/main/CurveStableSwapNG.vy#L570
+
+    println!("deposits {:?}", deposits);
 
     // sum(x_i), a.k.a S
     let sum_x = deposits
         .iter()
-        .fold(Uint128::zero(), |acc, x| acc.checked_add(x.amount).unwrap());
+        .enumerate()
+        .try_fold::<_, _, Result<_, ContractError>>(Decimal256::zero(), |acc, (index, asset)| {
+            let pool_asset_index = pool_info
+                .assets
+                .iter()
+                .position(|pool_asset| pool_asset.denom == asset.denom)
+                .ok_or(ContractError::AssetMismatch)?;
 
-    if sum_x == Uint128::zero() {
-        Some(Uint512::zero())
+            let pool_amount = Decimal256::decimal_with_precision(
+                asset.amount,
+                pool_info.asset_decimals[pool_asset_index],
+            )?;
+
+            Ok(acc.checked_add(pool_amount)?)
+        })?;
+
+    println!("sum_x: {:?}", sum_x);
+
+    if sum_x == Decimal256::zero() {
+        Ok(Uint512::zero())
     } else {
         // do as below but for a generic number of assets
-        let amount_times_coins: Vec<Uint128> = deposits
+        // let amount_times_coins: Vec<Uint128> = deposits
+        //     .iter()
+        //     .map(|coin| coin.amount.checked_mul(n_coins).unwrap())
+        //     .collect();
+
+        let amount_times_coins: Vec<Decimal256> = deposits
             .iter()
-            .map(|coin| coin.amount.checked_mul(n_coins).unwrap())
-            .collect();
+            .map::<Result<_, ContractError>, _>(|asset| {
+                let pool_asset_index = pool_info
+                    .assets
+                    .iter()
+                    .position(|pool_asset| pool_asset.denom == asset.denom)
+                    .ok_or(ContractError::AssetMismatch)?;
+
+                let pool_amount = Decimal256::decimal_with_precision(
+                    asset.amount,
+                    pool_info.asset_decimals[pool_asset_index],
+                )?;
+
+                println!("pool_amount: {:?}", pool_amount);
+                println!(
+                    "Decimal256::new(n_coins.into()): {:?}",
+                    Decimal256::from_ratio(n_coins, 1u128)
+                );
+
+                Ok(pool_amount.checked_mul(Decimal256::from_ratio(n_coins, 1u128))?)
+            })
+            .collect::<Result<Vec<Decimal256>, ContractError>>()?;
+
+        println!("amount_times: {:?}", amount_times_coins);
 
         // Newton's method to approximate D
-        let mut d_prev: Uint512;
-        let mut d: Uint512 = sum_x.into();
+        let mut d_prev: Decimal256;
+        // let mut d: Uint512 = sum_x.to_uint512_with_precision(0)?;
+        let mut d = sum_x;
+
         for _ in 0..NEWTON_ITERATIONS {
             let mut d_prod = d;
             for amount in amount_times_coins.clone().into_iter() {
-                d_prod = d_prod
-                    .checked_mul(d)
-                    .unwrap()
-                    .checked_div(amount.into())
-                    .unwrap();
+                d_prod = d_prod.checked_mul(d)?.checked_div(amount)?;
             }
+            println!("d_prod: {:?}", d_prod);
             d_prev = d;
-            d = compute_next_d(amp_factor, d, d_prod, sum_x, n_coins).unwrap();
-            // Equality with the precision of 1
+            println!("d_prev: {:?}", d_prev);
+
+            d = compute_next_d(amp_factor, d, d_prod, sum_x, n_coins)?;
+            println!("d: {:?}", d);
+
             if d > d_prev {
-                if d.checked_sub(d_prev).unwrap() <= Uint512::one() {
+                if d.checked_sub(d_prev)? <= Decimal256::one() {
                     break;
                 }
-            } else if d_prev.checked_sub(d).unwrap() <= Uint512::one() {
+            } else if d_prev.checked_sub(d)? <= Decimal256::one() {
                 break;
             }
         }
 
-        Some(d)
+        println!(
+            "d.to_uint512_with_precision(0)?: {:?}",
+            d.to_uint512_with_precision(0)?
+        );
+
+        Ok(d.to_uint512_with_precision(0)?)
     }
 }
 
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
     amp_factor: &u64,
-    d_init: Uint512,
-    d_prod: Uint512,
-    sum_x: Uint128,
+    d_init: Decimal256,
+    d_prod: Decimal256,
+    sum_x: Decimal256,
     n_coins: Uint128,
-) -> Option<Uint512> {
-    let ann = amp_factor.checked_mul(n_coins.u128() as u64)?;
-    let leverage = Uint512::from(sum_x).checked_mul(ann.into()).unwrap();
+) -> Result<Decimal256, ContractError> {
+    //todo revise this ann.unwrap()
+    let ann = Decimal256::from_ratio(amp_factor.checked_mul(n_coins.u128() as u64).unwrap(), 1u64);
+    // let leverage = Uint512::from(sum_x).checked_mul(ann.into())?;
+    let leverage = sum_x.checked_mul(ann)?;
     // d = (ann * sum_x + d_prod * n_coins) * d / ((ann - 1) * d + (n_coins + 1) * d_prod)
-    let numerator = d_init
-        .checked_mul(
-            d_prod
-                .checked_mul(n_coins.into())
-                .unwrap()
-                .checked_add(leverage)
-                .unwrap(),
-        )
-        .unwrap();
+    let numerator = d_init.checked_mul(
+        d_prod
+            .checked_mul(Decimal256::new(n_coins.into()))?
+            .checked_add(leverage)?,
+    )?;
+
+    println!("numerator: {:?}", numerator);
+    println!("ann: {:?}", ann);
+    println!(
+        "ann.checked_sub(Decimal256::one()): {:?}",
+        ann.checked_sub(Decimal256::one())
+    );
+
     let denominator = d_init
-        .checked_mul(ann.checked_sub(1)?.into())
-        .unwrap()
+        .checked_mul(ann.checked_sub(Decimal256::one())?)?
         .checked_add(
-            d_prod
-                .checked_mul((n_coins.checked_add(1u128.into()).unwrap()).into())
-                .unwrap(),
-        )
-        .unwrap();
-    Some(numerator.checked_div(denominator).unwrap())
+            d_prod.checked_mul(Decimal256::new(n_coins.into()).checked_add(Decimal256::one())?)?,
+        )?;
+    Ok(numerator.checked_div(denominator)?)
 }
 
 /// Computes the amount of lp tokens to mint after a deposit for a stableswap pool.
 /// Assumes the deposits have already been credited to the pool_assets.
 #[allow(clippy::unwrap_used, clippy::too_many_arguments)]
 pub fn compute_lp_mint_amount_for_stableswap_deposit(
+    pool_info: &PoolInfo,
     amp_factor: &u64,
     old_pool_assets: &[Coin],
     new_pool_assets: &[Coin],
     pool_lp_token_total_supply: Uint128,
 ) -> Result<Option<Uint128>, ContractError> {
     // Initial invariant
-    let d_0 = compute_d(amp_factor, old_pool_assets).ok_or(ContractError::StableInvariantError)?;
+    let d_0 = compute_d(amp_factor, pool_info, old_pool_assets)
+        .map_err(|_| ContractError::StableInvariantError)?;
 
     // Invariant after change, i.e. after deposit
     // notice that new_pool_assets already added the new deposits to the pool
-    let d_1 = compute_d(amp_factor, new_pool_assets).ok_or(ContractError::StableInvariantError)?;
+    let d_1 = compute_d(amp_factor, pool_info, new_pool_assets)
+        .map_err(|_| ContractError::StableInvariantError)?;
 
     // If the invariant didn't change, return None
     if d_1 <= d_0 {
@@ -989,6 +1048,8 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
             .checked_mul(d_1.checked_sub(d_0)?)?
             .checked_div(d_0)?;
 
+        println!(">>>>>d_0: {:?}", d_0);
+        println!("d_1: {:?}", d_1);
         println!("LP amount: {:?}", amount);
 
         Ok(Some(Uint128::try_from(amount)?))
@@ -1089,6 +1150,8 @@ pub fn compute_y(
 }
 
 //todo remove
+
+#[cfg(test)]
 #[deprecated]
 /// Compute SwapResult after an exchange
 #[allow(clippy::unwrap_used)]
@@ -1105,12 +1168,36 @@ pub fn swap_to(
         coin(swap_destination_amount.u128(), "denom2"),
         coin(unswaped_amount.u128(), "denom3"),
     ];
+
+    //todo remake
+    let pool_info = PoolInfo {
+        pool_identifier: "".to_string(),
+        asset_denoms: vec![],
+        lp_denom: "".to_string(),
+        asset_decimals: vec![],
+        assets: vec![],
+        pool_type: PoolType::ConstantProduct,
+        pool_fees: PoolFee {
+            protocol_fee: Fee {
+                share: Default::default(),
+            },
+            swap_fee: Fee {
+                share: Default::default(),
+            },
+            burn_fee: Fee {
+                share: Default::default(),
+            },
+            extra_fees: vec![],
+        },
+        status: Default::default(),
+    };
+
     let y = compute_y(
         n_coins,
         amp_factor,
         swap_source_amount.checked_add(source_amount).unwrap(),
         unswaped_amount,
-        compute_d(amp_factor, &deposits).unwrap(),
+        compute_d(amp_factor, &pool_info, &deposits).unwrap(),
     )?;
     // https://github.com/curvefi/curve-contract/blob/b0bbf77f8f93c9c5f4e415bce9cd71f0cdee960e/contracts/pool-templates/base/SwapTemplateBase.vy#L466
     let dy = swap_destination_amount
@@ -1139,6 +1226,7 @@ pub fn swap_to(
 mod tests {
     use cosmwasm_std::coin;
     use mantra_dex_std::fee::Fee;
+    use mantra_dex_std::fee::Fee;
     use mantra_dex_std::pool_manager::PoolStatus;
     use proptest::prelude::*;
     use rand::Rng;
@@ -1166,7 +1254,30 @@ mod tests {
             coin(amount_c, "denom4"),
         ];
 
-        let d = compute_d(&model.amp_factor, &deposits).unwrap();
+        //todo remake
+        let pool_info = PoolInfo {
+            pool_identifier: "".to_string(),
+            asset_denoms: vec![],
+            lp_denom: "".to_string(),
+            asset_decimals: vec![],
+            assets: vec![],
+            pool_type: PoolType::ConstantProduct,
+            pool_fees: PoolFee {
+                protocol_fee: Fee {
+                    share: Default::default(),
+                },
+                swap_fee: Fee {
+                    share: Default::default(),
+                },
+                burn_fee: Fee {
+                    share: Default::default(),
+                },
+                extra_fees: vec![],
+            },
+            status: Default::default(),
+        };
+
+        let d = compute_d(&model.amp_factor, &pool_info, &deposits).unwrap();
         d
     }
 
@@ -1225,7 +1336,31 @@ mod tests {
 
         let pool_token_supply = MAX_TOKENS_IN;
 
+        //todo remake
+        let pool_info = PoolInfo {
+            pool_identifier: "".to_string(),
+            asset_denoms: vec![],
+            lp_denom: "".to_string(),
+            asset_decimals: vec![],
+            assets: vec![],
+            pool_type: PoolType::ConstantProduct,
+            pool_fees: PoolFee {
+                protocol_fee: Fee {
+                    share: Default::default(),
+                },
+                swap_fee: Fee {
+                    share: Default::default(),
+                },
+                burn_fee: Fee {
+                    share: Default::default(),
+                },
+                extra_fees: vec![],
+            },
+            status: Default::default(),
+        };
+
         let actual_mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
+            &pool_info,
             &MIN_AMP,
             &deposits,
             &pool_assets,
@@ -1446,7 +1581,24 @@ mod tests {
                 coin(pool_token_c_amount, "denom3"),
             ];
 
-            let d0 = compute_d(&amp_factor, &pool_assets).unwrap();
+             //todo remake
+        let pool_info = PoolInfo {
+            pool_identifier: "".to_string(),
+            asset_denoms: vec![],
+            lp_denom: "".to_string(),
+            asset_decimals: vec![],
+            assets: vec![],
+            pool_type: PoolType::ConstantProduct,
+            pool_fees: PoolFee {
+                protocol_fee: Fee { share: Default::default() },
+                swap_fee: Fee { share: Default::default() },
+                burn_fee: Fee { share: Default::default() },
+                extra_fees: vec![],
+            },
+            status: Default::default(),
+        };
+
+            let d0 = compute_d(&amp_factor, &pool_info, &pool_assets).unwrap();
             let deposits = vec![
                 coin(deposit_amount_a, "denom1"),
                 coin(deposit_amount_b, "denom2"),
@@ -1462,6 +1614,7 @@ mod tests {
             ];
 
             let mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
+                &pool_info,
                 &amp_factor,
                 &deposits,
                 &new_pool_assets,
@@ -1470,7 +1623,24 @@ mod tests {
 
             prop_assume!(mint_amount.is_some());
 
-            let d1 = compute_d(&amp_factor, &new_pool_assets).unwrap();
+                 //todo remake
+        let pool_info = PoolInfo {
+            pool_identifier: "".to_string(),
+            asset_denoms: vec![],
+            lp_denom: "".to_string(),
+            asset_decimals: vec![],
+            assets: vec![],
+            pool_type: PoolType::ConstantProduct,
+            pool_fees: PoolFee {
+                protocol_fee: Fee { share: Default::default() },
+                swap_fee: Fee { share: Default::default() },
+                burn_fee: Fee { share: Default::default() },
+                extra_fees: vec![],
+            },
+            status: Default::default(),
+        };
+
+            let d1 = compute_d(&amp_factor, &pool_info, &new_pool_assets).unwrap();
 
             assert!(d0 < d1);
         }
@@ -1496,7 +1666,24 @@ mod tests {
                 coin(unswapped_amount, "denom3"),
             ];
 
-            let d0 = compute_d(&amp_factor, &deposits).unwrap();
+                  //todo remake
+        let pool_info = PoolInfo {
+            pool_identifier: "".to_string(),
+            asset_denoms: vec![],
+            lp_denom: "".to_string(),
+            asset_decimals: vec![],
+            assets: vec![],
+            pool_type: PoolType::ConstantProduct,
+            pool_fees: PoolFee {
+                protocol_fee: Fee { share: Default::default() },
+                swap_fee: Fee { share: Default::default() },
+                burn_fee: Fee { share: Default::default() },
+                extra_fees: vec![],
+            },
+            status: Default::default(),
+        };
+
+            let d0 = compute_d(&amp_factor, &pool_info, &deposits).unwrap();
 
             let swap_result = swap_to(N_COINS, &amp_factor, source_token_amount.into(), swap_source_amount.into(), swap_destination_amount.into(), unswapped_amount.into());
             prop_assume!(swap_result.is_some());
@@ -1509,7 +1696,7 @@ mod tests {
                 coin(unswapped_amount, "denom3"),
             ];
 
-            let d1 = compute_d(&amp_factor, &swaps).unwrap();
+            let d1 = compute_d(&amp_factor, &pool_info, &swaps).unwrap();
 
             assert!(d0 <= d1);  // Pool token supply not changed on swaps
         }

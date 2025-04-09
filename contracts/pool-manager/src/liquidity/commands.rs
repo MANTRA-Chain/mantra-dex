@@ -42,15 +42,15 @@ pub fn provide_liquidity(
     unlocking_duration: Option<u64>,
     lock_position_identifier: Option<String>,
 ) -> Result<Response, ContractError> {
-    let mut pool = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
+    let mut pool_info = get_pool_by_identifier(&deps.as_ref(), &pool_identifier)?;
 
     // check if the deposit feature is enabled
     ensure!(
-        pool.status.deposits_enabled,
+        pool_info.status.deposits_enabled,
         ContractError::OperationDisabled("provide_liquidity".to_string())
     );
 
-    let mut pool_assets = pool.assets.clone();
+    let mut pool_assets = pool_info.assets.clone();
     let deposits = aggregate_coins(info.funds.clone())?;
 
     ensure!(!deposits.is_empty(), ContractError::EmptyAssets);
@@ -179,12 +179,12 @@ pub fn provide_liquidity(
     } else {
         let mut messages: Vec<CosmosMsg> = vec![];
 
-        let liquidity_token = pool.lp_denom.clone();
+        let liquidity_token = pool_info.lp_denom.clone();
 
         // Compute share and other logic based on the number of assets
         let total_shares = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
 
-        let shares = match &pool.pool_type {
+        let shares = match &pool_info.pool_type {
             PoolType::ConstantProduct => {
                 if total_shares == Uint128::zero() {
                     // Make sure at least MINIMUM_LIQUIDITY_AMOUNT is deposited to mitigate the risk of the first
@@ -249,7 +249,7 @@ pub fn provide_liquidity(
 
                     // Make sure at least MINIMUM_LIQUIDITY_AMOUNT is deposited to mitigate the risk of the first
                     // depositor preventing small liquidity providers from joining the pool
-                    let share = Uint128::try_from(compute_d(amp_factor, &deposits).unwrap())?
+                    let share = Uint128::try_from(compute_d(amp_factor, &pool_info, &deposits)?)?
                         .saturating_sub(MINIMUM_LIQUIDITY_AMOUNT);
 
                     // share should be above zero after subtracting the min_lp_token_amount
@@ -270,6 +270,7 @@ pub fn provide_liquidity(
                     share
                 } else {
                     compute_lp_mint_amount_for_stableswap_deposit(
+                        &pool_info,
                         amp_factor,
                         // pool_assets hold the balances before the deposit was made
                         &pool_assets,
@@ -286,8 +287,8 @@ pub fn provide_liquidity(
         helpers::assert_slippage_tolerance(
             &slippage_tolerance,
             &deposits,
+            &pool_info,
             &mut pool_assets,
-            pool.pool_type.clone(),
         )?;
 
         // if the unlocking duration is set, lock the LP tokens in the farm manager
@@ -404,11 +405,11 @@ pub fn provide_liquidity(
                 .checked_add(asset.amount)?;
         }
 
-        pool.assets.clone_from(&pool_assets);
+        pool_info.assets.clone_from(&pool_assets);
 
-        POOLS.save(deps.storage, &pool_identifier, &pool)?;
+        POOLS.save(deps.storage, &pool_identifier, &pool_info)?;
 
-        let pool_reserves = pool
+        let pool_reserves = pool_info
             .assets
             .iter()
             .map(|asset| asset.to_string())

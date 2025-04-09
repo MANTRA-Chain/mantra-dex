@@ -1730,6 +1730,35 @@ fn swap_3pool_different_decimals() {
                 )
             );
         });
+
+    println!(">>>>>>>>");
+
+    suite.provide_liquidity(
+        &alice,
+        "p.1".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::new(10_000u128),
+            },
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::new(10_000u128),
+            },
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: Uint128::new(10_000_000_000u128),
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
 }
 
 #[test]
