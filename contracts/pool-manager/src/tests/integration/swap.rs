@@ -1488,7 +1488,7 @@ fn swap_stableswap_xxxxxxx() {
         },
     );
 
-    // let's provide liquidity 300T pusdc, 300T uusdc
+    // let's provide liquidity
     suite.provide_liquidity(
         &alice,
         "p.1".to_string(),

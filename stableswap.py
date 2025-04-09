@@ -42,7 +42,7 @@ def get_y(i, j, x, xp_):
     assert i >= 0
     assert i < N_COINS
 
-    amp = 100
+    amp = 85
     D = get_D(xp_, amp)
     print("D:: ", D)
     c = D
