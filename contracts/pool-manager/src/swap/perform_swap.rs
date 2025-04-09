@@ -58,6 +58,8 @@ pub fn perform_swap(
         ask_decimal,
     ) = get_asset_indexes_in_pool(&pool_info, offer_asset.denom, ask_asset_denom)?;
 
+    //todo refactor this to only pass the pool_info and the offer_asset.
+    // all the other values can be taken from there within compute_swap
     // compute the swap
     let swap_computation = helpers::compute_swap(
         &pool_info,

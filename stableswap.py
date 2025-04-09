@@ -8,15 +8,25 @@ def get_D(xp, amp):
     if S == 0:
         return 0
 
+    print("sum_pools:: ", S)
+
     Dprev = 0
     D = S
     Ann = amp * N_COINS
-    for _i in range(32):
+    for _i in range(225):
+        print("get_D_i", _i)
         D_P = D
         for _x in xp:
             D_P = D_P * D / (_x * N_COINS)
         Dprev = D
+
+        print("Dprev", Dprev)
         D = (Ann * S + D_P * N_COINS) * D / ((Ann - 1) * D + (N_COINS + 1) * D_P)
+        print("D", D)
+        print("---")
+
+
+
         # Equality with the precision of 1
         if D > Dprev:
             if D - Dprev <= 1:
@@ -48,7 +58,7 @@ def get_y(i, j, x, xp_):
     c = D
     S_ = 0
     Ann = amp * N_COINS
-
+    print("Ann:: ", Ann)
     _x = 0
     for _i in range(N_COINS):
         print("-----")
@@ -74,7 +84,7 @@ def get_y(i, j, x, xp_):
     print("b:: ", b)
     y_prev = 0
     y = D
-    for _i in range(32):
+    for _i in range(255):
         y_prev = y
         y = (y*y + c) / (2 * y + b - D)
         print(f'y{_i}:: {y}')

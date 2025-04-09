@@ -1,4 +1,4 @@
-use cosmwasm_std::{Decimal256, Uint256};
+use cosmwasm_std::{Decimal256, Uint256, Uint512};
 
 use crate::error::ContractError;
 
@@ -15,6 +15,7 @@ pub trait Decimal256Helper {
     ) -> Result<Decimal256, ContractError>;
 
     fn to_uint256_with_precision(&self, precision: u32) -> Result<Uint256, ContractError>;
+    fn to_uint512_with_precision(&self, precision: u32) -> Result<Uint512, ContractError>;
 }
 
 impl Decimal256Helper for Decimal256 {
@@ -39,6 +40,12 @@ impl Decimal256Helper for Decimal256 {
 
     fn to_uint256_with_precision(&self, precision: u32) -> Result<Uint256, ContractError> {
         let value = self.atomics();
+
+        Ok(value.checked_div(10u128.pow(self.decimal_places() - precision).into())?)
+    }
+
+    fn to_uint512_with_precision(&self, precision: u32) -> Result<Uint512, ContractError> {
+        let value = Uint512::from(self.atomics());
 
         Ok(value.checked_div(10u128.pow(self.decimal_places() - precision).into())?)
     }
