@@ -1,5 +1,6 @@
 use crate::math::Decimal256Helper;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 use crate::tests::integration::helpers::extract_pool_reserves;
 use crate::tests::suite::TestingSuite;
@@ -1761,29 +1762,35 @@ fn simulation_vs_reverse_simulation_3pool() {
         (
             "uusd",
             "uusdc",
-            Uint128::new(1_000_000u128), // 1 USDC with 6 decimals
+            Uint128::new(333_000000u128), // 333 USDC with 6 decimals
         ),
         (
             "uusdc",
             "uusdt",
-            Uint128::new(1_000_000_000000u128), // 1 USDT with 12 decimals
+            Uint128::new(5_000000000000u128), // 5 USDT with 12 decimals
         ),
         // Medium amounts
         (
             "uusdt",
             "uusd",
-            Uint128::new(1_000_000_000000000000u128), // 1 USD with 18 decimals
+            Uint128::new(10_000_000000000000000000u128), // 10k USD with 18 decimals
         ),
         // Large amounts
         (
             "uusd",
             "uusdt",
-            Uint128::new(1_000_000_000_000u128), // 1M USD with 6 decimals
+            Uint128::new(1_000_000_000000u128), // 1M USD with 6 decimals
         ),
     ];
+    let mut decimals_by_denom: HashMap<String, u8> = HashMap::new();
+    decimals_by_denom.insert("uusd".to_string(), 6);
+    decimals_by_denom.insert("uusdc".to_string(), 12);
+    decimals_by_denom.insert("uusdt".to_string(), 18);
 
     // Test each case
     for (token_in, token_out, amount_in) in test_cases {
+        let token_in_decimals = decimals_by_denom[&token_in.to_string()];
+
         let simulated_return = RefCell::new(Uint128::zero());
         let simulated_spread = RefCell::new(Uint128::zero());
         let reverse_simulated_offer = RefCell::new(Uint128::zero());
@@ -1830,9 +1837,14 @@ fn simulation_vs_reverse_simulation_3pool() {
         // Compare the original amount_in with the reverse simulated offer amount
         // They should be very close, with a small difference due to rounding
         // Using 0.01% tolerance for comparison
-        let tolerance = Decimal::permille(10); // 0.01%
-        let amount_in_decimal = Decimal::from_ratio(amount_in, 1u128);
-        let reverse_offer_decimal = Decimal::from_ratio(*reverse_simulated_offer.borrow(), 1u128);
+        // 1bps tolerance
+        let tolerance = Decimal::from_ratio(Uint128::from(1u128), Uint128::from(10000u128));
+        let amount_in_decimal =
+            Decimal::from_ratio(amount_in, 10u128.pow(u32::from(token_in_decimals)));
+        let reverse_offer_decimal = Decimal::from_ratio(
+            *reverse_simulated_offer.borrow(),
+            10u128.pow(u32::from(token_in_decimals)),
+        );
 
         let diff = if amount_in_decimal > reverse_offer_decimal {
             amount_in_decimal - reverse_offer_decimal

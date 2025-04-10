@@ -150,8 +150,8 @@ pub fn assert_max_spread(
     spread_amount: Uint128,
 ) -> StdResult<()> {
     println!("-----");
-    println!("belief_price {:?}", belief_price);
-    println!("max_spread {:?}", max_spread);
+    // println!("belief_price {:?}", belief_price);
+    // println!("max_spread {:?}", max_spread);
     println!("offer_amount {:?}", offer_amount);
     println!("return_amount {:?}", return_amount);
     println!("spread_amount {:?}", spread_amount);

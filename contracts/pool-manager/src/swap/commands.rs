@@ -55,7 +55,7 @@ pub fn swap(
         max_spread,
     )?;
 
-    println!("*******Swap result: {:?}", swap_result);
+    // println!("*******Swap result: {:?}", swap_result);
 
     let mut messages: Vec<CosmosMsg> = vec![];
 

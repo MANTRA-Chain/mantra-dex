@@ -299,7 +299,7 @@ pub fn calculate_stableswap_y(
     let d_512 = calculate_stableswap_d(pool_info, n_coins_256, amp)?
         .to_uint512_with_precision(u32::from(max_precision))?;
 
-    println!("*d: {:?}", d_512);
+    // println!("*d: {:?}", d_512);
 
     // Calculate pool sum based on swap direction
     let pool_sum = calculate_pool_sum(
@@ -311,7 +311,7 @@ pub fn calculate_stableswap_y(
         max_precision,
     )?;
 
-    println!("pool_sum total: {:?}", pool_sum);
+    // println!("pool_sum total: {:?}", pool_sum);
 
     // Calculate coefficient c
     let mut c_512 = calculate_stableswap_coefficient_c(
@@ -329,11 +329,11 @@ pub fn calculate_stableswap_y(
     let ann_times_n_coins = ann.checked_mul(n_coins_512)?;
     c_512 = c_512.checked_mul(d_512)?.checked_div(ann_times_n_coins)?;
 
-    println!("final c: {:?}", c_512);
+    // println!("final c: {:?}", c_512);
 
     // Calculate coefficient b
     let b = calculate_stableswap_coefficient_b(pool_sum, d_512, ann)?;
-    println!("b:: {:?}", b);
+    // println!("b:: {:?}", b);
 
     // Use newton_raphson_iterate for the approximation
     newton_raphson_iterate(d_512, NEWTON_ITERATIONS, Uint512::one(), |y| {
@@ -343,7 +343,7 @@ pub fn calculate_stableswap_y(
             .checked_add(c_512)?
             .checked_div(y.checked_add(y)?.checked_add(b)?.checked_sub(d_512)?)?;
 
-        println!("y: {:?}", next_y);
+        // println!("y: {:?}", next_y);
 
         Ok(next_y)
     })
@@ -462,19 +462,17 @@ pub fn compute_swap(
             )?)
         }
         PoolType::StableSwap { amp } => {
-            println!("offer_pool_amount: {:?}", offer_pool_amount);
-            println!("ask_pool_amount: {:?}", ask_pool_amount);
-            println!("offer_precision : {:?}", offer_precision);
-            println!("ask_precision : {:?}", ask_precision);
-            let offer_pool_amount =
-                Decimal256::decimal_with_precision(offer_pool_amount, offer_precision)?;
+            // println!("offer_pool_amount: {:?}", offer_pool_amount);
+            // println!("ask_pool_amount: {:?}", ask_pool_amount);
+            // println!("offer_precision : {:?}", offer_precision);
+            // println!("ask_precision : {:?}", ask_precision);
             let ask_pool_amount =
                 Decimal256::decimal_with_precision(ask_pool_amount, ask_precision)?;
             let offer_amount = Decimal256::decimal_with_precision(offer_amount, offer_precision)?;
 
-            println!(">>offer_amount: {:?}", offer_amount);
-            println!(">>offer_pool_amount: {:?}", offer_pool_amount);
-            println!(">>ask_pool_amount: {:?}", ask_pool_amount);
+            // println!(">>offer_amount: {:?}", offer_amount);
+            // println!(">>offer_pool_amount: {:?}", offer_pool_amount);
+            // println!(">>ask_pool_amount: {:?}", ask_pool_amount);
 
             let max_precision = pool_info.asset_decimals.iter().max().unwrap().to_owned();
 
@@ -489,7 +487,7 @@ pub fn compute_swap(
                 StableSwapDirection::Simulate,
             )?;
 
-            println!("o.new_pool: {:?}", new_pool);
+            // println!("o.new_pool: {:?}", new_pool);
 
             //new_pool is returned with the max_precision. If ask_precision is lower, we need to convert it
             if ask_precision < max_precision {
@@ -498,43 +496,43 @@ pub fn compute_swap(
                         .to_uint_floor();
             }
 
-            println!("m.new_pool: {:?}", new_pool);
+            // println!("m.new_pool: {:?}", new_pool);
 
-            println!("ask_pool_amount: {:?}", ask_pool_amount);
-            println!(
-                ".to_uint256_with_precision(u32::from(max_precision)): {:?}",
-                ask_pool_amount.to_uint256_with_precision(u32::from(ask_precision))
-            );
+            // println!("ask_pool_amount: {:?}", ask_pool_amount);
+            // println!(
+            //     ".to_uint256_with_precision(u32::from(max_precision)): {:?}",
+            //     ask_pool_amount.to_uint256_with_precision(u32::from(ask_precision))
+            // );
 
-            println!("->->ask_pool_amount: {:?}", ask_pool_amount);
-            println!(
-                "->->ask_pool_amount.precision: {:?}",
-                ask_pool_amount.to_uint256_with_precision(u32::from(ask_precision))?
-            );
-            println!("->->new_pool: {:?}", new_pool);
+            // println!("->->ask_pool_amount: {:?}", ask_pool_amount);
+            // println!(
+            //     "->->ask_pool_amount.precision: {:?}",
+            //     ask_pool_amount.to_uint256_with_precision(u32::from(ask_precision))?
+            // );
+            // println!("->->new_pool: {:?}", new_pool);
 
             let return_amount = ask_pool_amount
                 .to_uint256_with_precision(u32::from(ask_precision))?
                 .checked_sub(new_pool)?;
 
-            println!("return_amount: {:?}", return_amount);
+            // println!("return_amount: {:?}", return_amount);
 
             // the spread is the loss from 1:1 conversion
             // thus is it the offer_amount - return_amount
 
-            println!(
-                "->->offer_amount.precision: {:?}",
-                offer_amount.to_uint256_with_precision(u32::from(max_precision))?
-            );
-            println!(
-                "->->return_amount.precision.1: {:?}",
-                Decimal256::from_ratio(return_amount, 1u128)
-            );
-            println!(
-                "->->return_amount.precision: {:?}",
-                Decimal256::from_ratio(return_amount, 1u128)
-                    .to_uint256_with_precision(u32::from(max_precision - ask_precision))?
-            );
+            // println!(
+            //     "->->offer_amount.precision: {:?}",
+            //     offer_amount.to_uint256_with_precision(u32::from(max_precision))?
+            // );
+            // println!(
+            //     "->->return_amount.precision.1: {:?}",
+            //     Decimal256::from_ratio(return_amount, 1u128)
+            // );
+            // println!(
+            //     "->->return_amount.precision: {:?}",
+            //     Decimal256::from_ratio(return_amount, 1u128)
+            //         .to_uint256_with_precision(u32::from(max_precision - ask_precision))?
+            // );
 
             // Return amount is previously returned with the max_precision.
             // We need to convert it to the ask_precision to calculate the spread.
@@ -545,7 +543,7 @@ pub fn compute_swap(
 
             let mut spread_amount = adjusted_offer_amount.saturating_sub(adjusted_return_amount);
 
-            println!("o.spread_amount**: {:?}", spread_amount);
+            // println!("o.spread_amount**: {:?}", spread_amount);
 
             // If offer_precision < max_precision, we need to convert the spread_amount to the offer_precision
             if offer_precision < max_precision {
@@ -556,7 +554,7 @@ pub fn compute_swap(
                 .to_uint_floor();
             }
 
-            println!("m.spread_amount**: {:?}", spread_amount);
+            // println!("m.spread_amount**: {:?}", spread_amount);
 
             let fees_computation = compute_fees(&pool_info.pool_fees, return_amount)?;
 
@@ -1084,149 +1082,10 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
             .checked_mul(d_1.checked_sub(d_0)?)?
             .checked_div(d_0)?;
 
-        println!("LP amount: {:?}", amount);
+        // println!("LP amount: {:?}", amount);
 
         Ok(Some(Uint128::try_from(amount)?))
     }
-}
-
-/// Compute the swap amount `y` in proportion to `x`.
-///
-/// Solve for `y`:
-///
-/// ```text
-/// y**2 + y * (sum' - (A*n**n - 1) * D / (A * n**n)) = D ** (n + 1) / (n ** (2 * n) * prod' * A)
-/// y**2 + b*y = c
-/// ```
-///
-//todo remove
-#[deprecated]
-#[allow(clippy::many_single_char_names, clippy::unwrap_used)]
-pub fn compute_y_raw(
-    n_coins: u8,
-    amp_factor: &u64,
-    swap_in: Uint128,
-    //swap_out: Uint128,
-    no_swap: Uint128,
-    d: Uint512,
-) -> Option<Uint512> {
-    let ann = amp_factor.checked_mul(n_coins.into())?; // A * n ** n
-
-    // sum' = prod' = x
-    // c =  D ** (n + 1) / (n ** (2 * n) * prod' * A)
-    let mut c = d;
-
-    c = c
-        .checked_mul(d)
-        .unwrap()
-        .checked_div(swap_in.checked_mul(n_coins.into()).unwrap().into())
-        .unwrap();
-
-    c = c
-        .checked_mul(d)
-        .unwrap()
-        .checked_div(no_swap.checked_mul(n_coins.into()).unwrap().into())
-        .unwrap();
-    c = c
-        .checked_mul(d)
-        .unwrap()
-        .checked_div(ann.checked_mul(n_coins.into()).unwrap().into())
-        .unwrap();
-    // b = sum(swap_in, no_swap) + D // Ann - D
-    // not subtracting D here because that could result in a negative.
-    let b = d
-        .checked_div(ann.into())
-        .unwrap()
-        .checked_add(swap_in.into())
-        .unwrap()
-        .checked_add(no_swap.into())
-        .unwrap();
-
-    // Solve for y by approximating: y**2 + b*y = c
-    let mut y_prev: Uint512;
-    let mut y = d;
-    for _ in 0..1000 {
-        y_prev = y;
-        // y = (y * y + c) / (2 * y + b - d);
-        let y_numerator = y.checked_mul(y).unwrap().checked_add(c).unwrap();
-        let y_denominator = y
-            .checked_mul(Uint512::from(2u8))
-            .unwrap()
-            .checked_add(b)
-            .unwrap()
-            .checked_sub(d)
-            .unwrap();
-        y = y_numerator.checked_div(y_denominator).unwrap();
-        if y > y_prev {
-            if y.checked_sub(y_prev).unwrap() <= Uint512::one() {
-                break;
-            }
-        } else if y_prev.checked_sub(y).unwrap() <= Uint512::one() {
-            break;
-        }
-    }
-    Some(y)
-}
-
-//todo remove
-#[deprecated]
-/// Computes the swap amount `y` in proportion to `x`.
-#[allow(clippy::unwrap_used)]
-#[cfg(test)]
-pub fn compute_y(
-    n_coins: u8,
-    amp_factor: &u64,
-    x: Uint128,
-    no_swap: Uint128,
-    d: Uint512,
-) -> Option<Uint128> {
-    let amount = compute_y_raw(n_coins, amp_factor, x, no_swap, d)?;
-    Some(Uint128::try_from(amount).unwrap())
-}
-
-//todo remove
-#[deprecated]
-/// Compute SwapResult after an exchange
-#[allow(clippy::unwrap_used)]
-#[cfg(test)]
-pub fn swap_to(
-    n_coins: u8,
-    amp_factor: &u64,
-    source_amount: Uint128,
-    swap_source_amount: Uint128,
-    swap_destination_amount: Uint128,
-    unswaped_amount: Uint128,
-) -> Option<SwapResult> {
-    use cosmwasm_std::coin;
-
-    let deposits = vec![
-        coin(swap_source_amount.u128(), "denom1"),
-        coin(swap_destination_amount.u128(), "denom2"),
-        coin(unswaped_amount.u128(), "denom3"),
-    ];
-    let y = compute_y(
-        n_coins,
-        amp_factor,
-        swap_source_amount.checked_add(source_amount).unwrap(),
-        unswaped_amount,
-        compute_d(amp_factor, &deposits).unwrap(),
-    )?;
-    // https://github.com/curvefi/curve-contract/blob/b0bbf77f8f93c9c5f4e415bce9cd71f0cdee960e/contracts/pool-templates/base/SwapTemplateBase.vy#L466
-    let dy = swap_destination_amount
-        .checked_sub(y)
-        .unwrap()
-        .checked_sub(Uint128::one())
-        .unwrap();
-
-    let amount_swapped = dy;
-    let new_destination_amount = swap_destination_amount.checked_sub(amount_swapped).unwrap();
-    let new_source_amount = swap_source_amount.checked_add(source_amount).unwrap();
-
-    Some(SwapResult {
-        new_source_amount,
-        new_destination_amount,
-        amount_swapped,
-    })
 }
 
 #[cfg(test)]
@@ -1344,17 +1203,17 @@ mod tests {
             let amount_a = rng.gen_range(1..=MAX_TOKENS_IN.u128());
             let amount_b = rng.gen_range(1..=MAX_TOKENS_IN.u128());
             let amount_c = rng.gen_range(1..=MAX_TOKENS_IN.u128());
-            println!("testing curve_math_with_random_inputs:");
-            println!(
-                "amp_factor: {}, amount_a: {}, amount_b: {}, amount_c: {}",
-                amp_factor, amount_a, amount_b, amount_c,
-            );
+            // println!("testing curve_math_with_random_inputs:");
+            // println!(
+            //     "amp_factor: {}, amount_a: {}, amount_b: {}, amount_c: {}",
+            //     amp_factor, amount_a, amount_b, amount_c,
+            // );
 
             let model = Model::new(amp_factor, vec![amount_a, amount_b, amount_c], N_COINS);
             let d = check_d(&model, amount_a, amount_b, amount_c);
             let amount_x = rng.gen_range(0..=amount_a);
 
-            println!("amount_x: {}", amount_x);
+            // println!("amount_x: {}", amount_x);
             check_y(&model, amount_x, amount_c, d);
         }
     }
@@ -1630,10 +1489,10 @@ mod tests {
         let ask_pool = large_pool;
         let offer_amount = large_amount;
 
-        println!(
-            "Parameters: amp={}, offer_pool={}, ask_pool={}, offer_amount={}",
-            amp, offer_pool, ask_pool, offer_amount
-        );
+        // println!(
+        //     "Parameters: amp={}, offer_pool={}, ask_pool={}, offer_amount={}",
+        //     amp, offer_pool, ask_pool, offer_amount
+        // );
 
         // Convert to Decimal256 for precision
         let offer_pool_dec = Decimal256::from_ratio(offer_pool, Uint128::new(1));
@@ -1706,7 +1565,7 @@ fn calculate_stableswap_d(
     // Calculate sum of pools with proper precision
     let sum_pools = calculate_pool_assets_sum(pool_info)?;
 
-    println!("sum_pools: {:?}", sum_pools);
+    // println!("sum_pools: {:?}", sum_pools);
 
     if sum_pools.is_zero() {
         // there was nothing to swap, return `0`.
@@ -1715,7 +1574,7 @@ fn calculate_stableswap_d(
 
     // Calculate ann = amp * n_coins
     let ann = calculate_ann(amp, n_coins)?;
-    println!("ann: {:?}", ann);
+    // println!("ann: {:?}", ann);
 
     // Use newton_raphson_iterate for the approximation
     let precision_threshold = Decimal256::one();
@@ -1737,9 +1596,8 @@ fn calculate_stableswap_d(
                     let mul_pools = pool_amount.checked_mul(n_coins_decimal)?;
                     acc.checked_multiply_ratio(current_d, mul_pools)
                 })?;
-            println!("new_d: {:?}", new_d);
+            // println!("new_d: {:?}", new_d);
 
-            let old_d = current_d;
             // current_d = ((ann * sum_pools + new_d * n_coins) * current_d) / ((ann - 1) * current_d + (n_coins + 1) * new_d)
             let next_d = (ann
                 .checked_mul(sum_pools)?
@@ -1755,8 +1613,8 @@ fn calculate_stableswap_d(
                     ))?,
             )?;
 
-            println!("old_d: {:?}", old_d);
-            println!("current_d: {:?}", next_d);
+            // println!("old_d: {:?}", old_d);
+            // println!("current_d: {:?}", next_d);
 
             Ok(next_d)
         },
