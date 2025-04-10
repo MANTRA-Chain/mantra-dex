@@ -149,6 +149,14 @@ pub fn assert_max_spread(
     return_amount: Uint128,
     spread_amount: Uint128,
 ) -> StdResult<()> {
+    println!("-----");
+    println!("belief_price {:?}", belief_price);
+    println!("max_spread {:?}", max_spread);
+    println!("offer_amount {:?}", offer_amount);
+    println!("return_amount {:?}", return_amount);
+    println!("spread_amount {:?}", spread_amount);
+    println!("-----");
+
     let max_spread: Decimal256 = max_spread
         .unwrap_or(Decimal::from_str(DEFAULT_SLIPPAGE)?)
         .min(Decimal::from_str(MAX_ALLOWED_SLIPPAGE)?)

@@ -282,8 +282,8 @@ pub(crate) type OfferAskDenoms = (String, String);
 pub fn calculate_stableswap_y(
     pool_info: &PoolInfo,
     offer_ask_denoms: OfferAskDenoms,
-    ask_pool_amount: Decimal256, //todo this is normalized already
-    offer_amount: Decimal256,    //todo this is normalized already
+    ask_pool_amount: Decimal256,
+    offer_amount: Decimal256,
     amp: &u64,
     direction: StableSwapDirection,
 ) -> Result<Uint256, ContractError> {
@@ -464,13 +464,15 @@ pub fn compute_swap(
         PoolType::StableSwap { amp } => {
             println!("offer_pool_amount: {:?}", offer_pool_amount);
             println!("ask_pool_amount: {:?}", ask_pool_amount);
-
+            println!("offer_precision : {:?}", offer_precision);
+            println!("ask_precision : {:?}", ask_precision);
             let offer_pool_amount =
                 Decimal256::decimal_with_precision(offer_pool_amount, offer_precision)?;
             let ask_pool_amount =
                 Decimal256::decimal_with_precision(ask_pool_amount, ask_precision)?;
             let offer_amount = Decimal256::decimal_with_precision(offer_amount, offer_precision)?;
 
+            println!(">>offer_amount: {:?}", offer_amount);
             println!(">>offer_pool_amount: {:?}", offer_pool_amount);
             println!(">>ask_pool_amount: {:?}", ask_pool_amount);
 
@@ -478,7 +480,7 @@ pub fn compute_swap(
 
             //todo refactor this, perhaps pass the coins amounts, denoms and decimals all together
             // in a single structure?
-            let new_pool = calculate_stableswap_y(
+            let mut new_pool = calculate_stableswap_y(
                 pool_info,
                 (offer_pool.denom, ask_pool.denom),
                 ask_pool_amount,
@@ -487,26 +489,72 @@ pub fn compute_swap(
                 StableSwapDirection::Simulate,
             )?;
 
-            //todo new_pool needs to come out with the right precision
+            println!("o.new_pool: {:?}", new_pool);
 
-            println!("new_pool: {:?}", new_pool);
+            //new_pool is returned with the max_precision. If ask_precision is lower, we need to convert it
+            if ask_precision < max_precision {
+                new_pool =
+                    Decimal256::decimal_with_precision(new_pool, max_precision - ask_precision)?
+                        .to_uint_floor();
+            }
+
+            println!("m.new_pool: {:?}", new_pool);
+
             println!("ask_pool_amount: {:?}", ask_pool_amount);
             println!(
                 ".to_uint256_with_precision(u32::from(max_precision)): {:?}",
-                ask_pool_amount.to_uint256_with_precision(u32::from(max_precision))
+                ask_pool_amount.to_uint256_with_precision(u32::from(ask_precision))
             );
 
+            println!("->->ask_pool_amount: {:?}", ask_pool_amount);
+            println!(
+                "->->ask_pool_amount.precision: {:?}",
+                ask_pool_amount.to_uint256_with_precision(u32::from(ask_precision))?
+            );
+            println!("->->new_pool: {:?}", new_pool);
+
             let return_amount = ask_pool_amount
-                .to_uint256_with_precision(u32::from(max_precision))?
+                .to_uint256_with_precision(u32::from(ask_precision))?
                 .checked_sub(new_pool)?;
 
             println!("return_amount: {:?}", return_amount);
 
             // the spread is the loss from 1:1 conversion
             // thus is it the offer_amount - return_amount
-            let spread_amount = offer_amount
+
+            println!(
+                "->->offer_amount.precision: {:?}",
+                offer_amount.to_uint256_with_precision(u32::from(max_precision))?
+            );
+            println!(
+                "->->return_amount.precision.1: {:?}",
+                Decimal256::from_ratio(return_amount, 1u128)
+            );
+            println!(
+                "->->return_amount.precision: {:?}",
+                Decimal256::from_ratio(return_amount, 1u128)
+                    .to_uint256_with_precision(u32::from(max_precision - ask_precision))?
+            );
+
+            //todo give readable names to this stuff
+
+            let mut spread_amount = offer_amount
                 .to_uint256_with_precision(u32::from(max_precision))?
-                .saturating_sub(return_amount);
+                .saturating_sub(
+                    Decimal256::from_ratio(return_amount, 1u128)
+                        .to_uint256_with_precision(u32::from(max_precision - ask_precision))?,
+                );
+            println!("o.spread_amount**: {:?}", spread_amount);
+
+            if offer_precision < max_precision {
+                spread_amount = Decimal256::decimal_with_precision(
+                    spread_amount,
+                    max_precision - offer_precision,
+                )?
+                .to_uint_floor();
+            }
+
+            println!("m.spread_amount**: {:?}", spread_amount);
 
             let fees_computation = compute_fees(&pool_info.pool_fees, return_amount)?;
 
@@ -1625,14 +1673,6 @@ mod tests {
             &amp,
             StableSwapDirection::Simulate,
         );
-        let result = calculate_stableswap_y(
-            &pool_info,
-            ("uusdc".to_string(), "uusdt".to_string()),
-            ask_pool_dec,
-            offer_amount_dec,
-            &amp,
-            StableSwapDirection::Simulate,
-        );
 
         match result {
             Ok(_) => {
@@ -1718,14 +1758,6 @@ fn calculate_stableswap_d(
 
             println!("old_d: {:?}", old_d);
             println!("current_d: {:?}", next_d);
-            println!(
-                "current_d.checked_sub(old_d): {:?}",
-                next_d.checked_sub(old_d).unwrap()
-            );
-            println!(
-                "Decimal256::decimal_with_precision(1u8, precision) {:?}",
-                Decimal256::decimal_with_precision(1u8, max_precision).unwrap()
-            );
 
             Ok(next_d)
         },

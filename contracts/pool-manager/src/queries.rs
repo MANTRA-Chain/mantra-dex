@@ -66,6 +66,8 @@ pub fn query_simulation(
         ask_decimal,
     )?;
 
+    println!("*******swap_computation: {:?}", swap_computation);
+
     Ok(SimulationResponse {
         return_amount: swap_computation.return_amount,
         spread_amount: swap_computation.spread_amount,
@@ -155,6 +157,12 @@ pub fn query_reverse_simulation(
                 StableSwapDirection::ReverseSimulate,
             )?;
 
+            // new_offer_pool_amount is returned with the max_precision. If offer_precision is lower, we need to convert it
+            // if offer_precision < max_precision {
+            //     new_offer_pool_amount = Decimal256::decimal_with_precision(new_offer_pool_amount, max_precision - offer_precision)?.to_uint_floor();
+            // }
+
+            //todo revise precision here too
             let offer_amount = new_offer_pool_amount
                 .checked_sub(offer_pool.to_uint256_with_precision(u32::from(max_precision))?)?;
 
@@ -169,6 +177,7 @@ pub fn query_reverse_simulation(
                     10u128.pow((max_precision - offer_decimal).into()),
                 ))?,
             };
+            //todo revise spread
             let spread_amount = offer_amount.saturating_sub(before_fees_offer);
             let swap_fee_amount = pool_info.pool_fees.swap_fee.compute(before_fees_ask)?;
             let protocol_fee_amount = pool_info.pool_fees.protocol_fee.compute(before_fees_ask)?;
