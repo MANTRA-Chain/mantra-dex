@@ -1785,7 +1785,9 @@ fn simulation_vs_reverse_simulation_3pool() {
     // Test each case
     for (token_in, token_out, amount_in) in test_cases {
         let simulated_return = RefCell::new(Uint128::zero());
+        let simulated_spread = RefCell::new(Uint128::zero());
         let reverse_simulated_offer = RefCell::new(Uint128::zero());
+        let reverse_simulated_spread = RefCell::new(Uint128::zero());
 
         // Forward simulation
         suite.query_simulation(
@@ -1800,6 +1802,9 @@ fn simulation_vs_reverse_simulation_3pool() {
                 simulated_return
                     .borrow_mut()
                     .clone_from(&response.return_amount);
+                simulated_spread
+                    .borrow_mut()
+                    .clone_from(&response.spread_amount);
             },
         );
 
@@ -1816,6 +1821,9 @@ fn simulation_vs_reverse_simulation_3pool() {
                 reverse_simulated_offer
                     .borrow_mut()
                     .clone_from(&response.offer_amount);
+                reverse_simulated_spread
+                    .borrow_mut()
+                    .clone_from(&response.spread_amount);
             },
         );
 
@@ -1843,6 +1851,22 @@ fn simulation_vs_reverse_simulation_3pool() {
             reverse_simulated_offer.borrow(),
             diff,
             max_allowed_diff
+        );
+
+        // Compare the spread between the forward and reverse simulations
+        let spread_simulation = *simulated_spread.borrow();
+        let spread_reverse_simulation = *reverse_simulated_spread.borrow();
+        let spread_tolerance = (amount_in_decimal * tolerance).atomics();
+
+        assert!(
+            spread_simulation.saturating_sub(spread_reverse_simulation) <= spread_tolerance,
+            "Spread mismatch for {}->{}: simulation={}, reverse={}, diff={}, max_allowed={}",
+            token_in,
+            token_out,
+            spread_simulation,
+            spread_reverse_simulation,
+            spread_simulation.saturating_sub(spread_reverse_simulation),
+            spread_tolerance
         );
     }
 }

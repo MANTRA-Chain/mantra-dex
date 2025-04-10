@@ -179,6 +179,7 @@ pub fn query_reverse_simulation(
             };
             //todo revise spread
             let spread_amount = offer_amount.saturating_sub(before_fees_offer);
+            println!("spread_amount: {:?}", spread_amount);
             let swap_fee_amount = pool_info.pool_fees.swap_fee.compute(before_fees_ask)?;
             let protocol_fee_amount = pool_info.pool_fees.protocol_fee.compute(before_fees_ask)?;
             let burn_fee_amount = pool_info.pool_fees.burn_fee.compute(before_fees_ask)?;
