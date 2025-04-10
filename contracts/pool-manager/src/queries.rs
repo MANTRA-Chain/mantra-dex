@@ -152,7 +152,6 @@ pub fn query_reverse_simulation(
                 ask_pool,
                 before_fees,
                 amp,
-                max_precision,
                 StableSwapDirection::ReverseSimulate,
             )?;
 
