@@ -16,6 +16,39 @@ use crate::math::Decimal256Helper;
 /// The amount of iterations to perform when calculating the Newton-Raphson approximation.
 const NEWTON_ITERATIONS: u64 = 255;
 
+/// Generic helper function for Newton-Raphson iteration pattern.
+///
+/// Takes a value type that can be compared and a closure to calculate the next value.
+/// Returns the converged value or a ConvergeError.
+fn newton_raphson_iterate<T, F>(
+    initial_value: T,
+    max_iterations: u64,
+    convergence_threshold: T,
+    next_value_fn: F,
+) -> Result<T, ContractError>
+where
+    T: std::cmp::PartialOrd + std::ops::Sub<Output = T> + Clone,
+    F: Fn(T) -> Result<T, ContractError>,
+{
+    let mut current = initial_value;
+
+    for _ in 0..max_iterations {
+        let previous = current.clone();
+        current = next_value_fn(previous.clone())?;
+
+        if current.clone() >= previous.clone() {
+            if current.clone().sub(previous) <= convergence_threshold {
+                return Ok(current);
+            }
+        } else if previous.sub(current.clone()) <= convergence_threshold {
+            return Ok(current);
+        }
+    }
+
+    // completed iterations but never approximated correctly
+    Err(ContractError::ConvergeError)
+}
+
 /// Encodes all results of swapping from a source token to a destination token.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SwapResult {
@@ -60,64 +93,59 @@ fn calculate_stableswap_d(
     // ann = amp * n_coins
     let ann = Decimal256::from_ratio(Uint256::from_u128((*amp).into()).checked_mul(n_coins)?, 1u8);
     println!("ann: {:?}", ann);
-    // perform Newton-Raphson method
-    let mut current_d = sum_pools;
-    for _ in 0..NEWTON_ITERATIONS {
-        let new_d = pool_info
-            .assets
-            .iter()
-            .enumerate()
-            .try_fold::<_, _, Result<_, ContractError>>(current_d, |acc, (index, asset)| {
-                let pool_amount = Decimal256::decimal_with_precision(
-                    asset.amount,
-                    pool_info.asset_decimals[index],
-                )?;
-                let mul_pools = pool_amount.checked_mul(n_coins_decimal)?;
-                acc.checked_multiply_ratio(current_d, mul_pools)
-            })?;
-        println!("new_d: {:?}", new_d);
 
-        let old_d = current_d;
-        // current_d = ((ann * sum_pools + new_d * n_coins) * current_d) / ((ann - 1) * current_d + (n_coins + 1) * new_d)
-        current_d = (ann
-            .checked_mul(sum_pools)?
-            .checked_add(new_d.checked_mul(n_coins_decimal)?)?
-            .checked_mul(current_d)?)
-        .checked_div(
-            (ann.checked_sub(Decimal256::one())?
-                .checked_mul(current_d)?
-                .checked_add(
-                    n_coins_decimal
-                        .checked_add(Decimal256::one())?
-                        .checked_mul(new_d)?,
-                ))?,
-        )?;
+    // Use newton_raphson_iterate for the approximation
+    let precision_threshold = Decimal256::decimal_with_precision(1u128, max_precision)?;
 
-        println!("old_d: {:?}", old_d);
-        println!("current_d: {:?}", current_d);
-        println!(
-            "current_d.checked_sub(old_d): {:?}",
-            current_d.checked_sub(old_d).unwrap()
-        );
-        println!(
-            "Decimal256::decimal_with_precision(1u8, precision) {:?}",
-            Decimal256::decimal_with_precision(1u8, max_precision).unwrap()
-        );
+    newton_raphson_iterate(
+        sum_pools,
+        NEWTON_ITERATIONS,
+        precision_threshold,
+        |current_d| {
+            let new_d = pool_info
+                .assets
+                .iter()
+                .enumerate()
+                .try_fold::<_, _, Result<_, ContractError>>(current_d, |acc, (index, asset)| {
+                    let pool_amount = Decimal256::decimal_with_precision(
+                        asset.amount,
+                        pool_info.asset_decimals[index],
+                    )?;
+                    let mul_pools = pool_amount.checked_mul(n_coins_decimal)?;
+                    acc.checked_multiply_ratio(current_d, mul_pools)
+                })?;
+            println!("new_d: {:?}", new_d);
 
-        // Compare with precision-adjusted value instead of fixed Decimal256::one()
-        let precision_threshold = Decimal256::decimal_with_precision(1u128, max_precision)?;
-        if current_d >= old_d {
-            if current_d.checked_sub(old_d)? <= precision_threshold {
-                return Ok(current_d);
-            }
-        } else if old_d.checked_sub(current_d)? <= precision_threshold {
-            return Ok(current_d);
-        }
-    }
+            let old_d = current_d;
+            // current_d = ((ann * sum_pools + new_d * n_coins) * current_d) / ((ann - 1) * current_d + (n_coins + 1) * new_d)
+            let next_d = (ann
+                .checked_mul(sum_pools)?
+                .checked_add(new_d.checked_mul(n_coins_decimal)?)?
+                .checked_mul(current_d)?)
+            .checked_div(
+                (ann.checked_sub(Decimal256::one())?
+                    .checked_mul(current_d)?
+                    .checked_add(
+                        n_coins_decimal
+                            .checked_add(Decimal256::one())?
+                            .checked_mul(new_d)?,
+                    ))?,
+            )?;
 
-    // completed iterations
-    // but we never approximated correctly
-    Err(ContractError::ConvergeError)
+            println!("old_d: {:?}", old_d);
+            println!("current_d: {:?}", next_d);
+            println!(
+                "current_d.checked_sub(old_d): {:?}",
+                next_d.checked_sub(old_d).unwrap()
+            );
+            println!(
+                "Decimal256::decimal_with_precision(1u8, precision) {:?}",
+                Decimal256::decimal_with_precision(1u8, max_precision).unwrap()
+            );
+
+            Ok(next_d)
+        },
+    )
 }
 
 /// Determines the direction of `offer_pool` -> `ask_pool`.
@@ -219,27 +247,19 @@ pub fn calculate_stableswap_y(
     let b = pool_sum.checked_add(d_512.checked_div(ann)?)?;
     println!("b:: {:?}", b);
 
-    // attempt to converge solution using Newton-Raphson method
-    let mut y = d_512;
-    for i in 0..NEWTON_ITERATIONS {
-        let previous_y = y;
+    // Use newton_raphson_iterate for the approximation
+    newton_raphson_iterate(d_512, NEWTON_ITERATIONS, Uint512::one(), |y| {
         // y = (y^2 + c) / (2y + b - d)
-        y = y
+        let next_y = y
             .checked_mul(y)?
             .checked_add(c_512)?
             .checked_div(y.checked_add(y)?.checked_add(b)?.checked_sub(d_512)?)?;
 
-        println!("y{:?}: {:?}", i, y);
-        if y >= previous_y {
-            if y.checked_sub(previous_y)? <= Uint512::one() {
-                return y.try_into().map_err(|_| ContractError::SwapOverflowError);
-            }
-        } else if y < previous_y && previous_y.checked_sub(y)? <= Uint512::one() {
-            return y.try_into().map_err(|_| ContractError::SwapOverflowError);
-        }
-    }
+        println!("y: {:?}", next_y);
 
-    Err(ContractError::ConvergeError)
+        Ok(next_y)
+    })
+    .and_then(|y| y.try_into().map_err(|_| ContractError::SwapOverflowError))
 }
 
 mod test {
