@@ -215,82 +215,55 @@ fn calculate_stableswap_coefficient_b(
     Ok(pool_sum.checked_add(d_512.checked_div(ann)?)?)
 }
 
-fn calculate_stableswap_d(
-    pool_info: &PoolInfo,
-    n_coins: Uint256,
-    amp: &u64,
-) -> Result<Decimal256, ContractError> {
-    let n_coins_decimal = Decimal256::from_ratio(n_coins, Uint256::one());
+/// Core D calculation logic shared between compute_d and calculate_stableswap_d
+fn calculate_d_core(amp_factor: &u64, deposits: &[Uint128], n_coins: Uint128) -> Option<Uint512> {
+    // sum(x_i), a.k.a S
+    let sum_x = deposits
+        .iter()
+        .fold(Uint128::zero(), |acc, x| acc.checked_add(*x).unwrap());
 
-    // Determine max precision from asset_decimals
-    let max_precision = *pool_info.asset_decimals.iter().max().unwrap();
+    if sum_x == Uint128::zero() {
+        Some(Uint512::zero())
+    } else {
+        // do as below but for a generic number of assets
+        let amount_times_coins: Vec<Uint128> = deposits
+            .iter()
+            .map(|amount| amount.checked_mul(n_coins).unwrap())
+            .collect();
 
-    // Calculate sum of pools with proper precision
-    let sum_pools = calculate_pool_assets_sum(pool_info)?;
+        // Newton's method to approximate D
+        let mut d_prev: Uint512;
+        let mut d: Uint512 = sum_x.into();
+        for _ in 0..NEWTON_ITERATIONS {
+            let mut d_prod = d;
+            for amount in amount_times_coins.clone().into_iter() {
+                d_prod = d_prod
+                    .checked_mul(d)
+                    .unwrap()
+                    .checked_div(amount.into())
+                    .unwrap();
+            }
+            d_prev = d;
+            d = compute_next_d(amp_factor, d, d_prod, sum_x, n_coins).unwrap();
+            // Equality with the precision of 1
+            if d > d_prev {
+                if d.checked_sub(d_prev).unwrap() <= Uint512::one() {
+                    break;
+                }
+            } else if d_prev.checked_sub(d).unwrap() <= Uint512::one() {
+                break;
+            }
+        }
 
-    println!("sum_pools: {:?}", sum_pools);
-
-    if sum_pools.is_zero() {
-        // there was nothing to swap, return `0`.
-        return Ok(Decimal256::zero());
+        Some(d)
     }
+}
 
-    // Calculate ann = amp * n_coins
-    let ann = calculate_ann(amp, n_coins)?;
-    println!("ann: {:?}", ann);
-
-    // Use newton_raphson_iterate for the approximation
-    let precision_threshold = Decimal256::one();
-
-    newton_raphson_iterate(
-        sum_pools,
-        NEWTON_ITERATIONS,
-        precision_threshold,
-        |current_d| {
-            let new_d = pool_info
-                .assets
-                .iter()
-                .enumerate()
-                .try_fold::<_, _, Result<_, ContractError>>(current_d, |acc, (index, asset)| {
-                    let pool_amount = Decimal256::decimal_with_precision(
-                        asset.amount,
-                        pool_info.asset_decimals[index],
-                    )?;
-                    let mul_pools = pool_amount.checked_mul(n_coins_decimal)?;
-                    acc.checked_multiply_ratio(current_d, mul_pools)
-                })?;
-            println!("new_d: {:?}", new_d);
-
-            let old_d = current_d;
-            // current_d = ((ann * sum_pools + new_d * n_coins) * current_d) / ((ann - 1) * current_d + (n_coins + 1) * new_d)
-            let next_d = (ann
-                .checked_mul(sum_pools)?
-                .checked_add(new_d.checked_mul(n_coins_decimal)?)?
-                .checked_mul(current_d)?)
-            .checked_div(
-                (ann.checked_sub(Decimal256::one())?
-                    .checked_mul(current_d)?
-                    .checked_add(
-                        n_coins_decimal
-                            .checked_add(Decimal256::one())?
-                            .checked_mul(new_d)?,
-                    ))?,
-            )?;
-
-            println!("old_d: {:?}", old_d);
-            println!("current_d: {:?}", next_d);
-            println!(
-                "current_d.checked_sub(old_d): {:?}",
-                next_d.checked_sub(old_d).unwrap()
-            );
-            println!(
-                "Decimal256::decimal_with_precision(1u8, precision) {:?}",
-                Decimal256::decimal_with_precision(1u8, max_precision).unwrap()
-            );
-
-            Ok(next_d)
-        },
-    )
+#[allow(clippy::unwrap_used)]
+pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
+    let n_coins = Uint128::from(deposits.len() as u128);
+    let deposits: Vec<Uint128> = deposits.iter().map(|coin| coin.amount).collect();
+    calculate_d_core(amp_factor, &deposits, n_coins)
 }
 
 /// Determines the direction of `offer_pool` -> `ask_pool`.
@@ -1005,54 +978,6 @@ pub fn get_asset_indexes_in_pool(
     ))
 }
 
-//todo consolidate calculate_stableswap_d with this one
-#[allow(clippy::unwrap_used)]
-pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
-    let n_coins = Uint128::from(deposits.len() as u128);
-    //todo use decimals in this one?! see curve https://github.com/curvefi/stableswap-ng/blob/fd54b9a1a110d0e2e4f962583761d9e236b70967/contracts/main/CurveStableSwapNG.vy#L570
-
-    // sum(x_i), a.k.a S
-    let sum_x = deposits
-        .iter()
-        .fold(Uint128::zero(), |acc, x| acc.checked_add(x.amount).unwrap());
-
-    if sum_x == Uint128::zero() {
-        Some(Uint512::zero())
-    } else {
-        // do as below but for a generic number of assets
-        let amount_times_coins: Vec<Uint128> = deposits
-            .iter()
-            .map(|coin| coin.amount.checked_mul(n_coins).unwrap())
-            .collect();
-
-        // Newton's method to approximate D
-        let mut d_prev: Uint512;
-        let mut d: Uint512 = sum_x.into();
-        for _ in 0..NEWTON_ITERATIONS {
-            let mut d_prod = d;
-            for amount in amount_times_coins.clone().into_iter() {
-                d_prod = d_prod
-                    .checked_mul(d)
-                    .unwrap()
-                    .checked_div(amount.into())
-                    .unwrap();
-            }
-            d_prev = d;
-            d = compute_next_d(amp_factor, d, d_prod, sum_x, n_coins).unwrap();
-            // Equality with the precision of 1
-            if d > d_prev {
-                if d.checked_sub(d_prev).unwrap() <= Uint512::one() {
-                    break;
-                }
-            } else if d_prev.checked_sub(d).unwrap() <= Uint512::one() {
-                break;
-            }
-        }
-
-        Some(d)
-    }
-}
-
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
     amp_factor: &u64,
@@ -1727,4 +1652,82 @@ mod tests {
             }
         }
     }
+}
+
+fn calculate_stableswap_d(
+    pool_info: &PoolInfo,
+    n_coins: Uint256,
+    amp: &u64,
+) -> Result<Decimal256, ContractError> {
+    let n_coins_decimal = Decimal256::from_ratio(n_coins, Uint256::one());
+
+    // Determine max precision from asset_decimals
+    let max_precision = *pool_info.asset_decimals.iter().max().unwrap();
+
+    // Calculate sum of pools with proper precision
+    let sum_pools = calculate_pool_assets_sum(pool_info)?;
+
+    println!("sum_pools: {:?}", sum_pools);
+
+    if sum_pools.is_zero() {
+        // there was nothing to swap, return `0`.
+        return Ok(Decimal256::zero());
+    }
+
+    // Calculate ann = amp * n_coins
+    let ann = calculate_ann(amp, n_coins)?;
+    println!("ann: {:?}", ann);
+
+    // Use newton_raphson_iterate for the approximation
+    let precision_threshold = Decimal256::one();
+
+    newton_raphson_iterate(
+        sum_pools,
+        NEWTON_ITERATIONS,
+        precision_threshold,
+        |current_d| {
+            let new_d = pool_info
+                .assets
+                .iter()
+                .enumerate()
+                .try_fold::<_, _, Result<_, ContractError>>(current_d, |acc, (index, asset)| {
+                    let pool_amount = Decimal256::decimal_with_precision(
+                        asset.amount,
+                        pool_info.asset_decimals[index],
+                    )?;
+                    let mul_pools = pool_amount.checked_mul(n_coins_decimal)?;
+                    acc.checked_multiply_ratio(current_d, mul_pools)
+                })?;
+            println!("new_d: {:?}", new_d);
+
+            let old_d = current_d;
+            // current_d = ((ann * sum_pools + new_d * n_coins) * current_d) / ((ann - 1) * current_d + (n_coins + 1) * new_d)
+            let next_d = (ann
+                .checked_mul(sum_pools)?
+                .checked_add(new_d.checked_mul(n_coins_decimal)?)?
+                .checked_mul(current_d)?)
+            .checked_div(
+                (ann.checked_sub(Decimal256::one())?
+                    .checked_mul(current_d)?
+                    .checked_add(
+                        n_coins_decimal
+                            .checked_add(Decimal256::one())?
+                            .checked_mul(new_d)?,
+                    ))?,
+            )?;
+
+            println!("old_d: {:?}", old_d);
+            println!("current_d: {:?}", next_d);
+            println!(
+                "current_d.checked_sub(old_d): {:?}",
+                next_d.checked_sub(old_d).unwrap()
+            );
+            println!(
+                "Decimal256::decimal_with_precision(1u8, precision) {:?}",
+                Decimal256::decimal_with_precision(1u8, max_precision).unwrap()
+            );
+
+            Ok(next_d)
+        },
+    )
 }
