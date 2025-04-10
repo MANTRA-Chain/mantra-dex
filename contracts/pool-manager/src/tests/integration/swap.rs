@@ -1,12 +1,11 @@
-use crate::math::Decimal256Helper;
 use std::cell::RefCell;
 
 use crate::tests::integration::helpers::extract_pool_reserves;
 use crate::tests::suite::TestingSuite;
+use cosmwasm_std::Coin;
 use cosmwasm_std::Decimal;
 use cosmwasm_std::Uint128;
 use cosmwasm_std::{assert_approx_eq, coin};
-use cosmwasm_std::{Coin, Decimal256, Uint256};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
@@ -1677,6 +1676,8 @@ fn swap_3pool_different_decimals() {
             },
         );
 
+    let usdt_amount = Uint128::new(199999999999997674418u128);
+
     suite
         .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
             assert_eq!(
@@ -1698,10 +1699,7 @@ fn swap_3pool_different_decimals() {
             },
             "uusdt".to_string(),
             |result| {
-                assert_eq!(
-                    result.unwrap().return_amount,
-                    Uint128::new(199_517195365122908186u128)
-                );
+                assert_eq!(result.unwrap().return_amount, usdt_amount.clone());
             },
         )
         .swap(
@@ -1725,9 +1723,8 @@ fn swap_3pool_different_decimals() {
         .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
             assert_eq!(
                 result.unwrap().amount,
-                Uint128::new(
-                    300_000_000_000_000_000000000000000000u128 + 199_517195365122908186u128
-                )
+                Uint128::new(300_000_000_000_000_000000000000000000u128)
+                    .saturating_add(usdt_amount)
             );
         });
 }
@@ -1955,12 +1952,9 @@ fn compute_offer_amount_floor() {
                 for event in result.unwrap().events {
                     if event.ty == "wasm" {
                         for attribute in event.attributes {
-                            match attribute.key.as_str() {
-                                "return_amount" => {
-                                    let return_amount = attribute.value.parse::<Uint128>().unwrap();
-                                    assert!(return_amount >= needed_uusd);
-                                }
-                                _ => {}
+                            if attribute.key.as_str() == "return_amount" {
+                                let return_amount = attribute.value.parse::<Uint128>().unwrap();
+                                assert!(return_amount >= needed_uusd);
                             }
                         }
                     }

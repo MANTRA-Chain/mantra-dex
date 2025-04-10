@@ -268,13 +268,13 @@ fn provide_liquidity_with_single_asset() {
                 .pool_info
                 .assets
                 .iter()
-                .find(|coin| coin.denom == "uwhale".to_string())
+                .find(|coin| coin.denom == *"uwhale")
                 .unwrap();
             let luna = response.pools[0]
                 .pool_info
                 .assets
                 .iter()
-                .find(|coin| coin.denom == "uluna".to_string())
+                .find(|coin| coin.denom == *"uluna")
                 .unwrap();
 
             assert_eq!(whale.amount, Uint128::from(1_020_000u128));

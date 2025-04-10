@@ -149,10 +149,9 @@ pub fn query_reverse_simulation(
             let new_offer_pool_amount = calculate_stableswap_y(
                 &pool_info,
                 (offer_asset_pool.denom, ask_asset_pool.denom),
-                offer_pool,
                 ask_pool,
                 before_fees,
-                &amp,
+                amp,
                 max_precision,
                 StableSwapDirection::ReverseSimulate,
             )?;

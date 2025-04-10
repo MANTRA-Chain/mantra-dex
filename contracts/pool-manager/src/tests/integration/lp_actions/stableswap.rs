@@ -1039,14 +1039,14 @@ fn provide_liquidity_stable_invalid_slippage_check() {
             coin(1_000_000_000_000u128, "uosmo".to_string()),
             coin(1_000_000_000_000u128, "uusd".to_string()),
             coin(
-                200_000_000_000_000_000000000000000000000u128,
+                200_000_000_000_000_000_000_000_000_000_000_000_u128,
                 "uusdc".to_string(),
             ),
             coin(
-                200_000_000_000_000_000000000000000000u128,
+                200_000_000_000_000_000_000_000_000_000_000_u128,
                 "ausdy".to_string(),
             ),
-            coin(150_000_000_000_000_000000u128, "uom".to_string()),
+            coin(150_000_000_000_000_000_000_u128, "uom".to_string()),
         ],
         StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
     );

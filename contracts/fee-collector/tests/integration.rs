@@ -42,9 +42,8 @@ fn change_contract_ownership() {
 
     let result = app.execute_contract(alice.clone(), fee_collector.clone(), &msg, &[]);
 
-    match result {
-        Ok(_) => panic!("Unauthorized attempt to change ownership should fail"),
-        Err(_) => {}
+    if let Ok(_) = result {
+        panic!("Unauthorized attempt to change ownership should fail")
     }
 
     // Authorized attempt to change ownership

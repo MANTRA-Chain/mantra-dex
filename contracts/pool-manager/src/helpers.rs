@@ -2,8 +2,8 @@ use std::ops::Mul;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Isqrt, MessageInfo,
-    StdError, StdResult, Uint128, Uint256, Uint512,
+    ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Isqrt, MessageInfo, StdError,
+    StdResult, Uint128, Uint256, Uint512,
 };
 use mantra_dex_std::coin::{add_coins, aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
 use mantra_dex_std::constants::LP_SYMBOL;
@@ -30,8 +30,6 @@ pub struct SwapResult {
 fn calculate_stableswap_d(
     pool_info: &PoolInfo,
     n_coins: Uint256,
-    offer_pool: Decimal256,
-    ask_pool: Decimal256,
     amp: &u64,
     precision: u8, //todo max precison
 ) -> Result<Decimal256, ContractError> {
@@ -134,9 +132,8 @@ pub(crate) type OfferAskDenoms = (String, String);
 pub fn calculate_stableswap_y(
     pool_info: &PoolInfo,
     offer_ask_denoms: OfferAskDenoms,
-    offer_pool_amount: Decimal256, //todo this is normalized already
-    ask_pool_amount: Decimal256,   //todo this is normalized already
-    offer_amount: Decimal256,      //todo this is normalized already
+    ask_pool_amount: Decimal256, //todo this is normalized already
+    offer_amount: Decimal256,    //todo this is normalized already
     amp: &u64,
     precision: u8, //todo max precision
     direction: StableSwapDirection,
@@ -148,15 +145,8 @@ pub fn calculate_stableswap_y(
 
     //todo d calculation seems to be OK, matching similar numbers from the python example
     // need to test with different decimal precisions
-    let d_512 = calculate_stableswap_d(
-        pool_info,
-        n_coins_256,
-        offer_pool_amount,
-        ask_pool_amount,
-        amp,
-        precision,
-    )?
-    .to_uint512_with_precision(u32::from(precision))?;
+    let d_512 = calculate_stableswap_d(pool_info, n_coins_256, amp, precision)?
+        .to_uint512_with_precision(u32::from(precision))?;
 
     println!("*d: {:?}", d_512);
 
@@ -251,18 +241,13 @@ mod test {
     mod tests {
         use crate::helpers::calculate_stableswap_y;
         use crate::helpers::StableSwapDirection;
-        use std::ops::Mul;
 
         use cosmwasm_std::assert_approx_eq;
-        use cosmwasm_std::{
-            coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo,
-            StdError, StdResult, Uint128, Uint256, Uint512,
-        };
-        use mantra_dex_std::coin::{aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
-        use mantra_dex_std::constants::LP_SYMBOL;
+        use cosmwasm_std::{coin, Decimal, Decimal256, Uint128};
+
         use mantra_dex_std::fee::Fee;
         use mantra_dex_std::fee::PoolFee;
-        use mantra_dex_std::pool_manager::{PoolInfo, PoolStatus, PoolType, SimulationResponse};
+        use mantra_dex_std::pool_manager::{PoolInfo, PoolStatus, PoolType};
 
         #[test]
         fn test_calculate_stableswap_y() {
@@ -297,7 +282,6 @@ mod test {
             };
 
             let offer_ask_denoms = ("denom1".to_string(), "denom2".to_string());
-            let offer_pool_amount = Decimal256::from_ratio(100000000u128, 1u128);
             let ask_pool_amount = Decimal256::from_ratio(200000000u128, 1u128);
             let offer_amount = Decimal256::from_ratio(10u128, 1u128);
             let amp = 100u64;
@@ -307,7 +291,6 @@ mod test {
             let result = calculate_stableswap_y(
                 &pool_info,
                 offer_ask_denoms,
-                offer_pool_amount,
                 ask_pool_amount,
                 offer_amount,
                 &amp,
@@ -386,7 +369,6 @@ pub fn compute_swap(
             let new_pool = calculate_stableswap_y(
                 pool_info,
                 (offer_pool.denom, ask_pool.denom),
-                offer_pool_amount,
                 ask_pool_amount,
                 offer_amount,
                 amp,
@@ -1077,6 +1059,7 @@ pub fn compute_y_raw(
 #[deprecated]
 /// Computes the swap amount `y` in proportion to `x`.
 #[allow(clippy::unwrap_used)]
+#[cfg(test)]
 pub fn compute_y(
     n_coins: u8,
     amp_factor: &u64,
@@ -1092,6 +1075,7 @@ pub fn compute_y(
 #[deprecated]
 /// Compute SwapResult after an exchange
 #[allow(clippy::unwrap_used)]
+#[cfg(test)]
 pub fn swap_to(
     n_coins: u8,
     amp_factor: &u64,
@@ -1100,6 +1084,8 @@ pub fn swap_to(
     swap_destination_amount: Uint128,
     unswaped_amount: Uint128,
 ) -> Option<SwapResult> {
+    use cosmwasm_std::coin;
+
     let deposits = vec![
         coin(swap_source_amount.u128(), "denom1"),
         coin(swap_destination_amount.u128(), "denom2"),
@@ -1166,8 +1152,7 @@ mod tests {
             coin(amount_c, "denom4"),
         ];
 
-        let d = compute_d(&model.amp_factor, &deposits).unwrap();
-        d
+        compute_d(&model.amp_factor, &deposits).unwrap()
     }
 
     fn check_y(model: &Model, swap_in: u128, no_swap: u128, d: Uint512) {
@@ -1572,7 +1557,15 @@ mod tests {
         let result = calculate_stableswap_y(
             &pool_info,
             ("uusdc".to_string(), "uusdt".to_string()),
-            offer_pool_dec,
+            ask_pool_dec,
+            offer_amount_dec,
+            &amp,
+            18,
+            StableSwapDirection::Simulate,
+        );
+        let result = calculate_stableswap_y(
+            &pool_info,
+            ("uusdc".to_string(), "uusdt".to_string()),
             ask_pool_dec,
             offer_amount_dec,
             &amp,

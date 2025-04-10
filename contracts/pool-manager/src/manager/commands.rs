@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    attr, ensure, Attribute, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response,
-    StdError, Uint128,
+    attr, ensure, Attribute, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
 };
 
 use mantra_dex_std::coin::is_factory_token;
