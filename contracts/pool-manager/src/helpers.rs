@@ -536,16 +536,18 @@ pub fn compute_swap(
                     .to_uint256_with_precision(u32::from(max_precision - ask_precision))?
             );
 
-            //todo give readable names to this stuff
+            // Return amount is previously returned with the max_precision.
+            // We need to convert it to the ask_precision to calculate the spread.
+            let adjusted_return_amount = Decimal256::from_ratio(return_amount, 1u128)
+                .to_uint256_with_precision(u32::from(max_precision - ask_precision))?;
+            let adjusted_offer_amount =
+                offer_amount.to_uint256_with_precision(u32::from(max_precision))?;
 
-            let mut spread_amount = offer_amount
-                .to_uint256_with_precision(u32::from(max_precision))?
-                .saturating_sub(
-                    Decimal256::from_ratio(return_amount, 1u128)
-                        .to_uint256_with_precision(u32::from(max_precision - ask_precision))?,
-                );
+            let mut spread_amount = adjusted_offer_amount.saturating_sub(adjusted_return_amount);
+
             println!("o.spread_amount**: {:?}", spread_amount);
 
+            // If offer_precision < max_precision, we need to convert the spread_amount to the offer_precision
             if offer_precision < max_precision {
                 spread_amount = Decimal256::decimal_with_precision(
                     spread_amount,
@@ -1700,9 +1702,6 @@ fn calculate_stableswap_d(
     amp: &u64,
 ) -> Result<Decimal256, ContractError> {
     let n_coins_decimal = Decimal256::from_ratio(n_coins, Uint256::one());
-
-    // Determine max precision from asset_decimals
-    let max_precision = *pool_info.asset_decimals.iter().max().unwrap();
 
     // Calculate sum of pools with proper precision
     let sum_pools = calculate_pool_assets_sum(pool_info)?;
