@@ -60,6 +60,161 @@ pub struct SwapResult {
     pub amount_swapped: Uint128,
 }
 
+/// Calculates the sum of all pool assets with proper precision handling
+fn calculate_pool_assets_sum(pool_info: &PoolInfo) -> Result<Decimal256, ContractError> {
+    pool_info
+        .assets
+        .iter()
+        .enumerate()
+        .try_fold::<_, _, Result<_, ContractError>>(Decimal256::zero(), |acc, (index, asset)| {
+            let pool_amount =
+                Decimal256::decimal_with_precision(asset.amount, pool_info.asset_decimals[index])?;
+            acc.checked_add(pool_amount)
+                .map_err(|err| ContractError::Std(StdError::overflow(err)))
+        })
+}
+
+/// Calculates the amplification factor * number of coins (ann)
+fn calculate_ann(amp: &u64, n_coins: Uint256) -> Result<Decimal256, ContractError> {
+    let amp_uint = Uint256::from_u128((*amp).into());
+    let product = amp_uint
+        .checked_mul(n_coins)
+        .map_err(|err| ContractError::Std(StdError::overflow(err)))?;
+
+    Ok(Decimal256::from_ratio(product, 1u8))
+}
+
+/// Finds the indices of the offer and ask assets in the pool
+fn find_asset_indices(
+    pool_info: &PoolInfo,
+    offer_ask_denoms: &OfferAskDenoms,
+) -> Result<(usize, usize), ContractError> {
+    // Find the index of the offer asset
+    let offer_index = pool_info
+        .asset_denoms
+        .iter()
+        .position(|d| d == &offer_ask_denoms.0)
+        .ok_or_else(|| StdError::generic_err("Offer denom not found".to_string()))?;
+
+    // Find the index of the ask asset
+    let ask_index = pool_info
+        .asset_denoms
+        .iter()
+        .position(|d| d == &offer_ask_denoms.1)
+        .ok_or_else(|| StdError::generic_err("Ask denom not found".to_string()))?;
+
+    Ok((offer_index, ask_index))
+}
+
+/// Calculates pool sum and adjusts it based on swap direction
+fn calculate_pool_sum(
+    pool_info: &PoolInfo,
+    offer_ask_denoms: &OfferAskDenoms,
+    ask_pool_amount: Decimal256,
+    offer_amount: Decimal256,
+    direction: &StableSwapDirection,
+    max_precision: u8,
+) -> Result<Uint512, ContractError> {
+    // Get the indices of the offer and ask assets
+    let (offer_index, ask_index) = find_asset_indices(pool_info, offer_ask_denoms)?;
+
+    // Calculate the sum of all pools
+    let mut pool_sum = Uint512::zero();
+
+    for (i, asset) in pool_info.assets.iter().enumerate() {
+        let pool_amount =
+            Decimal256::decimal_with_precision(asset.amount, pool_info.asset_decimals[i])?;
+
+        let x = match direction {
+            StableSwapDirection::Simulate => {
+                if i == offer_index {
+                    offer_amount.checked_add(pool_amount)?
+                } else if i != ask_index {
+                    pool_amount
+                } else {
+                    continue;
+                }
+            }
+            StableSwapDirection::ReverseSimulate => {
+                if i == offer_index {
+                    ask_pool_amount.checked_sub(offer_amount)?
+                } else if i != ask_index {
+                    pool_amount
+                } else {
+                    continue;
+                }
+            }
+        };
+
+        let x = Uint512::from(x.to_uint256_with_precision(u32::from(max_precision))?);
+        pool_sum = pool_sum.checked_add(x)?;
+    }
+
+    Ok(pool_sum)
+}
+
+/// Calculates the coefficient c for stableswap_y calculation
+#[allow(clippy::too_many_arguments)]
+fn calculate_stableswap_coefficient_c(
+    pool_info: &PoolInfo,
+    offer_ask_denoms: &OfferAskDenoms,
+    ask_pool_amount: Decimal256,
+    offer_amount: Decimal256,
+    d_512: Uint512,
+    n_coins_512: Uint512,
+    direction: &StableSwapDirection,
+    max_precision: u8,
+) -> Result<Uint512, ContractError> {
+    // Get the indices of the offer and ask assets
+    let (offer_index, ask_index) = find_asset_indices(pool_info, offer_ask_denoms)?;
+
+    // Initialize c value
+    let mut c_512 = d_512;
+
+    // Calculate the product of all pools divided by each pool times n_coins
+    for (i, asset) in pool_info.assets.iter().enumerate() {
+        let pool_amount =
+            Decimal256::decimal_with_precision(asset.amount, pool_info.asset_decimals[i])?;
+
+        let x = match direction {
+            StableSwapDirection::Simulate => {
+                if i == offer_index {
+                    offer_amount.checked_add(pool_amount)?
+                } else if i != ask_index {
+                    pool_amount
+                } else {
+                    continue;
+                }
+            }
+            StableSwapDirection::ReverseSimulate => {
+                if i == offer_index {
+                    ask_pool_amount.checked_sub(offer_amount)?
+                } else if i != ask_index {
+                    pool_amount
+                } else {
+                    continue;
+                }
+            }
+        };
+
+        let x = Uint512::from(x.to_uint256_with_precision(u32::from(max_precision))?);
+        c_512 = c_512
+            .checked_mul(d_512)?
+            .checked_div(x.checked_mul(n_coins_512)?)?;
+    }
+
+    Ok(c_512)
+}
+
+/// Calculates the coefficient b for stableswap_y calculation
+fn calculate_stableswap_coefficient_b(
+    pool_sum: Uint512,
+    d_512: Uint512,
+    ann: Uint512,
+) -> Result<Uint512, ContractError> {
+    Ok(pool_sum.checked_add(d_512.checked_div(ann)?)?)
+}
+
 fn calculate_stableswap_d(
     pool_info: &PoolInfo,
     n_coins: Uint256,
@@ -70,18 +225,8 @@ fn calculate_stableswap_d(
     // Determine max precision from asset_decimals
     let max_precision = *pool_info.asset_decimals.iter().max().unwrap();
 
-    let sum_pools = pool_info
-        .assets
-        .iter()
-        .enumerate()
-        .try_fold::<_, _, Result<_, ContractError>>(Decimal256::zero(), |acc, (index, asset)| {
-            println!("acc: {:?}", acc);
-            println!("asset: {:?}", asset);
-            let pool_amount =
-                Decimal256::decimal_with_precision(asset.amount, pool_info.asset_decimals[index])?;
-            println!("pool_amount: {:?}", pool_amount);
-            Ok(acc.checked_add(pool_amount)?)
-        })?;
+    // Calculate sum of pools with proper precision
+    let sum_pools = calculate_pool_assets_sum(pool_info)?;
 
     println!("sum_pools: {:?}", sum_pools);
 
@@ -90,8 +235,8 @@ fn calculate_stableswap_d(
         return Ok(Decimal256::zero());
     }
 
-    // ann = amp * n_coins
-    let ann = Decimal256::from_ratio(Uint256::from_u128((*amp).into()).checked_mul(n_coins)?, 1u8);
+    // Calculate ann = amp * n_coins
+    let ann = calculate_ann(amp, n_coins)?;
     println!("ann: {:?}", ann);
 
     // Use newton_raphson_iterate for the approximation
@@ -177,74 +322,44 @@ pub fn calculate_stableswap_y(
     // Determine max precision from asset_decimals
     let max_precision = *pool_info.asset_decimals.iter().max().unwrap();
 
-    //todo d calculation seems to be OK, matching similar numbers from the python example
-    // need to test with different decimal precisions
+    // Calculate D invariant
     let d_512 = calculate_stableswap_d(pool_info, n_coins_256, amp)?
         .to_uint512_with_precision(u32::from(max_precision))?;
 
     println!("*d: {:?}", d_512);
 
-    // Determine the indices of the offer and ask assets
-    let offer_index = pool_info
-        .asset_denoms
-        .iter()
-        .position(|d| d == &offer_ask_denoms.0)
-        .ok_or_else(|| StdError::generic_err("Offer denom not found".to_string()))?;
-    let ask_index = pool_info
-        .asset_denoms
-        .iter()
-        .position(|d| d == &offer_ask_denoms.1)
-        .ok_or_else(|| StdError::generic_err("Ask denom not found".to_string()))?;
-
-    // Initialize pool_sum
-    let mut pool_sum = Uint512::zero();
-    let mut c_512 = d_512;
-
-    let ann_times_n_coins = ann.checked_mul(n_coins_512)?;
-
-    for (i, asset) in pool_info.assets.iter().enumerate() {
-        let pool_amount =
-            Decimal256::decimal_with_precision(asset.amount, pool_info.asset_decimals[i])?;
-
-        let x = match direction {
-            StableSwapDirection::Simulate => {
-                if i == offer_index {
-                    offer_amount.checked_add(pool_amount)?
-                } else if i != ask_index {
-                    pool_amount
-                } else {
-                    continue;
-                }
-            }
-            StableSwapDirection::ReverseSimulate => {
-                if i == offer_index {
-                    ask_pool_amount.checked_sub(offer_amount)?
-                } else if i != ask_index {
-                    pool_amount
-                } else {
-                    continue;
-                }
-            }
-        };
-
-        let x = Uint512::from(x.to_uint256_with_precision(u32::from(max_precision))?);
-        pool_sum = pool_sum.checked_add(x)?;
-        c_512 = c_512
-            .checked_mul(d_512)?
-            .checked_div(x.checked_mul(n_coins_512)?)?;
-        println!("x: {:?}", x);
-        println!("pool_sum: {:?}", pool_sum);
-        println!("c: {:?}", c_512);
-    }
+    // Calculate pool sum based on swap direction
+    let pool_sum = calculate_pool_sum(
+        pool_info,
+        &offer_ask_denoms,
+        ask_pool_amount,
+        offer_amount,
+        &direction,
+        max_precision,
+    )?;
 
     println!("pool_sum total: {:?}", pool_sum);
 
-    //c = c * D / (Ann * N_COINS)
-    let c_512 = c_512.checked_mul(d_512)?.checked_div(ann_times_n_coins)?;
+    // Calculate coefficient c
+    let mut c_512 = calculate_stableswap_coefficient_c(
+        pool_info,
+        &offer_ask_denoms,
+        ask_pool_amount,
+        offer_amount,
+        d_512,
+        n_coins_512,
+        &direction,
+        max_precision,
+    )?;
+
+    // Finalize coefficient c calculation
+    let ann_times_n_coins = ann.checked_mul(n_coins_512)?;
+    c_512 = c_512.checked_mul(d_512)?.checked_div(ann_times_n_coins)?;
 
     println!("final c: {:?}", c_512);
 
-    let b = pool_sum.checked_add(d_512.checked_div(ann)?)?;
+    // Calculate coefficient b
+    let b = calculate_stableswap_coefficient_b(pool_sum, d_512, ann)?;
     println!("b:: {:?}", b);
 
     // Use newton_raphson_iterate for the approximation
