@@ -240,7 +240,7 @@ fn calculate_stableswap_d(
     println!("ann: {:?}", ann);
 
     // Use newton_raphson_iterate for the approximation
-    let precision_threshold = Decimal256::decimal_with_precision(1u128, max_precision)?;
+    let precision_threshold = Decimal256::one();
 
     newton_raphson_iterate(
         sum_pools,
