@@ -49,29 +49,13 @@ pub fn perform_swap(
 ) -> Result<SwapResult, ContractError> {
     let mut pool_info = get_pool_by_identifier(&deps.as_ref(), pool_identifier)?;
 
-    let (
-        offer_asset_in_pool,
-        ask_asset_in_pool,
-        offer_index,
-        ask_index,
-        offer_decimal,
-        ask_decimal,
-    ) = get_asset_indexes_in_pool(&pool_info, offer_asset.denom, ask_asset_denom)?;
+    let (_, _, offer_index, ask_index, _, _) =
+        get_asset_indexes_in_pool(&pool_info, &offer_asset.denom, &ask_asset_denom)?;
 
-    // compute the swap
-    let swap_computation = helpers::compute_swap(
-        Uint256::from(pool_info.assets.len() as u128),
-        offer_asset_in_pool.amount,
-        ask_asset_in_pool.amount,
-        offer_asset.amount,
-        pool_info.pool_fees.clone(),
-        &pool_info.pool_type,
-        offer_decimal,
-        ask_decimal,
-    )?;
+    let swap_computation = helpers::compute_swap(&pool_info, &offer_asset, &ask_asset_denom)?;
 
     let return_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.return_amount,
     };
 
@@ -104,21 +88,21 @@ pub fn perform_swap(
     }
 
     let burn_fee_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.burn_fee_amount,
     };
     let protocol_fee_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.protocol_fee_amount,
     };
     let extra_fees_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.extra_fees_amount,
     };
 
     #[allow(clippy::redundant_clone)]
     let swap_fee_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.swap_fee_amount,
     };
 

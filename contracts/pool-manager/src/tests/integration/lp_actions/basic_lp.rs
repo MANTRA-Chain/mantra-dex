@@ -86,11 +86,8 @@ fn deposit_and_withdraw_sanity_check() {
                 assert!(events.iter().any(|event| {
                     if event.ty == "wasm" {
                         for attribute in &event.attributes {
-                            match attribute.key.as_str() {
-                                "pool_reserves" => {
-                                    extract_pool_reserves(&attribute, &expected_pool_reserves);
-                                }
-                                _ => {}
+                            if attribute.key.as_str() == "pool_reserves" {
+                                extract_pool_reserves(attribute, &expected_pool_reserves);
                             }
                         }
                     }
@@ -139,21 +136,18 @@ fn deposit_and_withdraw_sanity_check() {
             |result| {
                 let events = result.unwrap().events;
                 for event in &events {
-                    match event.ty.as_str() {
-                        "wasm" => {
-                            for attribute in &event.attributes {
-                                match attribute.key.as_str() {
-                                    "pool_reserves" => {
-                                        extract_pool_reserves(&attribute, &expected_pool_reserves);
-                                    }
-                                    "pool_identifier" => {
-                                        assert_eq!(attribute.value, "o.whale.uluna");
-                                    }
-                                    _ => {}
+                    if event.ty.as_str() == "wasm" {
+                        for attribute in &event.attributes {
+                            match attribute.key.as_str() {
+                                "pool_reserves" => {
+                                    extract_pool_reserves(attribute, &expected_pool_reserves);
                                 }
+                                "pool_identifier" => {
+                                    assert_eq!(attribute.value, "o.whale.uluna");
+                                }
+                                _ => {}
                             }
                         }
-                        _ => {}
                     }
                 }
                 // we're trading 999_000 shares for 1_000_000 of our liquidity

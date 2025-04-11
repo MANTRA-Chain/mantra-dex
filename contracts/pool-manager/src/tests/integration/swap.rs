@@ -1,14 +1,11 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 use crate::tests::integration::helpers::extract_pool_reserves;
 use crate::tests::suite::TestingSuite;
-use cosmwasm_std::Coin;
-use cosmwasm_std::Decimal;
-use cosmwasm_std::Uint128;
-use cosmwasm_std::{assert_approx_eq, coin};
+use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
-use mantra_dex_std::fee::Fee;
-use mantra_dex_std::fee::PoolFee;
+use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::{PoolType, SimulationResponse};
 
@@ -490,8 +487,7 @@ fn basic_swapping_pool_reserves_event_test() {
         });
 }
 
-//todo remove when the stableswap issues are mitigated
-//#[test]
+#[test]
 fn basic_swapping_test_stable_swap_two_assets() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
@@ -1434,6 +1430,992 @@ fn swap_large_digits_stable_18_digits() {
         });
 }
 
+#[allow(clippy::inconsistent_digit_grouping)]
+#[test]
+fn swap_3pool_same_decimals() {
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusd".to_string(),
+            ),
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusdc".to_string(),
+            ),
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusdt".to_string(),
+            ),
+            coin(1_000_000_000_000u128, "uom".to_string()),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+
+    let asset_denoms = vec!["uusd".to_string(), "uusdc".to_string(), "uusdt".to_string()];
+
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::zero(),
+        },
+        swap_fee: Fee {
+            share: Decimal::zero(),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    // Create a pool
+    suite.instantiate_default().add_one_epoch().create_pool(
+        &alice,
+        asset_denoms,
+        vec![6u8, 6u8, 6u8],
+        pool_fees,
+        PoolType::StableSwap { amp: 85 },
+        None,
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // let's provide liquidity
+    suite.provide_liquidity(
+        &alice,
+        "p.1".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::new(1_000_000_000u128),
+            },
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::new(1_000_000_000u128),
+            },
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: Uint128::new(1_000_000_000u128),
+                // amount: Uint128::new(1_000_000_000_000_000_000_000u128),
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            assert_eq!(
+                result.unwrap().amount,
+                Uint128::new(300_000_000_000_000_000000000000000000u128)
+            );
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            assert_eq!(
+                result.unwrap().amount,
+                Uint128::new(300_000_000_000_000_000000000000000000u128)
+            );
+        })
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: Uint128::new(200_000_000u128),
+            },
+            "uusdt".to_string(),
+            |result| {
+                assert_eq!(result.unwrap().return_amount, Uint128::new(199_517_195u128));
+            },
+        )
+        .swap(
+            &bob,
+            "uusdt".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(200_000_000u128, "uusdc".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            assert_eq!(
+                result.unwrap().amount,
+                Uint128::new(300_000_000_000_000_000000000000000000u128 - 200_000_000u128)
+            );
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            assert_eq!(
+                result.unwrap().amount,
+                Uint128::new(300_000_000_000_000_000000000000000000u128 + 199_517_195u128)
+            );
+        });
+}
+
+#[allow(clippy::inconsistent_digit_grouping)]
+#[test]
+fn swap_3pool_different_decimals() {
+    let mut suite = setup_3pool_different_decimals(None, None, None, None);
+    let bob = suite.senders[1].clone();
+
+    let return_amount = RefCell::new(Uint128::zero());
+    let swap_amount = Uint128::new(200_000000000000u128);
+
+    let bob_uusdc_balance = RefCell::new(Uint128::zero());
+    let bob_uusdt_balance = RefCell::new(Uint128::zero());
+    let bob_uusd_balance = RefCell::new(Uint128::zero());
+
+    suite
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            bob_uusd_balance
+                .borrow_mut()
+                .clone_from(&result.unwrap().amount);
+        })
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            bob_uusdc_balance
+                .borrow_mut()
+                .clone_from(&result.unwrap().amount);
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            bob_uusdt_balance
+                .borrow_mut()
+                .clone_from(&result.unwrap().amount);
+        });
+
+    println!("****************");
+    println!("uusdc -> uusdt");
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdt".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdt".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdc".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdt_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdt_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("****************");
+    println!("uusdt -> uusdc");
+    let swap_amount = Uint128::new(10_000_000000000000000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdc".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdc".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdt".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdt_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdt_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("****************");
+    println!("uusdt -> uusd");
+    let swap_amount = Uint128::new(10_000_000000000000000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusd".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusd".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdt".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusd_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusd_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdt_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdt_balance.borrow_mut().clone_from(&balance);
+        });
+}
+
+#[allow(clippy::inconsistent_digit_grouping)]
+#[test]
+fn swap_4pool_different_decimals() {
+    let mut suite = setup_4pool_different_decimals(None, None, None, None);
+    let bob = suite.senders[1].clone();
+
+    let return_amount = RefCell::new(Uint128::zero());
+    let swap_amount = Uint128::new(200_000000u128);
+
+    let bob_uusdx_balance = RefCell::new(Uint128::zero());
+    let bob_uusdc_balance = RefCell::new(Uint128::zero());
+    let bob_uusdt_balance = RefCell::new(Uint128::zero());
+    let bob_uusd_balance = RefCell::new(Uint128::zero());
+
+    suite
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            bob_uusd_balance
+                .borrow_mut()
+                .clone_from(&result.unwrap().amount);
+        })
+        .query_balance(&bob.to_string(), "uusdx".to_string(), |result| {
+            bob_uusdx_balance
+                .borrow_mut()
+                .clone_from(&result.unwrap().amount);
+        })
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            bob_uusdc_balance
+                .borrow_mut()
+                .clone_from(&result.unwrap().amount);
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            bob_uusdt_balance
+                .borrow_mut()
+                .clone_from(&result.unwrap().amount);
+        });
+
+    println!("uusd -> uusdx");
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusd".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdx".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdx".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusd".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusd_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusd_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdx".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdx_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdx_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("uusdx -> uusd");
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdx".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusd".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusd".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdx".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdx".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdx_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdx_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusd_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusd_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("****************");
+    println!("uusd -> uusdc");
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusd".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdc".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdc".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusd".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusd_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusd_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("uusdc -> uusd");
+
+    let swap_amount = Uint128::new(200_000000000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusd".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusd".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdc".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusd_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusd_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("****************");
+    println!("uusd -> uusdt");
+
+    let swap_amount = Uint128::new(10_000_000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusd".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdt".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdt".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusd".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdt_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdt_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusd_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusd_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("uusdt -> uusd");
+
+    let swap_amount = Uint128::new(10_000_000000000000000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusd".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusd".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdt".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusd".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusd_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusd_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdt_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdt_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("uusdx -> uusdc");
+
+    let swap_amount = Uint128::new(1_000_000_000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdx".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdc".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdc".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdx".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdx".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdx_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdx_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("uusdc -> uusdx");
+
+    let swap_amount = Uint128::new(1_000_000_000000000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdx".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdx".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdc".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdx".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdx_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdx_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("****************");
+    println!("uusdc -> uusdt");
+
+    let swap_amount = Uint128::new(5_000_000_000000000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdt".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdt".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdc".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdt_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdt_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        });
+
+    println!("uusdt -> uusdc");
+
+    let swap_amount = Uint128::new(5_000_000_000000000000000000u128);
+    println!("swap_amount : {:?}", swap_amount);
+
+    suite
+        .query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: swap_amount.clone(),
+            },
+            "uusdc".to_string(),
+            |result| {
+                let response: SimulationResponse = result.unwrap();
+                println!("return_amount: {:?}", response.return_amount);
+
+                return_amount
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+            },
+        )
+        .swap(
+            &bob,
+            "uusdc".to_string(),
+            None,
+            Some(Decimal::percent(30)),
+            None,
+            "p.1".to_string(),
+            vec![coin(swap_amount.u128(), "uusdt".to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&bob.to_string(), "uusdc".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdc_balance.borrow().u128() + return_amount.borrow().u128())
+            );
+            bob_uusdc_balance.borrow_mut().clone_from(&balance);
+        })
+        .query_balance(&bob.to_string(), "uusdt".to_string(), |result| {
+            let balance = result.unwrap().amount;
+            assert_eq!(
+                balance,
+                Uint128::new(bob_uusdt_balance.borrow().u128() - swap_amount.u128())
+            );
+            bob_uusdt_balance.borrow_mut().clone_from(&balance);
+        });
+}
+
+#[allow(clippy::inconsistent_digit_grouping)]
+#[test]
+fn simulation_vs_reverse_simulation_3pool() {
+    let mut suite = setup_3pool_different_decimals(None, None, None, None);
+
+    // Test cases with different amounts and token pairs
+    let test_cases = vec![
+        // Small amounts
+        (
+            "uusd",
+            "uusdc",
+            Uint128::new(333_000000u128), // 333 USDC with 6 decimals
+        ),
+        (
+            "uusdc",
+            "uusdt",
+            Uint128::new(5_000000000000u128), // 5 USDT with 12 decimals
+        ),
+        // Medium amounts
+        (
+            "uusdt",
+            "uusd",
+            Uint128::new(10_000_000000000000000000u128), // 10k USD with 18 decimals
+        ),
+        // Large amounts
+        (
+            "uusd",
+            "uusdt",
+            Uint128::new(1_000_000_000000u128), // 1M USD with 6 decimals
+        ),
+    ];
+    let mut decimals_by_denom: HashMap<String, u8> = HashMap::new();
+    decimals_by_denom.insert("uusd".to_string(), 6);
+    decimals_by_denom.insert("uusdc".to_string(), 12);
+    decimals_by_denom.insert("uusdt".to_string(), 18);
+
+    // Test each case
+    for (token_in, token_out, amount_in) in test_cases {
+        let token_in_decimals = decimals_by_denom[&token_in.to_string()];
+
+        let simulated_return = RefCell::new(Uint128::zero());
+        let simulated_spread = RefCell::new(Uint128::zero());
+        let reverse_simulated_offer = RefCell::new(Uint128::zero());
+        let reverse_simulated_spread = RefCell::new(Uint128::zero());
+
+        // Forward simulation
+        suite.query_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: token_in.to_string(),
+                amount: amount_in,
+            },
+            token_out.to_string(),
+            |result| {
+                let response = result.unwrap();
+                simulated_return
+                    .borrow_mut()
+                    .clone_from(&response.return_amount);
+                simulated_spread
+                    .borrow_mut()
+                    .clone_from(&response.spread_amount);
+            },
+        );
+
+        // Reverse simulation using the forward simulation result
+        suite.query_reverse_simulation(
+            "p.1".to_string(),
+            Coin {
+                denom: token_out.to_string(),
+                amount: *simulated_return.borrow(),
+            },
+            token_in.to_string(),
+            |result| {
+                let response = result.unwrap();
+                reverse_simulated_offer
+                    .borrow_mut()
+                    .clone_from(&response.offer_amount);
+                reverse_simulated_spread
+                    .borrow_mut()
+                    .clone_from(&response.spread_amount);
+            },
+        );
+
+        // Compare the original amount_in with the reverse simulated offer amount
+        // They should be very close, with a small difference due to rounding
+        // Using 0.01% tolerance for comparison
+        // 1bps tolerance
+        let tolerance = Decimal::from_ratio(Uint128::from(1u128), Uint128::from(10000u128));
+        let amount_in_decimal =
+            Decimal::from_ratio(amount_in, 10u128.pow(u32::from(token_in_decimals)));
+        let reverse_offer_decimal = Decimal::from_ratio(
+            *reverse_simulated_offer.borrow(),
+            10u128.pow(u32::from(token_in_decimals)),
+        );
+
+        let diff = amount_in_decimal.abs_diff(reverse_offer_decimal);
+        let max_allowed_diff = amount_in_decimal * tolerance;
+
+        assert!(
+            diff <= max_allowed_diff,
+            "Simulation mismatch for {}->{}: original={}, reverse={}, diff={}, max_allowed={}",
+            token_in,
+            token_out,
+            amount_in,
+            reverse_simulated_offer.borrow(),
+            diff,
+            max_allowed_diff
+        );
+
+        // Compare the spread between the forward and reverse simulations
+        let spread_simulation = *simulated_spread.borrow();
+        let spread_reverse_simulation = *reverse_simulated_spread.borrow();
+        let spread_tolerance = (amount_in_decimal * tolerance).atomics();
+
+        assert!(
+            spread_simulation.saturating_sub(spread_reverse_simulation) <= spread_tolerance,
+            "Spread mismatch for {}->{}: simulation={}, reverse={}, diff={}, max_allowed={}",
+            token_in,
+            token_out,
+            spread_simulation,
+            spread_reverse_simulation,
+            spread_simulation.saturating_sub(spread_reverse_simulation),
+            spread_tolerance
+        );
+    }
+}
+
 #[test]
 fn belief_price_works_decimals_independent() {
     let mut suite = TestingSuite::default_with_balances(
@@ -1657,16 +2639,241 @@ fn compute_offer_amount_floor() {
                 for event in result.unwrap().events {
                     if event.ty == "wasm" {
                         for attribute in event.attributes {
-                            match attribute.key.as_str() {
-                                "return_amount" => {
-                                    let return_amount = attribute.value.parse::<Uint128>().unwrap();
-                                    assert!(return_amount >= needed_uusd);
-                                }
-                                _ => {}
+                            if attribute.key.as_str() == "return_amount" {
+                                let return_amount = attribute.value.parse::<Uint128>().unwrap();
+                                assert!(return_amount >= needed_uusd);
                             }
                         }
                     }
                 }
             },
         );
+}
+
+// This function is used to setup a 3pool with different decimals.
+// Default values are used if not provided.
+// -- Default decimals: 6, 12, 18
+// -- Default amp: 85
+// -- Default initial balances: 300T for each token
+// -- Default initial liquidity: 100T for each token
+fn setup_3pool_different_decimals(
+    asset_decimals: Option<Vec<u8>>,
+    initial_balances: Option<Vec<Uint128>>,
+    amp: Option<u64>,
+    initial_liquidity: Option<Vec<Uint128>>,
+) -> TestingSuite {
+    // Default values
+    let decimals = asset_decimals.unwrap_or_else(|| vec![6u8, 12u8, 18u8]);
+    let amp = amp.unwrap_or(85);
+
+    // Default initial balances (300T for each token)
+    let balances = initial_balances.unwrap_or_else(|| {
+        vec![
+            Uint128::new(300_000_000_000_000_000000000000000000u128),
+            Uint128::new(300_000_000_000_000_000000000000000000u128),
+            Uint128::new(300_000_000_000_000_000000000000000000u128),
+        ]
+    });
+
+    // Default initial liquidity (100T for each token)
+    let liquidity = initial_liquidity.unwrap_or_else(|| {
+        vec![
+            Uint128::new(100_000_000_000_000_000000u128), // 100T with 6 decimals
+            Uint128::new(100_000_000_000_000_000000000000u128), // 100T with 12 decimals
+            Uint128::new(100_000_000_000_000_000000000000000000u128), // 100T with 18 decimals
+        ]
+    });
+
+    let asset_denoms = vec!["uusd".to_string(), "uusdc".to_string(), "uusdt".to_string()];
+
+    // Create test suite with initial balances
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(balances[0].u128(), "uusd".to_string()),
+            coin(balances[1].u128(), "uusdc".to_string()),
+            coin(balances[2].u128(), "uusdt".to_string()),
+            coin(1_000_000_000_000u128, "uom".to_string()),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+
+    let creator = suite.creator();
+
+    // Pool fees (zero fees for testing)
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::zero(),
+        },
+        swap_fee: Fee {
+            share: Decimal::zero(),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    // Create pool
+    suite.instantiate_default().add_one_epoch().create_pool(
+        &creator,
+        asset_denoms.clone(),
+        decimals,
+        pool_fees,
+        PoolType::StableSwap { amp },
+        None,
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Provide initial liquidity
+    suite.provide_liquidity(
+        &creator,
+        "p.1".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uusd".to_string(),
+                amount: liquidity[0],
+            },
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: liquidity[1],
+            },
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: liquidity[2],
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite
+}
+
+// This function is used to setup a 4pool with different decimals.
+// Default values are used if not provided.
+// -- Default decimals: 6, 6, 12, 18
+// -- Default amp: 85
+// -- Default initial balances: 300T for each token
+// -- Default initial liquidity: 100T for each token
+fn setup_4pool_different_decimals(
+    asset_decimals: Option<Vec<u8>>,
+    initial_balances: Option<Vec<Uint128>>,
+    amp: Option<u64>,
+    initial_liquidity: Option<Vec<Uint128>>,
+) -> TestingSuite {
+    // Default values
+    let decimals = asset_decimals.unwrap_or_else(|| vec![6u8, 6u8, 12u8, 18u8]);
+    let amp = amp.unwrap_or(85);
+
+    // Default initial balances (300T for each token)
+    let balances = initial_balances.unwrap_or_else(|| {
+        vec![
+            Uint128::new(300_000_000_000_000_000000000000000000u128),
+            Uint128::new(300_000_000_000_000_000000000000000000u128),
+            Uint128::new(300_000_000_000_000_000000000000000000u128),
+            Uint128::new(300_000_000_000_000_000000000000000000u128),
+        ]
+    });
+
+    // Default initial liquidity (100T for each token)
+    let liquidity = initial_liquidity.unwrap_or_else(|| {
+        vec![
+            Uint128::new(100_000_000_000_000_000000u128), // 100T with 6 decimals
+            Uint128::new(100_000_000_000_000_000000u128), // 100T with 6 decimals
+            Uint128::new(100_000_000_000_000_000000000000u128), // 100T with 12 decimals
+            Uint128::new(100_000_000_000_000_000000000000000000u128), // 100T with 18 decimals
+        ]
+    });
+
+    let asset_denoms = vec![
+        "uusd".to_string(),
+        "uusdx".to_string(),
+        "uusdc".to_string(),
+        "uusdt".to_string(),
+    ];
+
+    // Create test suite with initial balances
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(balances[0].u128(), "uusd".to_string()),
+            coin(balances[1].u128(), "uusdx".to_string()),
+            coin(balances[2].u128(), "uusdc".to_string()),
+            coin(balances[3].u128(), "uusdt".to_string()),
+            coin(1_000_000_000_000u128, "uom".to_string()),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+
+    let creator = suite.creator();
+
+    // Pool fees (zero fees for testing)
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::zero(),
+        },
+        swap_fee: Fee {
+            share: Decimal::zero(),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    // Create pool
+    suite.instantiate_default().add_one_epoch().create_pool(
+        &creator,
+        asset_denoms.clone(),
+        decimals,
+        pool_fees,
+        PoolType::StableSwap { amp },
+        None,
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Provide initial liquidity
+    suite.provide_liquidity(
+        &creator,
+        "p.1".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uusd".to_string(),
+                amount: liquidity[0],
+            },
+            Coin {
+                denom: "uusdx".to_string(),
+                amount: liquidity[1],
+            },
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: liquidity[2],
+            },
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: liquidity[3],
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    suite
 }

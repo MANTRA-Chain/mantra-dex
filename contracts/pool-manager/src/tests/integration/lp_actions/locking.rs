@@ -385,7 +385,7 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         assert_eq!(positions.len(), 1);
         assert_eq!(positions[0], Position {
             identifier: "u-farm_identifier".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: farm_manager_lp_amount.borrow().clone() },
+            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: *farm_manager_lp_amount.borrow() },
             unlocking_duration: 86_400,
             open: true,
             expiring_at: None,
