@@ -225,74 +225,19 @@ fn invalid_amount_assets_xyk_pool() {
                 result.unwrap();
             },
         )
-
-        //todo remove when the stableswap issues are mitigated
-        // .create_pool(
-        //     &creator,
-        //     vec!["uom".to_string(), "uusdc".to_string(), "uusd".to_string()],
-        //     vec![6u8, 6u8, 6u8],
-        //     pool_fees.clone(),
-        //     PoolType::StableSwap { amp: 85 },
-        //     None,
-        //     vec![coin(1000, "uusd"), coin(8888, "uom")],
-        //     |result| {
-        //         result.unwrap();
-        //     },
-        // )
+        .create_pool(
+            &creator,
+            vec!["uom".to_string(), "uusdc".to_string(), "uusd".to_string()],
+            vec![6u8, 6u8, 6u8],
+            pool_fees.clone(),
+            PoolType::StableSwap { amp: 85 },
+            None,
+            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            |result| {
+                result.unwrap();
+            },
+        )
     ;
-}
-
-//todo remove when the stableswap issues are mitigated
-#[test]
-fn cant_create_stable_pools() {
-    let mut suite = TestingSuite::default_with_balances(
-        vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uusdc".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
-        ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
-    );
-    let creator = suite.creator();
-
-    let pool_fees = PoolFee {
-        protocol_fee: Fee {
-            share: Decimal::zero(),
-        },
-        swap_fee: Fee {
-            share: Decimal::zero(),
-        },
-        burn_fee: Fee {
-            share: Decimal::zero(),
-        },
-        extra_fees: vec![],
-    };
-
-    // Create a pool
-    suite.instantiate_default().add_one_epoch().create_pool(
-        &creator,
-        vec!["uom".to_string(), "uusdc".to_string(), "uusd".to_string()],
-        vec![6u8, 6u8, 6u8],
-        pool_fees.clone(),
-        PoolType::StableSwap { amp: 85 },
-        None,
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
-        |result| {
-            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-            match err {
-                ContractError::Std(e) => {
-                    assert!(e
-                        .to_string()
-                        .contains("Only xyk pools are supported at the moment"));
-                }
-                _ => {
-                    panic!("Wrong error type, should return ContractError::Std")
-                }
-            }
-        },
-    );
 }
 
 #[test]
@@ -1381,8 +1326,7 @@ fn cant_create_pool_with_bogus_identifier() {
     );
 }
 
-//todo remove when the stableswap issues are mitigated
-//#[test]
+#[test]
 fn cant_create_pool_with_large_number_of_assets() {
     let mut suite = TestingSuite::default_with_balances(
         vec![

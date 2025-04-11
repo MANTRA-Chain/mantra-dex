@@ -55,8 +55,6 @@ pub fn swap(
         max_spread,
     )?;
 
-    // println!("*******Swap result: {:?}", swap_result);
-
     let mut messages: Vec<CosmosMsg> = vec![];
 
     let receiver = validate_addr_or_default(&deps.as_ref(), receiver, info.sender);

@@ -492,8 +492,7 @@ fn basic_swapping_pool_reserves_event_test() {
         });
 }
 
-//todo remove when the stableswap issues are mitigated
-//#[test]
+#[test]
 fn basic_swapping_test_stable_swap_two_assets() {
     let mut suite = TestingSuite::default_with_balances(
         vec![

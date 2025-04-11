@@ -66,8 +66,6 @@ pub fn query_simulation(
         ask_decimal,
     )?;
 
-    // println!("*******swap_computation: {:?}", swap_computation);
-
     Ok(SimulationResponse {
         return_amount: swap_computation.return_amount,
         spread_amount: swap_computation.spread_amount,
@@ -86,13 +84,6 @@ pub fn query_reverse_simulation(
     offer_asset_denom: String,
     pool_identifier: String,
 ) -> Result<ReverseSimulationResponse, ContractError> {
-    // println!("*****");
-    // println!("query_reverse_simulation");
-    // println!("ask_asset: {:?}", ask_asset);
-    // println!("offer_asset_denom: {:?}", offer_asset_denom);
-    // println!("pool_identifier: {:?}", pool_identifier);
-    // println!("*****");
-
     let pool_info = get_pool_by_identifier(&deps, &pool_identifier)?;
 
     let (offer_asset_pool, ask_asset_pool, _, _, offer_decimal, ask_decimal) =

@@ -82,12 +82,6 @@ pub fn create_pool(
     pool_type: PoolType,
     pool_identifier: Option<String>,
 ) -> Result<Response, ContractError> {
-    //todo remove when the stableswap issues are mitigated
-    // ensure!(
-    //     matches!(pool_type, PoolType::ConstantProduct),
-    //     StdError::generic_err("Only xyk pools are supported at the moment")
-    // );
-
     // Load config for pool creation fee
     let config: Config = CONFIG.load(deps.storage)?;
 
