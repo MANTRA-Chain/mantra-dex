@@ -49,29 +49,13 @@ pub fn perform_swap(
 ) -> Result<SwapResult, ContractError> {
     let mut pool_info = get_pool_by_identifier(&deps.as_ref(), pool_identifier)?;
 
-    let (
-        offer_asset_in_pool,
-        ask_asset_in_pool,
-        offer_index,
-        ask_index,
-        offer_decimal,
-        ask_decimal,
-    ) = get_asset_indexes_in_pool(&pool_info, offer_asset.denom, ask_asset_denom)?;
+    let (_, _, offer_index, ask_index, _, _) =
+        get_asset_indexes_in_pool(&pool_info, &offer_asset.denom, &ask_asset_denom)?;
 
-    //todo refactor this to only pass the pool_info and the offer_asset.
-    // all the other values can be taken from there within compute_swap
-    // compute the swap
-    let swap_computation = helpers::compute_swap(
-        &pool_info,
-        offer_asset_in_pool,
-        ask_asset_in_pool.clone(),
-        offer_asset.amount,
-        offer_decimal,
-        ask_decimal,
-    )?;
+    let swap_computation = helpers::compute_swap(&pool_info, &offer_asset, &ask_asset_denom)?;
 
     let return_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.return_amount,
     };
 
@@ -104,21 +88,21 @@ pub fn perform_swap(
     }
 
     let burn_fee_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.burn_fee_amount,
     };
     let protocol_fee_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.protocol_fee_amount,
     };
     let extra_fees_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.extra_fees_amount,
     };
 
     #[allow(clippy::redundant_clone)]
     let swap_fee_asset = Coin {
-        denom: ask_asset_in_pool.denom.clone(),
+        denom: ask_asset_denom.clone(),
         amount: swap_computation.swap_fee_amount,
     };
 

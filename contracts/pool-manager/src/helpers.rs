@@ -416,15 +416,15 @@ mod test {
 #[allow(clippy::too_many_arguments)]
 pub fn compute_swap(
     pool_info: &PoolInfo,
-    offer_pool: Coin,
-    ask_pool: Coin,
-    offer_amount: Uint128,
-    offer_precision: u8,
-    ask_precision: u8,
+    offer_asset: &Coin,
+    ask_asset_denom: &str,
 ) -> Result<SwapComputation, ContractError> {
+    let (offer_pool, ask_pool, _, _, offer_precision, ask_precision) =
+        get_asset_indexes_in_pool(pool_info, &offer_asset.denom, ask_asset_denom)?;
+
     let offer_pool_amount: Uint256 = offer_pool.amount.into();
     let ask_pool_amount: Uint256 = ask_pool.amount.into();
-    let offer_amount: Uint256 = offer_amount.into();
+    let offer_amount: Uint256 = offer_asset.amount.into();
 
     match &pool_info.pool_type {
         PoolType::ConstantProduct => {
@@ -459,8 +459,6 @@ pub fn compute_swap(
 
             let max_precision = pool_info.asset_decimals.iter().max().unwrap().to_owned();
 
-            //todo refactor this, perhaps pass the coins amounts, denoms and decimals all together
-            // in a single structure?
             let mut new_pool = calculate_stableswap_y(
                 pool_info,
                 (offer_pool.denom, ask_pool.denom),
@@ -934,8 +932,8 @@ pub(crate) fn validate_no_additional_funds_sent_with_pool_creation(
 /// Gets the offer and ask asset indexes in a pool, together with their decimals.
 pub fn get_asset_indexes_in_pool(
     pool_info: &PoolInfo,
-    offer_asset_denom: String,
-    ask_asset_denom: String,
+    offer_asset_denom: &str,
+    ask_asset_denom: &str,
 ) -> Result<(Coin, Coin, usize, usize, u8, u8), ContractError> {
     // Find the index of the offer and ask asset in the pools
     let offer_index = pool_info
