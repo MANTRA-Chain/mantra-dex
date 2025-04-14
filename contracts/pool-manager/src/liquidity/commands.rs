@@ -269,15 +269,19 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    compute_lp_mint_amount_for_stableswap_deposit(
+                    let share = compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
                         // pool_assets hold the balances before the deposit was made
                         &pool_assets,
-                        // add the deposit to the pool_assets to calculate the new balances
-                        &add_coins(pool_assets.clone(), deposits.clone())?,
+                        &deposits,
                         total_shares,
-                    )?
-                    .ok_or(ContractError::StableLpMintError)?
+                        &pool,
+                    )?;
+
+                    // Update pool with deposits
+                    pool_assets = add_coins(pool_assets.clone(), deposits.clone())?;
+
+                    share
                 }
             }
         };

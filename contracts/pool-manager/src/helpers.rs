@@ -999,32 +999,124 @@ fn compute_next_d(
     Some(numerator.checked_div(denominator).unwrap())
 }
 
+#[cw_serde]
+pub struct DepositResult {
+    /// Amount of lp tokens to mint
+    pub mint_amount: Uint128,
+    /// Deposits added to the pool after fees
+    pub net_deposits: Vec<Coin>,
+    /// Fees charged
+    pub fees: Vec<Coin>,
+}
+
 /// Computes the amount of lp tokens to mint after a deposit for a stableswap pool.
-/// Assumes the deposits have already been credited to the pool_assets.
+/// If the user provides liquidity to a stableswap pool in a disproportionate way,
+/// the user will be charged swap fees on the skewness introduced to the pool.
 #[allow(clippy::unwrap_used, clippy::too_many_arguments)]
 pub fn compute_lp_mint_amount_for_stableswap_deposit(
     amp_factor: &u64,
     old_pool_assets: &[Coin],
-    new_pool_assets: &[Coin],
+    deposits: &[Coin],
     pool_lp_token_total_supply: Uint128,
-) -> Result<Option<Uint128>, ContractError> {
+    pool_info: &PoolInfo,
+) -> Result<Uint128, ContractError> {
     // Initial invariant
     let d_0 = compute_d(amp_factor, old_pool_assets).ok_or(ContractError::StableInvariantError)?;
 
     // Invariant after change, i.e. after deposit
     // notice that new_pool_assets already added the new deposits to the pool
-    let d_1 = compute_d(amp_factor, new_pool_assets).ok_or(ContractError::StableInvariantError)?;
+    //todo make sure full_new_assets assets are in the same order as old_pool_assets
+    let full_new_assets = add_coins(old_pool_assets.to_vec(), deposits.to_vec())?;
+    let d_1 = compute_d(amp_factor, &full_new_assets).ok_or(ContractError::StableInvariantError)?;
 
-    // If the invariant didn't change, return None
-    if d_1 <= d_0 {
-        Ok(None)
-    } else {
-        let amount = Uint512::from(pool_lp_token_total_supply)
-            .checked_mul(d_1.checked_sub(d_0)?)?
+    ensure!(d_1 > d_0, ContractError::StableInvariantError);
+
+    //------------------------------------------------------------
+    // dynamic fee implementation
+    // We need to recalculate the invariant accounting for fees to calculate fair user's share
+    let n_coins = old_pool_assets.len();
+    let base_fee = Decimal256::from(pool_info.pool_fees.swap_fee.share)
+        .checked_mul(Decimal256::from_ratio(n_coins as u128, 1u128))?
+        .checked_div(Decimal256::from_ratio((4 * (n_coins - 1)) as u128, 1u128))?;
+
+    // average invariant
+    let ys = d_0
+        .checked_add(d_1)?
+        .checked_div(Uint512::from(n_coins as u128))?;
+
+    let mut fees = Vec::with_capacity(n_coins);
+
+    for i in 0..n_coins {
+        let ideal_balance = d_1
+            .checked_mul(Uint512::from(old_pool_assets[i].amount))?
             .checked_div(d_0)?;
+        let difference: Uint256 = Uint512::from(full_new_assets[i].amount)
+            .abs_diff(ideal_balance)
+            .try_into()?;
 
-        Ok(Some(Uint128::try_from(amount)?))
+        let xs = Decimal256::decimal_with_precision(
+            full_new_assets[i].amount,
+            pool_info.asset_decimals[i],
+        )?;
+        let dynamic_fee_i = dynamic_fee(xs, ys, base_fee)?;
+        fees[i] = dynamic_fee_i.checked_mul(Decimal256::from_ratio(difference, 1u128))?;
+
+        println!("ideal_balance:: {:?}", ideal_balance);
+        println!("difference:: {:?}", difference);
+        println!("xs:: {:?}", xs);
+        println!("dynamic_fee_i:: {:?}", dynamic_fee_i);
+        println!("fees[i]:: {:?}", fees[i]);
+
+        // fees stay in the pool for LPs to enjoy
     }
+
+    // adjust the new pool assets without the fees to recalculate d1 and fair mint amount
+    let mut adjusted_new_pool_assets = full_new_assets.to_vec();
+    for i in 0..adjusted_new_pool_assets.len() {
+        adjusted_new_pool_assets[i].amount = Uint256::from(adjusted_new_pool_assets[i].amount)
+            .checked_sub(fees[i].to_uint_floor())?
+            .try_into()?;
+    }
+
+    println!("adjusted_new_pool_assets:: {:?}", adjusted_new_pool_assets);
+
+    let adjusted_d_1 = compute_d(amp_factor, &adjusted_new_pool_assets)
+        .ok_or(ContractError::StableInvariantError)?;
+
+    println!("adjusted_d_1:: {:?}", adjusted_d_1);
+
+    let amount = Uint512::from(pool_lp_token_total_supply)
+        .checked_mul(adjusted_d_1.checked_sub(d_0)?)?
+        .checked_div(d_0)?;
+
+    Ok(Uint128::try_from(amount)?)
+}
+
+fn dynamic_fee(
+    xpi: Decimal256,
+    xpj: Uint512,
+    fee: Decimal256,
+) -> Result<Decimal256, ContractError> {
+    let offpeg_fee_multiplier = Decimal256::from_ratio(20u128, 1u128);
+
+    if offpeg_fee_multiplier <= Decimal256::one() {
+        return Ok(fee);
+    }
+
+    let xpj_256: Uint256 = xpj.try_into()?;
+    let xpj = Decimal256::from_ratio(xpj_256, 1u128);
+    let xps2 = xpi.checked_add(xpj)?.pow(2);
+    let numerator = offpeg_fee_multiplier.checked_mul(fee)?;
+    let denominator = Decimal256::one().checked_add(
+        offpeg_fee_multiplier
+            .checked_sub(Decimal256::one())?
+            .checked_mul(xpi)?
+            .checked_mul(xpj)?
+            .checked_mul(Decimal256::from_ratio(4u128, 1u128))?
+            .checked_div(xps2)?,
+    )?;
+
+    Ok(numerator.checked_div(denominator)?)
 }
 
 /// Compute the swap amount `y` in proportion to `x`.
