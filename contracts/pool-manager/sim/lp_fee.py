@@ -1,5 +1,5 @@
-N_COINS = 2
-xp_ = [1000, 1000]
+N_COINS = 3
+xp_ = [1000, 1000, 1000]
 fee = 0.05
 
 def get_D(xp, amp):
@@ -104,9 +104,8 @@ def add_liquidity(_amounts):
 
     # Initial invarian
     D0 = get_D(old_balances, amp)
-    print(">>>>>>>> D0, ", D0)
-    total_supply = 2000
-    new_balances = [0, 0]
+    total_supply = 1000
+    new_balances = [0, 0, 0]
 
     # -------------------------- Do Transfers In -----------------------------
 
@@ -120,7 +119,6 @@ def add_liquidity(_amounts):
     print(f'new_balances: {new_balances}')
     # Invariant after change
     D1 = get_D(new_balances, amp)
-    print(">>>>>>>> D1, ", D1)
     assert D1 > D0
 
     # We need to recalculate the invariant accounting for fees
@@ -133,16 +131,15 @@ def add_liquidity(_amounts):
         difference: uint256 = 0
         new_balance: uint256 = 0
 
-        ys: uint256 = (D0 + D1) / N_COINS
+        ys: uint256 = D0 + D1 / N_COINS
         xs: uint256 = 0
         _dynamic_fee_i: uint256 = 0
-        print("ys: ", ys)
-        print("N_COINS: ", N_COINS)
+
         # Only account for fees if we are not the first to deposit
         base_fee: uint256 = fee * N_COINS / 4 * (N_COINS - 1)
 
         for i in range(N_COINS):
-            print("~~~~~~~~~~~~~~~~~~~~~~")
+            print(">>>>>>>>")
             ideal_balance = D1 * old_balances[i] / D0
             difference = 0
             new_balance = new_balances[i]
@@ -152,52 +149,30 @@ def add_liquidity(_amounts):
             else:
                 difference = new_balance - ideal_balance
 
-            print("old_balances[i]", old_balances[i])
-            print("new_balance", new_balance)
+            print("difference: ", difference)
 
             # fee[i] = _dynamic_fee(i, j) * difference / FEE_DENOMINATOR
             xs = (old_balances[i] + new_balance) / PRECISION
             _dynamic_fee_i = _dynamic_fee(xs, ys, base_fee)
-            fees.append((_dynamic_fee_i * difference) / FEE_DENOMINATOR)
+            fees.append(_dynamic_fee_i * difference / FEE_DENOMINATOR)
             new_balances[i] -= fees[i]
-            print("ideal_balance: ", ideal_balance)
-            print("difference: ", difference)
-            print("xs: ", xs)
-            print("dynamic_fee_i: ", _dynamic_fee_i)
-            print("fees[i]: ", fees[i])
-
-        print("fees: ", fees)
-        print("adjusted_new_pool_assets: ", new_balances)
         D1 = get_D(new_balances, amp)
-        print(">>>>>>>> adjusted_d_1, ", D1)
-        print("total_supply", total_supply)
-        mint_amount = (total_supply * (D1 - D0)) / D0
+        mint_amount = total_supply * (D1 - D0) / D0
+        print("fees: ", fees)
 
     return mint_amount
 
-FEE_DENOMINATOR = 1
+FEE_DENOMINATOR = 100
 
 def _dynamic_fee(xpi, xpj, _fee):
-    print("**** dynamic_fee ****")
-    _offpeg_fee_multiplier: uint256 = 2
+    _offpeg_fee_multiplier: uint256 = 1000
     if _offpeg_fee_multiplier <= FEE_DENOMINATOR:
         return _fee
 
     xps2: uint256 = (xpi + xpj) ** 2
-    print("xpi: ", xpi)
-    print("xpj: ", xpj)
-    print("xps2: ", xps2)
-    print("_fee: ", _fee)
-
-    numerator = _offpeg_fee_multiplier * _fee
-    denominator = (_offpeg_fee_multiplier - FEE_DENOMINATOR) * 4 * xpi * xpj / xps2
-    print("numerator: ", numerator)
-    print("denominator: ", denominator)
-
-    print("**** dynamic_fee ****")
-    return FEE_DENOMINATOR + ( numerator / denominator)
+    return FEE_DENOMINATOR + (_offpeg_fee_multiplier * _fee / (_offpeg_fee_multiplier - FEE_DENOMINATOR) * 4 * xpi * xpj / xps2)
 
 
 #print("Swap amount: ", xp_[2] - get_y(0, 2, 1200, xp_))
 
-print("add liquidity: ", add_liquidity([90,110]))
+print("add liquidity: ", add_liquidity([90,110,100]))
