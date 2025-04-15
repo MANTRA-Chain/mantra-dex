@@ -2877,3 +2877,276 @@ fn setup_4pool_different_decimals(
 
     suite
 }
+
+#[test]
+fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusdt".to_string(),
+            ),
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusdc".to_string(),
+            ),
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uusd".to_string(),
+            ),
+            coin(
+                300_000_000_000_000_000000000000000000u128,
+                "uom".to_string(),
+            ),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+    let alice = suite.creator();
+    let bob = suite.senders[1].clone();
+    let asset_infos = vec!["uusdc".to_string(), "uusdt".to_string()];
+
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::zero(),
+        },
+        swap_fee: Fee {
+            share: Decimal::percent(5),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    // Create a pool
+    suite.instantiate_default().create_pool(
+        &alice,
+        asset_infos,
+        vec![6u8, 6u8],
+        pool_fees,
+        PoolType::StableSwap { amp: 100 },
+        Some("uusdc.uusdt".to_string()),
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Initial liquidity
+
+    let alice_initial_uusdt_liquidity = Uint128::from(1_000_000000u128);
+    let alice_initial_uusdc_liquidity = Uint128::from(1_000_000000u128);
+    suite.provide_liquidity(
+        &alice,
+        "o.uusdc.uusdt".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: alice_initial_uusdt_liquidity,
+            },
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: alice_initial_uusdc_liquidity,
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    let bob_initial_uusdt_liquidity = Uint128::from(110_000000u128);
+    let bob_initial_uusdc_liquidity = Uint128::from(90_000000u128);
+
+    suite.provide_liquidity(
+        &bob,
+        "o.uusdc.uusdt".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uusdt".to_string(),
+                amount: bob_initial_uusdt_liquidity,
+            },
+            Coin {
+                denom: "uusdc".to_string(),
+                amount: bob_initial_uusdc_liquidity,
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    let lp_shares_alice = RefCell::new(Coin::new(0u128, "".to_string()));
+    let lp_shares_bob = RefCell::new(Coin::new(0u128, "".to_string()));
+
+    let bob_uusdc_balance = RefCell::new(Uint128::zero());
+    let bob_uusdt_balance = RefCell::new(Uint128::zero());
+    let alice_uusdc_balance = RefCell::new(Uint128::zero());
+    let alice_uusdt_balance = RefCell::new(Uint128::zero());
+
+    suite
+        .query_all_balances(&alice.to_string(), |balances| {
+            for coin in balances.unwrap().iter() {
+                match coin.denom.as_str() {
+                    denom if denom.contains("o.uusdc.uusdt") => {
+                        *lp_shares_alice.borrow_mut() = coin.clone();
+                    }
+                    denom if denom.contains("uusdc") => {
+                        *alice_uusdc_balance.borrow_mut() = coin.amount.clone();
+                    }
+                    denom if denom.contains("uusdt") => {
+                        *alice_uusdt_balance.borrow_mut() = coin.amount.clone();
+                    }
+                    _ => {}
+                }
+            }
+        })
+        .query_all_balances(&bob.to_string(), |balances| {
+            for coin in balances.unwrap().iter() {
+                match coin.denom.as_str() {
+                    denom if denom.contains("o.uusdc.uusdt") => {
+                        *lp_shares_bob.borrow_mut() = coin.clone();
+                    }
+                    denom if denom.contains("uusdc") => {
+                        *bob_uusdc_balance.borrow_mut() = coin.amount.clone();
+                    }
+                    denom if denom.contains("uusdt") => {
+                        *bob_uusdt_balance.borrow_mut() = coin.amount.clone();
+                    }
+                    _ => {}
+                }
+            }
+        });
+
+    suite
+        .withdraw_liquidity(
+            &bob,
+            "o.uusdc.uusdt".to_string(),
+            vec![lp_shares_bob.borrow().clone()],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .withdraw_liquidity(
+            &alice,
+            "o.uusdc.uusdt".to_string(),
+            vec![lp_shares_alice.borrow().clone()],
+            |result| {
+                result.unwrap();
+            },
+        );
+
+    // now alice should have been rewarded with the swap fees paid by bob for providing liquidity
+    // with a skewed ratio
+    suite.query_all_balances(&alice.to_string(), |balances| {
+        for coin in balances.unwrap().iter() {
+            match coin.denom.as_str() {
+                denom if denom.contains("uusdc") => {
+                    let difference = coin
+                        .amount
+                        .clone()
+                        .saturating_sub(*alice_uusdc_balance.borrow());
+                    assert!(difference >= alice_initial_uusdc_liquidity);
+                }
+                denom if denom.contains("uusdt") => {
+                    let difference = coin
+                        .amount
+                        .clone()
+                        .saturating_sub(*alice_uusdt_balance.borrow());
+                    assert!(difference >= alice_initial_uusdt_liquidity);
+                }
+                _ => {}
+            }
+        }
+    });
+
+    // bob on the other hand was punished
+    suite.query_all_balances(&bob.to_string(), |balances| {
+        for coin in balances.unwrap().iter() {
+            match coin.denom.as_str() {
+                denom if denom.contains("uusdc") => {
+                    let difference = coin
+                        .amount
+                        .clone()
+                        .saturating_sub(*bob_uusdc_balance.borrow());
+                    assert!(difference < bob_initial_uusdc_liquidity);
+                }
+                denom if denom.contains("uusdt") => {
+                    let difference = coin
+                        .amount
+                        .clone()
+                        .saturating_sub(*bob_uusdt_balance.borrow());
+                    assert!(difference < bob_initial_uusdt_liquidity);
+                }
+                _ => {}
+            }
+        }
+    });
+}
+
+fn print_diff(init_bal: [Uint128; 4], final_bal: [Uint128; 4]) -> [i128; 4] {
+    let diffs = [
+        final_bal[0].u128() as i128 - init_bal[0].u128() as i128,
+        final_bal[1].u128() as i128 - init_bal[1].u128() as i128,
+        final_bal[2].u128() as i128 - init_bal[2].u128() as i128,
+        final_bal[3].u128() as i128 - init_bal[3].u128() as i128,
+    ];
+
+    println!("==Balance deltas==");
+    if diffs[0] != 0 {
+        println!("uusdt delta : {}", diffs[0]);
+    }
+    if diffs[1] != 0 {
+        println!("uusdc delta : {}", diffs[1]);
+    }
+    if diffs[2] != 0 {
+        println!("uusd delta  : {}", diffs[2]);
+    }
+    if diffs[3] != 0 {
+        println!("lp delta    : {}", diffs[3]);
+    }
+    println!("==Balance deltas==\n");
+
+    diffs
+}
+fn calc_state(suite: &mut TestingSuite, creator: &str) -> [Uint128; 4] {
+    let uusdt_balance = RefCell::new(Uint128::zero());
+    let uusdc_balance = RefCell::new(Uint128::zero());
+    let uusd_balance = RefCell::new(Uint128::zero());
+    let lp_shares = RefCell::new(Uint128::zero());
+
+    suite.query_balance(&creator.to_string(), "uusdt".to_string(), |result| {
+        *uusdt_balance.borrow_mut() = result.unwrap().amount;
+    });
+
+    suite.query_balance(&creator.to_string(), "uusdc".to_string(), |result| {
+        *uusdc_balance.borrow_mut() = result.unwrap().amount;
+    });
+
+    suite.query_balance(&creator.to_string(), "uusd".to_string(), |result| {
+        *uusd_balance.borrow_mut() = result.unwrap().amount;
+    });
+
+    suite.query_all_balances(&creator.to_string(), |balances| {
+        for coin in balances.unwrap().iter() {
+            if coin.denom.contains("o.uusdc.uusdt") {
+                *lp_shares.borrow_mut() = coin.amount;
+            }
+        }
+    });
+
+    let uusdt = *uusdt_balance.borrow();
+    let uusdc = *uusdc_balance.borrow();
+    let uusd = *uusd_balance.borrow();
+    let lp = *lp_shares.borrow();
+    [uusdt, uusdc, uusd, lp]
+}
