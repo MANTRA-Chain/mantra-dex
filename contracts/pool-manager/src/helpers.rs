@@ -259,11 +259,62 @@ fn calculate_d_core(amp_factor: &u64, deposits: &[Uint128], n_coins: Uint128) ->
     }
 }
 
+/// Normalizes an amount from one decimal precision to another.
+fn normalize_amount(amount: Uint128, from_decimals: u8, to_decimals: u8) -> Option<Uint128> {
+    if from_decimals > to_decimals {
+        amount
+            .checked_div(Uint128::from(
+                10u128.pow((from_decimals - to_decimals) as u32),
+            ))
+            .ok()
+    } else {
+        amount
+            .checked_mul(Uint128::from(
+                10u128.pow((to_decimals - from_decimals) as u32),
+            ))
+            .ok()
+    }
+}
+
 #[allow(clippy::unwrap_used)]
 pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
     let n_coins = Uint128::from(deposits.len() as u128);
     let deposits: Vec<Uint128> = deposits.iter().map(|coin| coin.amount).collect();
     calculate_d_core(amp_factor, &deposits, n_coins)
+}
+
+/// Computes the invariant D for a stableswap pool.
+///
+/// This function takes a list of coins and a pool_info, and returns the invariant D.
+///
+/// The function normalizes all amounts to the highest decimal precision in the pool,
+/// and then uses Newton's method to approximate D.
+pub fn compute_d_with_pool_info(
+    amp_factor: &u64,
+    deposits: &[Coin],
+    pool_info: &PoolInfo,
+) -> Option<Uint512> {
+    let n_coins = Uint128::from(deposits.len() as u128);
+
+    // Get the highest decimal precision among all assets
+    let max_decimals = *pool_info.asset_decimals.iter().max().unwrap();
+
+    // Normalize all amounts to the highest decimal precision
+    let mut normalized_deposits = Vec::with_capacity(deposits.len());
+    for coin in deposits {
+        // Find the decimal precision for this coin from pool_info
+        let decimals = pool_info
+            .asset_denoms
+            .iter()
+            .position(|denom| denom == &coin.denom)
+            .map(|idx| pool_info.asset_decimals[idx])
+            .unwrap();
+
+        let normalized = normalize_amount(coin.amount, decimals, max_decimals)?;
+        normalized_deposits.push(normalized);
+    }
+
+    calculate_d_core(amp_factor, &normalized_deposits, n_coins)
 }
 
 /// Determines the direction of `offer_pool` -> `ask_pool`.
@@ -358,9 +409,9 @@ mod test {
         fn test_calculate_stableswap_y() {
             let pool_info = PoolInfo {
                 assets: vec![
-                    coin(100000000u128, "denom1"),
-                    coin(200000000u128, "denom2"),
-                    coin(300000000u128, "denom3"),
+                    coin(100u128 * 10u128.pow(6), "denom1"),
+                    coin(200u128 * 10u128.pow(6), "denom2"),
+                    coin(300u128 * 10u128.pow(6), "denom3"),
                 ],
                 asset_decimals: vec![6, 6, 6],
                 asset_denoms: vec![
@@ -387,7 +438,7 @@ mod test {
             };
 
             let offer_ask_denoms = ("denom1".to_string(), "denom2".to_string());
-            let ask_pool_amount = Decimal256::from_ratio(200000000u128, 1u128);
+            let ask_pool_amount = Decimal256::from_ratio(200u128 * 10u128.pow(6), 1u128);
             let offer_amount = Decimal256::from_ratio(10u128, 1u128);
             let amp = 100u64;
             let direction = StableSwapDirection::Simulate;
@@ -404,7 +455,7 @@ mod test {
 
             assert_approx_eq!(
                 result.try_into().unwrap(),
-                Uint128::from(189000000u128),
+                Uint128::from(189u128 * 10u128.pow(6)),
                 "0.01"
             );
         }
@@ -1001,24 +1052,28 @@ fn compute_next_d(
 
 /// Computes the amount of lp tokens to mint after a deposit for a stableswap pool.
 /// Assumes the deposits have already been credited to the pool_assets.
-#[allow(clippy::unwrap_used, clippy::too_many_arguments)]
 pub fn compute_lp_mint_amount_for_stableswap_deposit(
     amp_factor: &u64,
     old_pool_assets: &[Coin],
     new_pool_assets: &[Coin],
     pool_lp_token_total_supply: Uint128,
+    pool_info: &PoolInfo,
 ) -> Result<Option<Uint128>, ContractError> {
     // Initial invariant
-    let d_0 = compute_d(amp_factor, old_pool_assets).ok_or(ContractError::StableInvariantError)?;
+    let d_0 = compute_d_with_pool_info(amp_factor, old_pool_assets, pool_info)
+        .ok_or(ContractError::StableInvariantError)?;
 
     // Invariant after change, i.e. after deposit
     // notice that new_pool_assets already added the new deposits to the pool
-    let d_1 = compute_d(amp_factor, new_pool_assets).ok_or(ContractError::StableInvariantError)?;
+    let d_1 = compute_d_with_pool_info(amp_factor, new_pool_assets, pool_info)
+        .ok_or(ContractError::StableInvariantError)?;
 
-    // If the invariant didn't change, return None
+    // If the invariant didn't change or decreased, return None
     if d_1 <= d_0 {
         Ok(None)
     } else {
+        // Calculate the proportional LP tokens to mint based on the change in D
+        // The formula is: amount = total_supply * (d_1 - d_0) / d_0
         let amount = Uint512::from(pool_lp_token_total_supply)
             .checked_mul(d_1.checked_sub(d_0)?)?
             .checked_div(d_0)?;
@@ -1253,12 +1308,39 @@ mod tests {
         ];
 
         let pool_token_supply = MAX_TOKENS_IN;
+        let pool_info = PoolInfo {
+            pool_identifier: "pool_identifier".to_string(),
+            asset_denoms: vec![
+                "denom1".to_string(),
+                "denom2".to_string(),
+                "denom4".to_string(),
+            ],
+            lp_denom: "denom4".to_string(),
+            pool_fees: PoolFee {
+                protocol_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                swap_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                burn_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                extra_fees: vec![],
+            },
+
+            pool_type: PoolType::ConstantProduct,
+            status: PoolStatus::default(),
+            asset_decimals: vec![6, 6, 6],
+            assets: pool_assets.clone(),
+        };
 
         let actual_mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
             &MIN_AMP,
             &deposits,
             &pool_assets,
             pool_token_supply,
+            &pool_info,
         )
         .unwrap();
         let expected_mint_amount = Some(MAX_TOKENS_IN);
@@ -1484,12 +1566,30 @@ mod tests {
                 coin(pool_token_c_amount + deposit_amount_c, "denom3"),
             ];
 
+            let pool_info = PoolInfo {
+                pool_identifier:"pool_identifier".to_string(),
+                asset_denoms: vec!["denom1".to_string(),"denom2".to_string(),"denom3".to_string()],
+                lp_denom: "denom4".to_string(),
+                pool_fees: PoolFee {
+                    protocol_fee: Fee { share: Decimal::zero() },
+                    swap_fee: Fee { share: Decimal::zero() },
+                    burn_fee: Fee { share: Decimal::zero() },
+                    extra_fees: vec![],
+                },
+                asset_decimals: vec![6, 6, 6],
+                assets: new_pool_assets.clone(),
+                pool_type: PoolType::ConstantProduct,
+                status: PoolStatus::default(),
+            };
+
             let mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
                 &amp_factor,
                 &deposits,
                 &new_pool_assets,
                 Uint128::new(pool_token_supply),
-                ).unwrap();
+                &pool_info,
+            )
+            .unwrap();
 
             prop_assume!(mint_amount.is_some());
 
@@ -1508,11 +1608,6 @@ mod tests {
             swap_destination_amount in 0..MAX_TOKENS_IN.u128(),
             unswapped_amount in 0..MAX_TOKENS_IN.u128(),
         ) {
-            let source_token_amount = source_token_amount;
-            let swap_source_amount = swap_source_amount;
-            let swap_destination_amount = swap_destination_amount;
-            let unswapped_amount = unswapped_amount;
-
             let deposits = vec![
                 coin(swap_source_amount, "denom1"),
                 coin(swap_destination_amount, "denom2"),
@@ -1611,6 +1706,82 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    #[allow(clippy::inconsistent_digit_grouping)]
+    fn test_normalize_amount() {
+        // Test scaling up (6 decimals to 18 decimals)
+        let amount = Uint128::from(1u128 * 10u128.pow(6)); // 1.0 with 6 decimals
+        let normalized = normalize_amount(amount, 6, 18).unwrap();
+        assert_eq!(normalized, Uint128::from(1u128 * 10u128.pow(18))); // 1.0 with 18 decimals
+
+        // Test scaling down (18 decimals to 6 decimals)
+        let amount = Uint128::from(1u128 * 10u128.pow(18)); // 1.0 with 18 decimals
+        let normalized = normalize_amount(amount, 18, 6).unwrap();
+        assert_eq!(normalized, Uint128::from(1u128 * 10u128.pow(6))); // 1.0 with 6 decimals
+    }
+
+    #[test]
+    #[allow(clippy::inconsistent_digit_grouping)]
+    fn test_lp_mint_with_mixed_decimals() {
+        // Initial pool state with 1.0 of each token
+        let old_pool_assets = vec![
+            coin(1u128 * 10u128.pow(6), "uusd"),   // 1.0 uusd with 6 decimals
+            coin(1u128 * 10u128.pow(18), "uweth"), // 1.0 uweth with 18 decimals
+        ];
+
+        // Add 0.5 of each token
+
+        let new_pool_assets = vec![
+            coin(1_5u128 * 10u128.pow(5), "uusd"), // 1.5 uusd with 6 decimals
+            coin(1_5u128 * 10u128.pow(17), "uweth"), // 1.5 uweth with 18 decimals
+        ];
+
+        let amp_factor = 100u64;
+        let total_supply = Uint128::from(2u128 * 10u128.pow(6)); // Initial LP supply
+
+        let pool_info = PoolInfo {
+            pool_identifier: "x".to_string(),
+            asset_denoms: vec!["uusd".to_string(), "uweth".to_string()],
+            lp_denom: "lp".to_string(),
+            asset_decimals: vec![6, 18],
+            assets: vec![
+                coin(1u128 * 10u128.pow(6), "uusd"),
+                coin(1u128 * 10u128.pow(18), "uweth"),
+            ],
+            pool_type: PoolType::StableSwap { amp: amp_factor },
+            pool_fees: PoolFee {
+                protocol_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                swap_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                burn_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                extra_fees: vec![],
+            },
+            status: PoolStatus::default(),
+        };
+
+        let mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
+            &amp_factor,
+            &old_pool_assets,
+            &new_pool_assets,
+            total_supply,
+            &pool_info,
+        )
+        .unwrap()
+        .unwrap();
+
+        // Since we added 50% more of each token, we should get approximately 50% more LP tokens
+        let expected_mint = Uint128::from(1u128 * 10u128.pow(6)); // 50% of total_supply
+        let tolerance = Uint128::from(1u128 * 10u128.pow(6)); // Allow 1% difference
+
+        assert!(mint_amount >= expected_mint.checked_sub(tolerance).unwrap());
+        assert!(mint_amount <= expected_mint.checked_add(tolerance).unwrap());
     }
 }
 

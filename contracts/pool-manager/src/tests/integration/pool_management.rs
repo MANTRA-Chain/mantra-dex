@@ -111,7 +111,7 @@ fn invalid_assets_on_pool_creation() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -127,7 +127,7 @@ fn invalid_assets_on_pool_creation() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -143,7 +143,7 @@ fn invalid_assets_on_pool_creation() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::SameAsset { .. } => {}
+                    ContractError::SameAsset => {}
                     _ => panic!("Wrong error type, should return ContractError::SameAsset"),
                 }
             },
@@ -192,7 +192,7 @@ fn invalid_amount_assets_xyk_pool() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::ConstantProductPoolAssetMismatch { .. } => {}
+                    ContractError::ConstantProductPoolAssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::ConstantProductPoolAssetMismatch"),
                 }
             },
@@ -208,7 +208,7 @@ fn invalid_amount_assets_xyk_pool() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -282,7 +282,7 @@ fn sends_more_funds_than_needed() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::ExtraFundsSent { .. } => {}
+                    ContractError::ExtraFundsSent => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::ExtraFundsSent")
                     }
@@ -557,7 +557,7 @@ fn sends_more_funds_than_needed_3_tf_denoms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::ExtraFundsSent { .. } => {}
+                    ContractError::ExtraFundsSent => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::ExtraFundsSent")
                     }
@@ -1377,7 +1377,7 @@ fn cant_create_pool_with_large_number_of_assets() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::AssetMismatch")
                     }
@@ -1396,7 +1396,7 @@ fn cant_create_pool_with_large_number_of_assets() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::AssetMismatch")
                     }

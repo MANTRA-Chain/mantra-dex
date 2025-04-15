@@ -276,6 +276,7 @@ pub fn provide_liquidity(
                         // add the deposit to the pool_assets to calculate the new balances
                         &add_coins(pool_assets.clone(), deposits.clone())?,
                         total_shares,
+                        &pool,
                     )?
                     .ok_or(ContractError::StableLpMintError)?
                 }

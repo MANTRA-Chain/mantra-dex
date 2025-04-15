@@ -40,7 +40,7 @@ fn instantiate_farm_manager() {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
             match err {
-                ContractError::UnspecifiedConcurrentFarms { .. } => {}
+                ContractError::UnspecifiedConcurrentFarms => {}
                 _ => panic!("Wrong error type, should return ContractError::UnspecifiedConcurrentFarms"),
             }
         },
@@ -84,7 +84,7 @@ fn instantiate_farm_manager() {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
             match err {
-                ContractError::InvalidEmergencyUnlockPenalty { .. } => {}
+                ContractError::InvalidEmergencyUnlockPenalty => {}
                 _ => panic!("Wrong error type, should return ContractError::InvalidEmergencyUnlockPenalty"),
             }
         },
@@ -229,7 +229,7 @@ fn create_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::FarmFeeMissing { .. } => {}
+                    ContractError::FarmFeeMissing => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::FarmFeeMissing")
                     }
@@ -255,7 +255,7 @@ fn create_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -279,7 +279,7 @@ fn create_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -303,7 +303,7 @@ fn create_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -327,7 +327,7 @@ fn create_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -352,7 +352,7 @@ fn create_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::FarmStartTooFar { .. } => {}
+                    ContractError::FarmStartTooFar => {}
                     _ => panic!("Wrong error type, should return ContractError::FarmStartTooFar"),
                 }
             },
@@ -377,7 +377,7 @@ fn create_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    ContractError::FarmStartTimeAfterEndTime => {}
                     _ => panic!(
                         "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
                     ),
@@ -404,7 +404,7 @@ fn create_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    ContractError::FarmStartTimeAfterEndTime => {}
                     _ => panic!(
                         "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
                     ),
@@ -458,7 +458,7 @@ fn create_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    ContractError::FarmStartTimeAfterEndTime => {}
                     _ => panic!(
                         "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
                     ),
@@ -485,7 +485,7 @@ fn create_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::FarmStartTimeAfterEndTime { .. } => {}
+                    ContractError::FarmStartTimeAfterEndTime => {}
                     _ => panic!(
                         "Wrong error type, should return ContractError::FarmStartTimeAfterEndTime"
                     ),
@@ -512,7 +512,7 @@ fn create_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::FarmStartTooFar { .. } => {}
+                    ContractError::FarmStartTooFar => {}
                     _ => panic!("Wrong error type, should return ContractError::FarmStartTooFar"),
                 }
             },
@@ -538,7 +538,7 @@ fn create_farms() {
                 // trying to create a farm for an invalid lp_denom, i.e. an lp_denom that wasn't created
                 // by the pool manager, should fail
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -734,7 +734,7 @@ fn expand_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -758,7 +758,7 @@ fn expand_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -1012,7 +1012,7 @@ fn cant_expand_farm_too_late() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::FarmAlreadyExpired { .. } => {}
+                    ContractError::FarmAlreadyExpired => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
                     }
@@ -1068,7 +1068,7 @@ fn cant_expand_farm_too_late() {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
             match err {
-                ContractError::FarmAlreadyExpired { .. } => {}
+                ContractError::FarmAlreadyExpired => {}
                 _ => panic!("Wrong error type, should return ContractError::FarmAlreadyExpired"),
             }
         },
@@ -1144,7 +1144,7 @@ fn close_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::NonExistentFarm { .. } => {}
+                    ContractError::NonExistentFarm => {}
                     _ => panic!("Wrong error type, should return ContractError::NonExistentFarm"),
                 }
             },
@@ -1159,7 +1159,7 @@ fn close_farms() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -1618,7 +1618,7 @@ pub fn update_config() {
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::InvalidEmergencyUnlockPenalty { .. } => {}
+                ContractError::InvalidEmergencyUnlockPenalty => {}
                 _ => panic!("Wrong error type, should return ContractError::InvalidEmergencyUnlockPenalty"),
             }
         },
@@ -1833,7 +1833,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -1884,7 +1884,7 @@ pub fn test_manage_position() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 // the position is not closed or hasn't expired yet
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -1997,7 +1997,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::PendingRewards { .. } => {}
+                    ContractError::PendingRewards => {}
                     _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
                 }
             },
@@ -2017,7 +2017,7 @@ pub fn test_manage_position() {
         .claim(&other, vec![], None, |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::NoOpenPositions { .. } => {}
+                ContractError::NoOpenPositions => {}
                 _ => panic!("Wrong error type, should return ContractError::NoOpenPositions"),
             }
         })
@@ -2066,7 +2066,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -2084,7 +2084,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => panic!("Wrong error type, should return ContractError::AssetMismatch"),
                 }
             },
@@ -2135,7 +2135,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::PositionNotExpired { .. } => {}
+                    ContractError::PositionNotExpired => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::PositionNotExpired")
                     }
@@ -2197,7 +2197,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -2286,7 +2286,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -2338,7 +2338,7 @@ pub fn test_manage_position() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -2732,7 +2732,7 @@ pub fn test_withdrawing_open_positions_updates_weight() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -3872,7 +3872,7 @@ fn expand_expired_farm() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::FarmAlreadyExpired { .. } => {}
+                    ContractError::FarmAlreadyExpired => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
                     }
@@ -4709,7 +4709,7 @@ fn test_farm_helper() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::AssetMismatch")
                     }
@@ -6184,7 +6184,7 @@ fn position_fill_attack_is_not_possible() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -6336,7 +6336,7 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -6350,7 +6350,7 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::Unauthorized { .. } => {}
+                    ContractError::Unauthorized => {}
                     _ => panic!("Wrong error type, should return ContractError::Unauthorized"),
                 }
             },
@@ -7083,7 +7083,7 @@ fn user_can_claim_expired_epochs() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::FarmAlreadyExpired { .. } => {}
+                    ContractError::FarmAlreadyExpired => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::FarmAlreadyExpired")
                     }
@@ -7517,7 +7517,7 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::AssetMismatch")
                     }
@@ -7543,7 +7543,7 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
-                    ContractError::AssetMismatch { .. } => {}
+                    ContractError::AssetMismatch => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::AssetMismatch")
                     }
@@ -10159,7 +10159,7 @@ fn test_claim_until_epoch_closing_positions() {
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::PendingRewards { .. } => {}
+                ContractError::PendingRewards => {}
                 _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
             }
         },
@@ -10188,7 +10188,7 @@ fn test_claim_until_epoch_closing_positions() {
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
-                ContractError::PendingRewards { .. } => {}
+                ContractError::PendingRewards => {}
                 _ => panic!("Wrong error type, should return ContractError::PendingRewards"),
             }
         },
