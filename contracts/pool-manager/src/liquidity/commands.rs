@@ -269,15 +269,16 @@ pub fn provide_liquidity(
 
                     share
                 } else {
-                    compute_lp_mint_amount_for_stableswap_deposit(
+                    let share = compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
                         // pool_assets hold the balances before the deposit was made
                         &pool_assets,
-                        // add the deposit to the pool_assets to calculate the new balances
-                        &add_coins(pool_assets.clone(), deposits.clone())?,
+                        &deposits,
                         total_shares,
-                    )?
-                    .ok_or(ContractError::StableLpMintError)?
+                        &pool,
+                    )?;
+
+                    share
                 }
             }
         };
@@ -448,9 +449,11 @@ pub fn withdraw_liquidity(
 
     // Get the total share of the pool
     let total_shares = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
-
+    println!("total_shares: {}", total_shares);
+    println!("amount: {}", amount);
     // Get the ratio of the amount to withdraw to the total share
     let share_ratio: Decimal256 = Decimal256::from_ratio(amount, total_shares);
+    println!("share_ratio: {}", share_ratio);
 
     // sanity check, the share_ratio cannot possibly be greater than 1
     ensure!(
@@ -463,6 +466,7 @@ pub fn withdraw_liquidity(
         .assets
         .iter()
         .map(|pool_asset| {
+            println!("pool_asset.amount::::: {:?}", pool_asset.amount);
             Ok(Coin {
                 denom: pool_asset.denom.clone(),
                 amount: Uint128::try_from(
@@ -478,6 +482,7 @@ pub fn withdraw_liquidity(
         .filter(|coin| coin.amount > Uint128::zero())
         .collect();
 
+    println!("refund_assets: {:?}", refund_assets);
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // Transfer the refund assets to the sender
@@ -485,6 +490,8 @@ pub fn withdraw_liquidity(
         to_address: info.sender.to_string(),
         amount: refund_assets.clone(),
     }));
+
+    println!("pool: {:?}", pool);
 
     // Deduct balances on pool_info by the amount of each refund asset
     for refund_asset in refund_assets.iter() {
@@ -500,6 +507,8 @@ pub fn withdraw_liquidity(
             .checked_sub(refund_asset.amount)?;
     }
 
+    println!("here");
+    println!("pool: {:?}", pool);
     POOLS.save(deps.storage, &pool_identifier, &pool)?;
 
     let pool_reserves = pool
@@ -515,6 +524,8 @@ pub fn withdraw_liquidity(
         env.contract.address,
         amount,
     )?);
+
+    println!("messages: {:?}", messages);
     // update pool info
     Ok(Response::new()
         .add_messages(messages)

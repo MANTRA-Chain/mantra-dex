@@ -1000,31 +1000,152 @@ fn compute_next_d(
 }
 
 /// Computes the amount of lp tokens to mint after a deposit for a stableswap pool.
-/// Assumes the deposits have already been credited to the pool_assets.
+/// If the user provides liquidity to a stableswap pool in a disproportionate way,
+/// the user will be charged swap fees on the skewness introduced to the pool.
 #[allow(clippy::unwrap_used, clippy::too_many_arguments)]
 pub fn compute_lp_mint_amount_for_stableswap_deposit(
     amp_factor: &u64,
     old_pool_assets: &[Coin],
-    new_pool_assets: &[Coin],
+    deposits: &[Coin],
     pool_lp_token_total_supply: Uint128,
-) -> Result<Option<Uint128>, ContractError> {
+    pool_info: &PoolInfo,
+) -> Result<Uint128, ContractError> {
     // Initial invariant
     let d_0 = compute_d(amp_factor, old_pool_assets).ok_or(ContractError::StableInvariantError)?;
 
     // Invariant after change, i.e. after deposit
-    // notice that new_pool_assets already added the new deposits to the pool
-    let d_1 = compute_d(amp_factor, new_pool_assets).ok_or(ContractError::StableInvariantError)?;
+    let full_new_assets = add_coins(old_pool_assets.to_vec(), deposits.to_vec())?;
+    let d_1 = compute_d(amp_factor, &full_new_assets).ok_or(ContractError::StableInvariantError)?;
 
-    // If the invariant didn't change, return None
-    if d_1 <= d_0 {
-        Ok(None)
-    } else {
-        let amount = Uint512::from(pool_lp_token_total_supply)
-            .checked_mul(d_1.checked_sub(d_0)?)?
+    ensure!(d_1 > d_0, ContractError::StableInvariantError);
+
+    println!("d0:: {:?}", d_0);
+    println!("d1:: {:?}", d_1);
+    //------------------------------------------------------------
+    // dynamic fee implementation
+    // We need to recalculate the invariant accounting for fees to calculate fair user's share
+    let n_coins = old_pool_assets.len();
+    let base_fee = Decimal256::from(pool_info.pool_fees.swap_fee.share)
+        .checked_mul(Decimal256::from_ratio(n_coins as u128, 1u128))?
+        .checked_div(Decimal256::from_ratio((4 * (n_coins - 1)) as u128, 1u128))?;
+
+    // average invariant
+    let ys = d_0
+        .checked_add(d_1)?
+        .checked_div(Uint512::from(n_coins as u128))?;
+
+    println!("ys:: {:?}", ys);
+
+    let mut fees = Vec::with_capacity(n_coins);
+
+    for i in 0..n_coins {
+        println!("~~~~~~~~~~~~~~~~~~~~~~");
+        let ideal_balance = d_1
+            .checked_mul(Uint512::from(old_pool_assets[i].amount))?
             .checked_div(d_0)?;
+        let difference: Uint256 = Uint512::from(full_new_assets[i].amount)
+            .abs_diff(ideal_balance)
+            .try_into()?;
 
-        Ok(Some(Uint128::try_from(amount)?))
+        println!(
+            "old_pool_assets[i].amount::: {:?}",
+            old_pool_assets[i].amount
+        );
+        println!(
+            "full_new_assets[i].amount::: {:?}",
+            full_new_assets[i].amount
+        );
+
+        let xs = Decimal256::decimal_with_precision(
+            old_pool_assets[i]
+                .amount
+                .checked_add(full_new_assets[i].amount)?,
+            pool_info.asset_decimals[i],
+        )?;
+
+        let ys_256: Uint256 = ys.try_into()?;
+        let ys = <Decimal256 as Decimal256Helper>::decimal_with_precision(ys_256, 6)?;
+
+        let dynamic_fee_i = dynamic_fee(xs, ys, base_fee)?;
+        fees.push(dynamic_fee_i.checked_mul(Decimal256::from_ratio(difference, 1u128))?);
+
+        println!("ideal_balance:: {:?}", ideal_balance);
+        println!("difference:: {:?}", difference);
+        println!("xs:: {:?}", xs);
+        println!("dynamic_fee_i:: {:?}", dynamic_fee_i);
+        println!("fees[i]:: {:?}", fees[i]);
+
+        // fees stay in the pool for LPs to enjoy
+        //todo including the new LPer, so a more severe punishment should be applied
     }
+
+    println!("fees: {:?}", fees);
+
+    // adjust the new pool assets without the fees to recalculate d1 and fair mint amount
+    let mut adjusted_new_pool_assets = full_new_assets.to_vec();
+    for i in 0..adjusted_new_pool_assets.len() {
+        println!(
+            "adjusted_new_pool_assets[i].amount:: {:?}",
+            adjusted_new_pool_assets[i].amount
+        );
+        println!("fees[i].to_uint_floor():: {:?}", fees[i].to_uint_floor());
+
+        adjusted_new_pool_assets[i].amount = Uint256::from(adjusted_new_pool_assets[i].amount)
+            .checked_sub(fees[i].to_uint_floor())?
+            .try_into()?;
+    }
+
+    println!("adjusted_new_pool_assets:: {:?}", adjusted_new_pool_assets);
+
+    let adjusted_d_1 = compute_d(amp_factor, &adjusted_new_pool_assets)
+        .ok_or(ContractError::StableInvariantError)?;
+
+    println!("adjusted_d_1:: {:?}", adjusted_d_1);
+
+    let amount = Uint512::from(pool_lp_token_total_supply)
+        .checked_mul(adjusted_d_1.checked_sub(d_0)?)?
+        .checked_div(d_0)?;
+
+    println!(
+        "pool_lp_token_total_supply : {:?}",
+        pool_lp_token_total_supply
+    );
+    println!("add liquidity : {:?}", amount);
+    Ok(Uint128::try_from(amount)?)
+}
+
+//todo docs
+fn dynamic_fee(
+    xpi: Decimal256,
+    xpj: Decimal256,
+    fee: Decimal256,
+) -> Result<Decimal256, ContractError> {
+    println!("**** dynamic_fee ****");
+    let offpeg_fee_multiplier = Decimal256::from_ratio(2u128, 1u128);
+
+    println!("xpi: {:?}", xpi);
+    println!("xpj: {:?}", xpj);
+
+    let xps2 = xpi.checked_add(xpj)?.pow(2);
+
+    println!("xpj: {:?}", xpj);
+    println!("xps2: {:?}", xps2);
+    println!("fee: {:?}", fee);
+
+    let numerator = offpeg_fee_multiplier.checked_mul(fee)?;
+    let denominator = offpeg_fee_multiplier
+        .checked_sub(Decimal256::one())?
+        .checked_mul(xpi)?
+        .checked_mul(xpj)?
+        .checked_mul(Decimal256::from_ratio(4u128, 1u128))?
+        .checked_div(xps2)?;
+
+    println!("numerator: {:?}", numerator);
+    println!("denominator: {:?}", denominator);
+
+    println!("**** dynamic_fee ****");
+
+    Ok(Decimal256::one().checked_add(numerator.checked_div(denominator)?)?)
 }
 
 /// Compute the swap amount `y` in proportion to `x`.
@@ -1167,6 +1288,8 @@ pub fn swap_to(
     clippy::too_many_arguments
 )]
 mod tests {
+    use alloc::string::ToString;
+    use alloc::vec;
     use cosmwasm_std::coin;
     use mantra_dex_std::fee::Fee;
     use mantra_dex_std::pool_manager::PoolStatus;
@@ -1247,21 +1370,49 @@ mod tests {
         ];
 
         let pool_assets = vec![
-            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom1"),
-            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom2"),
-            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom4"),
+            coin(MAX_TOKENS_IN.u128(), "denom1"),
+            coin(MAX_TOKENS_IN.u128(), "denom2"),
+            coin(MAX_TOKENS_IN.u128(), "denom4"),
         ];
 
         let pool_token_supply = MAX_TOKENS_IN;
 
+        let pool_info = PoolInfo {
+            pool_identifier: "pool".to_string(),
+            asset_denoms: vec![
+                "denom1".to_string(),
+                "denom2".to_string(),
+                "denom4".to_string(),
+            ],
+            pool_type: PoolType::StableSwap { amp: MIN_AMP },
+            pool_fees: PoolFee {
+                swap_fee: Fee {
+                    share: Decimal::percent(5),
+                },
+                protocol_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                burn_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                extra_fees: vec![],
+            },
+            status: PoolStatus::default(),
+            assets: pool_assets.clone(),
+            asset_decimals: vec![6, 6, 6],
+            lp_denom: "lp".to_string(),
+        };
+
         let actual_mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
             &MIN_AMP,
-            &deposits,
             &pool_assets,
+            &deposits,
             pool_token_supply,
+            &pool_info,
         )
         .unwrap();
-        let expected_mint_amount = Some(MAX_TOKENS_IN);
+
+        let expected_mint_amount = MAX_TOKENS_IN;
 
         assert_eq!(actual_mint_amount, expected_mint_amount);
     }
@@ -1478,22 +1629,44 @@ mod tests {
 
             // by the time compute_mint_amount_for_stableswap_deposit is called within the contract
             // to compute the lp shares for the stableswap, pool assets include the new deposits already
-            let new_pool_assets = vec![
-                coin(pool_token_a_amount + deposit_amount_a, "denom1"),
-                coin(pool_token_b_amount + deposit_amount_b, "denom2"),
-                coin(pool_token_c_amount + deposit_amount_c, "denom3"),
+            let pool_assets = vec![
+                coin(pool_token_a_amount, "denom1"),
+                coin(pool_token_b_amount, "denom2"),
+                coin(pool_token_c_amount, "denom3"),
             ];
+
+            let pool_info = PoolInfo {
+            pool_identifier: "pool".to_string(),
+            asset_denoms: vec!["denom1".to_string(), "denom2".to_string(), "denom4".to_string(),],
+            pool_type: PoolType::StableSwap { amp: MIN_AMP },
+            pool_fees: PoolFee {
+                swap_fee: Fee {
+                    share: Decimal::percent(5),
+                },
+                protocol_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                burn_fee: Fee {
+                    share: Decimal::zero(),
+                },
+                extra_fees: vec![],
+            },
+            status: PoolStatus::default(),
+            assets: pool_assets.clone(),
+            asset_decimals: vec![6, 6, 6],
+            lp_denom: "lp".to_string(),
+        };
+
 
             let mint_amount = compute_lp_mint_amount_for_stableswap_deposit(
                 &amp_factor,
+                &pool_assets,
                 &deposits,
-                &new_pool_assets,
                 Uint128::new(pool_token_supply),
+                &pool_info,
                 ).unwrap();
 
-            prop_assume!(mint_amount.is_some());
-
-            let d1 = compute_d(&amp_factor, &new_pool_assets).unwrap();
+            let d1 = compute_d(&amp_factor, &pool_assets).unwrap();
 
             assert!(d0 < d1);
         }
