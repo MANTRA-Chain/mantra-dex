@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coin, coins, ensure, to_json_binary, wasm_execute, BankMsg, Coin, CosmosMsg, Decimal256,
-    DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, Uint256, Uint512,
+    DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, Uint256,
 };
 use cosmwasm_std::{Decimal, Uint128};
 use mantra_dex_std::coin::{add_coins, aggregate_coins};
@@ -260,7 +260,7 @@ pub fn provide_liquidity(
                     //TODO: fix hardcoded precision
                     let mut share =
                         Uint128::try_from(d_0)?.saturating_mul(Uint128::from(10u128).pow(6));
-                    share = share.saturating_sub(Uint128::from(MINIMUM_LIQUIDITY_AMOUNT));
+                    share = share.saturating_sub(MINIMUM_LIQUIDITY_AMOUNT);
 
                     println!("share: {}", share);
 
