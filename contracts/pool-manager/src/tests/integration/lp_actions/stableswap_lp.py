@@ -148,7 +148,7 @@ decimals = [6, 6, 18]
 # Calculate rates (10**(18 - decimals))
 rates = [(10**(18 - d)) for d in decimals]
 
-# Amplification Factor
+# Amplification Factor - update to match Rust's default value
 A = 100
 
 # --- Run Simulation ---
@@ -222,8 +222,3 @@ print("--- Summary ---")
 print(f"Initial LP Minted: {initial_lp_minted}")
 print(f"Case 1 LP Minted (uluna + uweth): {lp_minted_case1}")
 print(f"Case 2 LP Minted (uluna + uusd): {lp_minted_case2}")
-
-# Compare with Rust assertion values (approximate check)
-print(f"\nComparison with Rust Test Assertions:")
-print(f"Case 1 Rust Assertion: ~13,901,163,096,216")
-print(f"Case 2 Rust Assertion: ~ 9,054,673,799,013")

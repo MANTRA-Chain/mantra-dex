@@ -1613,3 +1613,302 @@ fn handling_of_lp_shares_exotic_amounts() {
             );
         });
 }
+
+#[test]
+fn python_simulation_comparison() {
+    let trilly = 1_000_000_000_000u128;
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            // Increase initial balances to avoid overflow 1B each token
+            coin(trilly * 10u128.pow(6), "uluna".to_string()),
+            coin(trilly * 10u128.pow(6), "uusd".to_string()),
+            coin(trilly * 10u128.pow(18), "uweth".to_string()),
+            coin(trilly * 10u128.pow(6), "uom".to_string()),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+
+    let creator = suite.creator();
+    let user = suite.senders[1].clone();
+
+    // Create pool with same parameters as Python simulation
+    suite.instantiate_default().create_pool(
+        &creator,
+        vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
+        vec![6u8, 6u8, 18u8],
+        PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        },
+        PoolType::StableSwap { amp: 85 },
+        Some("uluna.uusd.uweth".to_string()),
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    let lp_denom = suite.get_lp_denom("o.uluna.uusd.uweth".to_string());
+
+    println!("--- Initial Liquidity Provision ---");
+    // Initial deposit matching Python: 10*10^6 for 6 decimal coins, 10*10^18 for 18 decimal coin
+    let initial_uluna = 10u128 * 10u128.pow(6); // 10 * 10^6
+    let initial_uusd = 10u128 * 10u128.pow(6); // 10 * 10^6
+    let initial_uweth = 10u128 * 10u128.pow(18); // 10 * 10^18
+
+    println!("Initial Total Supply: 0");
+    println!(
+        "Depositing: [{}, {}, {}]",
+        initial_uluna, initial_uusd, initial_uweth
+    );
+
+    suite.provide_liquidity(
+        &creator,
+        "o.uluna.uusd.uweth".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uluna".to_string(),
+                amount: Uint128::from(initial_uluna),
+            },
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(initial_uusd),
+            },
+            Coin {
+                denom: "uweth".to_string(),
+                amount: Uint128::from(initial_uweth),
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Query pool info and check balances
+    suite.query_pools(
+        Some("o.uluna.uusd.uweth".to_string()),
+        None,
+        None,
+        |result| match result {
+            Ok(pools) => {
+                let pool = &pools.pools[0].pool_info;
+                println!("Pool Assets: {:?}", pool.assets);
+            }
+            Err(e) => {
+                panic!("Error querying pools: {:?}", e);
+            }
+        },
+    );
+    // Get initial state
+    let initial_lp_supply = RefCell::new(Uint128::zero());
+    suite.query_balance(&creator.to_string(), lp_denom.clone(), |result| {
+        let amount = result.unwrap().amount;
+        println!("New Total Supply (LP Tokens): {}", amount);
+        println!("LP Minted: {}", amount);
+        *initial_lp_supply.borrow_mut() = amount;
+    });
+    println!("------------------------------");
+
+    println!("--- Test Case 1: Deposit uluna (6 dec) + uweth (18 dec) ---");
+    println!("Current Total Supply: {}", initial_lp_supply.borrow());
+    println!("Depositing: [2000000, 0, 2000000000000000000]");
+
+    let lp_shares_case_1 = RefCell::new(Uint128::zero());
+    suite.provide_liquidity(
+        &user,
+        "o.uluna.uusd.uweth".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uluna".to_string(),
+                amount: Uint128::from(2u128 * 10u128.pow(6)),
+            },
+            Coin {
+                denom: "uweth".to_string(),
+                amount: Uint128::from(2u128 * 10u128.pow(18)),
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Query new balances after Case 1 using RefCell
+    suite.query_balance(&user.to_string(), lp_denom.clone(), |result| {
+        let amount = result.unwrap().amount;
+        println!(
+            "New Total Supply: {}",
+            initial_lp_supply.borrow().u128() + amount.u128()
+        );
+        println!("LP Minted in Case 1: {}", amount);
+        *lp_shares_case_1.borrow_mut() = amount;
+    });
+    println!("------------------------------");
+
+    // Reset state for Case 2
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(trilly * 10u128.pow(6), "uluna".to_string()),
+            coin(trilly * 10u128.pow(6), "uusd".to_string()),
+            coin(trilly * 10u128.pow(18), "uweth".to_string()),
+            coin(trilly * 10u128.pow(6), "uom".to_string()),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+
+    let creator = suite.creator();
+    let user = suite.senders[1].clone();
+
+    // Recreate pool
+    suite.instantiate_default().create_pool(
+        &creator,
+        vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
+        vec![6u8, 6u8, 18u8],
+        PoolFee {
+            protocol_fee: Fee {
+                share: Decimal::zero(),
+            },
+            swap_fee: Fee {
+                share: Decimal::zero(),
+            },
+            burn_fee: Fee {
+                share: Decimal::zero(),
+            },
+            extra_fees: vec![],
+        },
+        PoolType::StableSwap { amp: 100 },
+        Some("uluna.uusd.uweth".to_string()),
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    let lp_denom = suite.get_lp_denom("o.uluna.uusd.uweth".to_string());
+
+    // Initial liquidity again
+    suite.provide_liquidity(
+        &creator,
+        "o.uluna.uusd.uweth".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uluna".to_string(),
+                amount: Uint128::from(initial_uluna),
+            },
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(initial_uusd),
+            },
+            Coin {
+                denom: "uweth".to_string(),
+                amount: Uint128::from(initial_uweth),
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    println!("--- Test Case 2: Deposit uluna (6 dec) + uusd (6 dec) ---");
+    // Query current balances for Case 2 using RefCell
+    let current_balances_case2 = RefCell::new(vec![Uint128::zero(); 3]);
+    suite.query_balance(&creator.to_string(), "uluna".to_string(), |result| {
+        current_balances_case2.borrow_mut()[0] = result.unwrap().amount;
+    });
+    suite.query_balance(&creator.to_string(), "uusd".to_string(), |result| {
+        current_balances_case2.borrow_mut()[1] = result.unwrap().amount;
+    });
+    suite.query_balance(&creator.to_string(), "uweth".to_string(), |result| {
+        current_balances_case2.borrow_mut()[2] = result.unwrap().amount;
+    });
+    println!("Current Balances: {:?}", current_balances_case2.borrow());
+    println!("Current Total Supply: {}", initial_lp_supply.borrow());
+    println!("Depositing: [2000000, 2000000, 0]");
+
+    let lp_shares_case_2 = RefCell::new(Uint128::zero());
+    suite.provide_liquidity(
+        &user,
+        "o.uluna.uusd.uweth".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: "uluna".to_string(),
+                amount: Uint128::from(2u128 * 10u128.pow(6)),
+            },
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(2u128 * 10u128.pow(6)),
+            },
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Query new balances after Case 2 using RefCell
+    let new_balances_case2 = RefCell::new(vec![Uint128::zero(); 3]);
+    suite.query_balance(&creator.to_string(), "uluna".to_string(), |result| {
+        new_balances_case2.borrow_mut()[0] = result.unwrap().amount;
+    });
+    suite.query_balance(&creator.to_string(), "uusd".to_string(), |result| {
+        new_balances_case2.borrow_mut()[1] = result.unwrap().amount;
+    });
+    suite.query_balance(&creator.to_string(), "uweth".to_string(), |result| {
+        new_balances_case2.borrow_mut()[2] = result.unwrap().amount;
+    });
+    println!("New Balances: {:?}", new_balances_case2.borrow());
+
+    suite.query_balance(&user.to_string(), lp_denom.clone(), |result| {
+        let amount = result.unwrap().amount;
+        println!(
+            "New Total Supply: {}",
+            initial_lp_supply.borrow().u128() + amount.u128()
+        );
+        println!("LP Minted in Case 2: {}", amount);
+        *lp_shares_case_2.borrow_mut() = amount;
+    });
+    println!("------------------------------");
+
+    println!("--- Summary ---");
+    println!("Initial LP Minted: {}", initial_lp_supply.borrow());
+    println!(
+        "Case 1 LP Minted (uluna + uweth): {}",
+        lp_shares_case_1.borrow()
+    );
+    println!(
+        "Case 2 LP Minted (uluna + uusd): {}",
+        lp_shares_case_2.borrow()
+    );
+
+    // The key assertion - both cases should mint the same amount of LP tokens
+    assert_eq!(
+        lp_shares_case_1.borrow().u128(),
+        lp_shares_case_2.borrow().u128()
+    );
+}
