@@ -284,7 +284,7 @@ impl TestingSuite {
                 amount: Uint128::zero(),
             },
             max_concurrent_farms: 5,
-            max_farm_epoch_buffer: 014,
+            max_farm_epoch_buffer: 14,
             min_unlocking_duration: 86_400,
             max_unlocking_duration: 31_536_000,
             farm_expiration_time: MONTH_IN_SECONDS,
@@ -327,6 +327,7 @@ impl TestingSuite {
     }
 
     #[track_caller]
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn provide_liquidity(
         &mut self,
         sender: &Addr,
@@ -561,6 +562,7 @@ impl TestingSuite {
         self
     }
 
+    #[allow(deprecated)]
     pub(crate) fn query_all_balances(
         &mut self,
         addr: &String,

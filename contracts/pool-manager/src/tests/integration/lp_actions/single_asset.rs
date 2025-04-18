@@ -113,7 +113,7 @@ fn provide_liquidity_with_single_asset() {
                     let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                     match err {
-                        ContractError::EmptyPoolForSingleSideLiquidityProvision {} => {}
+                        ContractError::EmptyPoolForSingleSideLiquidityProvision => {}
                         _ => panic!(
                             "Wrong error type, should return ContractError::EmptyPoolForSingleSideLiquidityProvision"
                         ),

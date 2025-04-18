@@ -2667,11 +2667,12 @@ fn setup_3pool_different_decimals(
     let amp = amp.unwrap_or(85);
 
     // Default initial balances (300T for each token)
+    let initial_balance = 300_000_000_000_000u128 * 10u128.pow(18);
     let balances = initial_balances.unwrap_or_else(|| {
         vec![
-            Uint128::new(300_000_000_000_000_000000000000000000u128),
-            Uint128::new(300_000_000_000_000_000000000000000000u128),
-            Uint128::new(300_000_000_000_000_000000000000000000u128),
+            Uint128::new(initial_balance),
+            Uint128::new(initial_balance),
+            Uint128::new(initial_balance),
         ]
     });
 
@@ -2775,22 +2776,23 @@ fn setup_4pool_different_decimals(
     let amp = amp.unwrap_or(85);
 
     // Default initial balances (300T for each token)
+    let initial_balance = 300_000_000_000_000u128 * 10u128.pow(18);
     let balances = initial_balances.unwrap_or_else(|| {
         vec![
-            Uint128::new(300_000_000_000_000_000000000000000000u128),
-            Uint128::new(300_000_000_000_000_000000000000000000u128),
-            Uint128::new(300_000_000_000_000_000000000000000000u128),
-            Uint128::new(300_000_000_000_000_000000000000000000u128),
+            Uint128::new(initial_balance),
+            Uint128::new(initial_balance),
+            Uint128::new(initial_balance),
+            Uint128::new(initial_balance),
         ]
     });
 
     // Default initial liquidity (100T for each token)
     let liquidity = initial_liquidity.unwrap_or_else(|| {
         vec![
-            Uint128::new(100_000_000_000_000_000000u128), // 100T with 6 decimals
-            Uint128::new(100_000_000_000_000_000000u128), // 100T with 6 decimals
-            Uint128::new(100_000_000_000_000_000000000000u128), // 100T with 12 decimals
-            Uint128::new(100_000_000_000_000_000000000000000000u128), // 100T with 18 decimals
+            Uint128::new(100_000_000_000_000u128 * 10u128.pow(6)), // 100T with 6 decimals
+            Uint128::new(100_000_000_000_000u128 * 10u128.pow(6)), // 100T with 6 decimals
+            Uint128::new(100_000_000_000_000u128 * 10u128.pow(12)), // 100T with 12 decimals
+            Uint128::new(100_000_000_000_000u128 * 10u128.pow(18)), // 100T with 18 decimals
         ]
     });
 
