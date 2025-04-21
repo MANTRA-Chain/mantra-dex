@@ -254,14 +254,8 @@ fn calculate_d_core(amp_factor: &u64, deposits: &[Uint128], n_coins: Uint128) ->
             }
         }
 
-        // In Python, the initial LP amount is based on the D value times the number of tokens
-        if deposits.iter().all(|x| !x.is_zero()) {
-            // This multiplier helps match the Python behavior for the initial D value
-            let multiplier = n_coins.u128();
-            Some(d.checked_mul(Uint512::from(multiplier)).unwrap())
-        } else {
-            Some(d)
-        }
+        // Return the raw D value
+        Some(d)
     }
 }
 
@@ -1112,36 +1106,43 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
     pool_lp_token_total_supply: Uint128,
     pool_info: &PoolInfo,
 ) -> Result<Option<Uint128>, ContractError> {
-    // Initial invariant
+    // Calculate the total deposit amount
+    let total_deposit_amount: Uint128 = old_pool_assets
+        .iter()
+        .zip(new_pool_assets.iter())
+        .map(|(old, new)| new.amount.checked_sub(old.amount).unwrap_or_default())
+        .sum();
+
+    // If no deposits made, return None
+    if total_deposit_amount.is_zero() {
+        return Ok(Some(Uint128::zero()));
+    }
+
+    // For initial deposit (when no LP tokens exist yet)
+    if pool_lp_token_total_supply.is_zero() {
+        let minimum_liquidity = Uint128::new(1_000);
+        let lp_amount = total_deposit_amount.checked_sub(minimum_liquidity)?;
+        return Ok(Some(lp_amount));
+    }
+
+    // Calculate D values for the invariant calculation approach
     let d_0 = compute_d_with_pool_info(amp_factor, old_pool_assets, pool_info)
         .ok_or(ContractError::StableInvariantError)?;
 
-    // Invariant after change, i.e. after deposit
-    // notice that new_pool_assets already added the new deposits to the pool
     let d_1 = compute_d_with_pool_info(amp_factor, new_pool_assets, pool_info)
         .ok_or(ContractError::StableInvariantError)?;
 
-    // If the invariant didn't change or decreased, return None
     if d_1 <= d_0 {
-        println!("d_1 <= d_0");
-        // If invariant does not increase (or decreases, which shouldn't happen with deposits),
-        // mint zero tokens. The previous multiplication was likely incorrect.
-        Ok(Some(Uint128::zero()))
-    } else {
-        println!("d_1 > d_0");
-        // Calculate the proportional LP tokens to mint based on the change in D
-        // Formula: amount = total_supply * (d_1 - d_0) / d_0
-        println!("d_1: {}", d_1);
-        println!("d_0: {}", d_0);
-        println!("pool_lp_token_total_supply: {}", pool_lp_token_total_supply);
-        let amount = Uint512::from(pool_lp_token_total_supply)
-            .checked_mul(d_1.checked_sub(d_0)?)?
-            .checked_div(d_0)?;
-
-        // The calculated `amount` is the number of LP tokens to mint.
-        // Removed the incorrect .saturating_mul(10^6)
-        Ok(Some(Uint128::try_from(amount)?))
+        return Ok(Some(Uint128::zero()));
     }
+
+    // Formula: amount = total_supply * (d_1 - d_0) / d_0
+    // This matches the Python implementation in stableswap_lp.py
+    let amount = Uint512::from(pool_lp_token_total_supply)
+        .checked_mul(d_1.checked_sub(d_0)?)?
+        .checked_div(d_0)?;
+
+    Ok(Some(Uint128::try_from(amount)?))
 }
 
 /// Compute the swap amount `y` in proportion to `x`.
