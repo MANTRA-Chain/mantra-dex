@@ -690,6 +690,7 @@ pub fn compute_offer_amount(
     ask_amount: Uint128,
     pool_fees: PoolFee,
 ) -> StdResult<OfferAmountComputation> {
+    // Convert Uint128 to Uint256 once
     let offer_asset_in_pool: Uint256 = offer_asset_in_pool.into();
     let ask_asset_in_pool: Uint256 = ask_asset_in_pool.into();
     let ask_amount: Uint256 = ask_amount.into();
@@ -1041,46 +1042,64 @@ pub fn get_asset_indexes_in_pool(
 
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
-    amp_factor: &u64,
-    d_init: Uint512,
-    d_prod: Uint512,
-    sum_x: Uint128,
-    n_coins: Uint128,
+    amp_factor: &u64, // Raw A value, e.g., 100
+    d_init: Uint512,  // Current D (D_prev in Python loop)
+    d_prod: Uint512,  // D_P in Python loop
+    sum_x: Uint128,   // S in Python loop
+    n_coins: Uint128, // N_COINS in Python loop
 ) -> Option<Uint512> {
-    // This is the actual Python approach for computing D
-    let ann = amp_factor.checked_mul(n_coins.u128() as u64)?;
-    let a_precision: u64 = 100u64; // Match Python's A_PRECISION
+    // Constants matching Python simulation
+    const A_PRECISION: u64 = 100;
+    let a_precision_u512 = Uint512::from(A_PRECISION);
+    let n_coins_u64 = n_coins.u128() as u64;
 
-    // Use the same formula as Python implementation
-    let numerator = d_init
-        .checked_mul(
-            d_prod
-                .checked_mul(n_coins.into())
-                .unwrap()
-                .checked_add(Uint512::from(
-                    (ann as u128) * sum_x.u128() / (a_precision as u128),
-                ))
-                .unwrap(),
-        )
-        .unwrap();
+    // Calculate ann = A * n * A_PRECISION (Python implementation's ann)
+    // Use .ok() to convert Result to Option at each step
+    let ann_u64 = amp_factor
+        .checked_mul(n_coins_u64)?
+        .checked_mul(A_PRECISION)?;
 
-    let denominator = d_init
-        .checked_mul(Uint512::from(
-            ((ann - a_precision) as u128) * sum_x.u128() / (a_precision as u128),
-        ))
-        .unwrap()
-        .checked_add(
-            d_prod
-                .checked_mul((n_coins.checked_add(1u128.into()).unwrap()).into())
-                .unwrap(),
-        )
-        .unwrap();
+    let ann_u512 = Uint512::from(ann_u64);
+    let sum_x_u512 = Uint512::from(sum_x);
+    let n_coins_u512 = Uint512::from(n_coins);
 
-    // Avoid division by zero (matching Python's guard)
+    // Calculate term1 = Ann * S / A_PRECISION
+    let term1 = ann_u512
+        .checked_mul(sum_x_u512)
+        .ok()?
+        .checked_div(a_precision_u512)
+        .ok()?;
+
+    // Calculate term2 = D_P * N_COINS
+    let term2 = d_prod.checked_mul(n_coins_u512).ok()?;
+
+    // Calculate numerator = (term1 + term2) * D
+    let numerator = term1.checked_add(term2).ok()?.checked_mul(d_init).ok()?;
+
+    // term3 = (Ann - A_PRECISION) * D / A_PRECISION
+    let term3 = ann_u512
+        .checked_sub(a_precision_u512)
+        .ok()?
+        .checked_mul(d_init)
+        .ok()?
+        .checked_div(a_precision_u512)
+        .ok()?;
+
+    // term4 = (N_COINS + 1) * D_P
+    let term4 = n_coins_u512
+        .checked_add(Uint512::one())
+        .ok()?
+        .checked_mul(d_prod)
+        .ok()?;
+
+    // denominator = term3 + term4
+    let denominator = term3.checked_add(term4).ok()?;
+
+    // Avoid division by zero
     if denominator.is_zero() {
-        Some(d_init)
+        Some(d_init) // Return previous D if denominator is zero
     } else {
-        Some(numerator.checked_div(denominator).unwrap())
+        numerator.checked_div(denominator).ok() // Final division with Result -> Option
     }
 }
 
@@ -1105,14 +1124,13 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
     // If the invariant didn't change or decreased, return None
     if d_1 <= d_0 {
         println!("d_1 <= d_0");
-        //TODO: fix hardcoded precision
-        Ok(Some(
-            Uint128::try_from(d_0)?.saturating_mul(Uint128::from(10u128).pow(6)),
-        ))
+        // If invariant does not increase (or decreases, which shouldn't happen with deposits),
+        // mint zero tokens. The previous multiplication was likely incorrect.
+        Ok(Some(Uint128::zero()))
     } else {
         println!("d_1 > d_0");
         // Calculate the proportional LP tokens to mint based on the change in D
-        // The formula is exactly the same as in Python: amount = total_supply * (d_1 - d_0) / d_0
+        // Formula: amount = total_supply * (d_1 - d_0) / d_0
         println!("d_1: {}", d_1);
         println!("d_0: {}", d_0);
         println!("pool_lp_token_total_supply: {}", pool_lp_token_total_supply);
@@ -1120,9 +1138,9 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
             .checked_mul(d_1.checked_sub(d_0)?)?
             .checked_div(d_0)?;
 
-        Ok(Some(
-            Uint128::try_from(amount)?.saturating_mul(Uint128::from(10u128).pow(6)),
-        ))
+        // The calculated `amount` is the number of LP tokens to mint.
+        // Removed the incorrect .saturating_mul(10^6)
+        Ok(Some(Uint128::try_from(amount)?))
     }
 }
 
@@ -1342,13 +1360,13 @@ mod tests {
         let deposits = vec![
             coin(MAX_TOKENS_IN.u128(), "denom1"),
             coin(MAX_TOKENS_IN.u128(), "denom2"),
-            coin(MAX_TOKENS_IN.u128(), "denom4"),
+            coin(MAX_TOKENS_IN.u128(), "denom3"),
         ];
 
         let pool_assets = vec![
             coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom1"),
             coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom2"),
-            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom4"),
+            coin(MAX_TOKENS_IN.u128() + MAX_TOKENS_IN.u128(), "denom3"),
         ];
 
         let pool_token_supply = MAX_TOKENS_IN;
@@ -1357,9 +1375,9 @@ mod tests {
             asset_denoms: vec![
                 "denom1".to_string(),
                 "denom2".to_string(),
-                "denom4".to_string(),
+                "denom3".to_string(),
             ],
-            lp_denom: "denom4".to_string(),
+            lp_denom: "lp_token".to_string(),
             pool_fees: PoolFee {
                 protocol_fee: Fee {
                     share: Decimal::zero(),
