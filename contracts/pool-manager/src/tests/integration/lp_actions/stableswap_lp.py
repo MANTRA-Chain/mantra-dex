@@ -150,6 +150,7 @@ rates = [(10**(18 - d)) for d in decimals]
 
 # Amplification Factor
 A = 85
+SEPARATOR_SIZE = 30
 
 # --- Run Simulation ---
 
@@ -169,7 +170,7 @@ initial_lp_minted = pool.add_liquidity(initial_deposit)
 print(f"New Balances: {pool.balances}")
 print(f"New Total Supply (LP Tokens): {pool.total_supply}")
 print(f"LP Minted: {initial_lp_minted}")
-print("-" * 30)
+print("-" * SEPARATOR_SIZE)
 
 # Store state after initial deposit for Test Case 2
 initial_state_balances = list(pool.balances)
@@ -192,7 +193,7 @@ lp_minted_case1 = pool.add_liquidity(deposit_case1)
 print(f"New Balances: {pool.balances}")
 print(f"New Total Supply: {pool.total_supply}")
 print(f"LP Minted in Case 1: {lp_minted_case1}")
-print("-" * 30)
+print("-" * SEPARATOR_SIZE)
 
 
 print("--- Test Case 2: Deposit uluna (6 dec) + uusd (6 dec) ---")
@@ -215,7 +216,7 @@ lp_minted_case2 = pool_case2.add_liquidity(deposit_case2)
 print(f"New Balances: {pool_case2.balances}")
 print(f"New Total Supply: {pool_case2.total_supply}")
 print(f"LP Minted in Case 2: {lp_minted_case2}")
-print("-" * 30)
+print("-" * SEPARATOR_SIZE)
 
 
 print("--- Summary ---")
