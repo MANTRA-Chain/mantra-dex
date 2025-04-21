@@ -148,8 +148,8 @@ decimals = [6, 6, 18]
 # Calculate rates (10**(18 - decimals))
 rates = [(10**(18 - d)) for d in decimals]
 
-# Amplification Factor - update to match Rust's default value
-A = 100
+# Amplification Factor
+A = 85
 
 # --- Run Simulation ---
 
