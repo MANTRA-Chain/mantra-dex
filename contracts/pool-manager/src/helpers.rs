@@ -1058,21 +1058,25 @@ fn compute_next_d(
     let sum_x_u512 = Uint512::from(sum_x);
     let n_coins_u512 = Uint512::from(n_coins);
 
-    // Calculate term1 = Ann * S / A_PRECISION
-    let term1 = ann_u512
+    // Calculate amp_scaled_sum = Ann * S / A_PRECISION
+    let amp_scaled_sum = ann_u512
         .checked_mul(sum_x_u512)
         .ok()?
         .checked_div(a_precision_u512)
         .ok()?;
 
-    // Calculate term2 = D_P * N_COINS
-    let term2 = d_prod.checked_mul(n_coins_u512).ok()?;
+    // Calculate prod_times_n_coins = D_P * N_COINS
+    let prod_times_n_coins = d_prod.checked_mul(n_coins_u512).ok()?;
 
-    // Calculate numerator = (term1 + term2) * D
-    let numerator = term1.checked_add(term2).ok()?.checked_mul(d_init).ok()?;
+    // Calculate numerator = (amp_scaled_sum + prod_times_n_coins) * D
+    let numerator = amp_scaled_sum
+        .checked_add(prod_times_n_coins)
+        .ok()?
+        .checked_mul(d_init)
+        .ok()?;
 
-    // term3 = (Ann - A_PRECISION) * D / A_PRECISION
-    let term3 = ann_u512
+    // amp_adjusted_d = (Ann - A_PRECISION) * D / A_PRECISION
+    let amp_adjusted_d = ann_u512
         .checked_sub(a_precision_u512)
         .ok()?
         .checked_mul(d_init)
@@ -1080,15 +1084,15 @@ fn compute_next_d(
         .checked_div(a_precision_u512)
         .ok()?;
 
-    // term4 = (N_COINS + 1) * D_P
-    let term4 = n_coins_u512
+    // prod_times_n_plus_one = (N_COINS + 1) * D_P
+    let prod_times_n_plus_one = n_coins_u512
         .checked_add(Uint512::one())
         .ok()?
         .checked_mul(d_prod)
         .ok()?;
 
-    // denominator = term3 + term4
-    let denominator = term3.checked_add(term4).ok()?;
+    // denominator = amp_adjusted_d + prod_times_n_plus_one
+    let denominator = amp_adjusted_d.checked_add(prod_times_n_plus_one).ok()?;
 
     // Avoid division by zero
     if denominator.is_zero() {

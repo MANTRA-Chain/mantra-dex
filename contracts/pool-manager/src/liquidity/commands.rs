@@ -30,6 +30,9 @@ use crate::state::{
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
 
+// Precision factor for stableswap calculations
+const PRECISION: u32 = 6;
+
 #[allow(clippy::too_many_arguments)]
 pub fn provide_liquidity(
     deps: DepsMut,
@@ -257,9 +260,8 @@ pub fn provide_liquidity(
                     // The D calculation has been updated to match the Python simulation
                     let d_0 = compute_d(amp_factor, &deposits).unwrap();
                     println!("d_0: {}", d_0);
-                    //TODO: fix hardcoded precision
-                    let mut share =
-                        Uint128::try_from(d_0)?.saturating_mul(Uint128::from(10u128).pow(6));
+                    let mut share = Uint128::try_from(d_0)?
+                        .saturating_mul(Uint128::from(10u128).pow(PRECISION));
                     share = share.saturating_sub(MINIMUM_LIQUIDITY_AMOUNT);
 
                     println!("share: {}", share);
