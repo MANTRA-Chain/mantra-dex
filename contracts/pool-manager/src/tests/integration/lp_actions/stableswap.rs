@@ -1143,7 +1143,7 @@ fn setup_stable_swap() -> (TestingSuite, Addr, Addr, String) {
     let uweth_amount = 2_000_000_000_000u128 * 10u128.pow(18);
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(uluna_amount, "uluna".to_string()), // 2B
+            coin(uluna_amount, "uluna".to_string()), // 2T
             coin(uusd_amount, "uusd".to_string()),   // 2T
             coin(uweth_amount, "uweth".to_string()), // 2T
             coin(10_000u128, "uom".to_string()),
@@ -1290,13 +1290,21 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
 
     // Get initial LP shares amount
     let addr = creator.to_string();
+    let contract = suite.pool_manager_addr.to_string();
     let initial_lp_supply = RefCell::new(Uint128::zero());
-    suite.query_balance(&addr, lp_denom.clone(), |result| {
-        let amount = result.unwrap().amount;
-        println!("Initial LP Supply: {}", amount);
-        println!();
-        *initial_lp_supply.borrow_mut() = amount;
-    });
+    suite
+        .query_balance(&addr, lp_denom.clone(), |result| {
+            let amount = result.unwrap().amount;
+            *initial_lp_supply.borrow_mut() = amount;
+        })
+        .query_balance(&contract, lp_denom.clone(), |result| {
+            let amount = result.unwrap().amount;
+            let x = initial_lp_supply.borrow_mut().clone();
+            *initial_lp_supply.borrow_mut() = amount + x;
+
+            println!("Initial LP Supply: {}", *initial_lp_supply.borrow());
+            println!();
+        });
 
     // Case 1: Deposit uluna + uweth
     println!(
@@ -1516,12 +1524,8 @@ fn handling_of_lp_shares_exotic_amounts() {
             let expected = 9486810555483u128;
             let tolerance = expected / 1000; // 0.1%
             assert!(
-                new_lp_balance.u128() >= expected - tolerance,
-                "LP balance too low"
-            );
-            assert!(
-                new_lp_balance.u128() <= expected + tolerance,
-                "LP balance too high"
+                expected.abs_diff(new_lp_balance.u128()) <= tolerance,
+                "LP balance exceeds tolerance"
             );
         });
 
@@ -1560,12 +1564,8 @@ fn handling_of_lp_shares_exotic_amounts() {
             let expected = 3168594725531412u128;
             let tolerance = expected / 1000; // 0.1%
             assert!(
-                new_lp_balance.u128() >= expected - tolerance,
-                "LP balance too low"
-            );
-            assert!(
-                new_lp_balance.u128() <= expected + tolerance,
-                "LP balance too high"
+                expected.abs_diff(new_lp_balance.u128()) <= tolerance,
+                "LP balance exceeds tolerance"
             );
         });
 
@@ -1604,12 +1604,102 @@ fn handling_of_lp_shares_exotic_amounts() {
             let expected = 9486810558699405934993014u128;
             let tolerance = expected / 1000; // 0.1%
             assert!(
-                new_lp_balance.u128() >= expected - tolerance,
-                "LP balance too low"
+                expected.abs_diff(new_lp_balance.u128()) <= tolerance,
+                "LP balance exceeds tolerance"
             );
+        });
+}
+
+#[test]
+// similar to the above, but with exotic amounts
+fn handling_of_lp_shares_extreme_cases() {
+    let (mut suite, _, user, lp_denom) = setup_stable_swap();
+    // query the pool assets
+    let pool_assets: RefCell<PoolsResponse> = RefCell::new(PoolsResponse { pools: vec![] });
+    suite.query_pools(
+        Some("o.uluna.uusd.uweth".to_string()),
+        None,
+        None,
+        |result| {
+            pool_assets.borrow_mut().pools = result.unwrap().pools;
+        },
+    );
+
+    println!("nothing (1)");
+    suite
+        .provide_liquidity(
+            &user,
+            "o.uluna.uusd.uweth".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::new(1),
+                },
+                Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::new(1),
+                },
+                Coin {
+                    denom: "uweth".to_string(),
+                    amount: Uint128::new(1000000000),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&user.to_string(), lp_denom.clone(), |result| {
+            let new_lp_balance = result.unwrap().amount;
+            println!("new_lp_balance: {}", new_lp_balance);
+            let expected = 3168594725531412u128;
+            let tolerance = expected / 1000; // 0.1%
             assert!(
-                new_lp_balance.u128() <= expected + tolerance,
-                "LP balance too high"
+                expected.abs_diff(new_lp_balance.u128()) <= tolerance,
+                "LP balance exceeds tolerance"
+            );
+        });
+
+    println!("high amount (200T)");
+    suite
+        .provide_liquidity(
+            &user,
+            "o.uluna.uusd.uweth".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: "uluna".to_string(),
+                    amount: Uint128::from(200_000_000_000_000u128 * 10u128.pow(6)),
+                },
+                Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::from(200_000_000_000_000u128 * 10u128.pow(6)),
+                },
+                Coin {
+                    denom: "uweth".to_string(),
+                    amount: Uint128::from(200_000_000_000_000u128 * 10u128.pow(18)),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_balance(&user.to_string(), lp_denom.clone(), |result| {
+            let new_lp_balance = result.unwrap().amount;
+            println!("new_lp_balance: {}", new_lp_balance);
+            let expected = 9486810558699405934993014u128;
+            let tolerance = expected / 1000; // 0.1%
+            assert!(
+                expected.abs_diff(new_lp_balance.u128()) <= tolerance,
+                "LP balance exceeds tolerance"
             );
         });
 }

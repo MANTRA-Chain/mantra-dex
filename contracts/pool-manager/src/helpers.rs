@@ -35,7 +35,6 @@ where
     for _ in 0..max_iterations {
         let previous = current.clone();
         current = next_value_fn(previous.clone())?;
-
         if current.clone() >= previous.clone() {
             if current.clone().sub(previous) <= convergence_threshold {
                 return Ok(current);
@@ -250,11 +249,7 @@ fn calculate_d_core(amp_factor: &u64, deposits: &[Uint128], n_coins: Uint128) ->
             d_prev = d;
             d = compute_next_d(amp_factor, d, d_prod, sum_x, n_coins).unwrap();
             // Equality with the precision of 1
-            if d > d_prev {
-                if d.checked_sub(d_prev).unwrap() <= Uint512::one() {
-                    break;
-                }
-            } else if d_prev.checked_sub(d).unwrap() <= Uint512::one() {
+            if d.abs_diff(d_prev) <= Uint512::one() {
                 break;
             }
         }
@@ -1378,7 +1373,7 @@ mod tests {
                 extra_fees: vec![],
             },
 
-            pool_type: PoolType::ConstantProduct,
+            pool_type: PoolType::StableSwap { amp: 85 },
             status: PoolStatus::default(),
             asset_decimals: vec![6, 6, 6],
             assets: pool_assets.clone(),
@@ -1627,7 +1622,7 @@ mod tests {
                 },
                 asset_decimals: vec![6, 6, 6],
                 assets: new_pool_assets.clone(),
-                pool_type: PoolType::ConstantProduct,
+                pool_type: PoolType::StableSwap {amp : 85},
                 status: PoolStatus::default(),
             };
 
@@ -1783,11 +1778,12 @@ mod tests {
         // Add 0.5 of each token
 
         let new_pool_assets = vec![
-            coin(1_5u128 * 10u128.pow(5), "uusd"), // 1.5 uusd with 6 decimals
-            coin(1_5u128 * 10u128.pow(17), "uweth"), // 1.5 uweth with 18 decimals
+            coin(1_5u128 * 10u128.pow(6), "uusd"), // 1.5 uusd with 6 decimals
+            coin(1_5u128 * 10u128.pow(18), "uweth"), // 1.5 uweth with 18 decimals
         ];
 
         let amp_factor = 100u64;
+        // let total_supply = Uint128::from(2u128 * 10u128.pow(18)); // Initial LP supply
         let total_supply = Uint128::from(2u128 * 10u128.pow(6)); // Initial LP supply
 
         let pool_info = PoolInfo {
@@ -1826,11 +1822,11 @@ mod tests {
         .unwrap();
 
         // Since we added 50% more of each token, we should get approximately 50% more LP tokens
+        // let expected_mint = Uint128::from(5u128 * 10u128.pow(17)); // 50% of total_supply
+        // let tolerance = Uint128::from(5u128 * 10u128.pow(15)); // Allow 1% difference
         let expected_mint = Uint128::from(1u128 * 10u128.pow(6)); // 50% of total_supply
-        let tolerance = Uint128::from(1u128 * 10u128.pow(6)); // Allow 1% difference
-
-        assert!(mint_amount >= expected_mint.checked_sub(tolerance).unwrap());
-        assert!(mint_amount <= expected_mint.checked_add(tolerance).unwrap());
+        let tolerance = Uint128::from(1u128 * 10u128.pow(4)); // Allow 1% difference
+        assert!(mint_amount.abs_diff(expected_mint) <= tolerance);
     }
 }
 
