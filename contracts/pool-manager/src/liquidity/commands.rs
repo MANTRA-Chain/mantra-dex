@@ -259,12 +259,9 @@ pub fn provide_liquidity(
                     // In Python implementation, the initial LP tokens minted is D1 (the invariant)
                     // The D calculation has been updated to match the Python simulation
                     let d_0 = compute_d(amp_factor, &deposits).unwrap();
-                    println!("d_0: {}", d_0);
                     let mut share = Uint128::try_from(d_0)?
                         .saturating_mul(Uint128::from(10u128).pow(PRECISION));
                     share = share.saturating_sub(MINIMUM_LIQUIDITY_AMOUNT);
-
-                    println!("share: {}", share);
 
                     // Ensure we have at least MINIMUM_LIQUIDITY_AMOUNT to be minted
                     ensure!(
@@ -272,8 +269,7 @@ pub fn provide_liquidity(
                         ContractError::InvalidInitialLiquidityAmount(MINIMUM_LIQUIDITY_AMOUNT,)
                     );
 
-                    // Mint MINIMUM_LIQUIDITY_AMOUNT tokens to the contract as protection against donation
-                    // But do not subtract it from share to match Python implementation
+                    // mint the lp tokens to the contract
                     messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                         liquidity_token.clone(),
                         &env.contract.address,
@@ -283,9 +279,7 @@ pub fn provide_liquidity(
 
                     compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
-                        // pool_assets hold the balances before the deposit was made
                         &pool_assets,
-                        // add the deposit to the pool_assets to calculate the new balances
                         &add_coins(pool_assets.clone(), deposits.clone())?,
                         total_shares,
                         &pool,

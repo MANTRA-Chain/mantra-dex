@@ -290,10 +290,6 @@ fn normalize_amount(amount: Uint128, from_decimals: u8, to_decimals: u8) -> Opti
 /// 4. Properly handling rate multipliers for different token decimals
 #[allow(clippy::unwrap_used)]
 pub fn compute_d(amp_factor: &u64, deposits: &[Coin]) -> Option<Uint512> {
-    // In the Python simulation, for mixed decimals we use rate multipliers
-    // Rate multipliers are 10**(18 - decimals) where 18 is max decimals
-    // Since we don't have decimal info here, we'll use compute_d_with_pool_info
-    // when decimal precision matters.
     let n_coins = Uint128::from(deposits.len() as u128);
     let deposits: Vec<Uint128> = deposits.iter().map(|coin| coin.amount).collect();
     calculate_d_core(amp_factor, &deposits, n_coins)
@@ -1037,11 +1033,11 @@ pub fn get_asset_indexes_in_pool(
 
 #[allow(clippy::unwrap_used)]
 fn compute_next_d(
-    amp_factor: &u64, // Raw A value, e.g., 100
-    d_init: Uint512,  // Current D (D_prev in Python loop)
-    d_prod: Uint512,  // D_P in Python loop
-    sum_x: Uint128,   // S in Python loop
-    n_coins: Uint128, // N_COINS in Python loop
+    amp_factor: &u64,
+    d_init: Uint512,
+    d_prod: Uint512,
+    sum_x: Uint128,
+    n_coins: Uint128,
 ) -> Option<Uint512> {
     // Constants matching Python simulation
     const A_PRECISION: u64 = 100;
@@ -1817,7 +1813,6 @@ mod tests {
         ];
 
         let amp_factor = 100u64;
-        // let total_supply = Uint128::from(2u128 * 10u128.pow(18)); // Initial LP supply
         let total_supply = Uint128::from(2u128 * 10u128.pow(6)); // Initial LP supply
 
         let pool_info = PoolInfo {

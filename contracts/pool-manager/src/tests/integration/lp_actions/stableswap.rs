@@ -1605,13 +1605,11 @@ fn handling_of_lp_shares_exotic_amounts() {
             },
         ],
         |result| {
-            // This is expected to fail with extreme values
-            if let Ok(_) = result {
-                println!("High amount deposit succeeded unexpectedly");
+            if result.is_ok() {
+                println!("High amount deposit succeeded");
             } else {
-                println!("High amount deposit failed as expected with extreme values");
+                panic!("High amount deposit failed");
             }
-            // Don't fail the test regardless of outcome
         },
     );
 
@@ -1695,7 +1693,7 @@ fn handling_of_lp_shares_extreme_cases() {
         ],
         |result| {
             // This is expected to fail with extreme values
-            if let Ok(_) = result {
+            if result.is_ok() {
                 println!("High amount deposit succeeded unexpectedly");
             } else {
                 println!("High amount deposit failed as expected with extreme values");
