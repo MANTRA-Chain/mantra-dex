@@ -22,16 +22,14 @@ use crate::{
 // break it down into smaller modules which house some things like swap, liquidity etc
 use crate::contract::SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID;
 use crate::helpers::{
-    aggregate_outgoing_fees, compute_d, compute_lp_mint_amount_for_stableswap_deposit,
+    aggregate_outgoing_fees, compute_lp_mint_amount_for_stableswap_deposit,
+    get_minimum_liquidity_amount_stableswap,
 };
 use crate::queries::query_simulation;
 use crate::state::{
     LiquidityProvisionData, SingleSideLiquidityProvisionBuffer,
     SINGLE_SIDE_LIQUIDITY_PROVISION_BUFFER,
 };
-
-// Precision factor for stableswap calculations
-const PRECISION: u32 = 6;
 
 #[allow(clippy::too_many_arguments)]
 pub fn provide_liquidity(
@@ -256,25 +254,15 @@ pub fn provide_liquidity(
                         ContractError::AssetMismatch
                     );
 
-                    // In Python implementation, the initial LP tokens minted is D1 (the invariant)
-                    // The D calculation has been updated to match the Python simulation
-                    let d_0 = compute_d(amp_factor, &deposits).unwrap();
-                    let mut share = Uint128::try_from(d_0)?
-                        .saturating_mul(Uint128::from(10u128).pow(PRECISION));
-                    share = share.saturating_sub(MINIMUM_LIQUIDITY_AMOUNT);
+                    let min_decimals = *pool.asset_decimals.iter().min().unwrap();
+                    let max_decimals = *pool.asset_decimals.iter().max().unwrap();
 
-                    // Ensure we have at least MINIMUM_LIQUIDITY_AMOUNT to be minted
-                    ensure!(
-                        share >= MINIMUM_LIQUIDITY_AMOUNT,
-                        ContractError::InvalidInitialLiquidityAmount(MINIMUM_LIQUIDITY_AMOUNT,)
-                    );
-
-                    // mint the lp tokens to the contract
+                    // mint the minimum lp tokens to the contract
                     messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                         liquidity_token.clone(),
                         &env.contract.address,
                         &env.contract.address,
-                        MINIMUM_LIQUIDITY_AMOUNT,
+                        get_minimum_liquidity_amount_stableswap(min_decimals, max_decimals),
                     )?);
 
                     compute_lp_mint_amount_for_stableswap_deposit(

@@ -1119,23 +1119,6 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
         return Ok(Some(Uint128::zero()));
     }
 
-    // For initial deposit (when no LP tokens exist yet)
-    if pool_lp_token_total_supply.is_zero() {
-        // Minimum required for initial liquidity
-        let minimum_liquidity = MINIMUM_LIQUIDITY_AMOUNT;
-
-        // Ensure the deposit is greater than minimum_liquidity
-        if total_deposit_amount <= minimum_liquidity {
-            return Err(ContractError::InvalidInitialLiquidityAmount(
-                minimum_liquidity,
-            ));
-        }
-
-        // Use the original calculation which works for all tests
-        let lp_amount = total_deposit_amount.checked_sub(minimum_liquidity)?;
-        return Ok(Some(lp_amount));
-    }
-
     // For subsequent deposits, use invariant calculation for all cases
     // This ensures proper handling of mixed decimals
     let d_0 = compute_d_with_pool_info(amp_factor, old_pool_assets, pool_info)
@@ -1148,6 +1131,23 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
         return Ok(Some(Uint128::zero()));
     }
 
+    // For initial deposit (when no LP tokens exist yet)
+    if pool_lp_token_total_supply.is_zero() {
+        let min_decimals = *pool_info.asset_decimals.iter().min().unwrap();
+        let max_decimals = *pool_info.asset_decimals.iter().max().unwrap();
+
+        let lp_amount = d_1.saturating_sub(Uint512::from(get_minimum_liquidity_amount_stableswap(
+            min_decimals,
+            max_decimals,
+        )));
+        ensure!(
+            lp_amount > Uint512::zero(),
+            ContractError::InvalidInitialLiquidityAmount(MINIMUM_LIQUIDITY_AMOUNT)
+        );
+
+        return Ok(Some(Uint128::try_from(lp_amount)?));
+    }
+
     // Formula: amount = total_supply * (d_1 - d_0) / d_0
     // This properly handles mixed decimals since d_0 and d_1 are normalized
     let amount = Uint512::from(pool_lp_token_total_supply)
@@ -1155,6 +1155,11 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
         .checked_div(d_0)?;
 
     Ok(Some(Uint128::try_from(amount)?))
+}
+
+/// Gets the minimum liquidity amount for a stableswap pool, scaled to the given precision.
+pub fn get_minimum_liquidity_amount_stableswap(min_precision: u8, max_precision: u8) -> Uint128 {
+    normalize_amount(MINIMUM_LIQUIDITY_AMOUNT, min_precision, max_precision).unwrap()
 }
 
 /// Compute the swap amount `y` in proportion to `x`.
