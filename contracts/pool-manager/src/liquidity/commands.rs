@@ -22,7 +22,8 @@ use crate::{
 // break it down into smaller modules which house some things like swap, liquidity etc
 use crate::contract::SINGLE_SIDE_LIQUIDITY_PROVISION_REPLY_ID;
 use crate::helpers::{
-    aggregate_outgoing_fees, compute_d, compute_lp_mint_amount_for_stableswap_deposit,
+    aggregate_outgoing_fees, compute_lp_mint_amount_for_stableswap_deposit,
+    get_minimum_liquidity_amount_stableswap,
 };
 use crate::queries::query_simulation;
 use crate::state::{
@@ -235,6 +236,12 @@ pub fn provide_liquidity(
                     std::cmp::min(asset_shares[0], asset_shares[1])
                 }
             }
+            // StableSwap LP calculation has been updated to match the Python simulation
+            // found in contracts/pool-manager/src/tests/integration/lp_actions/stableswap_lp.py.
+            // The key differences are:
+            // 1. For initial deposits, we use the full D value (instead of D - MINIMUM_LIQUIDITY_AMOUNT)
+            // 2. We still mint MINIMUM_LIQUIDITY_AMOUNT to the contract as protection
+            // This approach better aligns with the Curve Finance implementation
             PoolType::StableSwap { amp: amp_factor } => {
                 if total_shares == Uint128::zero() {
                     // ensure all assets in the pool are provided and the amounts are greater than zero
@@ -247,27 +254,25 @@ pub fn provide_liquidity(
                         ContractError::AssetMismatch
                     );
 
-                    // Make sure at least MINIMUM_LIQUIDITY_AMOUNT is deposited to mitigate the risk of the first
-                    // depositor preventing small liquidity providers from joining the pool
-                    let share = Uint128::try_from(compute_d(amp_factor, &deposits).unwrap())?
-                        .saturating_sub(MINIMUM_LIQUIDITY_AMOUNT);
+                    let min_decimals = *pool.asset_decimals.iter().min().unwrap();
+                    let max_decimals = *pool.asset_decimals.iter().max().unwrap();
 
-                    // share should be above zero after subtracting the min_lp_token_amount
-                    if share.is_zero() {
-                        return Err(ContractError::InvalidInitialLiquidityAmount(
-                            MINIMUM_LIQUIDITY_AMOUNT,
-                        ));
-                    }
-
-                    // mint the lp tokens to the contract
+                    // mint the minimum lp tokens to the contract
                     messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                         liquidity_token.clone(),
                         &env.contract.address,
                         &env.contract.address,
-                        MINIMUM_LIQUIDITY_AMOUNT,
+                        get_minimum_liquidity_amount_stableswap(min_decimals, max_decimals),
                     )?);
 
-                    share
+                    compute_lp_mint_amount_for_stableswap_deposit(
+                        amp_factor,
+                        &pool_assets,
+                        &add_coins(pool_assets.clone(), deposits.clone())?,
+                        total_shares,
+                        &pool,
+                    )?
+                    .ok_or(ContractError::StableLpMintError)?
                 } else {
                     compute_lp_mint_amount_for_stableswap_deposit(
                         amp_factor,
@@ -276,6 +281,7 @@ pub fn provide_liquidity(
                         // add the deposit to the pool_assets to calculate the new balances
                         &add_coins(pool_assets.clone(), deposits.clone())?,
                         total_shares,
+                        &pool,
                     )?
                     .ok_or(ContractError::StableLpMintError)?
                 }

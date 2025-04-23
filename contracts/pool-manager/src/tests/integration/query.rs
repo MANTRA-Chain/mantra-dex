@@ -162,9 +162,8 @@ fn simulation_queries_fees_verification() {
             for event in result.unwrap().events {
                 if event.ty == "wasm" {
                     for attribute in event.attributes {
-                        match attribute.key.as_str() {
-                            "return_amount" => return_amount = attribute.value,
-                            _ => {}
+                        if attribute.key.as_str() == "return_amount" {
+                            return_amount = attribute.value
                         }
                     }
                 }
@@ -222,9 +221,8 @@ fn simulation_queries_fees_verification() {
             for event in result.unwrap().events {
                 if event.ty == "wasm" {
                     for attribute in event.attributes {
-                        match attribute.key.as_str() {
-                            "return_amount" => return_amount = attribute.value,
-                            _ => {}
+                        if attribute.key.as_str() == "return_amount" {
+                            return_amount = attribute.value
                         }
                     }
                 }
@@ -437,9 +435,8 @@ fn simulate_swap_operations_query_verification() {
             for event in result.unwrap().events {
                 if event.ty == "wasm" {
                     for attribute in event.attributes {
-                        match attribute.key.as_str() {
-                            "return_amount" => return_amount = attribute.value,
-                            _ => {}
+                        if attribute.key.as_str() == "return_amount" {
+                            return_amount = attribute.value
                         }
                     }
                 }
@@ -897,9 +894,8 @@ fn reverse_simulate_swap_operations_query_verification() {
             for event in result.unwrap().events {
                 if event.ty == "wasm" {
                     for attribute in event.attributes {
-                        match attribute.key.as_str() {
-                            "return_amount" => return_amount = attribute.value,
-                            _ => {}
+                        if attribute.key.as_str() == "return_amount" {
+                            return_amount = attribute.value
                         }
                     }
                 }
