@@ -265,20 +265,14 @@ pub fn provide_liquidity(
                         get_minimum_liquidity_amount_stableswap(min_decimals, max_decimals),
                     )?);
                 }
-                let share = compute_lp_mint_amount_for_stableswap_deposit(
+                compute_lp_mint_amount_for_stableswap_deposit(
                     amp_factor,
-                    // pool_assets hold the balances before the deposit was made
                     &pool_assets,
-                    &deposits,
+                    &add_coins(pool_assets.clone(), deposits.clone())?,
                     total_shares,
                     &pool,
                 )?
-                .ok_or(ContractError::StableLpMintError)?;
-
-                // Update pool with deposits
-                pool_assets = add_coins(pool_assets.clone(), deposits.clone())?;
-
-                share
+                .ok_or(ContractError::StableLpMintError)?
             }
         };
 
