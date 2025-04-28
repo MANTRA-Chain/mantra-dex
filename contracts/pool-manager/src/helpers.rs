@@ -277,6 +277,26 @@ fn normalize_amount(amount: Uint128, from_decimals: u8, to_decimals: u8) -> Opti
     }
 }
 
+pub fn normalize_amount_512(
+    amount: Uint512,
+    from_decimals: u8,
+    to_decimals: u8,
+) -> Option<Uint512> {
+    if from_decimals > to_decimals {
+        amount
+            .checked_div(Uint512::from(
+                10u128.pow((from_decimals - to_decimals) as u32),
+            ))
+            .ok()
+    } else {
+        amount
+            .checked_mul(Uint512::from(
+                10u128.pow((to_decimals - from_decimals) as u32),
+            ))
+            .ok()
+    }
+}
+
 /// Computes D invariant for stableswap pools.
 ///
 /// This implementation has been updated to match the Python simulation found in
@@ -315,18 +335,21 @@ pub fn compute_d_with_pool_info(
     let mut normalized_deposits = Vec::with_capacity(deposits.len());
     for coin in deposits {
         // Find the decimal precision for this coin from pool_info
-        let decimals = pool_info
-            .asset_denoms
-            .iter()
-            .position(|denom| denom == &coin.denom)
-            .map(|idx| pool_info.asset_decimals[idx])
-            .unwrap();
-
+        let decimals = find_denom_decimals(pool_info, coin.denom.as_str()).unwrap();
         let normalized = normalize_amount(coin.amount, decimals, max_decimals)?;
         normalized_deposits.push(normalized);
     }
 
     calculate_d_core(amp_factor, &normalized_deposits, n_coins)
+}
+
+/// Get the decimal precision for a given denom from pool_info
+pub fn find_denom_decimals(pool_info: &PoolInfo, denom: &str) -> Option<u8> {
+    pool_info
+        .asset_denoms
+        .iter()
+        .position(|d| d == denom)
+        .map(|idx| pool_info.asset_decimals[idx])
 }
 
 /// Determines the direction of `offer_pool` -> `ask_pool`.
@@ -1152,6 +1175,7 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
         // Should never happen, but guard anyway
         return Ok(Some(Uint128::zero()));
     }
+    println!("d_0: {}, d_1: {}", d_0, d_1);
 
     // ────────────────────────────────────────────────────────
     // 3. Dynamic-fee calculation (SKIPPED for first liquidity)
@@ -1164,20 +1188,23 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
         let base_fee = Decimal256::from(pool_info.pool_fees.swap_fee.share)
             .checked_mul(Decimal256::from_ratio(n_coins as u128, 1u128))?
             .checked_div(Decimal256::from_ratio((4 * (n_coins - 1)) as u128, 1u128))?;
+        println!("base_fee: {}", base_fee);
 
-        // Average invariant (ȳ) used by the dynamic-fee curve
+        // Average invariant (ȳ) used by the dynamic-fee curve
         let ys = d_0
             .checked_add(d_1)?
             .checked_div(Uint512::from(n_coins as u128))?;
 
         // Pre-allocate fees so we can index safely
         let mut fees = vec![Decimal256::zero(); n_coins];
+        let max_precision = pool_info.asset_decimals.iter().max().unwrap();
 
         for i in 0..n_coins {
             // Ideal post-deposit balance of coin i
             let ideal_balance = d_1
                 .checked_mul(Uint512::from(old_pool_assets[i].amount))?
                 .checked_div(d_0)?;
+            println!("ideal_balance: {}", ideal_balance);
 
             // Absolute difference vs. actual balance
             let difference: Uint256 = Uint512::from(new_pool_assets[i].amount)
@@ -1185,14 +1212,41 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
                 .try_into()?;
 
             // xₛ = coin i balance in decimal form (with proper precision)
-            let xs = Decimal256::decimal_with_precision(
+            //
+            let denom = new_pool_assets[i].denom.clone();
+            let asset_decimals = find_denom_decimals(pool_info, denom.as_str())
+                .ok_or(ContractError::StableLpMintError)?;
+            println!(
+                "new_pool_assets[{}].amount: {}",
+                i, new_pool_assets[i].amount
+            );
+            let normalized_new_pool_assets_i_amount = normalize_amount(
                 new_pool_assets[i].amount,
-                pool_info.asset_decimals[i],
+                asset_decimals,
+                max_precision.clone(),
+            )
+            .ok_or(ContractError::StableLpMintError)?;
+            println!(
+                "normalized_new_pool_assets_i_amount: {}",
+                normalized_new_pool_assets_i_amount
+            );
+            let xs = Decimal256::decimal_with_precision(
+                normalized_new_pool_assets_i_amount,
+                asset_decimals,
             )?;
+            println!("xs: {}", xs);
+            let normalized_ys = normalize_amount_512(ys, asset_decimals, max_precision.clone())
+                .ok_or(ContractError::StableLpMintError)?;
+            println!("ys: {}", ys);
+            println!("normalized_ys: {}", normalized_ys);
 
             // Dynamic fee for this coin
             let dynamic_fee_i = dynamic_fee(xs, ys, base_fee)?;
-            fees[i] = dynamic_fee_i.checked_mul(Decimal256::from_ratio(difference, 1u128))?;
+            println!("dynamic_fee_i: {}", dynamic_fee_i);
+            println!("difference: {}", difference);
+
+            fees[i] = dynamic_fee_i.saturating_mul(Decimal256::from_ratio(difference, 1u128));
+            println!("fees[i]: {}", fees[i]);
 
             // Subtract the fee from the user’s deposit so it remains in the pool
             adjusted_new_pool_assets[i].amount = Uint256::from(adjusted_new_pool_assets[i].amount)
@@ -1259,6 +1313,7 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit2(
     todo!("remove this function!!!");
 }
 
+// TODO: multiplying a 512 by a 256 and trying to fit it back into a 256 is probably going to break.
 fn dynamic_fee(
     xpi: Decimal256,
     xpj: Uint512,
@@ -1272,8 +1327,15 @@ fn dynamic_fee(
 
     let xpj_256: Uint256 = xpj.try_into()?;
     let xpj = Decimal256::from_ratio(xpj_256, 1u128);
-    let xps2 = xpi.checked_add(xpj)?.pow(2);
+    let xps2 = xpi.checked_add(xpj)?;
+    // let xps2 = xpi.checked_add(xpj)?.pow(2);
+    println!("xps2: {}", xps2);
+    println!("xpi: {}", xpi);
+    println!("xpj: {}", xpj);
+
     let numerator = offpeg_fee_multiplier.checked_mul(fee)?;
+    println!("numerator: {}", numerator);
+    println!("offpeg_fee_multiplier: {}", offpeg_fee_multiplier);
     let denominator = Decimal256::one().checked_add(
         offpeg_fee_multiplier
             .checked_sub(Decimal256::one())?
