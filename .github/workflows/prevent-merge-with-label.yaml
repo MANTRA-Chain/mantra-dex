@@ -1,0 +1,24 @@
+name: Prevent merge with 'do not merge' label
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - labeled
+      - unlabeled
+      - synchronize
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  prevent-merge:
+    if: contains(github.event.pull_request.labels.*.name, 'do not merge')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if PR has 'do not merge' label
+        run: |
+          echo "PR flagged as do not merge, merge not allowed until label is removed."
+          exit 1
