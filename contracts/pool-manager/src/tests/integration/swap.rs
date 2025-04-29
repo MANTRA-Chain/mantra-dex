@@ -2882,24 +2882,17 @@ fn setup_4pool_different_decimals(
 
 #[test]
 fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
+    println!("TEST providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals =================================================");
+    let usdc_decimals = 6u8;
+    let usdt_decimals = 6u8;
+    let initial_balance = 300_000_000_000_000_000000000000000000u128;
+
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(
-                300_000_000_000_000_000000000000000000u128,
-                "uusdt".to_string(),
-            ),
-            coin(
-                300_000_000_000_000_000000000000000000u128,
-                "uusdc".to_string(),
-            ),
-            coin(
-                300_000_000_000_000_000000000000000000u128,
-                "uusd".to_string(),
-            ),
-            coin(
-                300_000_000_000_000_000000000000000000u128,
-                "uom".to_string(),
-            ),
+            coin(initial_balance, "uusdt".to_string()),
+            coin(initial_balance, "uusdc".to_string()),
+            coin(initial_balance, "uusd".to_string()),
+            coin(initial_balance, "uom".to_string()),
         ],
         StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
     );
@@ -2921,12 +2914,10 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
     };
 
     // Create a pool
-    let uusdc_decimals = 6u8;
-    let uusdt_decimals = 6u8;
     suite.instantiate_default().create_pool(
         &alice,
         asset_infos,
-        vec![uusdc_decimals, uusdt_decimals],
+        vec![usdc_decimals, usdt_decimals],
         pool_fees,
         PoolType::StableSwap { amp: 100 },
         Some("uusdc.uusdt".to_string()),
@@ -2937,11 +2928,9 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
     );
 
     // Initial liquidity
-
-    let alice_initial_uusdt_liquidity =
-        Uint128::from(1_000u128 * 10u128.pow(uusdt_decimals as u32));
-    let alice_initial_uusdc_liquidity =
-        Uint128::from(1_000u128 * 10u128.pow(uusdc_decimals as u32));
+    let alice_initial_uusdt_liquidity = Uint128::from(1_000u128 * 10u128.pow(usdt_decimals as u32));
+    let alice_initial_uusdc_liquidity = Uint128::from(1_000u128 * 10u128.pow(usdc_decimals as u32));
+    println!("==== Alice provides 1k usdt and 1k usdc as initial liquidity to the pool");
     suite.provide_liquidity(
         &alice,
         "o.uusdc.uusdt".to_string(),
@@ -2965,9 +2954,9 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
         },
     );
 
-    let bob_initial_uusdt_liquidity = Uint128::from(110u128 * 10u128.pow(uusdt_decimals as u32));
-    let bob_initial_uusdc_liquidity = Uint128::from(90u128 * 10u128.pow(uusdc_decimals as u32));
-
+    println!("==== Bob provides 110 usdt and 90 usdc of liquidity");
+    let bob_initial_uusdt_liquidity = Uint128::from(110u128 * 10u128.pow(usdt_decimals as u32));
+    let bob_initial_uusdc_liquidity = Uint128::from(90u128 * 10u128.pow(usdc_decimals as u32));
     suite.provide_liquidity(
         &bob,
         "o.uusdc.uusdt".to_string(),
@@ -3033,6 +3022,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
             }
         });
 
+    println!("==== Withdraw Alice's and Bob's liquidity");
     suite
         .withdraw_liquidity(
             &bob,
@@ -3053,72 +3043,89 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
 
     // now alice should have been rewarded with the swap fees paid by bob for providing liquidity
     // with a skewed ratio
+    let alice_usdc_balance_change = RefCell::new(0i128);
+    let alice_usdt_balance_change = RefCell::new(0i128);
     suite.query_all_balances(&alice.to_string(), |balances| {
         for coin in balances.unwrap().iter() {
             match coin.denom.as_str() {
                 denom if denom.contains("uusdc") => {
-                    let difference = coin
-                        .amount
-                        .clone()
-                        .saturating_sub(*alice_uusdc_balance.borrow());
-                    println!("coin:                     {}", coin.amount);
-                    println!("difference:               {}", difference);
-                    println!(
-                        "alice_initial_uusdc_liquidity: {}",
-                        alice_initial_uusdc_liquidity
-                    );
+                    let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
+                    let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
+                    let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("Alice USDC balance change:");
+                    println!("difference:       {}", difference);
+                    println!("initial_balance:  {}", initial_balance);
+                    println!("coin.amount:      {}", coin.amount.u128());
+                    *alice_usdc_balance_change.borrow_mut() = difference;
                     // assert!(difference >= alice_initial_uusdc_liquidity);
                 }
                 denom if denom.contains("uusdt") => {
-                    let difference = coin
-                        .amount
-                        .clone()
-                        .saturating_sub(*alice_uusdt_balance.borrow());
-                    println!("coin:                     {}", coin.amount);
-                    println!("difference:               {}", difference);
-                    println!(
-                        "alice_initial_uusdt_liquidity: {}",
-                        alice_initial_uusdt_liquidity
-                    );
+                    let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
+                    let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
+                    let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("Alice USDT balance change:");
+                    println!("difference:       {}", difference);
+                    println!("initial_balance:  {}", initial_balance);
+                    println!("coin.amount:      {}", coin.amount.u128());
+                    *alice_usdt_balance_change.borrow_mut() = difference;
                     // assert!(difference >= alice_initial_uusdt_liquidity);
                 }
                 _ => {}
             }
         }
     });
+    let alice_nominal_balance_change =
+        *alice_usdc_balance_change.borrow() + *alice_usdt_balance_change.borrow();
+    println!(
+        "Alice nominal difference:  {}",
+        alice_nominal_balance_change
+    );
 
     // bob on the other hand was punished
+    let bob_usdc_balance_change = RefCell::new(0i128);
+    let bob_usdt_balance_change = RefCell::new(0i128);
     suite.query_all_balances(&bob.to_string(), |balances| {
         for coin in balances.unwrap().iter() {
             match coin.denom.as_str() {
                 denom if denom.contains("uusdc") => {
-                    let difference = coin
-                        .amount
-                        .clone()
-                        .saturating_sub(*bob_uusdc_balance.borrow());
-                    println!(
-                        "bob_initial_uusdc_liquidity: {}",
-                        bob_initial_uusdc_liquidity
-                    );
-                    println!("difference:               {}", difference);
-                    println!("coin:                     {}", coin.amount);
+                    let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
+                    let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
+                    let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("Bob USDC balance change:");
+                    println!("difference:       {}", difference);
+                    println!("initial_balance:  {}", initial_balance);
+                    println!("coin.amount:      {}", coin.amount.u128());
+                    *bob_usdc_balance_change.borrow_mut() = difference;
                     // assert!(difference < bob_initial_uusdc_liquidity);
                 }
                 denom if denom.contains("uusdt") => {
-                    let difference = coin
-                        .amount
-                        .clone()
-                        .saturating_sub(*bob_uusdt_balance.borrow());
-                    println!("coin:                     {}", coin.amount);
-                    println!("difference:               {}", difference);
-                    println!(
-                        "bob_initial_uusdt_liquidity: {}",
-                        bob_initial_uusdt_liquidity
-                    );
+                    let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
+                    let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
+                    let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("Bob USDT balance change:");
+                    println!("difference:       {}", difference);
+                    println!("initial_balance:   {}", initial_balance);
+                    println!("coin.amount:      {}", coin.amount.u128());
+                    *bob_usdt_balance_change.borrow_mut() = difference;
                     // assert!(difference < bob_initial_uusdt_liquidity);
                 }
                 _ => {}
             }
+        }
+    });
+    let bob_nominal_balance_change =
+        *bob_usdc_balance_change.borrow() + *bob_usdt_balance_change.borrow();
+    println!("Bob nominal difference: {}", bob_nominal_balance_change);
+
+    // check remaining assets on the pool
+    println!("==== Remaining assets in pool");
+    suite.query_pools(Some("o.uusdc.uusdt".to_string()), None, None, |result| {
+        let response = result.unwrap();
+        let pool = response.pools[0].pool_info.clone();
+        let assets = pool.assets;
+        for asset in assets {
+            println!("amount:       {}", asset.amount);
+            println!("denom:        {}", asset.denom);
         }
     });
 }
