@@ -1008,6 +1008,28 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some("o.whale.uluna.pool.1".to_string()),
+            vec![
+                coin(1000, "uusd"),
+                coin(8888, "uom"),
+                coin(1000, "utest"),
+                coin(1000, "uluna"),
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::ExtraFundsSent => {}
+                    _ => panic!("Wrong error type, should return ContractError::ExtraFundsSent"),
+                }
+            },
+        )
+        .create_pool(
+            &creator,
+            asset_denoms.clone(),
+            vec![6u8, 6u8],
+            pool_fees.clone(),
+            PoolType::ConstantProduct,
+            Some("o.whale.uluna.pool.1".to_string()),
             vec![coin(1000, "uusd"), coin(8888, "uom"), coin(1000, "utest")],
             |result| {
                 result.unwrap();
