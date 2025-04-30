@@ -103,10 +103,13 @@ pub enum ContractError {
     #[error("Error computing the stableswap invariant")]
     StableInvariantError,
 
+    #[error("Amp factor must be greater than 0")]
+    InvalidAmpFactor,
+
     #[error("Failed to converge when performing newtons method")]
     ConvergeError,
 
-    #[error("An conversion overflow occurred when attempting to swap an asset")]
+    #[error("A conversion overflow occurred when attempting to swap an asset")]
     SwapOverflowError,
 
     #[error("An overflow occurred when attempting to construct a decimal")]
