@@ -809,6 +809,58 @@ fn cant_recreate_existing_pool() {
 }
 
 #[test]
+fn cant_create_stableswap_with_zero_amp_factor() {
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(1_000_000_001u128, "uwhale".to_string()),
+            coin(1_000_000_000u128, "uluna".to_string()),
+            coin(1_000_000_001u128, "uusd".to_string()),
+            coin(1_000_000_001u128, "uom".to_string()),
+        ],
+        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+    );
+    let creator = suite.creator();
+    let _other = suite.senders[1].clone();
+    let _unauthorized = suite.senders[2].clone();
+    // Asset infos with uwhale
+
+    let asset_infos = vec!["uwhale".to_string(), "uom".to_string()];
+
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::zero(),
+        },
+        swap_fee: Fee {
+            share: Decimal::zero(),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    // Create a pool
+    suite.instantiate_default().add_one_epoch().create_pool(
+        &creator,
+        asset_infos.clone(),
+        vec![6u8, 6u8],
+        pool_fees.clone(),
+        PoolType::StableSwap { amp: 0u64 },
+        None,
+        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::InvalidAmpFactor => {}
+                _ => {
+                    panic!("Wrong error type, should return ContractError::InvalidAmpFactor")
+                }
+            }
+        },
+    );
+}
+
+#[test]
 fn cant_create_pool_not_paying_multiple_tf_fees() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
