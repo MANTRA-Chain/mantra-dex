@@ -2882,7 +2882,11 @@ fn setup_4pool_different_decimals(
 
 #[test]
 fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
-    println!("TEST providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals =================================================");
+    let separator = String::from("===============================================================");
+    println!(
+        "TEST providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals {}",
+        separator
+    );
     let usdc_decimals = 6u8;
     let usdt_decimals = 6u8;
     let initial_balance = 300_000_000_000_000_000000000000000000u128;
@@ -2930,6 +2934,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
     // Initial liquidity
     let alice_initial_uusdt_liquidity = Uint128::from(1_000u128 * 10u128.pow(usdt_decimals as u32));
     let alice_initial_uusdc_liquidity = Uint128::from(1_000u128 * 10u128.pow(usdc_decimals as u32));
+    println!("{}", separator);
     println!("==== Alice provides 1k usdt and 1k usdc as initial liquidity to the pool");
     suite.provide_liquidity(
         &alice,
@@ -2954,6 +2959,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
         },
     );
 
+    println!("{}", separator);
     println!("==== Bob provides 110 usdt and 90 usdc of liquidity");
     let bob_initial_uusdt_liquidity = Uint128::from(110u128 * 10u128.pow(usdt_decimals as u32));
     let bob_initial_uusdc_liquidity = Uint128::from(90u128 * 10u128.pow(usdc_decimals as u32));
@@ -3022,6 +3028,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
             }
         });
 
+    println!("{}", separator);
     println!("==== Withdraw Alice's and Bob's liquidity");
     suite
         .withdraw_liquidity(
@@ -3052,23 +3059,26 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                     let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
                     let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
                     let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("{}", separator);
                     println!("Alice USDC balance change:");
                     println!("difference:       {}", difference);
                     println!("initial_balance:  {}", initial_balance);
                     println!("coin.amount:      {}", coin.amount.u128());
                     *alice_usdc_balance_change.borrow_mut() = difference;
-                    // assert!(difference >= alice_initial_uusdc_liquidity);
+                    //TODO: fix this assertion
+                    // assert!(difference >= alice_initial_uusdc_liquidity.u128() as i128);
                 }
                 denom if denom.contains("uusdt") => {
                     let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
                     let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
                     let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("{}", separator);
                     println!("Alice USDT balance change:");
                     println!("difference:       {}", difference);
                     println!("initial_balance:  {}", initial_balance);
                     println!("coin.amount:      {}", coin.amount.u128());
                     *alice_usdt_balance_change.borrow_mut() = difference;
-                    // assert!(difference >= alice_initial_uusdt_liquidity);
+                    // assert!(difference >= alice_initial_uusdt_liquidity.u128() as i128);
                 }
                 _ => {}
             }
@@ -3091,10 +3101,11 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                     let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
                     let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
                     let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("{}", separator);
                     println!("Bob USDC balance change:");
-                    println!("difference:       {}", difference);
-                    println!("initial_balance:  {}", initial_balance);
-                    println!("coin.amount:      {}", coin.amount.u128());
+                    println!("difference:           {}", difference);
+                    println!("initial balance:      {}", initial_balance);
+                    println!("current amount:       {}", coin.amount.u128());
                     *bob_usdc_balance_change.borrow_mut() = difference;
                     // assert!(difference < bob_initial_uusdc_liquidity);
                 }
@@ -3102,10 +3113,11 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                     let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
                     let initial_balance_i128 = i128::try_from(initial_balance).unwrap();
                     let difference = coin_amount_i128 - initial_balance_i128;
+                    println!("{}", separator);
                     println!("Bob USDT balance change:");
-                    println!("difference:       {}", difference);
-                    println!("initial_balance:   {}", initial_balance);
-                    println!("coin.amount:      {}", coin.amount.u128());
+                    println!("difference:           {}", difference);
+                    println!("initial balance:      {}", initial_balance);
+                    println!("current amount:       {}", coin.amount.u128());
                     *bob_usdt_balance_change.borrow_mut() = difference;
                     // assert!(difference < bob_initial_uusdt_liquidity);
                 }
@@ -3118,6 +3130,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
     println!("Bob nominal difference: {}", bob_nominal_balance_change);
 
     // check remaining assets on the pool
+    println!("{}", separator);
     println!("==== Remaining assets in pool");
     suite.query_pools(Some("o.uusdc.uusdt".to_string()), None, None, |result| {
         let response = result.unwrap();
