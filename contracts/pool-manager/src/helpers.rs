@@ -1187,42 +1187,63 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
             .checked_div(Uint512::from(n_coins as u128))?;
 
         // Pre-allocate fees so we can index safely
-        let mut fees = vec![Uint512::zero(); n_coins];
         let max_precision = *pool_info.asset_decimals.iter().max().unwrap() as u32;
 
         for i in 0..n_coins {
-            // Ideal post-deposit balance of coin i
-            let ideal_balance = d_1
-                .checked_mul(Uint512::from(old_pool_assets[i].amount))?
-                .checked_div(d_0)?;
-
-            // Absolute difference vs. actual balance
-            // xₛ = coin i balance in decimal form (with proper precision)
-            let denom = full_new_assets[i].denom.clone();
-            let asset_decimals = find_denom_decimals(pool_info, denom.as_str())
-                .ok_or(ContractError::StableLpMintError)?;
-            let normalized_full_new_asset_amount = normalize_amount(
+            // Ideal post-deposit balance of coin i, normalized to max_precision
+            let asset_decimals = find_denom_decimals(pool_info, full_new_assets[i].denom.as_str())
+                .ok_or(ContractError::StableLpMintError)? as u32;
+            let normalized_old =
+                normalize_amount(old_pool_assets[i].amount, asset_decimals, max_precision)
+                    .ok_or(ContractError::StableLpMintError)?;
+            let normalized_new = normalize_amount(
                 adjusted_full_new_assets[i].amount,
-                asset_decimals as u32,
+                asset_decimals,
                 max_precision,
             )
             .ok_or(ContractError::StableLpMintError)?;
-            let new_pool_assets_amount =
-                old_pool_assets[i].amount + normalized_full_new_asset_amount;
-            let xs = Decimal256::decimal_with_precision(new_pool_assets_amount, asset_decimals)?;
-            let difference =
-                Uint512::from(normalized_full_new_asset_amount).abs_diff(ideal_balance);
+            let ideal_balance = d_1
+                .checked_mul(Uint512::from(normalized_old))?
+                .checked_div(d_0)?;
 
-            // Dynamic fee for this coin
-            let decimals_512 = Uint512::from(10u128).pow(asset_decimals as u32);
-            let dynamic_fee_i = dynamic_fee(xs, ys, base_fee, asset_decimals as u32)?
-                .to_uint512_with_precision(0)?;
-            fees[i] = dynamic_fee_i
+            // Calculate difference in max_precision
+            let difference = Uint512::from(normalized_new).abs_diff(ideal_balance);
+
+            // Skip applying fees if the difference is extremely small (likely due to rounding)
+            // This prevents tiny rounding errors from triggering fees on proportional deposits
+            let epsilon = match asset_decimals {
+                d if d >= 12 => Uint512::from(10u128).pow(d - 6), // For higher precision assets (like 18 decimals)
+                d if d >= 6 => Uint512::from(10u128), // For medium precision assets (6 decimals)
+                _ => Uint512::one(),                  // For lower precision assets
+            };
+
+            if difference <= epsilon {
+                continue;
+            }
+
+            // Dynamic fee for this coin (in max_precision)
+            let xs = Decimal256::decimal_with_precision(
+                normalized_new,
+                max_precision.try_into().unwrap(),
+            )?;
+            let dynamic_fee_i =
+                dynamic_fee(xs, ys, base_fee, max_precision)?.to_uint512_with_precision(0)?;
+            let decimals_512 = Uint512::from(10u128).pow(max_precision);
+            let fee_in_max_precision = dynamic_fee_i
                 .saturating_mul(difference)
                 .checked_div(decimals_512)?;
-            adjusted_full_new_assets[i].amount = Uint512::from(normalized_full_new_asset_amount)
-                .checked_sub(fees[i])?
+
+            // Convert fee back to asset's original precision for deduction
+            let fee_in_asset_precision = normalize_amount_512(
+                fee_in_max_precision,
+                max_precision as u8,
+                asset_decimals as u8,
+            )
+            .ok_or(ContractError::StableLpMintError)?;
+            let new_amount = Uint512::from(adjusted_full_new_assets[i].amount)
+                .checked_sub(fee_in_asset_precision)?
                 .try_into()?;
+            adjusted_full_new_assets[i].amount = new_amount;
         }
     }
 

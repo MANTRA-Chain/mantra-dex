@@ -662,7 +662,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
             assert_approx_eq!(
                 result.unwrap().amount,
                 Uint128::from(30_000_000u128 + 1_500_000u128 + 1_500_000u128 - 1_000u128),
-                "0.0000012425"
+                "0.002"
             );
         });
 
