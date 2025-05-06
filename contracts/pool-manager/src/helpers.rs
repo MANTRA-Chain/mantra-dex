@@ -1189,20 +1189,7 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
 
     if !first_liquidity {
         let n_coins = old_pool_assets.len();
-
-        // base_fee = swap_fee * n / [4*(n-1)]
-        let base_fee = Decimal256::from(pool_info.pool_fees.swap_fee.share)
-            .checked_mul(Decimal256::from_ratio(n_coins as u128, 1u128))?
-            .checked_div(Decimal256::from_ratio((4 * (n_coins - 1)) as u128, 1u128))?;
-
-        // Average invariant (ȳ) used by the dynamic-fee curve
-        let ys = d_0
-            .checked_add(d_1)?
-            .checked_div(Uint512::from(n_coins as u128))?;
-
-        // Pre-allocate fees so we can index safely
         let max_precision = *pool_info.asset_decimals.iter().max().unwrap() as u32;
-
         let normalized_deposited_amount = normalize_amount(
             deposited_assets[0].amount,
             find_denom_decimals(pool_info, deposited_assets[0].denom.as_str())
@@ -1210,7 +1197,6 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
             max_precision,
         )
         .ok_or(ContractError::StableLpMintError)?;
-
         let deposit_is_balanced = deposited_assets.iter().skip(1).all(|asset| {
             normalize_amount(
                 asset.amount,
@@ -1222,6 +1208,16 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
 
         // Skip fee calculation if deposit is balanced
         if !deposit_is_balanced {
+            // base_fee = swap_fee * n / [4*(n-1)]
+            let base_fee = Decimal256::from(pool_info.pool_fees.swap_fee.share)
+                .checked_mul(Decimal256::from_ratio(n_coins as u128, 1u128))?
+                .checked_div(Decimal256::from_ratio((4 * (n_coins - 1)) as u128, 1u128))?;
+
+            // Average invariant (ȳ) used by the dynamic-fee curve
+            let ys = d_0
+                .checked_add(d_1)?
+                .checked_div(Uint512::from(n_coins as u128))?;
+
             for i in 0..n_coins {
                 // Ideal post-deposit balance of coin i, normalized to max_precision
                 let asset_decimals =
