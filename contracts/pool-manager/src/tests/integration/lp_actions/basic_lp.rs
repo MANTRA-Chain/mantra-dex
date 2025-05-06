@@ -235,9 +235,6 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
         },
     );
 
-    let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("p.1".to_string());
-
     // Let's try to add liquidity
     suite
         .provide_liquidity(
@@ -415,9 +412,6 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
             result.unwrap();
         },
     );
-
-    let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("p.1".to_string());
 
     // Let's try to add liquidity
     suite

@@ -3065,8 +3065,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                     println!("initial_balance:  {}", initial_balance);
                     println!("coin.amount:      {}", coin.amount.u128());
                     *alice_usdc_balance_change.borrow_mut() = difference;
-                    //TODO: fix this assertion
-                    // assert!(difference >= alice_initial_uusdc_liquidity.u128() as i128);
+                    assert!(difference > 0);
                 }
                 denom if denom.contains("uusdt") => {
                     let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
@@ -3078,7 +3077,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                     println!("initial_balance:  {}", initial_balance);
                     println!("coin.amount:      {}", coin.amount.u128());
                     *alice_usdt_balance_change.borrow_mut() = difference;
-                    // assert!(difference >= alice_initial_uusdt_liquidity.u128() as i128);
+                    assert!(difference > 0);
                 }
                 _ => {}
             }
@@ -3107,7 +3106,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                     println!("initial balance:      {}", initial_balance);
                     println!("current amount:       {}", coin.amount.u128());
                     *bob_usdc_balance_change.borrow_mut() = difference;
-                    // assert!(difference < bob_initial_uusdc_liquidity);
+                    assert!(difference < 0);
                 }
                 denom if denom.contains("uusdt") => {
                     let coin_amount_i128 = i128::try_from(coin.amount.u128()).unwrap();
@@ -3119,7 +3118,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                     println!("initial balance:      {}", initial_balance);
                     println!("current amount:       {}", coin.amount.u128());
                     *bob_usdt_balance_change.borrow_mut() = difference;
-                    // assert!(difference < bob_initial_uusdt_liquidity);
+                    assert!(difference < 0);
                 }
                 _ => {}
             }
@@ -3141,62 +3140,4 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
             println!("denom:        {}", asset.denom);
         }
     });
-}
-
-fn print_diff(init_bal: [Uint128; 4], final_bal: [Uint128; 4]) -> [i128; 4] {
-    let diffs = [
-        final_bal[0].u128() as i128 - init_bal[0].u128() as i128,
-        final_bal[1].u128() as i128 - init_bal[1].u128() as i128,
-        final_bal[2].u128() as i128 - init_bal[2].u128() as i128,
-        final_bal[3].u128() as i128 - init_bal[3].u128() as i128,
-    ];
-
-    println!("==Balance deltas==");
-    if diffs[0] != 0 {
-        println!("uusdt delta : {}", diffs[0]);
-    }
-    if diffs[1] != 0 {
-        println!("uusdc delta : {}", diffs[1]);
-    }
-    if diffs[2] != 0 {
-        println!("uusd delta  : {}", diffs[2]);
-    }
-    if diffs[3] != 0 {
-        println!("lp delta    : {}", diffs[3]);
-    }
-    println!("==Balance deltas==\n");
-
-    diffs
-}
-fn calc_state(suite: &mut TestingSuite, creator: &str) -> [Uint128; 4] {
-    let uusdt_balance = RefCell::new(Uint128::zero());
-    let uusdc_balance = RefCell::new(Uint128::zero());
-    let uusd_balance = RefCell::new(Uint128::zero());
-    let lp_shares = RefCell::new(Uint128::zero());
-
-    suite.query_balance(&creator.to_string(), "uusdt".to_string(), |result| {
-        *uusdt_balance.borrow_mut() = result.unwrap().amount;
-    });
-
-    suite.query_balance(&creator.to_string(), "uusdc".to_string(), |result| {
-        *uusdc_balance.borrow_mut() = result.unwrap().amount;
-    });
-
-    suite.query_balance(&creator.to_string(), "uusd".to_string(), |result| {
-        *uusd_balance.borrow_mut() = result.unwrap().amount;
-    });
-
-    suite.query_all_balances(&creator.to_string(), |balances| {
-        for coin in balances.unwrap().iter() {
-            if coin.denom.contains("o.uusdc.uusdt") {
-                *lp_shares.borrow_mut() = coin.amount;
-            }
-        }
-    });
-
-    let uusdt = *uusdt_balance.borrow();
-    let uusdc = *uusdc_balance.borrow();
-    let uusd = *uusd_balance.borrow();
-    let lp = *lp_shares.borrow();
-    [uusdt, uusdc, uusd, lp]
 }
