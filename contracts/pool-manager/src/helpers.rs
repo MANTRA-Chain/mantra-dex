@@ -2,8 +2,8 @@ use std::ops::Mul;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Isqrt, MessageInfo, StdError,
-    StdResult, Uint128, Uint256, Uint512,
+    coin, ensure, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Isqrt, MessageInfo,
+    StdError, StdResult, Uint128, Uint256, Uint512,
 };
 use mantra_dex_std::coin::{add_coins, aggregate_coins, FACTORY_MAX_SUBDENOM_SIZE};
 use mantra_dex_std::constants::LP_SYMBOL;
@@ -1126,6 +1126,15 @@ pub struct DepositResult {
     /// Fees charged
     pub fees: Vec<Coin>,
 }
+
+/// Returns `true` if `a` and `b` differ by **no more than 1%** of the larger value.
+pub fn within_one_percent(a: Uint128, b: Uint128) -> bool {
+    let diff = a.abs_diff(b);
+    let max = a.max(b);
+    let one_pct = max.multiply_ratio(1u128, 100u128);
+    diff <= one_pct
+}
+
 /// Computes the amount of LP-tokens to mint after a deposit for a stableswap pool.
 /// Assumes the deposits have already been credited to `new_pool_assets`.
 /// If the user provides liquidity in a disproportionate way, a swap fee is charged
@@ -1146,13 +1155,18 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
 
     // ────────────────────────────────────────────────────────
     // 1. Total amount deposited (across all coins)
-    let total_deposit_amount: Uint128 = old_pool_assets
+    let mut total_deposit_amount = 0u128;
+    let deposited_assets: Vec<Coin> = full_new_assets
         .iter()
-        .zip(full_new_assets.iter())
-        .map(|(old, new)| new.amount.checked_sub(old.amount).unwrap_or_default())
-        .sum();
+        .zip(old_pool_assets.iter())
+        .map(|(new, old)| {
+            let amount = new.amount.saturating_sub(old.amount).u128();
+            total_deposit_amount += amount;
+            coin(amount, new.denom.clone())
+        })
+        .collect::<Vec<_>>();
 
-    if total_deposit_amount.is_zero() {
+    if total_deposit_amount == 0 {
         // Nothing was deposited
         return Ok(Some(Uint128::zero()));
     }
@@ -1189,61 +1203,70 @@ pub fn compute_lp_mint_amount_for_stableswap_deposit(
         // Pre-allocate fees so we can index safely
         let max_precision = *pool_info.asset_decimals.iter().max().unwrap() as u32;
 
-        for i in 0..n_coins {
-            // Ideal post-deposit balance of coin i, normalized to max_precision
-            let asset_decimals = find_denom_decimals(pool_info, full_new_assets[i].denom.as_str())
-                .ok_or(ContractError::StableLpMintError)? as u32;
-            let normalized_old =
-                normalize_amount(old_pool_assets[i].amount, asset_decimals, max_precision)
-                    .ok_or(ContractError::StableLpMintError)?;
-            let normalized_new = normalize_amount(
-                adjusted_full_new_assets[i].amount,
-                asset_decimals,
+        let normalized_deposited_amount = normalize_amount(
+            deposited_assets[0].amount,
+            find_denom_decimals(pool_info, deposited_assets[0].denom.as_str())
+                .ok_or(ContractError::StableLpMintError)? as u32,
+            max_precision,
+        )
+        .ok_or(ContractError::StableLpMintError)?;
+
+        let deposit_is_balanced = deposited_assets.iter().skip(1).all(|asset| {
+            normalize_amount(
+                asset.amount,
+                find_denom_decimals(pool_info, &asset.denom).unwrap_or_default() as u32,
                 max_precision,
             )
-            .ok_or(ContractError::StableLpMintError)?;
-            let ideal_balance = d_1
-                .checked_mul(Uint512::from(normalized_old))?
-                .checked_div(d_0)?;
+            .is_some_and(|n_amt| within_one_percent(n_amt, normalized_deposited_amount))
+        });
 
-            // Calculate difference in max_precision
-            let difference = Uint512::from(normalized_new).abs_diff(ideal_balance);
+        // Skip fee calculation if deposit is balanced
+        if !deposit_is_balanced {
+            for i in 0..n_coins {
+                // Ideal post-deposit balance of coin i, normalized to max_precision
+                let asset_decimals =
+                    find_denom_decimals(pool_info, full_new_assets[i].denom.as_str())
+                        .ok_or(ContractError::StableLpMintError)? as u32;
+                let normalized_old =
+                    normalize_amount(old_pool_assets[i].amount, asset_decimals, max_precision)
+                        .ok_or(ContractError::StableLpMintError)?;
+                let normalized_new = normalize_amount(
+                    adjusted_full_new_assets[i].amount,
+                    asset_decimals,
+                    max_precision,
+                )
+                .ok_or(ContractError::StableLpMintError)?;
+                let ideal_balance = d_1
+                    .checked_mul(Uint512::from(normalized_old))?
+                    .checked_div(d_0)?;
 
-            // Skip applying fees if the difference is extremely small (likely due to rounding)
-            // This prevents tiny rounding errors from triggering fees on proportional deposits
-            let epsilon = match asset_decimals {
-                d if d >= 12 => Uint512::from(10u128).pow(d - 6), // For higher precision assets (like 18 decimals)
-                d if d >= 6 => Uint512::from(10u128), // For medium precision assets (6 decimals)
-                _ => Uint512::one(),                  // For lower precision assets
-            };
+                // Calculate difference in max_precision
+                let difference = Uint512::from(normalized_new).abs_diff(ideal_balance);
 
-            if difference <= epsilon {
-                continue;
+                // Dynamic fee for this coin (in max_precision)
+                let xs = Decimal256::decimal_with_precision(
+                    normalized_new,
+                    max_precision.try_into().unwrap(),
+                )?;
+                let dynamic_fee_i =
+                    dynamic_fee(xs, ys, base_fee, max_precision)?.to_uint512_with_precision(0)?;
+                let decimals_512 = Uint512::from(10u128).pow(max_precision);
+                let fee_in_max_precision = dynamic_fee_i
+                    .saturating_mul(difference)
+                    .checked_div(decimals_512)?;
+
+                // Convert fee back to asset's original precision for deduction
+                let fee_in_asset_precision = normalize_amount_512(
+                    fee_in_max_precision,
+                    max_precision as u8,
+                    asset_decimals as u8,
+                )
+                .ok_or(ContractError::StableLpMintError)?;
+                let new_amount = Uint512::from(adjusted_full_new_assets[i].amount)
+                    .checked_sub(fee_in_asset_precision)?
+                    .try_into()?;
+                adjusted_full_new_assets[i].amount = new_amount;
             }
-
-            // Dynamic fee for this coin (in max_precision)
-            let xs = Decimal256::decimal_with_precision(
-                normalized_new,
-                max_precision.try_into().unwrap(),
-            )?;
-            let dynamic_fee_i =
-                dynamic_fee(xs, ys, base_fee, max_precision)?.to_uint512_with_precision(0)?;
-            let decimals_512 = Uint512::from(10u128).pow(max_precision);
-            let fee_in_max_precision = dynamic_fee_i
-                .saturating_mul(difference)
-                .checked_div(decimals_512)?;
-
-            // Convert fee back to asset's original precision for deduction
-            let fee_in_asset_precision = normalize_amount_512(
-                fee_in_max_precision,
-                max_precision as u8,
-                asset_decimals as u8,
-            )
-            .ok_or(ContractError::StableLpMintError)?;
-            let new_amount = Uint512::from(adjusted_full_new_assets[i].amount)
-                .checked_sub(fee_in_asset_precision)?
-                .try_into()?;
-            adjusted_full_new_assets[i].amount = new_amount;
         }
     }
 
@@ -1460,6 +1483,65 @@ pub fn swap_to(
         new_destination_amount,
         amount_swapped,
     })
+}
+
+fn calculate_stableswap_d(
+    pool_info: &PoolInfo,
+    n_coins: Uint256,
+    amp: &u64,
+) -> Result<Decimal256, ContractError> {
+    let n_coins_decimal = Decimal256::from_ratio(n_coins, Uint256::one());
+
+    // Calculate sum of pools with proper precision
+    let sum_pools = calculate_pool_assets_sum(pool_info)?;
+
+    if sum_pools.is_zero() {
+        // there was nothing to swap, return `0`.
+        return Ok(Decimal256::zero());
+    }
+
+    // Calculate ann = amp * n_coins
+    let ann = calculate_ann(amp, n_coins)?;
+
+    // Use newton_raphson_iterate for the approximation
+    let precision_threshold = Decimal256::one();
+
+    newton_raphson_iterate(
+        sum_pools,
+        NEWTON_ITERATIONS,
+        precision_threshold,
+        |current_d| {
+            let new_d = pool_info
+                .assets
+                .iter()
+                .enumerate()
+                .try_fold::<_, _, Result<_, ContractError>>(current_d, |acc, (index, asset)| {
+                    let pool_amount = Decimal256::decimal_with_precision(
+                        asset.amount,
+                        pool_info.asset_decimals[index],
+                    )?;
+                    let mul_pools = pool_amount.checked_mul(n_coins_decimal)?;
+                    acc.checked_multiply_ratio(current_d, mul_pools)
+                })?;
+
+            // current_d = ((ann * sum_pools + new_d * n_coins) * current_d) / ((ann - 1) * current_d + (n_coins + 1) * new_d)
+            let next_d = (ann
+                .checked_mul(sum_pools)?
+                .checked_add(new_d.checked_mul(n_coins_decimal)?)?
+                .checked_mul(current_d)?)
+            .checked_div(
+                (ann.checked_sub(Decimal256::one())?
+                    .checked_mul(current_d)?
+                    .checked_add(
+                        n_coins_decimal
+                            .checked_add(Decimal256::one())?
+                            .checked_mul(new_d)?,
+                    ))?,
+            )?;
+
+            Ok(next_d)
+        },
+    )
 }
 
 #[cfg(test)]
@@ -1960,14 +2042,14 @@ mod tests {
     #[allow(clippy::inconsistent_digit_grouping)]
     fn test_normalize_amount() {
         // Test scaling up (6 decimals to 18 decimals)
-        let amount = Uint128::from(1u128 * 10u128.pow(6)); // 1.0 with 6 decimals
+        let amount = Uint128::from(10u128.pow(6)); // 1.0 with 6 decimals
         let normalized = normalize_amount(amount, 6, 18).unwrap();
-        assert_eq!(normalized, Uint128::from(1u128 * 10u128.pow(18))); // 1.0 with 18 decimals
+        assert_eq!(normalized, Uint128::from(10u128.pow(18))); // 1.0 with 18 decimals
 
         // Test scaling down (18 decimals to 6 decimals)
-        let amount = Uint128::from(1u128 * 10u128.pow(18)); // 1.0 with 18 decimals
+        let amount = Uint128::from(10u128.pow(18)); // 1.0 with 18 decimals
         let normalized = normalize_amount(amount, 18, 6).unwrap();
-        assert_eq!(normalized, Uint128::from(1u128 * 10u128.pow(6))); // 1.0 with 6 decimals
+        assert_eq!(normalized, Uint128::from(10u128.pow(6))); // 1.0 with 6 decimals
     }
 
     #[test]
@@ -1975,8 +2057,8 @@ mod tests {
     fn test_lp_mint_with_mixed_decimals() {
         // Initial pool state with 1.0 of each token
         let old_pool_assets = vec![
-            coin(1u128 * 10u128.pow(6), "uusd"),   // 1.0 uusd with 6 decimals
-            coin(1u128 * 10u128.pow(18), "uweth"), // 1.0 uweth with 18 decimals
+            coin(10u128.pow(6), "uusd"),   // 1.0 uusd with 6 decimals
+            coin(10u128.pow(18), "uweth"), // 1.0 uweth with 18 decimals
         ];
 
         // Add 0.5 of each token
@@ -1993,10 +2075,7 @@ mod tests {
             asset_denoms: vec!["uusd".to_string(), "uweth".to_string()],
             lp_denom: "lp".to_string(),
             asset_decimals: vec![6, 18],
-            assets: vec![
-                coin(1u128 * 10u128.pow(6), "uusd"),
-                coin(1u128 * 10u128.pow(18), "uweth"),
-            ],
+            assets: vec![coin(10u128.pow(6), "uusd"), coin(10u128.pow(18), "uweth")],
             pool_type: PoolType::StableSwap { amp: amp_factor },
             pool_fees: PoolFee {
                 protocol_fee: Fee {
@@ -2054,63 +2133,4 @@ mod tests {
             mint_amount
         );
     }
-}
-
-fn calculate_stableswap_d(
-    pool_info: &PoolInfo,
-    n_coins: Uint256,
-    amp: &u64,
-) -> Result<Decimal256, ContractError> {
-    let n_coins_decimal = Decimal256::from_ratio(n_coins, Uint256::one());
-
-    // Calculate sum of pools with proper precision
-    let sum_pools = calculate_pool_assets_sum(pool_info)?;
-
-    if sum_pools.is_zero() {
-        // there was nothing to swap, return `0`.
-        return Ok(Decimal256::zero());
-    }
-
-    // Calculate ann = amp * n_coins
-    let ann = calculate_ann(amp, n_coins)?;
-
-    // Use newton_raphson_iterate for the approximation
-    let precision_threshold = Decimal256::one();
-
-    newton_raphson_iterate(
-        sum_pools,
-        NEWTON_ITERATIONS,
-        precision_threshold,
-        |current_d| {
-            let new_d = pool_info
-                .assets
-                .iter()
-                .enumerate()
-                .try_fold::<_, _, Result<_, ContractError>>(current_d, |acc, (index, asset)| {
-                    let pool_amount = Decimal256::decimal_with_precision(
-                        asset.amount,
-                        pool_info.asset_decimals[index],
-                    )?;
-                    let mul_pools = pool_amount.checked_mul(n_coins_decimal)?;
-                    acc.checked_multiply_ratio(current_d, mul_pools)
-                })?;
-
-            // current_d = ((ann * sum_pools + new_d * n_coins) * current_d) / ((ann - 1) * current_d + (n_coins + 1) * new_d)
-            let next_d = (ann
-                .checked_mul(sum_pools)?
-                .checked_add(new_d.checked_mul(n_coins_decimal)?)?
-                .checked_mul(current_d)?)
-            .checked_div(
-                (ann.checked_sub(Decimal256::one())?
-                    .checked_mul(current_d)?
-                    .checked_add(
-                        n_coins_decimal
-                            .checked_add(Decimal256::one())?
-                            .checked_mul(new_d)?,
-                    ))?,
-            )?;
-
-            Ok(next_d)
-        },
-    )
 }

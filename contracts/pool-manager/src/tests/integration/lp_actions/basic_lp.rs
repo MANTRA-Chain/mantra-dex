@@ -249,8 +249,8 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
             None,
             None,
             vec![
-                coin(1u128 * 10u128.pow(3), "uusdc".to_string()),
-                coin(1u128 * 10u128.pow(15), "uusdt".to_string()),
+                coin(10u128.pow(3), "uusdc".to_string()),
+                coin(10u128.pow(15), "uusdt".to_string()),
             ],
             |result| {
                 println!("result: {:?}", result);
@@ -267,8 +267,8 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
             None,
             None,
             vec![
-                coin(1u128 * 10u128.pow(3), "uusdc".to_string()),
-                coin(1u128 * 10u128.pow(15), "uusdt".to_string()),
+                coin(10u128.pow(3), "uusdc".to_string()),
+                coin(10u128.pow(15), "uusdt".to_string()),
             ],
             |result| {
                 println!("result: {:?}", result);
@@ -331,13 +331,13 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
                 if coin.denom.contains("uusdc") {
                     assert_eq!(
                         coin.amount,
-                        uusdc_bob.borrow().clone().amount + Uint128::new(1u128 * 10u128.pow(3))
+                        uusdc_bob.borrow().clone().amount + Uint128::new(10u128.pow(3))
                     );
                 }
                 if coin.denom.contains("uusdt") {
                     assert_eq!(
                         coin.amount,
-                        uusdt_bob.borrow().clone().amount + Uint128::new(1u128 * 10u128.pow(15))
+                        uusdt_bob.borrow().clone().amount + Uint128::new(10u128.pow(15))
                     );
                 }
             }
@@ -358,14 +358,14 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
                 if coin.denom.contains("uusdc") {
                     assert_approx_eq!(
                         coin.amount,
-                        uusdc_alice.borrow().clone().amount + Uint128::new(1u128 * 10u128.pow(3)),
+                        uusdc_alice.borrow().clone().amount + Uint128::new(10u128.pow(3)),
                         "50"
                     );
                 }
                 if coin.denom.contains("uusdt") {
                     assert_approx_eq!(
                         coin.amount,
-                        uusdt_alice.borrow().clone().amount + Uint128::new(1u128 * 10u128.pow(15)),
+                        uusdt_alice.borrow().clone().amount + Uint128::new(10u128.pow(15)),
                         "50"
                     );
                 }

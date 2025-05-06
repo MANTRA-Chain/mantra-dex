@@ -1314,7 +1314,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
         })
         .query_balance(&contract, lp_denom.clone(), |result| {
             let amount = result.unwrap().amount;
-            let x = initial_lp_supply.borrow_mut().clone();
+            let x = *initial_lp_supply.borrow_mut();
             *initial_lp_supply.borrow_mut() = amount + x;
 
             println!("Initial LP Supply: {}", *initial_lp_supply.borrow());

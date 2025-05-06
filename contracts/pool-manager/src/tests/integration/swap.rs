@@ -1601,7 +1601,7 @@ fn swap_3pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdc".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdt".to_string(),
             |result| {
@@ -1652,7 +1652,7 @@ fn swap_3pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdt".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdc".to_string(),
             |result| {
@@ -1703,7 +1703,7 @@ fn swap_3pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdt".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusd".to_string(),
             |result| {
@@ -1789,7 +1789,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusd".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdx".to_string(),
             |result| {
@@ -1838,7 +1838,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdx".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusd".to_string(),
             |result| {
@@ -1888,7 +1888,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusd".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdc".to_string(),
             |result| {
@@ -1939,7 +1939,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdc".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusd".to_string(),
             |result| {
@@ -1991,7 +1991,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusd".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdt".to_string(),
             |result| {
@@ -2042,7 +2042,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdt".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusd".to_string(),
             |result| {
@@ -2093,7 +2093,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdx".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdc".to_string(),
             |result| {
@@ -2144,7 +2144,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdc".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdx".to_string(),
             |result| {
@@ -2196,7 +2196,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdc".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdt".to_string(),
             |result| {
@@ -2247,7 +2247,7 @@ fn swap_4pool_different_decimals() {
             "p.1".to_string(),
             Coin {
                 denom: "uusdt".to_string(),
-                amount: swap_amount.clone(),
+                amount: swap_amount,
             },
             "uusdc".to_string(),
             |result| {
@@ -3002,10 +3002,10 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                         *lp_shares_alice.borrow_mut() = coin.clone();
                     }
                     denom if denom.contains("uusdc") => {
-                        *alice_uusdc_balance.borrow_mut() = coin.amount.clone();
+                        *alice_uusdc_balance.borrow_mut() = coin.amount;
                     }
                     denom if denom.contains("uusdt") => {
-                        *alice_uusdt_balance.borrow_mut() = coin.amount.clone();
+                        *alice_uusdt_balance.borrow_mut() = coin.amount;
                     }
                     _ => {}
                 }
@@ -3018,10 +3018,10 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
                         *lp_shares_bob.borrow_mut() = coin.clone();
                     }
                     denom if denom.contains("uusdc") => {
-                        *bob_uusdc_balance.borrow_mut() = coin.amount.clone();
+                        *bob_uusdc_balance.borrow_mut() = coin.amount;
                     }
                     denom if denom.contains("uusdt") => {
-                        *bob_uusdt_balance.borrow_mut() = coin.amount.clone();
+                        *bob_uusdt_balance.borrow_mut() = coin.amount;
                     }
                     _ => {}
                 }
