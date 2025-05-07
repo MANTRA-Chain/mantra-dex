@@ -1308,11 +1308,7 @@ fn dynamic_fee(
     fee: Decimal256,
     asset_decimals: u32,
 ) -> Result<Decimal256, ContractError> {
-    println!("**** dynamic_fee ****");
     let offpeg_fee_multiplier = Decimal256::from_ratio(2u128, 1u128);
-
-    println!("xpi: {:?}", xpi);
-    println!("xpj: {:?}", xpj);
 
     if offpeg_fee_multiplier <= Decimal256::one() {
         return Ok(fee);
