@@ -273,11 +273,7 @@ fn normalize_amount(amount: Uint128, from_decimals: u32, to_decimals: u32) -> Op
     }
 }
 
-pub fn normalize_amount_512(
-    amount: Uint512,
-    from_decimals: u8,
-    to_decimals: u8,
-) -> Option<Uint512> {
+fn normalize_amount_512(amount: Uint512, from_decimals: u8, to_decimals: u8) -> Option<Uint512> {
     if from_decimals > to_decimals {
         amount
             .checked_div(Uint512::from(
@@ -340,7 +336,7 @@ pub fn compute_d_with_pool_info(
 }
 
 /// Get the decimal precision for a given denom from pool_info
-pub fn find_denom_decimals(pool_info: &PoolInfo, denom: &str) -> Option<u8> {
+fn find_denom_decimals(pool_info: &PoolInfo, denom: &str) -> Option<u8> {
     pool_info
         .asset_denoms
         .iter()
@@ -2046,6 +2042,20 @@ mod tests {
         let amount = Uint128::from(10u128.pow(18)); // 1.0 with 18 decimals
         let normalized = normalize_amount(amount, 18, 6).unwrap();
         assert_eq!(normalized, Uint128::from(10u128.pow(6))); // 1.0 with 6 decimals
+    }
+
+    #[test]
+    #[allow(clippy::inconsistent_digit_grouping)]
+    fn test_normalize_amount_512() {
+        // Test scaling up (6 decimals to 18 decimals)
+        let amount = Uint512::from(10u128.pow(6)); // 1.0 with 6 decimals
+        let normalized = normalize_amount_512(amount, 6, 18).unwrap();
+        assert_eq!(normalized, Uint512::from(10u128.pow(18))); // 1.0 with 18 decimals
+
+        // Test scaling down (18 decimals to 6 decimals)
+        let amount = Uint512::from(10u128.pow(18)); // 1.0 with 18 decimals
+        let normalized = normalize_amount_512(amount, 18, 6).unwrap();
+        assert_eq!(normalized, Uint512::from(10u128.pow(6))); // 1.0 with 6 decimals
     }
 
     #[test]
