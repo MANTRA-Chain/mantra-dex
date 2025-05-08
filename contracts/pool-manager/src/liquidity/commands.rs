@@ -264,27 +264,15 @@ pub fn provide_liquidity(
                         &env.contract.address,
                         get_minimum_liquidity_amount_stableswap(min_decimals, max_decimals),
                     )?);
-
-                    compute_lp_mint_amount_for_stableswap_deposit(
-                        amp_factor,
-                        &pool_assets,
-                        &add_coins(pool_assets.clone(), deposits.clone())?,
-                        total_shares,
-                        &pool,
-                    )?
-                    .ok_or(ContractError::StableLpMintError)?
-                } else {
-                    compute_lp_mint_amount_for_stableswap_deposit(
-                        amp_factor,
-                        // pool_assets hold the balances before the deposit was made
-                        &pool_assets,
-                        // add the deposit to the pool_assets to calculate the new balances
-                        &add_coins(pool_assets.clone(), deposits.clone())?,
-                        total_shares,
-                        &pool,
-                    )?
-                    .ok_or(ContractError::StableLpMintError)?
                 }
+                compute_lp_mint_amount_for_stableswap_deposit(
+                    amp_factor,
+                    &pool_assets,
+                    &add_coins(pool_assets.clone(), deposits.clone())?,
+                    total_shares,
+                    &pool,
+                )?
+                .ok_or(ContractError::StableLpMintError)?
             }
         };
 
@@ -454,7 +442,6 @@ pub fn withdraw_liquidity(
 
     // Get the total share of the pool
     let total_shares = get_total_share(&deps.as_ref(), liquidity_token.clone())?;
-
     // Get the ratio of the amount to withdraw to the total share
     let share_ratio: Decimal256 = Decimal256::from_ratio(amount, total_shares);
 
@@ -521,6 +508,7 @@ pub fn withdraw_liquidity(
         env.contract.address,
         amount,
     )?);
+
     // update pool info
     Ok(Response::new()
         .add_messages(messages)
