@@ -664,7 +664,7 @@ dependencies = [
  "cw-storage-plus",
  "cw-utils",
  "cw2",
- "mantra-dex-std",
+ "mantra-dex-std 3.0.0",
  "mantra-utils",
  "schemars",
  "semver",
@@ -698,7 +698,7 @@ dependencies = [
  "epoch-manager",
  "fee-collector",
  "mantra-common-testing",
- "mantra-dex-std",
+ "mantra-dex-std 3.0.0",
  "mantra-utils",
  "pool-manager",
  "schemars",
@@ -724,7 +724,7 @@ dependencies = [
  "cw-ownable",
  "cw-utils",
  "cw2",
- "mantra-dex-std",
+ "mantra-dex-std 3.0.0",
  "mantra-utils",
  "schemars",
  "semver",
@@ -906,19 +906,37 @@ dependencies = [
 [[package]]
 name = "mantra-common-testing"
 version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a3f1475e2c9cf9ae0c8926385f12c3a654426fe6d97f9944144d92bd2cae43e"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
- "mantra-dex-std",
+ "mantra-dex-std 2.2.0",
  "mantrachain-std",
  "serde",
 ]
 
 [[package]]
 name = "mantra-dex-std"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c2292b020000ca567c9d2d0bdbfced453e4853aa572a046e845bdc02ee3cd7e"
+dependencies = [
+ "anybuf",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-ownable",
+ "mantrachain-std",
+ "uint",
+]
+
+[[package]]
+name = "mantra-dex-std"
 version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33dc2b7e5f220352b14ac83cc1d8d21697e417ea81da8b5f069e411b422f7c9e"
 dependencies = [
  "anybuf",
  "cosmwasm-schema",
@@ -931,6 +949,8 @@ dependencies = [
 [[package]]
 name = "mantra-utils"
 version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b6d6517b80d24683919a84796ccdd6535389e2000ad316cb32ca6572b4bdb9b"
 dependencies = [
  "cosmwasm-std",
  "cw-ownable",
@@ -939,6 +959,8 @@ dependencies = [
 [[package]]
 name = "mantrachain-std"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfcff500734f341efa3908b1f7631c1cba090ef58a75d60810ac8a912941faa2"
 dependencies = [
  "chrono",
  "cosmwasm-std",
@@ -1071,7 +1093,7 @@ dependencies = [
  "farm-manager",
  "fee-collector",
  "mantra-common-testing",
- "mantra-dex-std",
+ "mantra-dex-std 3.0.0",
  "mantra-utils",
  "proptest",
  "rand",
@@ -1845,7 +1867,7 @@ name = "xtask"
 version = "1.0.0"
 dependencies = [
  "cosmwasm-schema",
- "mantra-dex-std",
+ "mantra-dex-std 3.0.0",
  "serde",
  "serde_json",
 ]
