@@ -127,6 +127,11 @@ const PROTOCOL_FEE_POOL3_2: u128 = 150u128; // ~10% of SWAP_AMOUNT_1_5K
 const BURN_FEE_POOL3_2: u128 = 45u128; // ~3% of SWAP_AMOUNT_1_5K
 const TOTAL_FEES_POOL3_2: u128 = 300u128; // SWAP_FEE_STAY_IN_POOL_POOL3_2 + PROTOCOL_FEE_POOL3_2 + BURN_FEE_POOL3_2
 
+// Expected Pool Manager balances AFTER the final router swap in provide_liquidity_to_multiple_pools_check_fees
+const PM_ULUNA_BAL_AFTER_ROUTER: u128 = 3_003_570;
+const PM_UUSD_BAL_AFTER_ROUTER: u128 = 995_035;
+const PM_UWHALE_BAL_AFTER_ROUTER: u128 = 2_003_440;
+
 #[test]
 fn assert_slippage_tolerance_correct_xyk() {
     let mut suite = TestingSuite::default_with_balances(
@@ -165,7 +170,10 @@ fn assert_slippage_tolerance_correct_xyk() {
         pool_fees,
         PoolType::ConstantProduct {},
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
-        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+        vec![
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -276,7 +284,10 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
             pool_fees_1.clone(),
             PoolType::ConstantProduct,
             Some(WHALE_ULUNA_POOL_1_LABEL.to_string()),
-            vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+            vec![
+                coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+                coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -288,7 +299,10 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
             pool_fees_2.clone(),
             PoolType::ConstantProduct,
             Some(WHALE_ULUNA_POOL_2_LABEL.to_string()),
-            vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+            vec![
+                coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+                coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -300,7 +314,10 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
             pool_fees_1.clone(),
             PoolType::ConstantProduct,
             Some(ULUNA_UUSD_POOL_1_LABEL.to_string()),
-            vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+            vec![
+                coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+                coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -314,152 +331,159 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
         &fee_collector_addr.to_string(),
         UUSD_DENOM.to_string(),
         |result| {
-            assert_eq!(result.unwrap().amount, Uint128::new(3 * POOL_CREATION_FEE_UUSD_AMOUNT));
+            assert_eq!(
+                result.unwrap().amount,
+                Uint128::new(3 * POOL_CREATION_FEE_UUSD_AMOUNT)
+            );
         },
     );
 
     // let\'s provide liquidity with two assets
     suite
-            .provide_liquidity(
-                &creator,
-                O_WHALE_ULUNA_ID.to_string(), // This ID does not match any created pool, expect error
-                None,
-                None,
-                None,
-                None,
-                None,
-                vec![
-                    Coin {
-                        denom: UWHALE_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
-                    },
-                    Coin {
-                        denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
-                    },
-                ],
-                |result| {
-                    let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                    match err {
-                        ContractError::UnExistingPool => {}
-                        _ => panic!("Wrong error type, should return ContractError::UnExistingPool"),
-                    }
+        .provide_liquidity(
+            &creator,
+            O_WHALE_ULUNA_ID.to_string(), // This ID does not match any created pool, expect error
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
                 },
-            )
-            .provide_liquidity(
-                &creator,
-                O_WHALE_ULUNA_POOL_1_ID.to_string(),
-                None,
-                None,
-                None,
-                None,
-                None,
-                vec![
-                    Coin {
-                        denom: UWHALE_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
-                    },
-                    Coin {
-                        denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
-                    },
-                ],
-                |result| {
-                    result.unwrap();
+                Coin {
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
                 },
-            )
-            .provide_liquidity(
-                &other,
-                O_WHALE_ULUNA_POOL_2_ID.to_string(),
-                None,
-                None,
-                None,
-                None,
-                None,
-                vec![
-                    Coin {
-                        denom: UWHALE_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
-                    },
-                    Coin {
-                        denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
-                    },
-                ],
-                |result| {
-                    result.unwrap();
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::UnExistingPool => {}
+                    _ => panic!("Wrong error type, should return ContractError::UnExistingPool"),
+                }
+            },
+        )
+        .provide_liquidity(
+            &creator,
+            O_WHALE_ULUNA_POOL_1_ID.to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
                 },
-            )
-            .provide_liquidity(
-                &other,
-                O_ULUNA_UUSD_POOL_1_ID.to_string(),
-                None,
-                None,
-                None,
-                None,
-                None,
+                Coin {
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .provide_liquidity(
+            &other,
+            O_WHALE_ULUNA_POOL_2_ID.to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
+                },
+                Coin {
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .provide_liquidity(
+            &other,
+            O_ULUNA_UUSD_POOL_1_ID.to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            vec![
+                Coin {
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
+                },
+                Coin {
+                    denom: UUSD_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_1M),
+                },
+            ],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_all_balances(&pool_manager_addr.to_string(), |result| {
+            let balances = result.unwrap();
+            assert_eq!(
+                balances,
                 vec![
                     Coin {
+                        denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
+                        amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
+                    },
+                    Coin {
+                        denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
+                    },
+                    Coin {
+                        denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
+                        amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
+                    },
+                    Coin {
                         denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
+                        amount: Uint128::from(POOL_MANAGER_ULUNA_BALANCE_3M),
                     },
                     Coin {
                         denom: UUSD_DENOM.to_string(),
-                        amount: Uint128::from(LIQUIDITY_1M),
+                        amount: Uint128::from(POOL_MANAGER_UUSD_BALANCE_1M),
                     },
-                ],
-                |result| {
-                    result.unwrap();
-                },
-            )
-            .query_all_balances(&pool_manager_addr.to_string(), |result| {
-                let balances = result.unwrap();
-                assert_eq!(
-                    balances,
-                    vec![
-                        Coin {
-                            denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
-                            amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
-                        },
-                        Coin {
-                            denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
-                            amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
-                        },
-                        Coin {
-                            denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
-                            amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
-                        },
-                        Coin {
-                            denom: ULUNA_DENOM.to_string(),
-                            amount: Uint128::from(POOL_MANAGER_ULUNA_BALANCE_3M),
-                        },
-                        Coin {
-                            denom: UUSD_DENOM.to_string(),
-                            amount: Uint128::from(POOL_MANAGER_UUSD_BALANCE_1M),
-                        },
-                        Coin {
-                            denom: UWHALE_DENOM.to_string(),
-                            amount: Uint128::from(POOL_MANAGER_UWHALE_BALANCE_2M),
-                        },
-                    ]
-                );
-            });
+                    Coin {
+                        denom: UWHALE_DENOM.to_string(),
+                        amount: Uint128::from(POOL_MANAGER_UWHALE_BALANCE_2M),
+                    },
+                ]
+            );
+        });
 
     // let\'s do swaps in o.whale.uluna.pool.1 and verify the fees are channeled correctly
     suite
-            .swap(
-                &creator,
-                ULUNA_DENOM.to_string(),
-                None,
-                Some(Decimal::percent(SLIPPAGE_PERCENT_20)),
-                None,
-                O_WHALE_ULUNA_POOL_1_ID.to_string(),
-                vec![coin(SWAP_AMOUNT_1K, UWHALE_DENOM.to_string())],
-                |result| {
-                    result.unwrap();
-                },
-            )
-            .query_pools(Some(O_WHALE_ULUNA_POOL_1_ID.to_string()), None, None, |result| {
+        .swap(
+            &creator,
+            ULUNA_DENOM.to_string(),
+            None,
+            Some(Decimal::percent(SLIPPAGE_PERCENT_20)),
+            None,
+            O_WHALE_ULUNA_POOL_1_ID.to_string(),
+            vec![coin(SWAP_AMOUNT_1K, UWHALE_DENOM.to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_pools(
+            Some(O_WHALE_ULUNA_POOL_1_ID.to_string()),
+            None,
+            None,
+            |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -471,40 +495,50 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                 // total_fees = 197, of which 69 stay in the pool (for LPs).
                 // Going out of the pool is 99 (fee collector) + 29 (burned)
 
-                assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
-                    asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
-                    lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
-                    asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                    assets: vec![coin(POOL_1_WHALE_AFTER_SWAP_1, UWHALE_DENOM), coin(POOL_1_LUNA_AFTER_SWAP_1, ULUNA_DENOM)],
-                    pool_type: PoolType::ConstantProduct,
-                    pool_fees: pool_fees_1.clone(),
-                    status: PoolStatus::default(),
-                });
-            })
-        ;
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
+                        asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
+                        lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_1_WHALE_AFTER_SWAP_1, UWHALE_DENOM),
+                            coin(POOL_1_LUNA_AFTER_SWAP_1, ULUNA_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_1.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        );
 
     // verify the fees went to the fee collector
-    suite.query_balance(
-            &fee_collector_addr.to_string(),
-            ULUNA_DENOM,
+    suite
+        .query_balance(&fee_collector_addr.to_string(), ULUNA_DENOM, |result| {
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_1, ULUNA_DENOM)
+            );
+        })
+        .swap(
+            &creator,
+            UWHALE_DENOM.to_string(),
+            None,
+            Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
+            None,
+            O_WHALE_ULUNA_POOL_1_ID.to_string(),
+            vec![coin(SWAP_AMOUNT_2K, ULUNA_DENOM.to_string())],
             |result| {
-                assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_1, ULUNA_DENOM));
+                result.unwrap();
             },
         )
-            .swap(
-                &creator,
-                UWHALE_DENOM.to_string(),
-                None,
-                Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
-                None,
-                O_WHALE_ULUNA_POOL_1_ID.to_string(),
-                vec![coin(SWAP_AMOUNT_2K, ULUNA_DENOM.to_string())],
-                |result| {
-                    result.unwrap();
-                },
-            )
-            .query_pools(Some(O_WHALE_ULUNA_POOL_1_ID.to_string()), None, None, |result| {
+        .query_pools(
+            Some(O_WHALE_ULUNA_POOL_1_ID.to_string()),
+            None,
+            None,
+            |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -516,42 +550,58 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                 // total_fees = 397, of which 139 stay in the pool (for LPs).
                 // Going out of the pool is 199 (fee collector) + 59 (burned)
 
-                assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
-                    asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
-                    lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
-                    asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                    assets: vec![coin(POOL_1_WHALE_AFTER_SWAP_2, UWHALE_DENOM), coin(POOL_1_LUNA_AFTER_SWAP_2, ULUNA_DENOM)],
-                    pool_type: PoolType::ConstantProduct,
-                    pool_fees: pool_fees_1.clone(),
-                    status: PoolStatus::default(),
-                });
-            })
-        ;
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
+                        asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
+                        lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_1_WHALE_AFTER_SWAP_2, UWHALE_DENOM),
+                            coin(POOL_1_LUNA_AFTER_SWAP_2, ULUNA_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_1.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        );
 
     suite
         .query_balance(&fee_collector_addr.to_string(), UWHALE_DENOM, |result| {
-            assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_WHALE_AFTER_SWAP_2, UWHALE_DENOM));
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_WHALE_AFTER_SWAP_2, UWHALE_DENOM)
+            );
         })
         .query_balance(&fee_collector_addr.to_string(), ULUNA_DENOM, |result| {
-            assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_1, ULUNA_DENOM));
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_1, ULUNA_DENOM)
+            );
         });
 
     // let\'s do swaps in o.whale.uluna.pool.2 and verify the fees are channeled correctly
     suite
-            .swap(
-                &creator,
-                ULUNA_DENOM.to_string(),
-                None,
-                Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
-                None,
-                O_WHALE_ULUNA_POOL_2_ID.to_string(),
-                vec![coin(SWAP_AMOUNT_1K, UWHALE_DENOM.to_string())],
-                |result| {
-                    result.unwrap();
-                },
-            )
-            .query_pools(Some(O_WHALE_ULUNA_POOL_2_ID.to_string()), None, None, |result| {
+        .swap(
+            &creator,
+            ULUNA_DENOM.to_string(),
+            None,
+            Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
+            None,
+            O_WHALE_ULUNA_POOL_2_ID.to_string(),
+            vec![coin(SWAP_AMOUNT_1K, UWHALE_DENOM.to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_pools(
+            Some(O_WHALE_ULUNA_POOL_2_ID.to_string()),
+            None,
+            None,
+            |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -563,33 +613,43 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                 // total_fees = 198, of which 149 stay in the pool (for LPs).
                 // Going out of the pool is 49 (burned)
 
-                assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: O_WHALE_ULUNA_POOL_2_ID.to_string(),
-                    asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
-                    lp_denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
-                    asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                    assets: vec![coin(POOL_2_WHALE_AFTER_SWAP_1, UWHALE_DENOM), coin(POOL_2_LUNA_AFTER_SWAP_1, ULUNA_DENOM)],
-                    pool_type: PoolType::ConstantProduct,
-                    pool_fees: pool_fees_2.clone(),
-                    status: PoolStatus::default(),
-                });
-            })
-        ;
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_WHALE_ULUNA_POOL_2_ID.to_string(),
+                        asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
+                        lp_denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_2_WHALE_AFTER_SWAP_1, UWHALE_DENOM),
+                            coin(POOL_2_LUNA_AFTER_SWAP_1, ULUNA_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_2.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        );
 
     suite
-            .swap(
-                &creator,
-                UWHALE_DENOM.to_string(),
-                None,
-                Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
-                None,
-                O_WHALE_ULUNA_POOL_2_ID.to_string(),
-                vec![coin(SWAP_AMOUNT_2K, ULUNA_DENOM.to_string())],
-                |result| {
-                    result.unwrap();
-                },
-            )
-            .query_pools(Some(O_WHALE_ULUNA_POOL_2_ID.to_string()), None, None, |result| {
+        .swap(
+            &creator,
+            UWHALE_DENOM.to_string(),
+            None,
+            Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
+            None,
+            O_WHALE_ULUNA_POOL_2_ID.to_string(),
+            vec![coin(SWAP_AMOUNT_2K, ULUNA_DENOM.to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_pools(
+            Some(O_WHALE_ULUNA_POOL_2_ID.to_string()),
+            None,
+            None,
+            |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -601,43 +661,60 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                 // total_fees = 398, of which 299 stay in the pool (for LPs).
                 // Going out of the pool is 99 (burned)
 
-                assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: O_WHALE_ULUNA_POOL_2_ID.to_string(),
-                    asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
-                    lp_denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
-                    asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                    assets: vec![coin(POOL_2_WHALE_AFTER_SWAP_2, UWHALE_DENOM), coin(POOL_2_LUNA_AFTER_SWAP_2, ULUNA_DENOM)],
-                    pool_type: PoolType::ConstantProduct,
-                    pool_fees: pool_fees_2.clone(),
-                    status: PoolStatus::default(),
-                });
-            });
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_WHALE_ULUNA_POOL_2_ID.to_string(),
+                        asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
+                        lp_denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_2_WHALE_AFTER_SWAP_2, UWHALE_DENOM),
+                            coin(POOL_2_LUNA_AFTER_SWAP_2, ULUNA_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_2.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        );
 
     suite
         .query_balance(&fee_collector_addr.to_string(), UWHALE_DENOM, |result| {
             // no additional funds were sent to the fee collector
-            assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_WHALE_AFTER_SWAP_2, UWHALE_DENOM));
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_WHALE_AFTER_SWAP_2, UWHALE_DENOM)
+            );
         })
         .query_balance(&fee_collector_addr.to_string(), ULUNA_DENOM, |result| {
             // no additional funds were sent to the fee collector
-            assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_1, ULUNA_DENOM));
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_1, ULUNA_DENOM)
+            );
         });
 
     // let\'s do swaps in o.uluna.uusd.pool.1 and verify the fees are channeled correctly
     suite
-            .swap(
-                &creator,
-                UUSD_DENOM.to_string(),
-                None,
-                Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
-                None,
-                O_ULUNA_UUSD_POOL_1_ID.to_string(),
-                vec![coin(SWAP_AMOUNT_3K, ULUNA_DENOM.to_string())],
-                |result| {
-                    result.unwrap();
-                },
-            )
-            .query_pools(Some(O_ULUNA_UUSD_POOL_1_ID.to_string()), None, None, |result| {
+        .swap(
+            &creator,
+            UUSD_DENOM.to_string(),
+            None,
+            Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
+            None,
+            O_ULUNA_UUSD_POOL_1_ID.to_string(),
+            vec![coin(SWAP_AMOUNT_3K, ULUNA_DENOM.to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_pools(
+            Some(O_ULUNA_UUSD_POOL_1_ID.to_string()),
+            None,
+            None,
+            |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -649,38 +726,51 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                 // total_fees = 597, of which 209 stay in the pool (for LPs).
                 // Going out of the pool is 299 (fee collector) + 89 (burned)
 
-                assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: O_ULUNA_UUSD_POOL_1_ID.to_string(),
-                    asset_denoms: vec![ULUNA_DENOM.to_string(), UUSD_DENOM.to_string()],
-                    lp_denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
-                    asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                    assets: vec![coin(POOL_3_LUNA_AFTER_SWAP_1, ULUNA_DENOM), coin(POOL_3_UUSD_AFTER_SWAP_1, UUSD_DENOM)],
-                    pool_type: PoolType::ConstantProduct,
-                    pool_fees: pool_fees_1.clone(),
-                    status: PoolStatus::default(),
-                });
-            })
-        ;
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_ULUNA_UUSD_POOL_1_ID.to_string(),
+                        asset_denoms: vec![ULUNA_DENOM.to_string(), UUSD_DENOM.to_string()],
+                        lp_denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_3_LUNA_AFTER_SWAP_1, ULUNA_DENOM),
+                            coin(POOL_3_UUSD_AFTER_SWAP_1, UUSD_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_1.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        );
 
     suite.query_balance(&fee_collector_addr.to_string(), UUSD_DENOM, |result| {
         // 3000 of pool creation fees + 299 from the previous swap
-        assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_UUSD_AFTER_SWAP_1, UUSD_DENOM));
+        assert_eq!(
+            result.unwrap(),
+            coin(FEE_COLLECTOR_UUSD_AFTER_SWAP_1, UUSD_DENOM)
+        );
     });
 
     suite
-            .swap(
-                &creator,
-                ULUNA_DENOM.to_string(),
-                None,
-                Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
-                None,
-                O_ULUNA_UUSD_POOL_1_ID.to_string(),
-                vec![coin(SWAP_AMOUNT_1_5K, UUSD_DENOM.to_string())],
-                |result| {
-                    result.unwrap();
-                },
-            )
-            .query_pools(Some(O_ULUNA_UUSD_POOL_1_ID.to_string()), None, None, |result| {
+        .swap(
+            &creator,
+            ULUNA_DENOM.to_string(),
+            None,
+            Some(Decimal::percent(SLIPPAGE_PERCENT_21)),
+            None,
+            O_ULUNA_UUSD_POOL_1_ID.to_string(),
+            vec![coin(SWAP_AMOUNT_1_5K, UUSD_DENOM.to_string())],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_pools(
+            Some(O_ULUNA_UUSD_POOL_1_ID.to_string()),
+            None,
+            None,
+            |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -692,75 +782,81 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                 // total_fees = 300, of which 105 stay in the pool (for LPs).
                 // Going out of the pool is 150 (fee collector) + 45 (burned)
 
-                assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: O_ULUNA_UUSD_POOL_1_ID.to_string(),
-                    asset_denoms: vec![ULUNA_DENOM.to_string(), UUSD_DENOM.to_string()],
-                    lp_denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
-                    asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                    assets: vec![coin(POOL_3_LUNA_AFTER_SWAP_2, ULUNA_DENOM), coin(POOL_3_UUSD_AFTER_SWAP_2, UUSD_DENOM)],
-                    pool_type: PoolType::ConstantProduct,
-                    pool_fees: pool_fees_1.clone(),
-                    status: PoolStatus::default(),
-                });
-            })
-        ;
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_ULUNA_UUSD_POOL_1_ID.to_string(),
+                        asset_denoms: vec![ULUNA_DENOM.to_string(), UUSD_DENOM.to_string()],
+                        lp_denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_3_LUNA_AFTER_SWAP_2, ULUNA_DENOM),
+                            coin(POOL_3_UUSD_AFTER_SWAP_2, UUSD_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_1.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        );
 
     suite
-            .query_balance(
-                &fee_collector_addr.to_string(),
-                UWHALE_DENOM,
-                |result| {
-                    // no additional funds were sent to the fee collector
-                    assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_WHALE_AFTER_SWAP_2, UWHALE_DENOM));
-                },
-            )
-            .query_balance(
-                &fee_collector_addr.to_string(),
-                ULUNA_DENOM,
-                |result| {
-                    // 99 + 150
-                    assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_2_POOL_3, ULUNA_DENOM));
-                },
-            ).query_balance(
-            &fee_collector_addr.to_string(),
-            UUSD_DENOM,
-            |result| {
-                // FEE_COLLECTOR_UUSD_AFTER_SWAP_1 (3299) remains as this swap does not involve UUSD for protocol fees
-                assert_eq!(result.unwrap(), coin(FEE_COLLECTOR_UUSD_AFTER_SWAP_1, UUSD_DENOM));
-            },
-        )
-            .query_all_balances(
-                &pool_manager_addr.to_string(),
-                |result| {
-                    let balances = result.unwrap();
-                    assert_eq!(balances, vec![
-                        Coin {
-                            denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
-                            amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
-                        },
-                        Coin {
-                            denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
-                            amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
-                        },
-                        Coin {
-                            denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
-                            amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
-                        },
-                        Coin {
-                            denom: ULUNA_DENOM.to_string(),
-                            amount: Uint128::from(POOL_MANAGER_ULUNA_FINAL + POOL_2_LUNA_AFTER_ROUTER_SWAP - POOL_1_LUNA_AFTER_SWAP_2 + POOL_3_LUNA_AFTER_ROUTER_SWAP - POOL_3_LUNA_AFTER_SWAP_2 ), // Simplified this complex calculation
-                        },
-                        Coin {
-                            denom: UUSD_DENOM.to_string(),
-                            amount: Uint128::from(POOL_MANAGER_UUSD_FINAL + POOL_3_UUSD_AFTER_ROUTER_SWAP - POOL_3_UUSD_AFTER_SWAP_2),
-                        },
-                        Coin {
-                            denom: UWHALE_DENOM.to_string(),
-                            amount: Uint128::from(POOL_MANAGER_UWHALE_FINAL + POOL_2_WHALE_AFTER_ROUTER_SWAP - POOL_1_WHALE_AFTER_SWAP_2 - SWAP_AMOUNT_5K),
-                        },
-                    ]);
-                },
+        .query_balance(&fee_collector_addr.to_string(), UWHALE_DENOM, |result| {
+            // no additional funds were sent to the fee collector
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_WHALE_AFTER_SWAP_2, UWHALE_DENOM)
             );
+        })
+        .query_balance(&fee_collector_addr.to_string(), ULUNA_DENOM, |result| {
+            // 99 + 150
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_LUNA_AFTER_SWAP_2_POOL_3, ULUNA_DENOM)
+            );
+        })
+        .query_balance(&fee_collector_addr.to_string(), UUSD_DENOM, |result| {
+            // FEE_COLLECTOR_UUSD_AFTER_SWAP_1 (3299) remains as this swap does not involve UUSD for protocol fees
+            assert_eq!(
+                result.unwrap(),
+                coin(FEE_COLLECTOR_UUSD_AFTER_SWAP_1, UUSD_DENOM)
+            );
+        });
+
+    // query pools with pagination // This comment might be from old code, the assertion below is for pool manager balances
+    suite.query_all_balances(&pool_manager_addr.to_string(), |result| {
+        let balances = result.unwrap();
+        assert_eq!(
+            balances,
+            vec![
+                Coin {
+                    denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
+                    amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
+                },
+                Coin {
+                    denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                    amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
+                },
+                Coin {
+                    denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
+                    amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
+                },
+                Coin {
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(POOL_MANAGER_ULUNA_FINAL),
+                },
+                Coin {
+                    denom: UUSD_DENOM.to_string(),
+                    amount: Uint128::from(POOL_MANAGER_UUSD_FINAL),
+                },
+                Coin {
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(POOL_MANAGER_UWHALE_FINAL),
+                },
+            ]
+        );
+    });
 
     // swap via the router now
     let swap_operations = vec![
@@ -776,7 +872,8 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
         },
     ];
 
-    suite.execute_swap_operations(
+    suite
+        .execute_swap_operations(
             &creator,
             swap_operations,
             None,
@@ -786,23 +883,39 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
             |result| {
                 result.unwrap();
             },
-        ).query_pools(Some(O_WHALE_ULUNA_POOL_1_ID.to_string()), None, None, |result| {
-            let response = result.unwrap();
-            let pool_info = response.pools[0].pool_info.clone();
+        )
+        .query_pools(
+            Some(O_WHALE_ULUNA_POOL_1_ID.to_string()),
+            None,
+            None,
+            |result| {
+                let response = result.unwrap();
+                let pool_info = response.pools[0].pool_info.clone();
 
-            // this should have not changed since last time, since we didn\'t touch this pool
-            assert_eq!(pool_info, PoolInfo {
-                pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
-                asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
-                lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
-                asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                assets: vec![coin(POOL_1_WHALE_AFTER_SWAP_2, UWHALE_DENOM), coin(POOL_1_LUNA_AFTER_SWAP_2, ULUNA_DENOM)],
-                pool_type: PoolType::ConstantProduct,
-                pool_fees: pool_fees_1.clone(),
-                status: PoolStatus::default(),
-            });
-        })
-            .query_pools(Some(O_WHALE_ULUNA_POOL_2_ID.to_string()), None, None, |result| {
+                // this should have not changed since last time, since we didn\'t touch this pool
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
+                        asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
+                        lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_1_WHALE_AFTER_SWAP_2, UWHALE_DENOM),
+                            coin(POOL_1_LUNA_AFTER_SWAP_2, ULUNA_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_1.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        )
+        .query_pools(
+            Some(O_WHALE_ULUNA_POOL_2_ID.to_string()),
+            None,
+            None,
+            |result| {
                 let response = result.unwrap();
                 let pool_info = response.pools[0].pool_info.clone();
 
@@ -811,42 +924,62 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                 // spread_amount: Uint128(25), swap_fee_amount: Uint128(747),
                 // protocol_fee_amount: Uint128(0), burn_fee_amount: Uint128(249) }
 
-                assert_eq!(pool_info, PoolInfo {
-                    pool_identifier: O_WHALE_ULUNA_POOL_2_ID.to_string(),
-                    asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
-                    lp_denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
-                    asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                    assets: vec![coin(POOL_2_WHALE_AFTER_ROUTER_SWAP, UWHALE_DENOM), coin(POOL_2_LUNA_AFTER_ROUTER_SWAP, ULUNA_DENOM)],
-                    pool_type: PoolType::ConstantProduct,
-                    pool_fees: pool_fees_2.clone(),
-                    status: PoolStatus::default(),
-                });
-            }).query_pools(Some(O_ULUNA_UUSD_POOL_1_ID.to_string()), None, None, |result| {
-            let response = result.unwrap();
-            let pool_info = response.pools[0].pool_info.clone();
-
-            // the swap above was:
-            // SwapComputation { return_amount: Uint128(3169),
-            // spread_amount: Uint128(16), swap_fee_amount: Uint128(277),
-            // protocol_fee_amount: Uint128(396), burn_fee_amount: Uint128(118) }
-
-            assert_eq!(pool_info, PoolInfo {
-                pool_identifier: O_ULUNA_UUSD_POOL_1_ID.to_string(),
-                asset_denoms: vec![ULUNA_DENOM.to_string(), UUSD_DENOM.to_string()],
-                lp_denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
-                asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
-                assets: vec![coin(POOL_3_LUNA_AFTER_ROUTER_SWAP, ULUNA_DENOM), coin(POOL_3_UUSD_AFTER_ROUTER_SWAP, UUSD_DENOM)],
-                pool_type: PoolType::ConstantProduct,
-                pool_fees: pool_fees_1.clone(),
-                status: PoolStatus::default(),
-            });
-        });
-
-    suite.query_all_balances(
-            &fee_collector_addr.to_string(),
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_WHALE_ULUNA_POOL_2_ID.to_string(),
+                        asset_denoms: vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()],
+                        lp_denom: O_WHALE_ULUNA_POOL_2_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_2_WHALE_AFTER_ROUTER_SWAP, UWHALE_DENOM),
+                            coin(POOL_2_LUNA_AFTER_ROUTER_SWAP, ULUNA_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_2.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        )
+        .query_pools(
+            Some(O_ULUNA_UUSD_POOL_1_ID.to_string()),
+            None,
+            None,
             |result| {
-                let balances = result.unwrap();
-                assert_eq!(balances, vec![
+                let response = result.unwrap();
+                let pool_info = response.pools[0].pool_info.clone();
+
+                // the swap above was:
+                // SwapComputation { return_amount: Uint128(3169),
+                // spread_amount: Uint128(16), swap_fee_amount: Uint128(277),
+                // protocol_fee_amount: Uint128(396), burn_fee_amount: Uint128(118) }
+
+                assert_eq!(
+                    pool_info,
+                    PoolInfo {
+                        pool_identifier: O_ULUNA_UUSD_POOL_1_ID.to_string(),
+                        asset_denoms: vec![ULUNA_DENOM.to_string(), UUSD_DENOM.to_string()],
+                        lp_denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
+                        asset_decimals: vec![ASSET_DECIMALS_6, ASSET_DECIMALS_6],
+                        assets: vec![
+                            coin(POOL_3_LUNA_AFTER_ROUTER_SWAP, ULUNA_DENOM),
+                            coin(POOL_3_UUSD_AFTER_ROUTER_SWAP, UUSD_DENOM)
+                        ],
+                        pool_type: PoolType::ConstantProduct,
+                        pool_fees: pool_fees_1.clone(),
+                        status: PoolStatus::default(),
+                    }
+                );
+            },
+        );
+
+    suite
+        .query_all_balances(&fee_collector_addr.to_string(), |result| {
+            let balances = result.unwrap();
+            assert_eq!(
+                balances,
+                vec![
                     // the o.whale.uluna.pool.2 doesn\'t have protocol fees, hence no luna was accrued
                     // in the last swap
                     Coin {
@@ -861,13 +994,14 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                         denom: UWHALE_DENOM.to_string(),
                         amount: Uint128::from(FEE_COLLECTOR_WHALE_AFTER_SWAP_2),
                     },
-                ]);
-            },
-        ).query_all_balances(
-            &pool_manager_addr.to_string(),
-            |result| {
-                let balances = result.unwrap();
-                assert_eq!(balances, vec![
+                ]
+            );
+        })
+        .query_all_balances(&pool_manager_addr.to_string(), |result| {
+            let balances = result.unwrap();
+            assert_eq!(
+                balances,
+                vec![
                     Coin {
                         denom: O_ULUNA_UUSD_POOL_1_LP.to_string(),
                         amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
@@ -882,17 +1016,17 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                     },
                     Coin {
                         denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(POOL_MANAGER_ULUNA_FINAL + POOL_2_LUNA_AFTER_ROUTER_SWAP - POOL_1_LUNA_AFTER_SWAP_2 + POOL_3_LUNA_AFTER_ROUTER_SWAP - POOL_3_LUNA_AFTER_SWAP_2 ), // Simplified this complex calculation
+                        amount: Uint128::from(PM_ULUNA_BAL_AFTER_ROUTER),
                     },
                     Coin {
                         denom: UUSD_DENOM.to_string(),
-                        amount: Uint128::from(POOL_MANAGER_UUSD_FINAL + POOL_3_UUSD_AFTER_ROUTER_SWAP - POOL_3_UUSD_AFTER_SWAP_2),
+                        amount: Uint128::from(PM_UUSD_BAL_AFTER_ROUTER),
                     },
                     Coin {
                         denom: UWHALE_DENOM.to_string(),
-                        amount: Uint128::from(POOL_MANAGER_UWHALE_FINAL + POOL_2_WHALE_AFTER_ROUTER_SWAP - POOL_1_WHALE_AFTER_SWAP_2 - SWAP_AMOUNT_5K),
+                        amount: Uint128::from(PM_UWHALE_BAL_AFTER_ROUTER),
                     },
-                ]);
-            },
-        );
+                ]
+            );
+        });
 }

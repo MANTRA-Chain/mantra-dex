@@ -57,7 +57,7 @@ The constants should be extracted to the top of each file.
 
 ### Locking Tests (`lp_actions/locking.rs`)
 
-- [ ] **All tests**: Extract numeric literals, string denoms, and locking parameters.
+- [x] **All tests**: Extract numeric literals, string denoms, and locking parameters.
 
 ### Shares Calculation Tests (`lp_actions/shares_calculation.rs`)
 
@@ -69,14 +69,14 @@ The constants should be extracted to the top of each file.
 
 ### Slippage and Fees Tests (`lp_actions/slippage_and_fees.rs`)
 
-- [ ] **All tests**: Extract numeric literals, string denoms, fee values, and slippage parameters.
+- [x] **All tests**: Extract numeric literals, string denoms, fee values, and slippage parameters.
 
 ### Stableswap Tests (`lp_actions/stableswap.rs`)
 
 - [ ] **All tests**: Extract numeric literals, string denoms, and stableswap parameters.
 
 ## Progress Tracking
-- Percentage Complete: 54% (27/~50 tasks)
+- Percentage Complete: 56% (28/~50 tasks)
 
 ## Notes
 The goal of this refactoring is to improve code maintainability by moving hardcoded values to constants at the top of each file. This will make the tests easier to read, modify, and maintain. Each test should use constants instead of hardcoded values.
