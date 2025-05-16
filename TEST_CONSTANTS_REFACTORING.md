@@ -53,7 +53,7 @@ The constants should be extracted to the top of each file.
 
 ### Basic LP Tests (`lp_actions/basic_lp.rs`)
 
-- [ ] **All tests**: Extract numeric literals, string denoms, and LP parameters.
+- [x] **All tests**: Extract numeric literals, string denoms, and LP parameters. (DONE - 2024-05-16 - Refactored remaining constants in `lp_actions/basic_lp.rs`)
 
 ### Locking Tests (`lp_actions/locking.rs`)
 
