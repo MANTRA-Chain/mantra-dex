@@ -80,7 +80,10 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
         pool_fees,
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
-        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+        vec![
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -140,22 +143,35 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
         .query_all_balances(&farm_manager_addr.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                coin.denom == lp_denom
+                    && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
             }));
         });
 
-    suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
-        let positions = result.unwrap().positions;
-        assert_eq!(positions.len(), 1);
-        assert_eq!(positions[0], Position {
-            identifier: POSITION_IDENTIFIER_1.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
-            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-    });
+    suite.query_farm_positions(
+        Some(PositionsBy::Receiver(creator.to_string())),
+        None,
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap().positions;
+            assert_eq!(positions.len(), 1);
+            assert_eq!(
+                positions[0],
+                Position {
+                    identifier: POSITION_IDENTIFIER_1.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                    },
+                    unlocking_duration: UNLOCK_DURATION_ONE_DAY,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        },
+    );
 
     // let's do it again, it should create another position on the farm manager
 
@@ -214,26 +230,44 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
             *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
         });
 
-    suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
-        let positions = result.unwrap().positions;
-        assert_eq!(positions.len(), 2);
-        assert_eq!(positions[0], Position {
-            identifier: POSITION_IDENTIFIER_1.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
-            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-        assert_eq!(positions[1], Position {
-            identifier: POSITION_IDENTIFIER_2.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(LIQUIDITY_AMOUNT_2K) },
-            unlocking_duration: UNLOCK_DURATION_OTHER,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-    });
+    suite.query_farm_positions(
+        Some(PositionsBy::Receiver(creator.to_string())),
+        None,
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap().positions;
+            assert_eq!(positions.len(), 2);
+            assert_eq!(
+                positions[0],
+                Position {
+                    identifier: POSITION_IDENTIFIER_1.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                    },
+                    unlocking_duration: UNLOCK_DURATION_ONE_DAY,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                positions[1],
+                Position {
+                    identifier: POSITION_IDENTIFIER_2.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: Uint128::from(LIQUIDITY_AMOUNT_2K)
+                    },
+                    unlocking_duration: UNLOCK_DURATION_OTHER,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        },
+    );
 }
 
 #[test]
@@ -275,7 +309,10 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         pool_fees,
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
-        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+        vec![
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -335,22 +372,35 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         .query_all_balances(&farm_manager_addr.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                coin.denom == lp_denom
+                    && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
             }));
         });
 
-    suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
-        let positions = result.unwrap().positions;
-        assert_eq!(positions.len(), 1);
-        assert_eq!(positions[0], Position {
-            identifier: USER_FARM_IDENTIFIER.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
-            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-    });
+    suite.query_farm_positions(
+        Some(PositionsBy::Receiver(creator.to_string())),
+        None,
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap().positions;
+            assert_eq!(positions.len(), 1);
+            assert_eq!(
+                positions[0],
+                Position {
+                    identifier: USER_FARM_IDENTIFIER.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                    },
+                    unlocking_duration: UNLOCK_DURATION_ONE_DAY,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        },
+    );
 
     // let's do it again, reusing the same farm identifier
 
@@ -409,19 +459,31 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
             *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
         });
 
-    suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
-        let positions = result.unwrap().positions;
-        // the position should be updated
-        assert_eq!(positions.len(), 1);
-        assert_eq!(positions[0], Position {
-            identifier: USER_FARM_IDENTIFIER.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: *farm_manager_lp_amount.borrow() },
-            unlocking_duration: UNLOCK_DURATION_OTHER,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-    });
+    suite.query_farm_positions(
+        Some(PositionsBy::Receiver(creator.to_string())),
+        None,
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap().positions;
+            // the position should be updated
+            assert_eq!(positions.len(), 1);
+            assert_eq!(
+                positions[0],
+                Position {
+                    identifier: USER_FARM_IDENTIFIER.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: *farm_manager_lp_amount.borrow()
+                    },
+                    unlocking_duration: UNLOCK_DURATION_ONE_DAY,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        },
+    );
 }
 
 #[test]
@@ -463,7 +525,10 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
         pool_fees,
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
-        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+        vec![
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -523,22 +588,35 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
         .query_all_balances(&farm_manager_addr.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                coin.denom == lp_denom
+                    && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
             }));
         });
 
-    suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
-        let positions = result.unwrap().positions;
-        assert_eq!(positions.len(), 1);
-        assert_eq!(positions[0], Position {
-            identifier: USER_FARM_IDENTIFIER.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
-            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-    });
+    suite.query_farm_positions(
+        Some(PositionsBy::Receiver(creator.to_string())),
+        None,
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap().positions;
+            assert_eq!(positions.len(), 1);
+            assert_eq!(
+                positions[0],
+                Position {
+                    identifier: USER_FARM_IDENTIFIER.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                    },
+                    unlocking_duration: UNLOCK_DURATION_ONE_DAY,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        },
+    );
 
     // let's do it again, this time no identifier is used
 
@@ -597,25 +675,43 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
             *farm_manager_lp_amount.borrow_mut() = lp_balance.amount;
         });
 
-    suite.query_farm_positions(Some(PositionsBy::Receiver(creator.to_string())), None, None, None, |result| {
-        let positions = result.unwrap().positions;
-        // the position should be updated
-        assert_eq!(positions.len(), 2);
-        assert_eq!(positions[0], Position {
-            identifier: POSITION_IDENTIFIER_1.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(LIQUIDITY_AMOUNT_2K) },
-            unlocking_duration: UNLOCK_DURATION_OTHER,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-        assert_eq!(positions[1], Position {
-            identifier: USER_FARM_IDENTIFIER.to_string(),
-            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
-            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
-            open: true,
-            expiring_at: None,
-            receiver: creator.clone(),
-        });
-    });
+    suite.query_farm_positions(
+        Some(PositionsBy::Receiver(creator.to_string())),
+        None,
+        None,
+        None,
+        |result| {
+            let positions = result.unwrap().positions;
+            // the position should be updated
+            assert_eq!(positions.len(), 2);
+            assert_eq!(
+                positions[0],
+                Position {
+                    identifier: POSITION_IDENTIFIER_1.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: Uint128::from(LIQUIDITY_AMOUNT_2K)
+                    },
+                    unlocking_duration: UNLOCK_DURATION_OTHER,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+            assert_eq!(
+                positions[1],
+                Position {
+                    identifier: USER_FARM_IDENTIFIER.to_string(),
+                    lp_asset: Coin {
+                        denom: lp_denom.to_string(),
+                        amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
+                    },
+                    unlocking_duration: UNLOCK_DURATION_ONE_DAY,
+                    open: true,
+                    expiring_at: None,
+                    receiver: creator.clone(),
+                }
+            );
+        },
+    );
 }
