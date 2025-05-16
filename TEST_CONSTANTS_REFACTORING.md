@@ -65,7 +65,7 @@ The constants should be extracted to the top of each file.
 
 ### Single Asset Tests (`lp_actions/single_asset.rs`)
 
-- [x] **All tests**: Extract numeric literals, string denoms, and asset parameters. (DONE - 2024-05-17 - Refactored constants in `lp_actions/single_asset.rs`)
+- [x] **All tests**: Extract numeric literals, string denoms, and asset parameters. (DONE - 2024-05-23 - Re-refactored constants in `lp_actions/single_asset.rs` to ensure full coverage)
 
 ### Slippage and Fees Tests (`lp_actions/slippage_and_fees.rs`)
 
