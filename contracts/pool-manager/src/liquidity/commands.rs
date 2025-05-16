@@ -284,18 +284,16 @@ pub fn provide_liquidity(
             pool.pool_type.clone(),
         )?;
 
-        // if the unlocking duration is set, lock the LP tokens in the farm manager
-        if let Some(unlocking_duration) = unlocking_duration {
-            // check if receiver is the same as the sender of the tx.
-            // In case the liquidity was provided via the single-side liquidity provision, the receiver
-            // will be the contract address. In that case, when providing the single-side liquidity,
-            // the receiver must be the same as the sender of the tx.
+        // if an unlocking duration is set, create or expand a position on the farm manager
+        if let Some(resolved_unlocking_duration) = unlocking_duration {
+            // Ensure that if locking LPs for a specific receiver, either the tx sender is that receiver
+            // or the tx sender is the contract itself (e.g. for single-side LP)
             ensure!(
                 receiver == info.sender.to_string() || info.sender == env.contract.address,
                 ContractError::Unauthorized
             );
 
-            // mint the lp tokens to the contract
+            // Mint LP tokens to the pool-manager contract itself, as these will be sent to the farm manager
             messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
                 liquidity_token.clone(),
                 &env.contract.address,
@@ -311,9 +309,9 @@ pub fn provide_liquidity(
                     config.farm_manager_addr.to_string(),
                     &mantra_dex_std::farm_manager::QueryMsg::Positions {
                         filter_by: Some(PositionsBy::Identifier(position_identifier.clone())),
-                        open_state: None,
+                        open_state: Some(true),
                         start_after: None,
-                        limit: None,
+                        limit: Some(1u32),
                     },
                 );
 
@@ -336,7 +334,7 @@ pub fn provide_liquidity(
                                     identifier: position_identifier,
                                 },
                             },
-                            coins(shares.u128(), liquidity_token),
+                            coins(shares.u128(), liquidity_token.clone()),
                         )?
                         .into(),
                     );
@@ -349,36 +347,37 @@ pub fn provide_liquidity(
                             &mantra_dex_std::farm_manager::ExecuteMsg::ManagePosition {
                                 action: mantra_dex_std::farm_manager::PositionAction::Create {
                                     identifier: Some(position_identifier),
-                                    unlocking_duration,
+                                    unlocking_duration: resolved_unlocking_duration,
                                     receiver: Some(receiver.clone()),
                                 },
                             },
-                            coins(shares.u128(), liquidity_token),
+                            coins(shares.u128(), liquidity_token.clone()),
                         )?
                         .into(),
                     );
                 }
             } else {
                 // no lock_position_identifier was set, create a new position for the user
+                // Pass None for identifier to let farm-manager auto-generate it
                 messages.push(
                     wasm_execute(
                         config.farm_manager_addr,
                         &mantra_dex_std::farm_manager::ExecuteMsg::ManagePosition {
                             action: mantra_dex_std::farm_manager::PositionAction::Create {
-                                identifier: lock_position_identifier,
-                                unlocking_duration,
-                                receiver: Some(receiver.clone()),
+                                identifier: None,
+                                unlocking_duration: resolved_unlocking_duration,
+                                receiver: Some(info.sender.to_string()),
                             },
                         },
-                        coins(shares.u128(), liquidity_token),
+                        coins(shares.u128(), liquidity_token.clone()),
                     )?
                     .into(),
                 );
             }
         } else {
-            // if no unlocking duration is set, just mint the LP tokens to the receiver
+            // No unlocking_duration, so mint LP tokens directly to the receiver
             messages.push(mantra_dex_std::lp_common::mint_lp_token_msg(
-                liquidity_token,
+                liquidity_token.clone(),
                 &deps.api.addr_validate(&receiver)?,
                 &env.contract.address,
                 shares,

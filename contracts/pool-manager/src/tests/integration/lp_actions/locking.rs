@@ -11,23 +11,53 @@ use mantra_dex_std::{
 
 use crate::tests::suite::TestingSuite;
 
+// Denoms
+const UWHALE_DENOM: &str = "uwhale";
+const ULUNA_DENOM: &str = "uluna";
+const UUSD_DENOM: &str = "uusd";
+const UOM_DENOM: &str = "uom";
+
+// Amounts
+const INITIAL_LARGE_BALANCE: u128 = 10_000_000u128;
+const INITIAL_SMALL_BALANCE: u128 = 10_000u128;
+const STARGATE_MOCK_UOM_AMOUNT: u128 = 8888u128;
+const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = 1000u128;
+// const POOL_CREATION_FEE_UOM_AMOUNT: u128 = 8888u128; // This is same as STARGATE_MOCK_UOM_AMOUNT
+
+const LIQUIDITY_AMOUNT_1M: u128 = 1_000_000u128;
+const LIQUIDITY_AMOUNT_2K: u128 = 2_000u128;
+const EXPECTED_SHARES_AFTER_1M_LIQUIDITY: u128 = 999_000u128; // 1_000_000 - MINIMUM_LIQUIDITY_AMOUNT (1000)
+
+// Pool Parameters
+const DEFAULT_ASSET_DECIMALS: u8 = 6u8;
+const WHALE_ULUNA_POOL_LABEL: &str = "whale.uluna";
+const ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA: &str = "o.whale.uluna"; // Used to derive LP token name
+
+// Locking & Position Parameters
+const UNLOCK_DURATION_ONE_DAY: u64 = 86_400u64;
+const UNLOCK_DURATION_OTHER: u64 = 200_000u64;
+const POSITION_IDENTIFIER_1: &str = "p-1";
+const POSITION_IDENTIFIER_2: &str = "p-2";
+const FARM_IDENTIFIER: &str = "farm_identifier";
+const USER_FARM_IDENTIFIER: &str = "u-farm_identifier";
+
 #[test]
 fn provide_liquidity_locking_lp_no_lock_position_identifier() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(INITIAL_LARGE_BALANCE, UWHALE_DENOM.to_string()),
+            coin(INITIAL_LARGE_BALANCE, ULUNA_DENOM.to_string()),
+            coin(INITIAL_SMALL_BALANCE, UUSD_DENOM.to_string()),
+            coin(INITIAL_SMALL_BALANCE, UOM_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -46,11 +76,11 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms,
-        vec![6u8, 6u8],
+        vec![DEFAULT_ASSET_DECIMALS, DEFAULT_ASSET_DECIMALS],
         pool_fees,
         PoolType::ConstantProduct,
-        Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        Some(WHALE_ULUNA_POOL_LABEL.to_string()),
+        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
         |result| {
             result.unwrap();
         },
@@ -58,26 +88,26 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
 
     let contract_addr = suite.pool_manager_addr.clone();
     let farm_manager_addr = suite.farm_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
+    let lp_denom = suite.get_lp_denom(ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string());
 
     // Let's try to add liquidity
     suite
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
-            Some(86_400u64),
+            ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string(),
+            Some(UNLOCK_DURATION_ONE_DAY),
             None,
             None,
             None,
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
             ],
             |result| {
@@ -86,7 +116,7 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
                     event.attributes.iter().any(|attr| {
                         attr.key == "added_shares"
                             && attr.value
-                                == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
+                                == (Uint128::from(LIQUIDITY_AMOUNT_1M) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
                     })
                 }));
@@ -110,7 +140,7 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
         .query_all_balances(&farm_manager_addr.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom && coin.amount == Uint128::from(999_000u128)
+                coin.denom == lp_denom && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
             }));
         });
 
@@ -118,9 +148,9 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
         let positions = result.unwrap().positions;
         assert_eq!(positions.len(), 1);
         assert_eq!(positions[0], Position {
-            identifier: "p-1".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
-            unlocking_duration: 86_400,
+            identifier: POSITION_IDENTIFIER_1.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
+            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
@@ -139,20 +169,20 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
         })
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
-            Some(200_000u64),
+            ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string(),
+            Some(UNLOCK_DURATION_OTHER),
             None,
             None,
             None,
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(2_000u128),
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(2_000u128),
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
             ],
             |result| {
@@ -176,7 +206,7 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
                     && coin.amount
                         == farm_manager_lp_amount
                             .borrow()
-                            .checked_add(Uint128::from(2_000u128))
+                            .checked_add(Uint128::from(LIQUIDITY_AMOUNT_2K))
                             .unwrap()
             }));
 
@@ -188,17 +218,17 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
         let positions = result.unwrap().positions;
         assert_eq!(positions.len(), 2);
         assert_eq!(positions[0], Position {
-            identifier: "p-1".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
-            unlocking_duration: 86_400,
+            identifier: POSITION_IDENTIFIER_1.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
+            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
         });
         assert_eq!(positions[1], Position {
-            identifier: "p-2".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(2_000u128) },
-            unlocking_duration: 200_000,
+            identifier: POSITION_IDENTIFIER_2.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(LIQUIDITY_AMOUNT_2K) },
+            unlocking_duration: UNLOCK_DURATION_OTHER,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
@@ -210,19 +240,19 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
 fn provide_liquidity_locking_lp_reusing_position_identifier() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(INITIAL_LARGE_BALANCE, UWHALE_DENOM.to_string()),
+            coin(INITIAL_LARGE_BALANCE, ULUNA_DENOM.to_string()),
+            coin(INITIAL_SMALL_BALANCE, UUSD_DENOM.to_string()),
+            coin(INITIAL_SMALL_BALANCE, UOM_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -241,11 +271,11 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms,
-        vec![6u8, 6u8],
+        vec![DEFAULT_ASSET_DECIMALS, DEFAULT_ASSET_DECIMALS],
         pool_fees,
         PoolType::ConstantProduct,
-        Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        Some(WHALE_ULUNA_POOL_LABEL.to_string()),
+        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
         |result| {
             result.unwrap();
         },
@@ -253,26 +283,26 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
 
     let contract_addr = suite.pool_manager_addr.clone();
     let farm_manager_addr = suite.farm_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
+    let lp_denom = suite.get_lp_denom(ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string());
 
     // Let's try to add liquidity
     suite
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
-            Some(86_400u64),
-            Some("farm_identifier".to_string()),
+            ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string(),
+            Some(UNLOCK_DURATION_ONE_DAY),
+            Some(FARM_IDENTIFIER.to_string()),
             None,
             None,
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
             ],
             |result| {
@@ -281,7 +311,7 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
                     event.attributes.iter().any(|attr| {
                         attr.key == "added_shares"
                             && attr.value
-                                == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
+                                == (Uint128::from(LIQUIDITY_AMOUNT_1M) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
                     })
                 }));
@@ -305,7 +335,7 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         .query_all_balances(&farm_manager_addr.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom && coin.amount == Uint128::from(999_000u128)
+                coin.denom == lp_denom && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
             }));
         });
 
@@ -313,9 +343,9 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         let positions = result.unwrap().positions;
         assert_eq!(positions.len(), 1);
         assert_eq!(positions[0], Position {
-            identifier: "u-farm_identifier".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
-            unlocking_duration: 86_400,
+            identifier: USER_FARM_IDENTIFIER.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
+            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
@@ -334,20 +364,20 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         })
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
-            Some(200_000u64),
-            Some("u-farm_identifier".to_string()),
+            ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string(),
+            Some(UNLOCK_DURATION_OTHER),
+            Some(USER_FARM_IDENTIFIER.to_string()),
             None,
             None,
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(2_000u128),
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(2_000u128),
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
             ],
             |result| {
@@ -371,7 +401,7 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
                     && coin.amount
                         == farm_manager_lp_amount
                             .borrow()
-                            .checked_add(Uint128::from(2_000u128))
+                            .checked_add(Uint128::from(LIQUIDITY_AMOUNT_2K))
                             .unwrap()
             }));
 
@@ -384,9 +414,9 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         // the position should be updated
         assert_eq!(positions.len(), 1);
         assert_eq!(positions[0], Position {
-            identifier: "u-farm_identifier".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: *farm_manager_lp_amount.borrow() },
-            unlocking_duration: 86_400,
+            identifier: USER_FARM_IDENTIFIER.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: *farm_manager_lp_amount.borrow() },
+            unlocking_duration: UNLOCK_DURATION_OTHER,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
@@ -398,19 +428,19 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
 fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(INITIAL_LARGE_BALANCE, UWHALE_DENOM.to_string()),
+            coin(INITIAL_LARGE_BALANCE, ULUNA_DENOM.to_string()),
+            coin(INITIAL_SMALL_BALANCE, UUSD_DENOM.to_string()),
+            coin(INITIAL_SMALL_BALANCE, UOM_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -429,11 +459,11 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms,
-        vec![6u8, 6u8],
+        vec![DEFAULT_ASSET_DECIMALS, DEFAULT_ASSET_DECIMALS],
         pool_fees,
         PoolType::ConstantProduct,
-        Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        Some(WHALE_ULUNA_POOL_LABEL.to_string()),
+        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
         |result| {
             result.unwrap();
         },
@@ -441,26 +471,26 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
 
     let contract_addr = suite.pool_manager_addr.clone();
     let farm_manager_addr = suite.farm_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
+    let lp_denom = suite.get_lp_denom(ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string());
 
     // Let's try to add liquidity
     suite
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
-            Some(86_400u64),
-            Some("farm_identifier".to_string()),
+            ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string(),
+            Some(UNLOCK_DURATION_ONE_DAY),
+            Some(FARM_IDENTIFIER.to_string()),
             None,
             None,
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
             ],
             |result| {
@@ -469,7 +499,7 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
                     event.attributes.iter().any(|attr| {
                         attr.key == "added_shares"
                             && attr.value
-                                == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
+                                == (Uint128::from(LIQUIDITY_AMOUNT_1M) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
                     })
                 }));
@@ -493,7 +523,7 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
         .query_all_balances(&farm_manager_addr.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom && coin.amount == Uint128::from(999_000u128)
+                coin.denom == lp_denom && coin.amount == Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY)
             }));
         });
 
@@ -501,9 +531,9 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
         let positions = result.unwrap().positions;
         assert_eq!(positions.len(), 1);
         assert_eq!(positions[0], Position {
-            identifier: "u-farm_identifier".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::from(999_000u128) },
-            unlocking_duration: 86_400,
+            identifier: USER_FARM_IDENTIFIER.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
+            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
@@ -522,20 +552,20 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
         })
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
-            Some(200_000u64),
+            ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA.to_string(),
+            Some(UNLOCK_DURATION_OTHER),
             None,
             None,
             None,
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(2_000u128),
+                    denom: UWHALE_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(2_000u128),
+                    denom: ULUNA_DENOM.to_string(),
+                    amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
             ],
             |result| {
@@ -559,7 +589,7 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
                     && coin.amount
                         == farm_manager_lp_amount
                             .borrow()
-                            .checked_add(Uint128::from(2_000u128))
+                            .checked_add(Uint128::from(LIQUIDITY_AMOUNT_2K))
                             .unwrap()
             }));
 
@@ -572,17 +602,17 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
         // the position should be updated
         assert_eq!(positions.len(), 2);
         assert_eq!(positions[0], Position {
-            identifier: "p-1".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(2_000u128) },
-            unlocking_duration: 200_000,
+            identifier: POSITION_IDENTIFIER_1.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(LIQUIDITY_AMOUNT_2K) },
+            unlocking_duration: UNLOCK_DURATION_OTHER,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
         });
         assert_eq!(positions[1], Position {
-            identifier: "u-farm_identifier".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(999_000u128) },
-            unlocking_duration: 86_400,
+            identifier: USER_FARM_IDENTIFIER.to_string(),
+            lp_asset: Coin { denom: lp_denom.to_string(), amount: Uint128::from(EXPECTED_SHARES_AFTER_1M_LIQUIDITY) },
+            unlocking_duration: UNLOCK_DURATION_ONE_DAY,
             open: true,
             expiring_at: None,
             receiver: creator.clone(),
