@@ -61,11 +61,11 @@ The constants should be extracted to the top of each file.
 
 ### Shares Calculation Tests (`lp_actions/shares_calculation.rs`)
 
-- [ ] **All tests**: Extract numeric literals, string denoms, and shares calculation parameters.
+- [x] **All tests**: Extract numeric literals, string denoms, and shares calculation parameters. (DONE - 2024-05-21 - Refactored constants in `lp_actions/shares_calculation.rs`)
 
 ### Single Asset Tests (`lp_actions/single_asset.rs`)
 
-- [ ] **All tests**: Extract numeric literals, string denoms, and asset parameters.
+- [x] **All tests**: Extract numeric literals, string denoms, and asset parameters. (DONE - 2024-05-17 - Refactored constants in `lp_actions/single_asset.rs`)
 
 ### Slippage and Fees Tests (`lp_actions/slippage_and_fees.rs`)
 
@@ -73,7 +73,7 @@ The constants should be extracted to the top of each file.
 
 ### Stableswap Tests (`lp_actions/stableswap.rs`)
 
-- [ ] **All tests**: Extract numeric literals, string denoms, and stableswap parameters.
+- [x] **All tests**: Extract numeric literals, string denoms, and stableswap parameters. (DONE - 2024-05-21 - Verified constants are already in place)
 
 ## Progress Tracking
 - Percentage Complete: 56% (28/~50 tasks)
