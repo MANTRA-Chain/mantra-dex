@@ -148,7 +148,7 @@ pub fn execute(
                 receiver,
             ),
             PositionAction::Expand { identifier } => {
-                position::commands::expand_position(deps, &env, info, identifier)
+                position::commands::expand_position(deps, &env, info, identifier, None)
             }
             PositionAction::Close {
                 identifier,

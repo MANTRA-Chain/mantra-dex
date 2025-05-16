@@ -113,6 +113,7 @@ pub(crate) fn expand_position(
     env: &Env,
     info: MessageInfo,
     identifier: String,
+    unlocking_duration: Option<u64>,
 ) -> Result<Response, ContractError> {
     let mut position = get_position(deps.storage, Some(identifier.clone()))?.ok_or(
         ContractError::NoPositionFound {
@@ -144,6 +145,14 @@ pub(crate) fn expand_position(
         position.receiver == info.sender || info.sender == config.pool_manager_addr,
         ContractError::Unauthorized
     );
+
+    // Update the unlocking duration if provided and the request comes from the pool manager
+    if let Some(new_unlocking_duration) = unlocking_duration {
+        if info.sender == config.pool_manager_addr {
+            validate_unlocking_duration_for_position(&config, new_unlocking_duration)?;
+            position.unlocking_duration = new_unlocking_duration;
+        }
+    }
 
     position.lp_asset.amount = position.lp_asset.amount.checked_add(lp_asset.amount)?;
     POSITIONS.save(deps.storage, &position.identifier, &position)?;
