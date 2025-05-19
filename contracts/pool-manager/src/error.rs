@@ -85,9 +85,6 @@ pub enum ContractError {
     #[error("The amount of LP shares to withdraw is invalid")]
     InvalidLpShareToWithdraw,
 
-    #[error("Spread limit exceeded")]
-    MaxSpreadAssertion,
-
     #[error("Slippage tolerance exceeded")]
     MaxSlippageAssertion,
 

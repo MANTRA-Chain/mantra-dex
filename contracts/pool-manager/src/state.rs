@@ -32,14 +32,14 @@ pub struct SingleSideLiquidityProvisionBuffer {
 /// single asset.
 #[cw_serde]
 pub struct LiquidityProvisionData {
-    /// The maximum allowable spread between the bid and ask prices for the pool.
-    /// When provided, if the spread exceeds this value, the liquidity provision will not be
+    /// The maximum allowable slippage between the bid and ask prices for the pool.
+    /// When provided, if the slippage exceeds this value, the liquidity provision will not be
     /// executed.
-    pub max_spread: Option<Decimal>,
+    pub swap_max_slippage: Option<Decimal>,
     /// A percentage value representing the acceptable slippage for the operation.
     /// When provided, if the slippage exceeds this value, the liquidity provision will not be
     /// executed.
-    pub slippage_tolerance: Option<Decimal>,
+    pub liquidity_max_slippage: Option<Decimal>,
     /// The identifier for the pool to provide liquidity for.
     pub pool_identifier: String,
     /// The amount of time in seconds to unlock tokens if taking part on the farms. If not passed,

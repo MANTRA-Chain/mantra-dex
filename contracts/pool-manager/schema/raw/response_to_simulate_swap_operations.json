@@ -8,7 +8,7 @@
     "extra_fees",
     "protocol_fees",
     "return_amount",
-    "spreads",
+    "slippage_amounts",
     "swap_fees"
   ],
   "properties": {
@@ -41,8 +41,8 @@
         }
       ]
     },
-    "spreads": {
-      "description": "The spreads of the swap.",
+    "slippage_amounts": {
+      "description": "The slippage amounts of the swap.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/Coin"

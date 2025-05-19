@@ -190,7 +190,7 @@ fn simulation_queries_fees_verification() {
         |result| {
             let response = result.as_ref().unwrap();
 
-            assert_eq!(response.spread_amount, Uint128::new(100u128));
+            assert_eq!(response.slippage_amount, Uint128::new(100u128));
 
             // the protocol fee is 1% of the output amount
             assert_approx_eq!(response.protocol_fee_amount, Uint128::new(10u128), "0.1");
@@ -369,7 +369,7 @@ fn simulate_swap_operations_query_verification() {
 
             assert_eq!(response.return_amount, Uint128::from(3243u128));
             assert_eq!(
-                response.spreads,
+                response.slippage_amounts,
                 vec![
                     coin(360u128, "uusdc".to_string()),
                     coin(397u128, "uusdt".to_string())
@@ -826,7 +826,7 @@ fn reverse_simulate_swap_operations_query_verification() {
             // this is the value we got in the previous test for the regular simulation
             assert_approx_eq!(response.offer_amount, Uint128::from(1000u128), "0.001");
             assert_eq!(
-                response.spreads,
+                response.slippage_amounts,
                 vec![
                     coin(1u128, "uusdc".to_string()),
                     coin(1u128, "uusdt".to_string()),
