@@ -436,12 +436,8 @@ impl TestingSuite {
             max_slippage,
         };
 
-        self.app.execute_contract(
-            sender.clone(),
-            self.pool_manager_addr.clone(),
-            &msg,
-            &funds,
-        )
+        self.app
+            .execute_contract(sender.clone(), self.pool_manager_addr.clone(), &msg, &funds)
     }
 
     #[track_caller]

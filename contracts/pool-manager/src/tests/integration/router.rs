@@ -103,7 +103,10 @@ fn basic_swap_operations_test() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -115,7 +118,10 @@ fn basic_swap_operations_test() {
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -143,7 +149,9 @@ fn basic_swap_operations_test() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -169,7 +177,9 @@ fn basic_swap_operations_test() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -286,7 +296,10 @@ fn rejects_empty_swaps() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -298,7 +311,10 @@ fn rejects_empty_swaps() {
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -316,8 +332,11 @@ fn rejects_empty_swaps() {
     let err = result.unwrap_err();
     let err_string = err.to_string();
     assert!(
-        err_string.contains("Execute {") && err_string.contains("execute_swap_operations") && err_string.contains("operations"),
-        "Expected error related to swap operations execution, got: {}", err_string
+        err_string.contains("Execute {")
+            && err_string.contains("execute_swap_operations")
+            && err_string.contains("operations"),
+        "Expected error related to swap operations execution, got: {}",
+        err_string
     );
 }
 
@@ -365,7 +384,10 @@ fn rejects_non_consecutive_swaps() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -377,7 +399,10 @@ fn rejects_non_consecutive_swaps() {
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -405,7 +430,9 @@ fn rejects_non_consecutive_swaps() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -431,7 +458,9 @@ fn rejects_non_consecutive_swaps() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -514,7 +543,10 @@ fn sends_to_correct_receiver() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -526,7 +558,10 @@ fn sends_to_correct_receiver() {
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -554,7 +589,9 @@ fn sends_to_correct_receiver() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -580,7 +617,9 @@ fn sends_to_correct_receiver() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -670,7 +709,10 @@ fn sends_to_correct_receiver() {
         &suite.pool_manager_addr.to_string(),
         DENOM_USD.to_string(),
         |amt| {
-            assert_eq!(amt.unwrap().amount.u128(), LIQUIDITY_AMOUNT - SWAP_RESULT_USD);
+            assert_eq!(
+                amt.unwrap().amount.u128(),
+                LIQUIDITY_AMOUNT - SWAP_RESULT_USD
+            );
         },
     );
     suite.query_balance(
@@ -890,7 +932,10 @@ fn query_swap_operations() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -902,7 +947,10 @@ fn query_swap_operations() {
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -930,7 +978,9 @@ fn query_swap_operations() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -956,7 +1006,9 @@ fn query_swap_operations() {
         |result| {
             // ensure we got 999,000 in the response (1m - initial liquidity amount)
             let result = result.unwrap();
-            assert!(result.has_event(&Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)));
+            assert!(result.has_event(
+                &Event::new("wasm").add_attribute("added_shares", EXPECTED_ADDED_SHARES)
+            ));
         },
     );
 
@@ -979,16 +1031,24 @@ fn query_swap_operations() {
     // simulating (reverse) swap operations should return the correct same amount as the pools are balanced
     // going from whale -> uusd should return 974 uusd
     // going in reverse, 974 uusd -> whale should require approximately 1000 whale
-    suite.query_simulate_swap_operations(Uint128::new(SWAP_AMOUNT), swap_operations.clone(), |result| {
-        let result = result.unwrap();
-        assert_eq!(result.return_amount.u128(), EXPECTED_SWAP_RESULT_USD);
-    });
+    suite.query_simulate_swap_operations(
+        Uint128::new(SWAP_AMOUNT),
+        swap_operations.clone(),
+        |result| {
+            let result = result.unwrap();
+            assert_eq!(result.return_amount.u128(), EXPECTED_SWAP_RESULT_USD);
+        },
+    );
     suite.query_reverse_simulate_swap_operations(
         Uint128::new(EXPECTED_SWAP_RESULT_USD),
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();
-            assert_approx_eq!(result.offer_amount.u128(), SWAP_AMOUNT, INITIAL_SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                result.offer_amount.u128(),
+                SWAP_AMOUNT,
+                INITIAL_SIMULATION_TOLERANCE
+            );
         },
     );
 
@@ -1029,13 +1089,24 @@ fn query_swap_operations() {
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();
-            assert_approx_eq!(result.offer_amount.u128(), REVERSE_SIMULATION_EXPECTED_AMOUNT, REVERSE_SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                result.offer_amount.u128(),
+                REVERSE_SIMULATION_EXPECTED_AMOUNT,
+                REVERSE_SIMULATION_TOLERANCE
+            );
         },
     );
 
     // and if simulate swap operations with 1_000 more whale we should get even less uusd than before
-    suite.query_simulate_swap_operations(Uint128::new(SWAP_AMOUNT), swap_operations.clone(), |result| {
-        let result = result.unwrap();
-        assert_eq!(result.return_amount.u128(), SIMULATED_RESULT_AFTER_PRICE_CHANGE);
-    });
+    suite.query_simulate_swap_operations(
+        Uint128::new(SWAP_AMOUNT),
+        swap_operations.clone(),
+        |result| {
+            let result = result.unwrap();
+            assert_eq!(
+                result.return_amount.u128(),
+                SIMULATED_RESULT_AFTER_PRICE_CHANGE
+            );
+        },
+    );
 }

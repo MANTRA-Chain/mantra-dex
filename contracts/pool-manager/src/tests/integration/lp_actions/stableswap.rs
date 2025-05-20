@@ -51,7 +51,8 @@ const SLIPPAGE_TOLERANCE_HIGH: &str = "0.003";
 
 // ========== Expected Values ==========
 const EXPECTED_LP_AMOUNT_FIRST: u128 = LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();
-const EXPECTED_LP_AMOUNT_SECOND: u128 = LIQUIDITY_1_5M + LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();
+const EXPECTED_LP_AMOUNT_SECOND: u128 =
+    LIQUIDITY_1_5M + LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();
 
 #[test]
 fn provide_liquidity_stable_swap() {
@@ -94,9 +95,14 @@ fn provide_liquidity_stable_swap() {
         asset_infos,
         vec![ASSET_DECIMALS, ASSET_DECIMALS, ASSET_DECIMALS],
         pool_fees,
-        PoolType::StableSwap { amp: STABLESWAP_AMP_FACTOR },
+        PoolType::StableSwap {
+            amp: STABLESWAP_AMP_FACTOR,
+        },
         Some(WHALE_ULUNA_UUSD_POOL_LABEL.to_string()),
-        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+        vec![
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -382,9 +388,14 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
         asset_infos,
         vec![ASSET_DECIMALS, ASSET_DECIMALS, ASSET_DECIMALS],
         pool_fees,
-        PoolType::StableSwap { amp: STABLESWAP_AMP_FACTOR },
+        PoolType::StableSwap {
+            amp: STABLESWAP_AMP_FACTOR,
+        },
         Some(UUSDC_UUSDT_UUSDY_POOL_LABEL.to_string()),
-        vec![coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM), coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM)],
+        vec![
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
+            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
