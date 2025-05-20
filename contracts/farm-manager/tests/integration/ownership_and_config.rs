@@ -8,6 +8,24 @@ use mantra_dex_std::farm_manager::Config;
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
+const UOM_DENOM: &str = "uom";
+const NEW_CREATE_FARM_FEE_AMOUNT: u128 = 2_000u128;
+const NEW_MAX_CONCURRENT_FARMS: u32 = 5u32;
+const NEW_MAX_FARM_EPOCH_BUFFER: u32 = 15u32;
+const NEW_MIN_UNLOCKING_DURATION: u64 = 100_000u64;
+const NEW_MAX_UNLOCKING_DURATION: u64 = 200_000u64;
+const NEW_FARM_EXPIRATION_TIME: u64 = MONTH_IN_SECONDS * 2;
+const NEW_EMERGENCY_UNLOCK_PENALTY_PERCENT: u64 = 20;
+
+// Constants for invalid values
+const INVALID_MAX_CONCURRENT_FARMS_DECREASED: u32 = 0u32;
+const INVALID_MIN_UNLOCKING_DURATION_TOO_HIGH: u64 = 80_800u64;
+const INVALID_MAX_UNLOCKING_DURATION_TOO_LOW: u64 = 80_000u64;
+const INVALID_MIN_UNLOCKING_DURATION_RANGE: u64 = 300_000u64;
+const INVALID_MAX_UNLOCKING_DURATION_RANGE: u64 = 200_000u64;
+const INVALID_EMERGENCY_UNLOCK_PENALTY_TOO_HIGH: u64 = 105;
+const INVALID_FARM_EXPIRATION_TIME: u64 = MONTH_IN_SECONDS - 100;
+
 #[test]
 fn verify_ownership() {
     let mut suite = TestingSuite::default_with_balances(vec![]);
@@ -67,7 +85,7 @@ pub fn update_config() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
+        coin(1_000_000_000u128, UOM_DENOM.to_string()),
         coin(1_000_000_000u128, "uusdy".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
@@ -87,7 +105,7 @@ pub fn update_config() {
         epoch_manager_addr: epoch_manager,
         pool_manager_addr: pool_manager,
         create_farm_fee: Coin {
-            denom: "uom".to_string(),
+            denom: UOM_DENOM.to_string(),
             amount: Uint128::new(1_000u128),
         },
         max_concurrent_farms: 2u32,
@@ -108,16 +126,16 @@ pub fn update_config() {
             Some(MOCK_CONTRACT_ADDR_1.to_string()),
             Some(MOCK_CONTRACT_ADDR_1.to_string()),
             Some(Coin {
-                denom: "uom".to_string(),
-                amount: Uint128::new(2_000u128),
+                denom: UOM_DENOM.to_string(),
+                amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
             }),
             Some(3u32),
-            Some(15u32),
+            Some(NEW_MAX_FARM_EPOCH_BUFFER),
             Some(172_800u64),
             Some(864_000u64),
-            Some(MONTH_IN_SECONDS * 2),
+            Some(NEW_FARM_EXPIRATION_TIME),
             Some(Decimal::percent(50)),
-            vec![coin(1_000, "uom")],
+            vec![coin(1_000, UOM_DENOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -131,14 +149,14 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(2_000u128),
+            denom: UOM_DENOM.to_string(),
+            amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
-        Some(0u32),
-        Some(15u32),
+        Some(INVALID_MAX_CONCURRENT_FARMS_DECREASED),
+        Some(NEW_MAX_FARM_EPOCH_BUFFER),
         Some(172_800u64),
         Some(864_000u64),
-        Some(MONTH_IN_SECONDS * 2),
+        Some(NEW_FARM_EXPIRATION_TIME),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -154,14 +172,14 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(2_000u128),
+            denom: UOM_DENOM.to_string(),
+            amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
-        Some(0u32),
-        Some(15u32),
+        Some(INVALID_MAX_CONCURRENT_FARMS_DECREASED),
+        Some(NEW_MAX_FARM_EPOCH_BUFFER),
         Some(172_800u64),
         Some(864_000u64),
-        Some(MONTH_IN_SECONDS * 2),
+        Some(NEW_FARM_EXPIRATION_TIME),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -177,14 +195,14 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(2_000u128),
+            denom: UOM_DENOM.to_string(),
+            amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
-        Some(5u32),
-        Some(15u32),
-        Some(80_800u64),
-        Some(80_000u64),
-        Some(MONTH_IN_SECONDS * 2),
+        Some(NEW_MAX_CONCURRENT_FARMS),
+        Some(NEW_MAX_FARM_EPOCH_BUFFER),
+        Some(INVALID_MIN_UNLOCKING_DURATION_TOO_HIGH),
+        Some(INVALID_MAX_UNLOCKING_DURATION_TOO_LOW),
+        Some(NEW_FARM_EXPIRATION_TIME),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -200,14 +218,14 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(2_000u128),
+            denom: UOM_DENOM.to_string(),
+            amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
-        Some(5u32),
-        Some(15u32),
-        Some(300_000u64),
-        Some(200_000u64),
-        Some(MONTH_IN_SECONDS * 2),
+        Some(NEW_MAX_CONCURRENT_FARMS),
+        Some(NEW_MAX_FARM_EPOCH_BUFFER),
+        Some(INVALID_MIN_UNLOCKING_DURATION_RANGE),
+        Some(INVALID_MAX_UNLOCKING_DURATION_RANGE),
+        Some(NEW_FARM_EXPIRATION_TIME),
         Some(Decimal::percent(50)),
         vec![],
         |result| {
@@ -223,15 +241,15 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(2_000u128),
+            denom: UOM_DENOM.to_string(),
+            amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
-        Some(5u32),
-        Some(15u32),
-        Some(100_000u64),
-        Some(200_000u64),
-        Some(MONTH_IN_SECONDS * 2),
-        Some(Decimal::percent(105)),
+        Some(NEW_MAX_CONCURRENT_FARMS),
+        Some(NEW_MAX_FARM_EPOCH_BUFFER),
+        Some(NEW_MIN_UNLOCKING_DURATION),
+        Some(NEW_MAX_UNLOCKING_DURATION),
+        Some(NEW_FARM_EXPIRATION_TIME),
+        Some(Decimal::percent(INVALID_EMERGENCY_UNLOCK_PENALTY_TOO_HIGH)),
         vec![],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -246,15 +264,15 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(2_000u128),
+            denom: UOM_DENOM.to_string(),
+            amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
-        Some(5u32),
-        Some(15u32),
-        Some(100_000u64),
-        Some(200_000u64),
-        Some(MONTH_IN_SECONDS * 2),
-        Some(Decimal::percent(20)),
+        Some(NEW_MAX_CONCURRENT_FARMS),
+        Some(NEW_MAX_FARM_EPOCH_BUFFER),
+        Some(NEW_MIN_UNLOCKING_DURATION),
+        Some(NEW_MAX_UNLOCKING_DURATION),
+        Some(NEW_FARM_EXPIRATION_TIME),
+        Some(Decimal::percent(NEW_EMERGENCY_UNLOCK_PENALTY_PERCENT)),
         vec![],
         |result| {
             result.unwrap();
@@ -266,15 +284,15 @@ pub fn update_config() {
         epoch_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
         pool_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
         create_farm_fee: Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(2_000u128),
+            denom: UOM_DENOM.to_string(),
+            amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         },
-        max_concurrent_farms: 5u32,
-        max_farm_epoch_buffer: 15u32,
-        min_unlocking_duration: 100_000u64,
-        max_unlocking_duration: 200_000u64,
-        farm_expiration_time: MONTH_IN_SECONDS * 2,
-        emergency_unlock_penalty: Decimal::percent(20),
+        max_concurrent_farms: NEW_MAX_CONCURRENT_FARMS,
+        max_farm_epoch_buffer: NEW_MAX_FARM_EPOCH_BUFFER,
+        min_unlocking_duration: NEW_MIN_UNLOCKING_DURATION,
+        max_unlocking_duration: NEW_MAX_UNLOCKING_DURATION,
+        farm_expiration_time: NEW_FARM_EXPIRATION_TIME,
+        emergency_unlock_penalty: Decimal::percent(NEW_EMERGENCY_UNLOCK_PENALTY_PERCENT),
     };
 
     suite.query_config(|result| {
@@ -292,7 +310,7 @@ pub fn update_config() {
         None,
         None,
         None,
-        Some(MONTH_IN_SECONDS - 100),
+        Some(INVALID_FARM_EXPIRATION_TIME),
         None,
         vec![],
         |result| {
