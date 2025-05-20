@@ -148,7 +148,10 @@ fn simulation_queries_fees_verification() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -158,9 +161,14 @@ fn simulation_queries_fees_verification() {
             vec![DENOM_USD.to_string(), DENOM_USDC.to_string()],
             vec![DECIMAL_PLACES, DECIMAL_PLACES],
             pool_fees,
-            PoolType::StableSwap { amp: STABLESWAP_AMP_FACTOR },
+            PoolType::StableSwap {
+                amp: STABLESWAP_AMP_FACTOR,
+            },
             Some(POOL_ID_USD_USDC.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -225,16 +233,32 @@ fn simulation_queries_fees_verification() {
             let response = result.as_ref().unwrap();
 
             // the protocol fee is 1% of the output amount
-            assert_approx_eq!(response.protocol_fee_amount, Uint128::new(EXPECTED_PROTOCOL_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.protocol_fee_amount,
+                Uint128::new(EXPECTED_PROTOCOL_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             // the swap fee is 2% of the output amount
-            assert_approx_eq!(response.swap_fee_amount, Uint128::new(EXPECTED_SWAP_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.swap_fee_amount,
+                Uint128::new(EXPECTED_SWAP_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             // the burn fee is 3% of the output amount
-            assert_approx_eq!(response.burn_fee_amount, Uint128::new(EXPECTED_BURN_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.burn_fee_amount,
+                Uint128::new(EXPECTED_BURN_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             // the extra fees are 4% of the output amount
-            assert_approx_eq!(response.extra_fees_amount, Uint128::new(EXPECTED_EXTRA_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.extra_fees_amount,
+                Uint128::new(EXPECTED_EXTRA_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             *simulated_return_amount.borrow_mut() = response.return_amount;
         },
@@ -282,19 +306,38 @@ fn simulation_queries_fees_verification() {
         |result| {
             let response = result.as_ref().unwrap();
 
-            assert_eq!(response.slippage_amount, Uint128::new(EXPECTED_SLIPPAGE_AMOUNT));
+            assert_eq!(
+                response.slippage_amount,
+                Uint128::new(EXPECTED_SLIPPAGE_AMOUNT)
+            );
 
             // the protocol fee is 1% of the output amount
-            assert_approx_eq!(response.protocol_fee_amount, Uint128::new(EXPECTED_PROTOCOL_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.protocol_fee_amount,
+                Uint128::new(EXPECTED_PROTOCOL_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             // the swap fee is 2% of the output amount
-            assert_approx_eq!(response.swap_fee_amount, Uint128::new(EXPECTED_SWAP_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.swap_fee_amount,
+                Uint128::new(EXPECTED_SWAP_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             // the burn fee is 3% of the output amount
-            assert_approx_eq!(response.burn_fee_amount, Uint128::new(EXPECTED_BURN_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.burn_fee_amount,
+                Uint128::new(EXPECTED_BURN_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             // the extra fees are 4% of the output amount
-            assert_approx_eq!(response.extra_fees_amount, Uint128::new(EXPECTED_EXTRA_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.extra_fees_amount,
+                Uint128::new(EXPECTED_EXTRA_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             *simulated_return_amount.borrow_mut() = response.return_amount;
         },
@@ -375,7 +418,10 @@ fn simulate_swap_operations_query_verification() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_OM_USDT.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -385,9 +431,14 @@ fn simulate_swap_operations_query_verification() {
             vec![DENOM_USDT.to_string(), DENOM_USDC.to_string()],
             vec![DECIMAL_PLACES, DECIMAL_PLACES],
             pool_fees,
-            PoolType::StableSwap { amp: STABLESWAP_AMP_FACTOR },
+            PoolType::StableSwap {
+                amp: STABLESWAP_AMP_FACTOR,
+            },
             Some(POOL_ID_USDT_USDC.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -459,7 +510,10 @@ fn simulate_swap_operations_query_verification() {
             println!("{:?}", result);
             let response = result.unwrap();
 
-            assert_eq!(response.return_amount, Uint128::from(EXPECTED_RETURN_AMOUNT));
+            assert_eq!(
+                response.return_amount,
+                Uint128::from(EXPECTED_RETURN_AMOUNT)
+            );
             assert_eq!(
                 response.slippage_amounts,
                 vec![
@@ -590,7 +644,10 @@ fn reverse_simulation_queries_fees_verification() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -600,9 +657,14 @@ fn reverse_simulation_queries_fees_verification() {
             vec![DENOM_USD.to_string(), DENOM_USDC.to_string()],
             vec![DECIMAL_PLACES, DECIMAL_PLACES],
             pool_fees,
-            PoolType::StableSwap { amp: STABLESWAP_AMP_FACTOR },
+            PoolType::StableSwap {
+                amp: STABLESWAP_AMP_FACTOR,
+            },
             Some(POOL_ID_USD_USDC.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -671,13 +733,29 @@ fn reverse_simulation_queries_fees_verification() {
             // the fees should be the same as the previous test, as we requested
             // the reverse simulation for the value we obtained before
 
-            assert_approx_eq!(response.protocol_fee_amount, Uint128::new(EXPECTED_PROTOCOL_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.protocol_fee_amount,
+                Uint128::new(EXPECTED_PROTOCOL_FEE),
+                SIMULATION_TOLERANCE
+            );
 
-            assert_approx_eq!(response.swap_fee_amount, Uint128::new(EXPECTED_SWAP_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.swap_fee_amount,
+                Uint128::new(EXPECTED_SWAP_FEE),
+                SIMULATION_TOLERANCE
+            );
 
-            assert_approx_eq!(response.burn_fee_amount, Uint128::new(EXPECTED_BURN_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.burn_fee_amount,
+                Uint128::new(EXPECTED_BURN_FEE),
+                SIMULATION_TOLERANCE
+            );
 
-            assert_approx_eq!(response.extra_fees_amount, Uint128::new(EXPECTED_EXTRA_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.extra_fees_amount,
+                Uint128::new(EXPECTED_EXTRA_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             *simulated_offer_amount.borrow_mut() = response.offer_amount;
         },
@@ -716,7 +794,11 @@ fn reverse_simulation_queries_fees_verification() {
                 OFFER_AMOUNT_TOLERANCE
             );
 
-            assert_approx_eq!(REVERSE_SIMULATION_AMOUNT_WHALE, return_amount.parse::<u128>().unwrap(), RETURN_AMOUNT_TOLERANCE_WHALE);
+            assert_approx_eq!(
+                REVERSE_SIMULATION_AMOUNT_WHALE,
+                return_amount.parse::<u128>().unwrap(),
+                RETURN_AMOUNT_TOLERANCE_WHALE
+            );
         },
     );
 
@@ -736,13 +818,29 @@ fn reverse_simulation_queries_fees_verification() {
             // the fees should be the same as the previous test, as we requested
             // the reverse simulation for the value we obtained before
 
-            assert_approx_eq!(response.protocol_fee_amount, Uint128::new(EXPECTED_PROTOCOL_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.protocol_fee_amount,
+                Uint128::new(EXPECTED_PROTOCOL_FEE),
+                SIMULATION_TOLERANCE
+            );
 
-            assert_approx_eq!(response.swap_fee_amount, Uint128::new(EXPECTED_SWAP_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.swap_fee_amount,
+                Uint128::new(EXPECTED_SWAP_FEE),
+                SIMULATION_TOLERANCE
+            );
 
-            assert_approx_eq!(response.burn_fee_amount, Uint128::new(EXPECTED_BURN_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.burn_fee_amount,
+                Uint128::new(EXPECTED_BURN_FEE),
+                SIMULATION_TOLERANCE
+            );
 
-            assert_approx_eq!(response.extra_fees_amount, Uint128::new(EXPECTED_EXTRA_FEE), SIMULATION_TOLERANCE);
+            assert_approx_eq!(
+                response.extra_fees_amount,
+                Uint128::new(EXPECTED_EXTRA_FEE),
+                SIMULATION_TOLERANCE
+            );
 
             *simulated_offer_amount.borrow_mut() = response.offer_amount;
         },
@@ -781,7 +879,11 @@ fn reverse_simulation_queries_fees_verification() {
                 OFFER_AMOUNT_TOLERANCE
             );
 
-            assert_approx_eq!(REVERSE_SIMULATION_AMOUNT_USD, return_amount.parse::<u128>().unwrap(), RETURN_AMOUNT_TOLERANCE_WHALE);
+            assert_approx_eq!(
+                REVERSE_SIMULATION_AMOUNT_USD,
+                return_amount.parse::<u128>().unwrap(),
+                RETURN_AMOUNT_TOLERANCE_WHALE
+            );
         },
     );
 }
@@ -831,7 +933,10 @@ fn reverse_simulate_swap_operations_query_verification() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_OM_USDT.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -841,9 +946,14 @@ fn reverse_simulate_swap_operations_query_verification() {
             vec![DENOM_USDT.to_string(), DENOM_USDC.to_string()],
             vec![DECIMAL_PLACES, DECIMAL_PLACES],
             pool_fees,
-            PoolType::StableSwap { amp: STABLESWAP_AMP_FACTOR },
+            PoolType::StableSwap {
+                amp: STABLESWAP_AMP_FACTOR,
+            },
             Some(POOL_ID_USDT_USDC.to_string()),
-            vec![coin(POOL_CREATION_FEE, DENOM_USD), coin(OM_STARGATE_BALANCE, DENOM_OM)],
+            vec![
+                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(OM_STARGATE_BALANCE, DENOM_OM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -916,7 +1026,11 @@ fn reverse_simulate_swap_operations_query_verification() {
             let response = result.unwrap();
 
             // this is the value we got in the previous test for the regular simulation
-            assert_approx_eq!(response.offer_amount, Uint128::from(SWAP_AMOUNT), EXPECTED_OFFER_AMOUNT_TOLERANCE);
+            assert_approx_eq!(
+                response.offer_amount,
+                Uint128::from(SWAP_AMOUNT),
+                EXPECTED_OFFER_AMOUNT_TOLERANCE
+            );
             assert_eq!(
                 response.slippage_amounts,
                 vec![

@@ -144,8 +144,10 @@ const SIMULATED_RETURN_199_517_195_UUSDT_U128: Uint128 = Uint128::new(199_517_19
 #[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_200T_PICO_UUSDC_3POOL_DIFFERENT_DECIMALS: Uint128 = Uint128::new(200_000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_10K_ATTO_UUSDT_3POOL_DIFFERENT_DECIMALS: Uint128 = Uint128::new(10_000_000000000000000000u128);
-static MAX_SLIPPAGE_PERCENT_30_3POOL_DIFFERENT_DECIMALS: LazyLock<Decimal> = LazyLock::new(|| Decimal::percent(30));
+const SWAP_10K_ATTO_UUSDT_3POOL_DIFFERENT_DECIMALS: Uint128 =
+    Uint128::new(10_000_000000000000000000u128);
+static MAX_SLIPPAGE_PERCENT_30_3POOL_DIFFERENT_DECIMALS: LazyLock<Decimal> =
+    LazyLock::new(|| Decimal::percent(30));
 
 // -- Constants for setup_3pool_different_decimals helper --
 const DEFAULT_AMP_3POOL: u64 = 85;
@@ -156,7 +158,8 @@ const DEFAULT_LIQUIDITY_VALUE_1_3POOL: Uint128 = Uint128::new(100_000_000_000_00
 #[allow(clippy::inconsistent_digit_grouping)]
 const DEFAULT_LIQUIDITY_VALUE_2_3POOL: Uint128 = Uint128::new(100_000_000_000_000_000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_LIQUIDITY_VALUE_3_3POOL: Uint128 = Uint128::new(100_000_000_000_000_000000000000000000u128);
+const DEFAULT_LIQUIDITY_VALUE_3_3POOL: Uint128 =
+    Uint128::new(100_000_000_000_000_000000000000000000u128);
 
 const DECIMALS_6_U8: u8 = 6u8;
 const DECIMALS_12_U8: u8 = 12u8;
@@ -182,9 +185,11 @@ const SWAP_4POOL_VAL7: Uint128 = Uint128::new(5_000_000_000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_4POOL_VAL8: Uint128 = Uint128::new(5_000_000_000000000000000000u128);
 
-const DEFAULT_ASSET_DECIMALS_4POOL: [u8; 4] = [DECIMALS_6_U8, DECIMALS_6_U8, DECIMALS_12_U8, DECIMALS_18_U8];
+const DEFAULT_ASSET_DECIMALS_4POOL: [u8; 4] =
+    [DECIMALS_6_U8, DECIMALS_6_U8, DECIMALS_12_U8, DECIMALS_18_U8];
 #[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_INITIAL_BALANCE_RAW_4POOL: Uint128 = Uint128::new(300_000_000_000_000_000000000000000000u128);
+const DEFAULT_INITIAL_BALANCE_RAW_4POOL: Uint128 =
+    Uint128::new(300_000_000_000_000_000000000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
 const DEFAULT_LIQUIDITY_BASE_100T_4POOL: Uint128 = Uint128::new(100_000_000_000_000u128); // 100 Trillion
 
@@ -194,11 +199,13 @@ const SIM_TEST_AMOUNT_UUSD_AS_OFFER_FOR_UUSDC: Uint128 = Uint128::new(333_000000
 #[allow(clippy::inconsistent_digit_grouping)]
 const SIM_TEST_AMOUNT_UUSDC_AS_OFFER_FOR_UUSDT: Uint128 = Uint128::new(5_000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const SIM_TEST_AMOUNT_UUSDT_AS_OFFER_FOR_UUSD: Uint128 = Uint128::new(10_000_000000000000000000u128);
+const SIM_TEST_AMOUNT_UUSDT_AS_OFFER_FOR_UUSD: Uint128 =
+    Uint128::new(10_000_000000000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
 const SIM_TEST_AMOUNT_UUSD_AS_OFFER_FOR_UUSDT: Uint128 = Uint128::new(1_000_000_000000u128);
 
-static ONE_BPS_DECIMAL_TOLERANCE: LazyLock<Decimal> = LazyLock::new(|| Decimal::from_ratio(1u128, 10000u128));
+static ONE_BPS_DECIMAL_TOLERANCE: LazyLock<Decimal> =
+    LazyLock::new(|| Decimal::from_ratio(1u128, 10000u128));
 
 // -- Constants for belief_price_works_decimals_independent --
 const UWETH_DENOM: &str = "uweth";
@@ -208,7 +215,8 @@ const UUSD_UWETH_POOL_ID: &str = "o.uusd.uweth";
 #[allow(clippy::inconsistent_digit_grouping)]
 const INITIAL_BALANCE_UUSD_BELIEF_PRICE: Uint128 = Uint128::new(1_000_000_000u128); // 1_000 * 10^6
 #[allow(clippy::inconsistent_digit_grouping)]
-const INITIAL_BALANCE_UWETH_BELIEF_PRICE: Uint128 = Uint128::new(1_000_000_000_000_000000000000000000u128); // 10^12 * 10^18 = 10^30
+const INITIAL_BALANCE_UWETH_BELIEF_PRICE: Uint128 =
+    Uint128::new(1_000_000_000_000_000000000000000000u128); // 10^12 * 10^18 = 10^30
 const INITIAL_BALANCE_UOM_BELIEF_PRICE: Uint128 = Uint128::new(10_000u128);
 
 const LIQUIDITY_UUSD_BELIEF_PRICE: Uint128 = Uint128::new(100_000_000u128); // 100 * 10^6
@@ -237,12 +245,12 @@ const NEEDED_UUSD_COMPUTE_OFFER: Uint128 = Uint128::new(99_900_099u128);
 const UUSDC_UUSDT_POOL_RAW: &str = "uusdc.uusdt";
 const UUSDC_UUSDT_POOL_ID: &str = "o.uusdc.uusdt";
 
-static SWAP_FEE_PERCENT_5_SKEWED_LIQ_TEST: LazyLock<Decimal> = LazyLock::new(|| Decimal::percent(5));
+static SWAP_FEE_PERCENT_5_SKEWED_LIQ_TEST: LazyLock<Decimal> =
+    LazyLock::new(|| Decimal::percent(5));
 
 const ALICE_INITIAL_LIQ_BASE_SKEWED_TEST: Uint128 = Uint128::new(1_000u128);
 const BOB_INITIAL_LIQ_USDT_BASE_SKEWED_TEST: Uint128 = Uint128::new(110u128);
 const BOB_INITIAL_LIQ_USDC_BASE_SKEWED_TEST: Uint128 = Uint128::new(90u128);
-
 
 // -- Constants for basic_swapping_test --
 const BASIC_SWAP_INITIAL_UWHALE_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
@@ -296,9 +304,18 @@ const SWAP_LARGE_DIGITS_STABLE_MAX_SLIPPAGE_2: Decimal = Decimal::percent(10);
 fn basic_swapping_test() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(BASIC_SWAP_INITIAL_UWHALE_BALANCE.u128(), UWHALE_DENOM.to_string()),
-            coin(BASIC_SWAP_INITIAL_ULUNA_BALANCE.u128(), ULUNA_DENOM.to_string()),
-            coin(BASIC_SWAP_INITIAL_UUSD_BALANCE.u128(), UUSD_DENOM.to_string()),
+            coin(
+                BASIC_SWAP_INITIAL_UWHALE_BALANCE.u128(),
+                UWHALE_DENOM.to_string(),
+            ),
+            coin(
+                BASIC_SWAP_INITIAL_ULUNA_BALANCE.u128(),
+                ULUNA_DENOM.to_string(),
+            ),
+            coin(
+                BASIC_SWAP_INITIAL_UUSD_BALANCE.u128(),
+                UUSD_DENOM.to_string(),
+            ),
             coin(BASIC_SWAP_INITIAL_UOM_BALANCE.u128(), UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
@@ -526,10 +543,22 @@ fn basic_swapping_test() {
 fn basic_swapping_pool_reserves_event_test() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(POOL_RESERVES_INITIAL_UWHALE_BALANCE.u128(), UWHALE_DENOM.to_string()),
-            coin(POOL_RESERVES_INITIAL_ULUNA_BALANCE.u128(), ULUNA_DENOM.to_string()),
-            coin(POOL_RESERVES_INITIAL_UUSD_BALANCE.u128(), UUSD_DENOM.to_string()),
-            coin(POOL_RESERVES_INITIAL_UOM_BALANCE.u128(), UOM_DENOM.to_string()),
+            coin(
+                POOL_RESERVES_INITIAL_UWHALE_BALANCE.u128(),
+                UWHALE_DENOM.to_string(),
+            ),
+            coin(
+                POOL_RESERVES_INITIAL_ULUNA_BALANCE.u128(),
+                ULUNA_DENOM.to_string(),
+            ),
+            coin(
+                POOL_RESERVES_INITIAL_UUSD_BALANCE.u128(),
+                UUSD_DENOM.to_string(),
+            ),
+            coin(
+                POOL_RESERVES_INITIAL_UOM_BALANCE.u128(),
+                UOM_DENOM.to_string(),
+            ),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -814,10 +843,22 @@ fn basic_swapping_pool_reserves_event_test() {
 fn basic_swapping_test_stable_swap_two_assets() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(STABLE_SWAP_TWO_ASSETS_INITIAL_UWHALE_BALANCE.u128(), UWHALE_DENOM.to_string()),
-            coin(STABLE_SWAP_TWO_ASSETS_INITIAL_ULUNA_BALANCE.u128(), ULUNA_DENOM.to_string()),
-            coin(STABLE_SWAP_TWO_ASSETS_INITIAL_UUSD_BALANCE.u128(), UUSD_DENOM.to_string()),
-            coin(STABLE_SWAP_TWO_ASSETS_INITIAL_UOM_BALANCE.u128(), UOM_DENOM.to_string()),
+            coin(
+                STABLE_SWAP_TWO_ASSETS_INITIAL_UWHALE_BALANCE.u128(),
+                UWHALE_DENOM.to_string(),
+            ),
+            coin(
+                STABLE_SWAP_TWO_ASSETS_INITIAL_ULUNA_BALANCE.u128(),
+                ULUNA_DENOM.to_string(),
+            ),
+            coin(
+                STABLE_SWAP_TWO_ASSETS_INITIAL_UUSD_BALANCE.u128(),
+                UUSD_DENOM.to_string(),
+            ),
+            coin(
+                STABLE_SWAP_TWO_ASSETS_INITIAL_UOM_BALANCE.u128(),
+                UOM_DENOM.to_string(),
+            ),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -1007,10 +1048,22 @@ fn basic_swapping_test_stable_swap_two_assets() {
 fn swap_with_fees() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(SWAP_WITH_FEES_INITIAL_UWHALE_BALANCE.u128(), UWHALE_DENOM.to_string()),
-            coin(SWAP_WITH_FEES_INITIAL_ULUNA_BALANCE.u128(), ULUNA_DENOM.to_string()),
-            coin(SWAP_WITH_FEES_INITIAL_UUSD_BALANCE.u128(), UUSD_DENOM.to_string()),
-            coin(SWAP_WITH_FEES_INITIAL_UOM_BALANCE.u128(), UOM_DENOM.to_string()),
+            coin(
+                SWAP_WITH_FEES_INITIAL_UWHALE_BALANCE.u128(),
+                UWHALE_DENOM.to_string(),
+            ),
+            coin(
+                SWAP_WITH_FEES_INITIAL_ULUNA_BALANCE.u128(),
+                ULUNA_DENOM.to_string(),
+            ),
+            coin(
+                SWAP_WITH_FEES_INITIAL_UUSD_BALANCE.u128(),
+                UUSD_DENOM.to_string(),
+            ),
+            coin(
+                SWAP_WITH_FEES_INITIAL_UOM_BALANCE.u128(),
+                UOM_DENOM.to_string(),
+            ),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -1151,10 +1204,22 @@ fn swap_with_fees() {
 fn swap_large_digits_xyk() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(), UWHALE_DENOM.to_string()),
-            coin(SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(), ULUNA_DENOM.to_string()),
-            coin(SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(), UOSMO_DENOM.to_string()),
-            coin(SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(), UUSD_DENOM.to_string()),
+            coin(
+                SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(),
+                UWHALE_DENOM.to_string(),
+            ),
+            coin(
+                SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(),
+                ULUNA_DENOM.to_string(),
+            ),
+            coin(
+                SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(),
+                UOSMO_DENOM.to_string(),
+            ),
+            coin(
+                SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(),
+                UUSD_DENOM.to_string(),
+            ),
             coin(BALANCE_UUSDC_100T_XYK.u128(), UUSDC_DENOM.to_string()),
             coin(BALANCE_AUSDY_100Q_XYK.u128(), AUSDY_DENOM.to_string()),
             coin(BALANCE_UOM_150T_XYK.u128(), UOM_DENOM.to_string()),
@@ -2704,11 +2769,23 @@ fn simulation_vs_reverse_simulation_3pool() {
 fn belief_price_works_decimals_independent() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_BALANCE_UUSD_BELIEF_PRICE.u128(), UUSD_DENOM.to_string()),
-            coin(INITIAL_BALANCE_UWETH_BELIEF_PRICE.u128(), UWETH_DENOM.to_string()),
-            coin(INITIAL_BALANCE_UOM_BELIEF_PRICE.u128(), UOM_DENOM.to_string()),
+            coin(
+                INITIAL_BALANCE_UUSD_BELIEF_PRICE.u128(),
+                UUSD_DENOM.to_string(),
+            ),
+            coin(
+                INITIAL_BALANCE_UWETH_BELIEF_PRICE.u128(),
+                UWETH_DENOM.to_string(),
+            ),
+            coin(
+                INITIAL_BALANCE_UOM_BELIEF_PRICE.u128(),
+                UOM_DENOM.to_string(),
+            ),
         ],
-        StargateMock::new(vec![coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(
+            EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
+            UOM_DENOM.to_string(),
+        )]),
     );
     let creator = suite.creator();
     let user = suite.senders[1].clone();
@@ -2734,7 +2811,10 @@ fn belief_price_works_decimals_independent() {
             },
             PoolType::ConstantProduct,
             Some(UUSD_UWETH_POOL_RAW.to_string()),
-            vec![coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM), coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM)],
+            vec![
+                coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM),
+                coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -2790,7 +2870,10 @@ fn belief_price_works_decimals_independent() {
         None,
         None,
         UUSD_UWETH_POOL_ID.to_string(),
-        vec![coin(SWAP_OFFER_UWETH_BELIEF_PRICE.u128(), UWETH_DENOM.to_string())],
+        vec![coin(
+            SWAP_OFFER_UWETH_BELIEF_PRICE.u128(),
+            UWETH_DENOM.to_string(),
+        )],
         |result| {
             result.unwrap();
         },
@@ -2823,7 +2906,10 @@ fn belief_price_works_decimals_independent() {
         None,
         None,
         UUSD_UWETH_POOL_ID.to_string(),
-        vec![coin(SWAP_OFFER_UUSD_BELIEF_PRICE.u128(), UUSD_DENOM.to_string())],
+        vec![coin(
+            SWAP_OFFER_UUSD_BELIEF_PRICE.u128(),
+            UUSD_DENOM.to_string(),
+        )],
         |result| {
             result.unwrap();
         },
@@ -2834,11 +2920,23 @@ fn belief_price_works_decimals_independent() {
 fn compute_offer_amount_floor() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_BALANCE_ULUNA_COMPUTE_OFFER.u128(), ULUNA_DENOM.to_string()),
-            coin(INITIAL_BALANCE_UUSD_COMPUTE_OFFER.u128(), UUSD_DENOM.to_string()),
-            coin(INITIAL_BALANCE_UOM_COMPUTE_OFFER.u128(), UOM_DENOM.to_string()),
+            coin(
+                INITIAL_BALANCE_ULUNA_COMPUTE_OFFER.u128(),
+                ULUNA_DENOM.to_string(),
+            ),
+            coin(
+                INITIAL_BALANCE_UUSD_COMPUTE_OFFER.u128(),
+                UUSD_DENOM.to_string(),
+            ),
+            coin(
+                INITIAL_BALANCE_UOM_COMPUTE_OFFER.u128(),
+                UOM_DENOM.to_string(),
+            ),
         ],
-        StargateMock::new(vec![coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(
+            EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
+            UOM_DENOM.to_string(),
+        )]),
     );
     let creator = suite.creator();
     let user = suite.senders[1].clone();
@@ -2865,7 +2963,10 @@ fn compute_offer_amount_floor() {
             },
             PoolType::ConstantProduct,
             Some(ULUNA_UUSD_POOL_RAW.to_string()),
-            vec![coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM), coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM)],
+            vec![
+                coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM),
+                coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -2918,7 +3019,10 @@ fn compute_offer_amount_floor() {
             None,
             None,
             pool_id.clone(),
-            vec![coin((*offer_uluna.borrow()).into(), ULUNA_DENOM.to_string())],
+            vec![coin(
+                (*offer_uluna.borrow()).into(),
+                ULUNA_DENOM.to_string(),
+            )],
             |result| {
                 for event in result.unwrap().events {
                     if event.ty == EVENT_TYPE_WASM {
@@ -2947,7 +3051,8 @@ fn setup_3pool_different_decimals(
     initial_liquidity: Option<Vec<Uint128>>,
 ) -> TestingSuite {
     // Default values
-    let decimals = asset_decimals.unwrap_or_else(|| vec![DECIMALS_6_U8, DECIMALS_12_U8, DECIMALS_18_U8]);
+    let decimals =
+        asset_decimals.unwrap_or_else(|| vec![DECIMALS_6_U8, DECIMALS_12_U8, DECIMALS_18_U8]);
     let amp_val = amp.unwrap_or(DEFAULT_AMP_3POOL);
 
     // Default initial balances (300T for each token)
@@ -2965,13 +3070,17 @@ fn setup_3pool_different_decimals(
     // Default initial liquidity (100T for each token)
     let liquidity = initial_liquidity.unwrap_or_else(|| {
         vec![
-            DEFAULT_LIQUIDITY_VALUE_1_3POOL, 
-            DEFAULT_LIQUIDITY_VALUE_2_3POOL, 
+            DEFAULT_LIQUIDITY_VALUE_1_3POOL,
+            DEFAULT_LIQUIDITY_VALUE_2_3POOL,
             DEFAULT_LIQUIDITY_VALUE_3_3POOL,
         ]
     });
 
-    let asset_denoms_str = vec![UUSD_DENOM.to_string(), UUSDC_DENOM.to_string(), UUSDT_DENOM.to_string()];
+    let asset_denoms_str = vec![
+        UUSD_DENOM.to_string(),
+        UUSDC_DENOM.to_string(),
+        UUSDT_DENOM.to_string(),
+    ];
 
     // Create test suite with initial balances
     let mut suite = TestingSuite::default_with_balances(
@@ -2981,7 +3090,10 @@ fn setup_3pool_different_decimals(
             coin(balances[2].u128(), UUSDT_DENOM.to_string()),
             coin(BALANCE_1T_U128.u128(), UOM_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(
+            EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
+            UOM_DENOM.to_string(),
+        )]),
     );
 
     let creator = suite.creator();
@@ -3008,7 +3120,10 @@ fn setup_3pool_different_decimals(
         pool_fees,
         PoolType::StableSwap { amp: amp_val },
         None,
-        vec![coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM), coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM)],
+        vec![
+            coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM),
+            coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -3183,7 +3298,10 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
             coin(initial_balance.u128(), UUSD_DENOM.to_string()),
             coin(initial_balance.u128(), UOM_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(
+            EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
+            UOM_DENOM.to_string(),
+        )]),
     );
     let alice = suite.creator();
     let bob = suite.senders[1].clone();
@@ -3208,17 +3326,24 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
         asset_infos,
         vec![DECIMALS_6_U8, DECIMALS_6_U8],
         pool_fees,
-        PoolType::StableSwap { amp: STABLE_SWAP_AMP }, // Reusing existing STABLE_SWAP_AMP
+        PoolType::StableSwap {
+            amp: STABLE_SWAP_AMP,
+        }, // Reusing existing STABLE_SWAP_AMP
         Some(UUSDC_UUSDT_POOL_RAW.to_string()),
-        vec![coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM), coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM)],
+        vec![
+            coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM),
+            coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM),
+        ],
         |result| {
             result.unwrap();
         },
     );
 
     // Initial liquidity
-    let alice_initial_uusdt_liquidity = ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
-    let alice_initial_uusdc_liquidity = ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
+    let alice_initial_uusdt_liquidity =
+        ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
+    let alice_initial_uusdc_liquidity =
+        ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
     println!("{}", separator);
     println!("==== Alice provides 1k usdt and 1k usdc as initial liquidity to the pool");
     suite.provide_liquidity(
@@ -3246,8 +3371,10 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
 
     println!("{}", separator);
     println!("==== Bob provides 110 usdt and 90 usdc of liquidity");
-    let bob_initial_uusdt_liquidity = BOB_INITIAL_LIQ_USDT_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
-    let bob_initial_uusdc_liquidity = BOB_INITIAL_LIQ_USDC_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
+    let bob_initial_uusdt_liquidity =
+        BOB_INITIAL_LIQ_USDT_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
+    let bob_initial_uusdc_liquidity =
+        BOB_INITIAL_LIQ_USDC_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6_U8)));
     suite.provide_liquidity(
         &bob,
         UUSDC_UUSDT_POOL_ID.to_string(),
@@ -3283,13 +3410,16 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
         .query_all_balances(&alice.to_string(), |balances| {
             for coin in balances.unwrap().iter() {
                 match coin.denom.as_str() {
-                    denom if denom.contains(UUSDC_UUSDT_POOL_ID) => { // Check against pool ID string
+                    denom if denom.contains(UUSDC_UUSDT_POOL_ID) => {
+                        // Check against pool ID string
                         *lp_shares_alice.borrow_mut() = coin.clone();
                     }
-                    denom if denom == UUSDC_DENOM => { // Exact match for denom
+                    denom if denom == UUSDC_DENOM => {
+                        // Exact match for denom
                         *alice_uusdc_balance.borrow_mut() = coin.amount;
                     }
-                    denom if denom == UUSDT_DENOM => { // Exact match for denom
+                    denom if denom == UUSDT_DENOM => {
+                        // Exact match for denom
                         *alice_uusdt_balance.borrow_mut() = coin.amount;
                     }
                     _ => {}
@@ -3299,13 +3429,16 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
         .query_all_balances(&bob.to_string(), |balances| {
             for coin in balances.unwrap().iter() {
                 match coin.denom.as_str() {
-                    denom if denom.contains(UUSDC_UUSDT_POOL_ID) => { // Check against pool ID string
+                    denom if denom.contains(UUSDC_UUSDT_POOL_ID) => {
+                        // Check against pool ID string
                         *lp_shares_bob.borrow_mut() = coin.clone();
                     }
-                    denom if denom == UUSDC_DENOM => { // Exact match for denom
+                    denom if denom == UUSDC_DENOM => {
+                        // Exact match for denom
                         *bob_uusdc_balance.borrow_mut() = coin.amount;
                     }
-                    denom if denom == UUSDT_DENOM => { // Exact match for denom
+                    denom if denom == UUSDT_DENOM => {
+                        // Exact match for denom
                         *bob_uusdt_balance.borrow_mut() = coin.amount;
                     }
                     _ => {}
@@ -3416,13 +3549,18 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
     // check remaining assets on the pool
     println!("{}", separator);
     println!("==== Remaining assets in pool");
-    suite.query_pools(Some(UUSDC_UUSDT_POOL_ID.to_string()), None, None, |result| {
-        let response = result.unwrap();
-        let pool = response.pools[0].pool_info.clone();
-        let assets = pool.assets;
-        for asset in assets {
-            println!("amount:       {}", asset.amount);
-            println!("denom:        {}", asset.denom);
-        }
-    });
+    suite.query_pools(
+        Some(UUSDC_UUSDT_POOL_ID.to_string()),
+        None,
+        None,
+        |result| {
+            let response = result.unwrap();
+            let pool = response.pools[0].pool_info.clone();
+            let assets = pool.assets;
+            for asset in assets {
+                println!("amount:       {}", asset.amount);
+                println!("denom:        {}", asset.denom);
+            }
+        },
+    );
 }
