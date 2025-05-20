@@ -7,25 +7,39 @@ use mantra_dex_std::constants::MONTH_IN_SECONDS;
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
+const DENOM_UOM: &str = "uom";
+const INITIAL_AMOUNT_UOM_RAW: u128 = 1_000u128;
+const MAX_CONCURRENT_FARMS_0: u32 = 0;
+const MAX_CONCURRENT_FARMS_1: u32 = 1;
+const MAX_CONCURRENT_FARMS_7: u32 = 7;
+const DEFAULT_UNLOCKING_PERIODS: u32 = 14;
+const DEFAULT_MIN_UNLOCKING_DURATION_SECONDS: u64 = 86_400;
+const VALID_MAX_UNLOCKING_DURATION_SECONDS: u64 = 31_536_000;
+const INVALID_MAX_UNLOCKING_DURATION_TOO_SHORT_SECONDS: u64 = 86_399;
+const VALID_MAX_UNLOCKING_DURATION_SLIGHTLY_LONGER_SECONDS: u64 = 86_500;
+const DEFAULT_EMERGENCY_UNLOCK_PENALTY: Decimal = Decimal::percent(10);
+const INVALID_EMERGENCY_UNLOCK_PENALTY: Decimal = Decimal::percent(101);
+const INVALID_FARM_EXPIRATION_TOO_SHORT_SECONDS: u64 = MONTH_IN_SECONDS - 1;
+
 #[test]
 fn instantiate_farm_manager() {
     let mut suite =
-        TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, "uom".to_string())]);
+        TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, DENOM_UOM.to_string())]);
 
     suite.instantiate_err(
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(1_000u128),
+            denom: DENOM_UOM.to_string(),
+            amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
-        0,
-        14,
-        86_400,
-        31_536_000,
+        MAX_CONCURRENT_FARMS_0,
+        DEFAULT_UNLOCKING_PERIODS,
+        DEFAULT_MIN_UNLOCKING_DURATION_SECONDS,
+        VALID_MAX_UNLOCKING_DURATION_SECONDS,
         MONTH_IN_SECONDS,
-        Decimal::percent(10),
+        DEFAULT_EMERGENCY_UNLOCK_PENALTY,
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -39,15 +53,15 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(1_000u128),
+            denom: DENOM_UOM.to_string(),
+            amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
-        1,
-        14,
-        86_400,
-        86_399,
+        MAX_CONCURRENT_FARMS_1,
+        DEFAULT_UNLOCKING_PERIODS,
+        DEFAULT_MIN_UNLOCKING_DURATION_SECONDS,
+        INVALID_MAX_UNLOCKING_DURATION_TOO_SHORT_SECONDS,
         MONTH_IN_SECONDS,
-        Decimal::percent(10),
+        DEFAULT_EMERGENCY_UNLOCK_PENALTY,
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -61,15 +75,15 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(1_000u128),
+            denom: DENOM_UOM.to_string(),
+            amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
-        1,
-        14,
-        86_400,
-        86_500,
+        MAX_CONCURRENT_FARMS_1,
+        DEFAULT_UNLOCKING_PERIODS,
+        DEFAULT_MIN_UNLOCKING_DURATION_SECONDS,
+        VALID_MAX_UNLOCKING_DURATION_SLIGHTLY_LONGER_SECONDS,
         MONTH_IN_SECONDS,
-        Decimal::percent(101),
+        INVALID_EMERGENCY_UNLOCK_PENALTY,
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -83,15 +97,15 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(1_000u128),
+            denom: DENOM_UOM.to_string(),
+            amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
-        1,
-        14,
-        86_400,
-        86_500,
-        MONTH_IN_SECONDS - 1,
-        Decimal::percent(101),
+        MAX_CONCURRENT_FARMS_1,
+        DEFAULT_UNLOCKING_PERIODS,
+        DEFAULT_MIN_UNLOCKING_DURATION_SECONDS,
+        VALID_MAX_UNLOCKING_DURATION_SLIGHTLY_LONGER_SECONDS,
+        INVALID_FARM_EXPIRATION_TOO_SHORT_SECONDS,
+        INVALID_EMERGENCY_UNLOCK_PENALTY, // Note: This penalty is invalid, but the test prioritizes FarmExpirationTimeInvalid
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -105,14 +119,14 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: "uom".to_string(),
-            amount: Uint128::new(1_000u128),
+            denom: DENOM_UOM.to_string(),
+            amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
-        7,
-        14,
-        86_400,
-        31_536_000,
+        MAX_CONCURRENT_FARMS_7,
+        DEFAULT_UNLOCKING_PERIODS,
+        DEFAULT_MIN_UNLOCKING_DURATION_SECONDS,
+        VALID_MAX_UNLOCKING_DURATION_SECONDS,
         MONTH_IN_SECONDS,
-        Decimal::percent(10), //10% penalty
+        DEFAULT_EMERGENCY_UNLOCK_PENALTY,
     );
 }
