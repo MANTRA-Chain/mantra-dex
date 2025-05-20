@@ -12,17 +12,35 @@ use mantra_dex_std::farm_manager::{
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
+const UOM_DENOM: &str = "uom";
+const UUSDY_DENOM: &str = "uusdy";
+const UOSMO_DENOM: &str = "uosmo";
+const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000;
+const FARM_START_EPOCH: u64 = 12;
+const FARM_END_EPOCH: u64 = 16;
+const FARM_UOM_FEE_AMOUNT: u128 = 1_000;
+const UNLOCKING_DURATION_SECONDS: u64 = 86_400;
+const POSITION_LP_AMOUNT: u128 = 1_000;
+const PAGE_LIMIT_5: u32 = 5;
+const LP_DENOM_1_INITIAL_BALANCE: u128 = 1_000_000_000_000;
+const FARM_UUSDY_ASSET_AMOUNT: u128 = 3333;
+const CREATOR_ANOTHER_POSITION_LP_AMOUNT: u128 = 2_000;
+const LP_DENOM_2_INITIAL_BALANCE: u128 = 1_000_000_000_000;
+const FARM_1_UUSDY_ASSET_AMOUNT: u128 = 8_888;
+const FARM_2_UUSDY_ASSET_AMOUNT: u128 = 666_666;
+const FARM_2_END_EPOCH: u64 = 20;
+
 #[test]
 fn test_rewards_query_overlapping_farms() {
     let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
-        coin(1_000_000_000u128, lp_denom_1.clone()),
-        coin(1_000_000_000u128, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE_AMOUNT, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, lp_denom_1.clone()),
+        coin(INITIAL_BALANCE_AMOUNT, lp_denom_2.clone()),
     ]);
 
     let creator = suite.creator();
@@ -45,17 +63,20 @@ fn test_rewards_query_overlapping_farms() {
             FarmAction::Fill {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
-                    start_epoch: Some(12),
-                    preliminary_end_epoch: Some(16),
+                    start_epoch: Some(FARM_START_EPOCH),
+                    preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(80_000u128),
                     },
                     farm_identifier: Some("farm_1".to_string()),
                 },
             },
-            vec![coin(80_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![
+                coin(80_000u128, UUSDY_DENOM.to_string()),
+                coin(FARM_UOM_FEE_AMOUNT, UOM_DENOM.to_string()),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -65,17 +86,20 @@ fn test_rewards_query_overlapping_farms() {
             FarmAction::Fill {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
-                    start_epoch: Some(12),
-                    preliminary_end_epoch: Some(16),
+                    start_epoch: Some(FARM_START_EPOCH),
+                    preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uosmo".to_string(),
+                        denom: UOSMO_DENOM.to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     farm_identifier: Some("farm_2".to_string()),
                 },
             },
-            vec![coin(10_000u128, "uosmo"), coin(1_000, "uom")],
+            vec![
+                coin(10_000u128, UOSMO_DENOM.to_string()),
+                coin(FARM_UOM_FEE_AMOUNT, UOM_DENOM.to_string()),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -85,17 +109,17 @@ fn test_rewards_query_overlapping_farms() {
             FarmAction::Fill {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
-                    start_epoch: Some(12),
-                    preliminary_end_epoch: Some(16),
+                    start_epoch: Some(FARM_START_EPOCH),
+                    preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uom".to_string(),
+                        denom: UOM_DENOM.to_string(),
                         amount: Uint128::new(30_000u128),
                     },
                     farm_identifier: Some("farm_3".to_string()),
                 },
             },
-            vec![coin(31_000u128, "uom")],
+            vec![coin(31_000u128, UOM_DENOM.to_string())], // 30_000 + 1_000 fee
             |result| {
                 result.unwrap();
             },
@@ -105,17 +129,20 @@ fn test_rewards_query_overlapping_farms() {
             FarmAction::Fill {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
-                    start_epoch: Some(12),
-                    preliminary_end_epoch: Some(16),
+                    start_epoch: Some(FARM_START_EPOCH),
+                    preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(70_000u128),
                     },
                     farm_identifier: Some("farm_4".to_string()),
                 },
             },
-            vec![coin(70_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![
+                coin(70_000u128, UUSDY_DENOM.to_string()),
+                coin(FARM_UOM_FEE_AMOUNT, UOM_DENOM.to_string()),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -127,7 +154,7 @@ fn test_rewards_query_overlapping_farms() {
             &creator,
             PositionAction::Create {
                 identifier: Some("creator_pos_1".to_string()),
-                unlocking_duration: 86_400,
+                unlocking_duration: UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(35_000, lp_denom_1.clone())],
@@ -139,7 +166,7 @@ fn test_rewards_query_overlapping_farms() {
             &creator,
             PositionAction::Create {
                 identifier: Some("creator_pos_2".to_string()),
-                unlocking_duration: 86_400,
+                unlocking_duration: UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(70_000, lp_denom_2.clone())],
@@ -164,18 +191,24 @@ fn test_rewards_query_overlapping_farms() {
             rewards_response,
             RewardsResponse::RewardsResponse {
                 total_rewards: vec![
-                    coin(15000, "uom"),
-                    coin(5000, "uosmo"),
-                    coin(75000, "uusdy"),
+                    coin(15000, UOM_DENOM.to_string()),
+                    coin(5000, UOSMO_DENOM.to_string()),
+                    coin(75000, UUSDY_DENOM.to_string()),
                 ],
                 rewards_per_lp_denom: vec![
                     (
                         lp_denom_1.clone(),
-                        vec![coin(5000, "uosmo"), coin(40000, "uusdy")]
+                        vec![
+                            coin(5000, UOSMO_DENOM.to_string()),
+                            coin(40000, UUSDY_DENOM.to_string())
+                        ]
                     ),
                     (
                         lp_denom_2.clone(),
-                        vec![coin(15000, "uom"), coin(35000, "uusdy")]
+                        vec![
+                            coin(15000, UOM_DENOM.to_string()),
+                            coin(35000, UUSDY_DENOM.to_string())
+                        ]
                     ),
                 ],
             }
@@ -186,15 +219,15 @@ fn test_rewards_query_overlapping_farms() {
 #[test]
 fn test_positions_query_filters_and_pagination() {
     let mut balances = vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
-        coin(1_000_000_000u128, "uosmo"),
+        coin(INITIAL_BALANCE_AMOUNT, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UOSMO_DENOM.to_string()),
     ];
 
     // prepare lp denoms
     for i in 1..MAX_FARMS_LIMIT * 2 {
         let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
-        balances.push(coin(1_000_000_000u128, lp_denom.clone()));
+        balances.push(coin(INITIAL_BALANCE_AMOUNT, lp_denom.clone()));
     }
 
     let mut suite = TestingSuite::default_with_balances(balances);
@@ -208,11 +241,11 @@ fn test_positions_query_filters_and_pagination() {
             &alice,
             PositionAction::Create {
                 identifier: Some(format!("position{}", i)),
-                unlocking_duration: 86_400,
+                unlocking_duration: UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(
-                1_000,
+                POSITION_LP_AMOUNT,
                 format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
             )],
             |result| {
@@ -239,10 +272,10 @@ fn test_positions_query_filters_and_pagination() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             None,
-            Some(5),
+            Some(PAGE_LIMIT_5),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), 5usize);
+                assert_eq!(response.positions.len(), PAGE_LIMIT_5 as usize);
                 position_a_id.replace(response.positions[4].identifier.clone());
             },
         )
@@ -250,10 +283,10 @@ fn test_positions_query_filters_and_pagination() {
             Some(PositionsBy::Receiver(alice.to_string())),
             Some(true),
             Some(position_a_id.borrow().clone()),
-            Some(5),
+            Some(PAGE_LIMIT_5),
             |result| {
                 let response = result.unwrap();
-                assert_eq!(response.positions.len(), 5usize);
+                assert_eq!(response.positions.len(), PAGE_LIMIT_5 as usize);
                 position_b_id.replace(response.positions[0].identifier.clone());
             },
         );
@@ -293,10 +326,10 @@ fn test_query_rewards_divide_by_zero() {
     let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
-        coin(1_000_000_000_000, lp_denom_1.clone()),
+        coin(INITIAL_BALANCE_AMOUNT, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UOSMO_DENOM.to_string()),
+        coin(LP_DENOM_1_INITIAL_BALANCE, lp_denom_1.clone()),
     ]);
 
     let creator = suite.creator();
@@ -314,13 +347,16 @@ fn test_query_rewards_divide_by_zero() {
                 preliminary_end_epoch: None,
                 curve: None,
                 farm_asset: Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::new(3333u128),
+                    denom: UUSDY_DENOM.to_string(),
+                    amount: Uint128::new(FARM_UUSDY_ASSET_AMOUNT),
                 },
                 farm_identifier: None,
             },
         },
-        vec![coin(3333u128, "uusdy"), coin(1_000, "uom")],
+        vec![
+            coin(FARM_UUSDY_ASSET_AMOUNT, UUSDY_DENOM.to_string()),
+            coin(FARM_UOM_FEE_AMOUNT, UOM_DENOM.to_string()),
+        ],
         |result| {
             result.unwrap();
         },
@@ -331,10 +367,10 @@ fn test_query_rewards_divide_by_zero() {
         &creator,
         PositionAction::Create {
             identifier: Some("creator_position".to_string()),
-            unlocking_duration: 86_400,
+            unlocking_duration: UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
-        vec![coin(1_000, lp_denom_1.clone())],
+        vec![coin(POSITION_LP_AMOUNT, lp_denom_1.clone())],
         |result| {
             result.unwrap();
         },
@@ -417,10 +453,10 @@ fn test_query_rewards_divide_by_zero() {
         &creator,
         PositionAction::Create {
             identifier: Some("creator_another_position".to_string()),
-            unlocking_duration: 86_400,
+            unlocking_duration: UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
-        vec![coin(2_000, lp_denom_1.clone())],
+        vec![coin(CREATOR_ANOTHER_POSITION_LP_AMOUNT, lp_denom_1.clone())],
         |result| {
             result.unwrap();
         },
@@ -454,7 +490,10 @@ fn test_query_rewards_divide_by_zero() {
         })
         .query_lp_weight(&creator, &lp_denom_1, 8, |result| {
             let lp_weight_response = result.unwrap();
-            assert_eq!(lp_weight_response.lp_weight, Uint128::new(2_000));
+            assert_eq!(
+                lp_weight_response.lp_weight,
+                Uint128::new(CREATOR_ANOTHER_POSITION_LP_AMOUNT)
+            );
         })
         .query_lp_weight(&creator, &lp_denom_1, 9, |result| {
             result.unwrap_err();
@@ -526,11 +565,11 @@ fn test_query_rewards_divide_by_zero_mitigated() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
-        coin(1_000_000_000_000, lp_denom_1.clone()),
-        coin(1_000_000_000_000, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE_AMOUNT, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE_AMOUNT, UOSMO_DENOM.to_string()),
+        coin(LP_DENOM_1_INITIAL_BALANCE, lp_denom_1.clone()),
+        coin(LP_DENOM_2_INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     let alice = suite.creator();
@@ -549,13 +588,16 @@ fn test_query_rewards_divide_by_zero_mitigated() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
-                        amount: Uint128::new(8_888u128),
+                        denom: UUSDY_DENOM.to_string(),
+                        amount: Uint128::new(FARM_1_UUSDY_ASSET_AMOUNT),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_888u128, "uusdy"), coin(1_000, "uom")],
+            vec![
+                coin(FARM_1_UUSDY_ASSET_AMOUNT, UUSDY_DENOM.to_string()),
+                coin(FARM_UOM_FEE_AMOUNT, UOM_DENOM.to_string()),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -566,16 +608,19 @@ fn test_query_rewards_divide_by_zero_mitigated() {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
-                    preliminary_end_epoch: Some(20),
+                    preliminary_end_epoch: Some(FARM_2_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
-                        amount: Uint128::new(666_666u128),
+                        denom: UUSDY_DENOM.to_string(),
+                        amount: Uint128::new(FARM_2_UUSDY_ASSET_AMOUNT),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(666_666u128, "uusdy"), coin(1_000, "uom")],
+            vec![
+                coin(FARM_2_UUSDY_ASSET_AMOUNT, UUSDY_DENOM.to_string()),
+                coin(FARM_UOM_FEE_AMOUNT, UOM_DENOM.to_string()),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -586,10 +631,10 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         &bob,
         PositionAction::Create {
             identifier: Some("creator_position".to_string()),
-            unlocking_duration: 86_400,
+            unlocking_duration: UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
-        vec![coin(1_000, lp_denom_1.clone())],
+        vec![coin(POSITION_LP_AMOUNT, lp_denom_1.clone())],
         |result| {
             result.unwrap();
         },
@@ -599,10 +644,10 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         &bob,
         PositionAction::Create {
             identifier: Some("creator_another_position".to_string()),
-            unlocking_duration: 86_400,
+            unlocking_duration: UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
-        vec![coin(1_000, lp_denom_2.clone())],
+        vec![coin(POSITION_LP_AMOUNT, lp_denom_2.clone())],
         |result| {
             result.unwrap();
         },
@@ -674,10 +719,10 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         &bob,
         PositionAction::Create {
             identifier: Some("creator_a_third_position".to_string()),
-            unlocking_duration: 86_400,
+            unlocking_duration: UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
-        vec![coin(2_000, lp_denom_1.clone())],
+        vec![coin(CREATOR_ANOTHER_POSITION_LP_AMOUNT, lp_denom_1.clone())],
         |result| {
             result.unwrap();
         },
@@ -693,10 +738,13 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         assert_eq!(
             rewards_response,
             RewardsResponse::RewardsResponse {
-                total_rewards: vec![coin(105895u128, "uusdy")],
+                total_rewards: vec![coin(105895u128, UUSDY_DENOM.to_string())],
                 rewards_per_lp_denom: vec![
-                    (lp_denom_1.clone(), coins(634u128, "uusdy")),
-                    (lp_denom_2.clone(), coins(105261u128, "uusdy")),
+                    (lp_denom_1.clone(), coins(634u128, UUSDY_DENOM.to_string())),
+                    (
+                        lp_denom_2.clone(),
+                        coins(105261u128, UUSDY_DENOM.to_string())
+                    ),
                 ],
             }
         );
