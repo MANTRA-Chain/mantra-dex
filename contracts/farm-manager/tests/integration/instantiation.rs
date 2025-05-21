@@ -4,10 +4,10 @@ use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 use farm_manager::ContractError;
 use mantra_dex_std::constants::MONTH_IN_SECONDS;
 
+use super::common_constants::{INITIAL_USER_BALANCE, UOM_DENOM};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
-const DENOM_UOM: &str = "uom";
 const INITIAL_AMOUNT_UOM_RAW: u128 = 1_000u128;
 const MAX_CONCURRENT_FARMS_0: u32 = 0;
 const MAX_CONCURRENT_FARMS_1: u32 = 1;
@@ -24,14 +24,14 @@ const INVALID_FARM_EXPIRATION_TOO_SHORT_SECONDS: u64 = MONTH_IN_SECONDS - 1;
 #[test]
 fn instantiate_farm_manager() {
     let mut suite =
-        TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, DENOM_UOM.to_string())]);
+        TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, UOM_DENOM.to_string())]);
 
     suite.instantiate_err(
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: DENOM_UOM.to_string(),
+            denom: UOM_DENOM.to_string(),
             amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
         MAX_CONCURRENT_FARMS_0,
@@ -53,7 +53,7 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: DENOM_UOM.to_string(),
+            denom: UOM_DENOM.to_string(),
             amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
         MAX_CONCURRENT_FARMS_1,
@@ -75,7 +75,7 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: DENOM_UOM.to_string(),
+            denom: UOM_DENOM.to_string(),
             amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
         MAX_CONCURRENT_FARMS_1,
@@ -97,7 +97,7 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: DENOM_UOM.to_string(),
+            denom: UOM_DENOM.to_string(),
             amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
         MAX_CONCURRENT_FARMS_1,
@@ -119,7 +119,7 @@ fn instantiate_farm_manager() {
         MOCK_CONTRACT_ADDR_1.to_string(),
         MOCK_CONTRACT_ADDR_1.to_string(),
         Coin {
-            denom: DENOM_UOM.to_string(),
+            denom: UOM_DENOM.to_string(),
             amount: Uint128::new(INITIAL_AMOUNT_UOM_RAW),
         },
         MAX_CONCURRENT_FARMS_7,
