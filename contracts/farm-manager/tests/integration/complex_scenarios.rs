@@ -4,6 +4,10 @@ use cosmwasm_std::{coin, Coin, Uint128};
 use mantra_dex_std::constants::LP_SYMBOL;
 use mantra_dex_std::farm_manager::{Curve, Farm, FarmAction, FarmParams, FarmsBy, PositionAction};
 
+use super::common_constants::{
+    DEFAULT_UNLOCKING_DURATION_SECONDS, INITIAL_USER_BALANCE, UOM_DENOM, UOM_FARM_CREATION_FEE,
+    UOSMO_DENOM, UUSDY_DENOM,
+};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
@@ -28,14 +32,6 @@ use crate::common::MOCK_CONTRACT_ADDR_1;
 /// Verify users got rewards pro rata to their locked tokens
 #[test]
 fn test_multiple_farms_and_positions() {
-    // Denoms
-    const UOM_DENOM: &str = "uom";
-    const UUSDY_DENOM: &str = "uusdy";
-    const UOSMO_DENOM: &str = "uosmo";
-
-    // Initial balances for users
-    const INITIAL_USER_BALANCE: u128 = 1_000_000_000u128;
-
     // Farm Raw Identifiers (used in FarmParams)
     const RAW_FARM_1_ID: &str = "farm_1";
     const RAW_FARM_2_ID: &str = "farm_2";
@@ -61,7 +57,6 @@ fn test_multiple_farms_and_positions() {
     const U_ANOTHER_POS_1_ID: &str = "u-another_pos_1";
 
     // Unlocking Durations
-    const DEFAULT_UNLOCKING_DURATION_SECONDS: u64 = 86_400; // 1 day
     const SIX_MONTHS_UNLOCKING_DURATION_SECONDS: u64 = 15_778_476; // ~6 months
 
     // Farm Asset Amounts

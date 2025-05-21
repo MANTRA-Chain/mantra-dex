@@ -8,13 +8,13 @@ use mantra_dex_std::farm_manager::{
     Curve, Farm, FarmAction, FarmParams, PositionAction, PositionsBy,
 };
 
+use super::common_constants::{
+    DEFAULT_UNLOCKING_DURATION_SECONDS, UOM_DENOM, UOSMO_DENOM, UUSDY_DENOM,
+};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
 // Denoms
-const UUSDY_DENOM: &str = "uusdy";
-const UOM_DENOM: &str = "uom";
-const UOSMO_DENOM: &str = "uosmo";
 const INVALID_LP_DENOM: &str = "invalid_lp";
 
 // Amounts
@@ -50,9 +50,6 @@ const DEFAULT_START_EPOCH_OFFSET: u64 = 1; // current epoch + 1
 
 // Position Identifiers
 const POSITION_ID_P1: &str = "p-1";
-
-// Unlocking Duration
-const UNLOCKING_DURATION_86400: u64 = 86_400;
 
 // Emission Rates
 const EMISSION_RATE_714: u128 = 714;
@@ -515,7 +512,7 @@ fn closing_expired_farm_wont_pay_penalty() {
             &creator,
             PositionAction::Create {
                 identifier: None,
-                unlocking_duration: UNLOCKING_DURATION_86400,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(LP_DEPOSIT_AMOUNT_10000, lp_denom.clone())],

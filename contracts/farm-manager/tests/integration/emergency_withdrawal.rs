@@ -12,23 +12,19 @@ use mantra_dex_std::farm_manager::{
     PositionAction, PositionsBy, PositionsResponse, RewardsResponse,
 };
 
+use super::common_constants::{
+    DEFAULT_UNLOCKING_DURATION_SECONDS, INITIAL_USER_BALANCE, UOM_DENOM, UOM_FARM_CREATION_FEE,
+    UOSMO_DENOM, UUSDY_DENOM,
+};
 use crate::common::suite::TestingSuite;
 use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
 
 mod common;
 
 // Global constants for the test file
-const UOM_DENOM: &str = "uom";
-const UUSDY_DENOM: &str = "uusdy";
-const UOSMO_DENOM: &str = "uosmo";
-
-const INITIAL_USER_BALANCE: u128 = 1_000_000_000u128;
 const INITIAL_USER_BALANCE_LARGE: u128 = 1_000_000_000_000u128; // Used in test_managing_positions_close_and_emergency_withdraw
 
-const DEFAULT_UNLOCKING_DURATION_SECONDS: u64 = 86_400; // 1 day
 const YEAR_APPROX_UNLOCKING_DURATION_SECONDS: u64 = 31_556_926; // Used in test_emergency_withdrawal_with_proportional_penalty
-
-const UOM_FARM_CREATION_FEE: u128 = 1_000u128;
 
 // Constants for test_emergency_withdrawal & test_emergency_withdrawal_with_pending_rewards_are_lost
 const FARM_ID_EW: &str = "farm";
