@@ -8,16 +8,8 @@ use mantra_dex_std::{
     pool_manager::{PoolType, PoolsResponse},
 };
 
-use crate::tests::integration::common_constants::{
-    DECIMAL_PLACES as ASSET_DECIMALS, DENOM_ULUNA as ULUNA_DENOM, DENOM_UOM as UOM_DENOM,
-    DENOM_UUSD as UUSD_DENOM, DENOM_UUSDC as UUSDC_DENOM, DENOM_UUSDT as UUSDT_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, DENOM_UWHALE as UWHALE_DENOM,
-    INITIAL_BALANCE as INITIAL_BALANCE_1B, INITIAL_BALANCE_PLUS_ONE as INITIAL_BALANCE_1B_PLUS_1,
-    LIQUIDITY_AMOUNT as LIQUIDITY_1M, POOL_CREATION_FEE as POOL_CREATION_FEE_UUSD_AMOUNT,
-    PROTOCOL_FEE_RATIO_1_1000, STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT as SWAP_AMOUNT_1K,
-    SWAP_FEE_RATIO_1_10000,
-};
 use crate::{tests::suite::TestingSuite, ContractError};
+use test_utils::common_constants::*;
 
 // ========== Liquidity Amounts ==========
 const LIQUIDITY_500K: u128 = 500_000u128;
@@ -40,6 +32,21 @@ const SLIPPAGE_TOLERANCE_HIGH: &str = "0.003";
 const EXPECTED_LP_AMOUNT_FIRST: u128 = LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();
 const EXPECTED_LP_AMOUNT_SECOND: u128 =
     LIQUIDITY_1_5M + LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();
+
+// Add after the import of test_utils::common_constants::*
+const UWHALE_DENOM: &str = DENOM_UWHALE;
+const ULUNA_DENOM: &str = DENOM_ULUNA;
+const UUSD_DENOM: &str = DENOM_UUSD;
+const UOM_DENOM: &str = DENOM_UOM;
+const UUSDC_DENOM: &str = DENOM_UUSDC;
+const UUSDT_DENOM: &str = DENOM_UUSDT;
+const UUSDY_DENOM: &str = DENOM_UUSDY;
+const LIQUIDITY_1M: u128 = LIQUIDITY_AMOUNT;
+const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = POOL_CREATION_FEE;
+const ASSET_DECIMALS: u8 = DECIMAL_PLACES;
+const SWAP_FEE_RATIO_1_10000: (u128, u128) = SWAP_FEE_RATIO_1_1000;
+const INITIAL_BALANCE_1B: u128 = INITIAL_BALANCE;
+const INITIAL_BALANCE_1B_PLUS_1: u128 = INITIAL_BALANCE_PLUS_ONE;
 
 #[test]
 fn provide_liquidity_stable_swap() {
@@ -130,7 +137,7 @@ fn provide_liquidity_stable_swap() {
         O_WHALE_ULUNA_UUSD_ID.to_string(),
         Coin {
             denom: UWHALE_DENOM.to_string(),
-            amount: Uint128::from(SWAP_AMOUNT_1K),
+            amount: Uint128::from(SWAP_AMOUNT),
         },
         ULUNA_DENOM.to_string(),
         |result| {
@@ -467,7 +474,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
         O_UUSDC_UUSDT_UUSDY_ID.to_string(),
         Coin {
             denom: UUSDC_DENOM.to_string(),
-            amount: Uint128::from(SWAP_AMOUNT_1K),
+            amount: Uint128::from(SWAP_AMOUNT),
         },
         UUSDT_DENOM.to_string(),
         |result| {

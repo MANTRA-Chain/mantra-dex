@@ -704,6 +704,7 @@ dependencies = [
  "schemars",
  "semver",
  "serde",
+ "test-utils",
  "thiserror 1.0.69",
 ]
 
@@ -1097,6 +1098,7 @@ dependencies = [
  "sha2",
  "stable-swap-sim",
  "test-case",
+ "test-utils",
  "thiserror 1.0.69",
 ]
 
@@ -1667,6 +1669,10 @@ dependencies = [
  "syn 2.0.101",
  "test-case-core",
 ]
+
+[[package]]
+name = "test-utils"
+version = "0.1.0"
 
 [[package]]
 name = "thiserror"

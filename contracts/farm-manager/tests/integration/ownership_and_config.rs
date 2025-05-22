@@ -5,9 +5,9 @@ use farm_manager::ContractError;
 use mantra_dex_std::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
 use mantra_dex_std::farm_manager::Config;
 
-use super::common_constants::UOM_DENOM;
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
+use test_utils::common_constants::DENOM_UOM as UOM_DENOM;
 
 const NEW_CREATE_FARM_FEE_AMOUNT: u128 = 2_000u128;
 const NEW_MAX_CONCURRENT_FARMS: u32 = 5u32;

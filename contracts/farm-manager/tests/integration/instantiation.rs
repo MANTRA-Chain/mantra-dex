@@ -4,11 +4,12 @@ use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 use farm_manager::ContractError;
 use mantra_dex_std::constants::MONTH_IN_SECONDS;
 
-use super::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, INITIAL_USER_BALANCE, UOM_DENOM,
-};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
+use test_utils::common_constants::{
+    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
+    DENOM_UUSDY as UUSDY_DENOM, INITIAL_USER_BALANCE,
+};
 
 const INITIAL_AMOUNT_UOM_RAW: u128 = 1_000u128;
 const MAX_CONCURRENT_FARMS_0: u32 = 0;

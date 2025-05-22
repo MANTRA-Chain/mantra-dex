@@ -8,7 +8,9 @@ use mantra_dex_std::farm_manager::{FarmAction, FarmParams, PositionAction};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
-use super::common_constants::{DEFAULT_UNLOCKING_DURATION_SECONDS, UUSDY_DENOM};
+use test_utils::common_constants::{
+    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UUSDY as UUSDY_DENOM,
+};
 
 const FARM_ASSET_AMOUNT: u128 = 8_000u128;
 const START_EPOCH: u64 = 12;

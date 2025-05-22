@@ -1,8 +1,3 @@
-use super::common_constants::{
-    DECIMAL_PLACES, DENOM_ULUNA as DENOM_LUNA, DENOM_UOM as DENOM_OM, DENOM_UUSD as DENOM_USD,
-    DENOM_UWHALE as DENOM_WHALE, INITIAL_BALANCE, INITIAL_BALANCE_PLUS_ONE, LIQUIDITY_AMOUNT,
-    POOL_CREATION_FEE, STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE, SWAP_AMOUNT,
-};
 use crate::tests::suite::TestingSuite;
 use crate::ContractError;
 use cosmwasm_std::coin;
@@ -14,6 +9,7 @@ use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::pool_manager::PoolType;
+use test_utils::common_constants::*;
 
 // Pool identifiers
 const POOL_ID_WHALE_LUNA: &str = "whale.uluna";
@@ -46,6 +42,13 @@ const SIMULATED_RESULT_AFTER_PRICE_CHANGE: u128 = 935;
 const REVERSE_SIMULATION_EXPECTED_AMOUNT: u128 = 1_007;
 const REVERSE_SIMULATION_TOLERANCE: &str = "0.1";
 const INITIAL_SIMULATION_TOLERANCE: &str = "0.006";
+
+// Add after the imports:
+const DENOM_WHALE: &str = DENOM_UWHALE;
+const DENOM_LUNA: &str = DENOM_ULUNA;
+const DENOM_USD: &str = DENOM_UUSD;
+const DENOM_OM: &str = DENOM_UOM;
+const OM_STARGATE_BALANCE: u128 = STARGATE_MOCK_UOM_AMOUNT;
 
 #[test]
 fn basic_swap_operations_test() {
