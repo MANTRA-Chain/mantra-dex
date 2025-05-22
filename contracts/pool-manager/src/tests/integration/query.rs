@@ -1,25 +1,15 @@
 use std::cell::RefCell;
 
+use super::common_constants::{
+    DECIMAL_PLACES, DENOM_ULUNA as DENOM_LUNA, DENOM_UOM as DENOM_OM, DENOM_UUSD as DENOM_USD,
+    DENOM_UUSDC as DENOM_USDC, DENOM_UUSDT as DENOM_USDT, DENOM_UWHALE as DENOM_WHALE,
+    INITIAL_BALANCE, INITIAL_BALANCE_PLUS_ONE, LIQUIDITY_AMOUNT, POOL_CREATION_FEE,
+    STABLESWAP_AMP_FACTOR, STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE, SWAP_AMOUNT,
+};
 use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::pool_manager::{PoolType, SwapOperation};
-use super::common_constants::{
-    DENOM_UWHALE as DENOM_WHALE,
-    DENOM_ULUNA as DENOM_LUNA,
-    DENOM_UUSD as DENOM_USD,
-    DENOM_UUSDC as DENOM_USDC,
-    DENOM_UOM as DENOM_OM,
-    DENOM_UUSDT as DENOM_USDT,
-    INITIAL_BALANCE,
-    INITIAL_BALANCE_PLUS_ONE,
-    LIQUIDITY_AMOUNT,
-    SWAP_AMOUNT,
-    POOL_CREATION_FEE,
-    STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE,
-    DECIMAL_PLACES,
-    STABLESWAP_AMP_FACTOR,
-};
 
 use crate::tests::suite::TestingSuite;
 

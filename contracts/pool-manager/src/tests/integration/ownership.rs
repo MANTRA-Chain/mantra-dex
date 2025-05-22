@@ -1,8 +1,8 @@
 use cosmwasm_std::{coin, Addr, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 
-use crate::{tests::suite::TestingSuite, ContractError};
 use super::common_constants::{DENOM_UOM, STARGATE_MOCK_UOM_AMOUNT};
+use crate::{tests::suite::TestingSuite, ContractError};
 
 // Test constants
 // Common token amounts
