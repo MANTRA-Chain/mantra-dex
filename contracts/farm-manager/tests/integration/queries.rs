@@ -10,14 +10,14 @@ use mantra_dex_std::farm_manager::{
 };
 
 use super::common_constants::{
-    INITIAL_USER_BALANCE, UOM_DENOM, UOM_FARM_CREATION_FEE, UOSMO_DENOM, UUSDY_DENOM,
+    DEFAULT_UNLOCKING_DURATION_SECONDS, INITIAL_USER_BALANCE, UOM_DENOM, UOM_FARM_CREATION_FEE,
+    UOSMO_DENOM, UUSDY_DENOM,
 };
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
 const FARM_START_EPOCH: u64 = 12;
 const FARM_END_EPOCH: u64 = 16;
-const UNLOCKING_DURATION_SECONDS: u64 = 86_400;
 const POSITION_LP_AMOUNT: u128 = 1_000;
 const PAGE_LIMIT_5: u32 = 5;
 const LP_DENOM_1_INITIAL_BALANCE: u128 = 1_000_000_000_000;
@@ -152,7 +152,7 @@ fn test_rewards_query_overlapping_farms() {
             &creator,
             PositionAction::Create {
                 identifier: Some("creator_pos_1".to_string()),
-                unlocking_duration: UNLOCKING_DURATION_SECONDS,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(35_000, lp_denom_1.clone())],
@@ -164,7 +164,7 @@ fn test_rewards_query_overlapping_farms() {
             &creator,
             PositionAction::Create {
                 identifier: Some("creator_pos_2".to_string()),
-                unlocking_duration: UNLOCKING_DURATION_SECONDS,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(70_000, lp_denom_2.clone())],
@@ -239,7 +239,7 @@ fn test_positions_query_filters_and_pagination() {
             &alice,
             PositionAction::Create {
                 identifier: Some(format!("position{}", i)),
-                unlocking_duration: UNLOCKING_DURATION_SECONDS,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(
@@ -365,7 +365,7 @@ fn test_query_rewards_divide_by_zero() {
         &creator,
         PositionAction::Create {
             identifier: Some("creator_position".to_string()),
-            unlocking_duration: UNLOCKING_DURATION_SECONDS,
+            unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
         vec![coin(POSITION_LP_AMOUNT, lp_denom_1.clone())],
@@ -451,7 +451,7 @@ fn test_query_rewards_divide_by_zero() {
         &creator,
         PositionAction::Create {
             identifier: Some("creator_another_position".to_string()),
-            unlocking_duration: UNLOCKING_DURATION_SECONDS,
+            unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
         vec![coin(CREATOR_ANOTHER_POSITION_LP_AMOUNT, lp_denom_1.clone())],
@@ -629,7 +629,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         &bob,
         PositionAction::Create {
             identifier: Some("creator_position".to_string()),
-            unlocking_duration: UNLOCKING_DURATION_SECONDS,
+            unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
         vec![coin(POSITION_LP_AMOUNT, lp_denom_1.clone())],
@@ -642,7 +642,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         &bob,
         PositionAction::Create {
             identifier: Some("creator_another_position".to_string()),
-            unlocking_duration: UNLOCKING_DURATION_SECONDS,
+            unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
         vec![coin(POSITION_LP_AMOUNT, lp_denom_2.clone())],
@@ -717,7 +717,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         &bob,
         PositionAction::Create {
             identifier: Some("creator_a_third_position".to_string()),
-            unlocking_duration: UNLOCKING_DURATION_SECONDS,
+            unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
             receiver: None,
         },
         vec![coin(CREATOR_ANOTHER_POSITION_LP_AMOUNT, lp_denom_1.clone())],
