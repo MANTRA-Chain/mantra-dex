@@ -8,11 +8,11 @@ use mantra_dex_std::farm_manager::{FarmAction, FarmParams, PositionAction};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
-const UUSDY_DENOM: &str = "uusdy";
+use super::common_constants::{DEFAULT_UNLOCKING_DURATION_SECONDS, UUSDY_DENOM};
+
 const FARM_ASSET_AMOUNT: u128 = 8_000u128;
 const START_EPOCH: u64 = 12;
 const PRELIMINARY_END_EPOCH: u64 = 16;
-const UNLOCKING_DURATION: u64 = 86_400;
 
 const INVALID_ID_SPECIAL_CHARS: &str = "invalid!";
 const INVALID_ID_TOO_LONG: &str =
@@ -168,7 +168,7 @@ fn test_farm_and_position_id_validation() {
             &creator,
             PositionAction::Create {
                 identifier: Some(INVALID_ID_SPECIAL_CHARS.to_string()),
-                unlocking_duration: UNLOCKING_DURATION,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(LP_STAKE_AMOUNT, lp_denom.clone())],
@@ -186,7 +186,7 @@ fn test_farm_and_position_id_validation() {
             &creator,
             PositionAction::Create {
                 identifier: Some(INVALID_ID_TOO_LONG.to_string()),
-                unlocking_duration: UNLOCKING_DURATION,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(LP_STAKE_AMOUNT, lp_denom.clone())],
@@ -204,7 +204,7 @@ fn test_farm_and_position_id_validation() {
             &creator,
             PositionAction::Create {
                 identifier: Some(INVALID_ID_SQL_INJECTION_LIKE.to_string()),
-                unlocking_duration: UNLOCKING_DURATION,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(LP_STAKE_AMOUNT, lp_denom.clone())],
@@ -222,7 +222,7 @@ fn test_farm_and_position_id_validation() {
             &creator,
             PositionAction::Create {
                 identifier: Some(INVALID_ID_NON_ASCII.to_string()),
-                unlocking_duration: UNLOCKING_DURATION,
+                unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
             vec![coin(LP_STAKE_AMOUNT, lp_denom.clone())],

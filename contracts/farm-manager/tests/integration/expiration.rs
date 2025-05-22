@@ -9,7 +9,8 @@ use mantra_dex_std::farm_manager::{
 };
 
 use super::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, UOM_DENOM, UOSMO_DENOM, UUSDY_DENOM,
+    DEFAULT_UNLOCKING_DURATION_SECONDS, INITIAL_USER_BALANCE, UOM_DENOM, UOM_FARM_CREATION_FEE,
+    UOSMO_DENOM, UUSDY_DENOM,
 };
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
@@ -18,12 +19,9 @@ use crate::common::MOCK_CONTRACT_ADDR_1;
 const INVALID_LP_DENOM: &str = "invalid_lp";
 
 // Amounts
-const INITIAL_BALANCE_2_000_000_000: u128 = 2_000_000_000u128;
-const INITIAL_LP_BALANCE_1_000_000_000: u128 = 1_000_000_000u128;
 const FARM_ASSET_AMOUNT_8000: u128 = 8_000u128;
 const FARM_ASSET_AMOUNT_10000: u128 = 10_000u128;
 const FARM_ASSET_AMOUNT_4000: u128 = 4_000u128;
-const UOM_FUND_AMOUNT_1000: u128 = 1_000u128;
 const LP_DEPOSIT_AMOUNT_10000: u128 = 10_000u128;
 
 // Farm Identifiers
@@ -60,11 +58,11 @@ fn test_close_expired_farms() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE_2_000_000_000, UOM_DENOM),
-        coin(INITIAL_BALANCE_2_000_000_000, UUSDY_DENOM),
-        coin(INITIAL_BALANCE_2_000_000_000, UOSMO_DENOM),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, lp_denom.clone()),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, INVALID_LP_DENOM),
+        coin(INITIAL_USER_BALANCE, UOM_DENOM),
+        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_USER_BALANCE, INVALID_LP_DENOM),
     ]);
 
     let creator = suite.creator();
@@ -93,7 +91,7 @@ fn test_close_expired_farms() {
         },
         vec![
             coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-            coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+            coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
         ],
         |result| {
             result.unwrap();
@@ -136,7 +134,7 @@ fn test_close_expired_farms() {
             },
             vec![
                 coin(FARM_ASSET_AMOUNT_10000, UUSDY_DENOM),
-                coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
             ],
             |result| {
                 result.unwrap();
@@ -170,10 +168,10 @@ fn expand_expired_farm() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE_2_000_000_000, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE_2_000_000_000, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE_2_000_000_000, UOSMO_DENOM.to_string()),
-        coin(INITIAL_BALANCE_2_000_000_000, lp_denom.clone()),
+        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
     ]);
 
     let other = suite.senders[1].clone();
@@ -198,7 +196,7 @@ fn expand_expired_farm() {
             },
             vec![
                 coin(FARM_ASSET_AMOUNT_4000, UUSDY_DENOM),
-                coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
             ],
             |result| {
                 result.unwrap();
@@ -270,11 +268,11 @@ fn test_farm_expired() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE_2_000_000_000, UOM_DENOM),
-        coin(INITIAL_BALANCE_2_000_000_000, UUSDY_DENOM),
-        coin(INITIAL_BALANCE_2_000_000_000, UOSMO_DENOM),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, lp_denom.clone()),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, INVALID_LP_DENOM),
+        coin(INITIAL_USER_BALANCE, UOM_DENOM),
+        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_USER_BALANCE, INVALID_LP_DENOM),
     ]);
 
     let creator = suite.creator();
@@ -307,7 +305,7 @@ fn test_farm_expired() {
             },
             vec![
                 coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
             ],
             |result| {
                 result.unwrap();
@@ -330,7 +328,7 @@ fn test_farm_expired() {
             },
             vec![
                 coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
             ],
             |result| {
                 result.unwrap();
@@ -353,7 +351,7 @@ fn test_farm_expired() {
             },
             vec![
                 coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -408,7 +406,7 @@ fn test_farm_expired() {
         },
         vec![
             coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-            coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+            coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
         ],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -468,7 +466,7 @@ fn test_farm_expired() {
             },
             vec![
                 coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FUND_AMOUNT_1000, UOM_DENOM),
+                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
             ],
             |result| {
                 result.unwrap();
@@ -495,11 +493,11 @@ fn test_farm_expired() {
 fn closing_expired_farm_wont_pay_penalty() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_LP_BALANCE_1_000_000_000, UOM_DENOM),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, UUSDY_DENOM),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, UOSMO_DENOM),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, lp_denom.clone()),
-        coin(INITIAL_LP_BALANCE_1_000_000_000, INVALID_LP_DENOM),
+        coin(INITIAL_USER_BALANCE, UOM_DENOM),
+        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_USER_BALANCE, INVALID_LP_DENOM),
     ]);
     let creator = suite.creator();
 
@@ -546,7 +544,7 @@ fn closing_expired_farm_wont_pay_penalty() {
         .query_balance(lp_denom.clone(), &creator, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_LP_BALANCE_1_000_000_000 - LP_DEPOSIT_AMOUNT_10000)
+                Uint128::new(INITIAL_USER_BALANCE - LP_DEPOSIT_AMOUNT_10000)
             );
         })
         .query_balance(lp_denom.clone(), &fee_collector, |balance| {
@@ -565,7 +563,7 @@ fn closing_expired_farm_wont_pay_penalty() {
             },
         )
         .query_balance(lp_denom.clone(), &creator, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_LP_BALANCE_1_000_000_000));
+            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
         })
         .query_balance(lp_denom.clone(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
