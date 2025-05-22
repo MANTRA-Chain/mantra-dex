@@ -4,12 +4,12 @@ use cosmwasm_std::{coin, Coin, Uint128};
 use mantra_dex_std::constants::LP_SYMBOL;
 use mantra_dex_std::farm_manager::{Curve, Farm, FarmAction, FarmParams, FarmsBy, PositionAction};
 
-use super::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, INITIAL_USER_BALANCE, UOM_DENOM, UOM_FARM_CREATION_FEE,
-    UOSMO_DENOM, UUSDY_DENOM,
-};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
+use test_utils::common_constants::{
+    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO,
+    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
+};
 
 /// Complex test case with 4 farms for 2 different LPs somewhat overlapping in time
 /// Farm 1 -> runs from epoch 12 to 16
@@ -111,11 +111,11 @@ fn test_multiple_farms_and_positions() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom_1.clone()),
-        coin(INITIAL_USER_BALANCE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+        coin(INITIAL_BALANCE, lp_denom_1.clone()),
+        coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     let creator = suite.creator();
@@ -168,14 +168,14 @@ fn test_multiple_farms_and_positions() {
                     preliminary_end_epoch: Some(FARM_2_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_2_UOSMO_ASSET_AMOUNT),
                     },
                     farm_identifier: Some(RAW_FARM_2_ID.to_string()),
                 },
             },
             vec![
-                coin(FARM_2_UOSMO_ASSET_AMOUNT, UOSMO_DENOM),
+                coin(FARM_2_UOSMO_ASSET_AMOUNT, DENOM_UOSMO),
                 coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
             ],
             |result| {
@@ -329,7 +329,7 @@ fn test_multiple_farms_and_positions() {
         .query_balance(UUSDY_DENOM.to_string(), &creator, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_USER_BALANCE - FARM_1_UUSDY_ASSET_AMOUNT)
+                Uint128::new(INITIAL_BALANCE - FARM_1_UUSDY_ASSET_AMOUNT)
             );
         })
         .claim(&creator, vec![], None, |result| {
@@ -364,7 +364,7 @@ fn test_multiple_farms_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_2_UOSMO_ASSET_AMOUNT),
                     },
                     claimed_amount: Uint128::new(932), // Derived
@@ -392,11 +392,11 @@ fn test_multiple_farms_and_positions() {
             // Initial - farm 4 asset amount (other created farm 4)
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_USER_BALANCE - FARM_4_UUSDY_ASSET_AMOUNT)
+                Uint128::new(INITIAL_BALANCE - FARM_4_UUSDY_ASSET_AMOUNT)
             );
         })
-        .query_balance(UOSMO_DENOM.to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+        .query_balance(DENOM_UOSMO.to_string(), &other, |balance| {
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .claim(&other, vec![], None, |result| {
             result.unwrap();
@@ -404,7 +404,7 @@ fn test_multiple_farms_and_positions() {
         .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(999_951_332)); // Derived
         })
-        .query_balance(UOSMO_DENOM.to_string(), &other, |balance| {
+        .query_balance(DENOM_UOSMO.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_003_198)); // Derived
         })
         .query_farms(None, None, None, |result| {
@@ -433,7 +433,7 @@ fn test_multiple_farms_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_2_UOSMO_ASSET_AMOUNT),
                     },
                     claimed_amount: Uint128::new(4_130), // Derived
@@ -555,7 +555,7 @@ fn test_multiple_farms_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_2_UOSMO_ASSET_AMOUNT),
                     },
                     claimed_amount: Uint128::new(9_994), // exhausted
@@ -629,7 +629,7 @@ fn test_multiple_farms_and_positions() {
                     owner: creator.clone(),
                     lp_denom: lp_denom_1.clone(),
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_2_UOSMO_ASSET_AMOUNT),
                     },
                     claimed_amount: Uint128::new(9_994), // exhausted

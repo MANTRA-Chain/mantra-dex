@@ -37,3 +37,4 @@ epoch-manager.workspace         = true
 fee-collector.workspace         = true
 mantra-common-testing.workspace = true
 pool-manager.workspace          = true
+test-utils                      = { path = "../../test-utils" }

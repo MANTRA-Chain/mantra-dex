@@ -8,12 +8,12 @@ use mantra_dex_std::farm_manager::{
     Curve, Farm, FarmAction, FarmParams, PositionAction, PositionsBy,
 };
 
-use super::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, INITIAL_USER_BALANCE, UOM_DENOM, UOM_FARM_CREATION_FEE,
-    UOSMO_DENOM, UUSDY_DENOM,
-};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
+use test_utils::common_constants::{
+    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
+    DENOM_UUSDY as UUSDY_DENOM, INITIAL_USER_BALANCE, UOM_FARM_CREATION_FEE,
+};
 
 // Denoms
 const INVALID_LP_DENOM: &str = "invalid_lp";

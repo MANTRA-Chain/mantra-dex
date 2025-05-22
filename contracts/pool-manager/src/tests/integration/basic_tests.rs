@@ -1,7 +1,7 @@
 use super::super::suite::TestingSuite;
-use super::common_constants::{DENOM_UOM, STARGATE_MOCK_UOM_AMOUNT};
 use cosmwasm_std::coin;
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
+use test_utils::common_constants::{DENOM_UOM, STARGATE_MOCK_UOM_AMOUNT};
 
 // Test token denominations
 const DENOM_TEST: &str = "utest";
