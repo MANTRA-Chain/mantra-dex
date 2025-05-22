@@ -7,7 +7,7 @@ use mantra_dex_std::farm_manager::Config;
 
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
-use test_utils::common_constants::DENOM_UOM as UOM_DENOM;
+use test_utils::common_constants::{DENOM_UOM, DENOM_UOSMO, DENOM_UUSDY};
 
 const NEW_CREATE_FARM_FEE_AMOUNT: u128 = 2_000u128;
 const NEW_MAX_CONCURRENT_FARMS: u32 = 5u32;
@@ -85,9 +85,9 @@ pub fn update_config() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, UOM_DENOM.to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(1_000_000_000u128, DENOM_UOM.to_string()),
+        coin(1_000_000_000u128, DENOM_UUSDY.to_string()),
+        coin(1_000_000_000u128, DENOM_UOSMO.to_string()),
         coin(1_000_000_000u128, lp_denom.clone()),
     ]);
 
@@ -105,7 +105,7 @@ pub fn update_config() {
         epoch_manager_addr: epoch_manager,
         pool_manager_addr: pool_manager,
         create_farm_fee: Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(1_000u128),
         },
         max_concurrent_farms: 2u32,
@@ -126,7 +126,7 @@ pub fn update_config() {
             Some(MOCK_CONTRACT_ADDR_1.to_string()),
             Some(MOCK_CONTRACT_ADDR_1.to_string()),
             Some(Coin {
-                denom: UOM_DENOM.to_string(),
+                denom: DENOM_UOM.to_string(),
                 amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
             }),
             Some(3u32),
@@ -135,7 +135,7 @@ pub fn update_config() {
             Some(864_000u64),
             Some(NEW_FARM_EXPIRATION_TIME),
             Some(Decimal::percent(50)),
-            vec![coin(1_000, UOM_DENOM)],
+            vec![coin(1_000, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -149,7 +149,7 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
         Some(INVALID_MAX_CONCURRENT_FARMS_DECREASED),
@@ -172,7 +172,7 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
         Some(INVALID_MAX_CONCURRENT_FARMS_DECREASED),
@@ -195,7 +195,7 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
         Some(NEW_MAX_CONCURRENT_FARMS),
@@ -218,7 +218,7 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
         Some(NEW_MAX_CONCURRENT_FARMS),
@@ -241,7 +241,7 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
         Some(NEW_MAX_CONCURRENT_FARMS),
@@ -264,7 +264,7 @@ pub fn update_config() {
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(MOCK_CONTRACT_ADDR_1.to_string()),
         Some(Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         }),
         Some(NEW_MAX_CONCURRENT_FARMS),
@@ -284,7 +284,7 @@ pub fn update_config() {
         epoch_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
         pool_manager_addr: Addr::unchecked(MOCK_CONTRACT_ADDR_1),
         create_farm_fee: Coin {
-            denom: UOM_DENOM.to_string(),
+            denom: DENOM_UOM.to_string(),
             amount: Uint128::new(NEW_CREATE_FARM_FEE_AMOUNT),
         },
         max_concurrent_farms: NEW_MAX_CONCURRENT_FARMS,
