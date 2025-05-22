@@ -12,26 +12,32 @@ use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::FeatureToggle;
 use mantra_dex_std::pool_manager::PoolType;
+use super::common_constants::{
+    DENOM_UWHALE, 
+    DENOM_ULUNA, 
+    DENOM_UUSD, 
+    DENOM_UOM, 
+    DENOM_UUSDC, 
+    DENOM_UUSDY, 
+    DENOM_UUSDT, 
+    DENOM_UOSMO,
+    INITIAL_BALANCE as BALANCE_AMOUNT_MEDIUM,
+    INITIAL_BALANCE_PLUS_ONE as BALANCE_AMOUNT_LARGE,
+    STARGATE_MOCK_UOM_AMOUNT as MOCK_AMOUNT_UOM,
+    LIQUIDITY_AMOUNT,
+    POOL_CREATION_FEE as REQUIRED_POOL_CREATION_FEE,
+    DECIMAL_PLACES as DEFAULT_DECIMAL_PRECISION,
+    STABLESWAP_AMP_FACTOR,
+    UNLOCKING_DURATION,
+};
 
 // Test constants
-// Common token denoms
-const DENOM_UWHALE: &str = "uwhale";
-const DENOM_ULUNA: &str = "uluna";
-const DENOM_UUSD: &str = "uusd";
-const DENOM_UOM: &str = "uom";
 const DENOM_UTEST: &str = "utest";
-const DENOM_UUSDC: &str = "uusdc";
-const DENOM_UUSDY: &str = "uusdy";
-const DENOM_UUSDT: &str = "uusdt";
-const DENOM_UOSMO: &str = "uosmo";
 const DENOM_IBC_1: &str = "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A";
 const DENOM_IBC_2: &str = "ibc/A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2";
 const DENOM_FACTORY: &str = "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom";
 
 // Common token amounts
-const BALANCE_AMOUNT_LARGE: u128 = 1_000_000_001;
-const BALANCE_AMOUNT_MEDIUM: u128 = 1_000_000_000;
-const MOCK_AMOUNT_UOM: u128 = 8888;
 const MOCK_AMOUNT_UTEST: u128 = 1000;
 const INSUFFICIENT_TF_FEE: u128 = 999;
 const INSUFFICIENT_POOL_AMOUNT: u128 = 999;
@@ -42,10 +48,8 @@ const INSUFFICIENT_TWICE_POOL_CREATION_FEE: u128 = 1999;
 const EXCESSIVE_POOL_CREATION_FEE: u128 = 3000;
 const ATTACKER_BALANCE_AMOUNT: u128 = 10_000_000;
 const SMALL_BALANCE_AMOUNT: u128 = 10_000;
-const LIQUIDITY_AMOUNT: u128 = 1_000_000;
 
 // Fee constants
-const REQUIRED_POOL_CREATION_FEE: u128 = 1000;
 const INSUFFICIENT_POOL_CREATION_FEE: u128 = 90;
 
 // Fee percentages
@@ -55,11 +59,7 @@ const SWAP_FEE_PERCENT: u64 = 7;
 const BURN_FEE_PERCENT: u64 = 3;
 const SINGLE_SIDED_LP_PERCENT: u64 = 50;
 
-// Decimal precision
-const DEFAULT_DECIMAL_PRECISION: u8 = 6;
-
 // Pool constants
-const STABLESWAP_AMP_FACTOR: u64 = 85;
 const STABLESWAP_TEST_AMP_FACTOR: u64 = 80;
 const STABLESWAP_POOL_ID: &str = "stableswap";
 
@@ -80,7 +80,6 @@ const CUSTOM_POOL_PREFIX_1: &str = "o.pool.1";
 const CUSTOM_POOL_PREFIX_2: &str = "o.pool.2";
 
 // Position constants
-const UNLOCKING_DURATION: u64 = 86_400;
 const SPAM_POSITION_ID: &str = "spam_position";
 const LEGIT_POSITION_ID: &str = "legit_position";
 
