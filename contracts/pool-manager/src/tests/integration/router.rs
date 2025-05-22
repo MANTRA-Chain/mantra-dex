@@ -9,19 +9,19 @@ use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::pool_manager::PoolType;
-
-// Token denominations
-const DENOM_WHALE: &str = "uwhale";
-const DENOM_LUNA: &str = "uluna";
-const DENOM_USD: &str = "uusd";
-const DENOM_OM: &str = "uom";
-
-// Token amounts
-const INITIAL_BALANCE: u128 = 1_000_000_000;
-const LIQUIDITY_AMOUNT: u128 = 1_000_000;
-const SWAP_AMOUNT: u128 = 1_000;
-const POOL_CREATION_FEE: u128 = 1_000;
-const OM_STARGATE_BALANCE: u128 = 8888;
+use super::common_constants::{
+    DENOM_UWHALE as DENOM_WHALE,
+    DENOM_ULUNA as DENOM_LUNA,
+    DENOM_UUSD as DENOM_USD,
+    DENOM_UOM as DENOM_OM,
+    INITIAL_BALANCE,
+    INITIAL_BALANCE_PLUS_ONE,
+    LIQUIDITY_AMOUNT,
+    SWAP_AMOUNT,
+    POOL_CREATION_FEE,
+    STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE,
+    DECIMAL_PLACES,
+};
 
 // Pool identifiers
 const POOL_ID_WHALE_LUNA: &str = "whale.uluna";
@@ -37,12 +37,7 @@ const SLIPPAGE_TOLERANCE: u64 = 2; // 2%
 const EXPECTED_ADDED_SHARES: &str = "999000";
 const EXPECTED_SWAP_RESULT_USD: u128 = 974;
 
-// Test function constants (kept local to basic_swap_operations_test)
-// Decimal places
-const DECIMAL_PLACES: u8 = 6;
-
 // Additional constants for rejects_empty_swaps test
-const INITIAL_BALANCE_PLUS_ONE: u128 = INITIAL_BALANCE + 1;
 const SMALL_FEE_RATIO_NUMERATOR: u128 = 1;
 const SMALL_FEE_RATIO_DENOMINATOR: u128 = 100_000;
 

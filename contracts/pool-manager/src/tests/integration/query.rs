@@ -4,26 +4,28 @@ use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::pool_manager::{PoolType, SwapOperation};
+use super::common_constants::{
+    DENOM_UWHALE as DENOM_WHALE,
+    DENOM_ULUNA as DENOM_LUNA,
+    DENOM_UUSD as DENOM_USD,
+    DENOM_UUSDC as DENOM_USDC,
+    DENOM_UOM as DENOM_OM,
+    DENOM_UUSDT as DENOM_USDT,
+    INITIAL_BALANCE,
+    INITIAL_BALANCE_PLUS_ONE,
+    LIQUIDITY_AMOUNT,
+    SWAP_AMOUNT,
+    POOL_CREATION_FEE,
+    STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE,
+    DECIMAL_PLACES,
+    STABLESWAP_AMP_FACTOR,
+};
 
 use crate::tests::suite::TestingSuite;
 
-// Token denominations
-const DENOM_WHALE: &str = "uwhale";
-const DENOM_LUNA: &str = "uluna";
-const DENOM_USD: &str = "uusd";
-const DENOM_USDC: &str = "uusdc";
-const DENOM_OM: &str = "uom";
-const DENOM_USDT: &str = "uusdt";
-
 // Token amounts
-const INITIAL_BALANCE: u128 = 1_000_000_000;
-const INITIAL_BALANCE_PLUS_ONE: u128 = INITIAL_BALANCE + 1;
 const LARGE_INITIAL_BALANCE: u128 = 1_000_000_000_000;
 const LARGE_INITIAL_BALANCE_PLUS_ONE: u128 = LARGE_INITIAL_BALANCE + 1;
-const LIQUIDITY_AMOUNT: u128 = 1_000_000;
-const SWAP_AMOUNT: u128 = 1_000;
-const POOL_CREATION_FEE: u128 = 1_000;
-const OM_STARGATE_BALANCE: u128 = 8888;
 
 // Pool identifiers
 const POOL_ID_WHALE_LUNA: &str = "whale.uluna";
@@ -49,10 +51,6 @@ const EXPECTED_ADDED_SHARES: &str = "999000";
 // Simulation parameters
 const SIMULATION_TOLERANCE: &str = "0.1";
 const RETURN_AMOUNT_TOLERANCE: &str = "0.00000001";
-
-// Decimal places and other constants
-const DECIMAL_PLACES: u8 = 6;
-const STABLESWAP_AMP_FACTOR: u64 = 85;
 
 // Additional constants for simulate_swap_operations_query_verification test
 const POOL_ID_OM_USDT: &str = "uom.uusdt";

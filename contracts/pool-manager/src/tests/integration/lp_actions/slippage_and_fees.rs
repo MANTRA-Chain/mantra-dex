@@ -3,38 +3,31 @@ use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::pool_manager::{PoolInfo, PoolStatus, PoolType, SwapOperation};
 
+use crate::tests::integration::common_constants::{
+    DECIMAL_PLACES as ASSET_DECIMALS_6, DENOM_ULUNA as ULUNA_DENOM, DENOM_UOM as UOM_DENOM,
+    DENOM_UOSMO as UOSMO_DENOM, DENOM_UUSD as UUSD_DENOM, DENOM_UWHALE as UWHALE_DENOM,
+    INITIAL_BALANCE as INITIAL_BALANCE_1B, INITIAL_BALANCE_PLUS_ONE as INITIAL_BALANCE_1B_PLUS_1,
+    LIQUIDITY_AMOUNT as LIQUIDITY_1M, POOL_CREATION_FEE as POOL_CREATION_FEE_UUSD_AMOUNT,
+    PROTOCOL_FEE_RATIO_1_1000, STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT as SWAP_AMOUNT_1K,
+    SWAP_FEE_RATIO_1_10000,
+};
 use crate::tests::suite::TestingSuite;
 use crate::ContractError;
 
-// ========== Asset Denoms ==========
-const UWHALE_DENOM: &str = "uwhale";
-const ULUNA_DENOM: &str = "uluna";
-const UUSD_DENOM: &str = "uusd";
-const UOM_DENOM: &str = "uom";
-const UOSMO_DENOM: &str = "uosmo";
-
 // ========== Initial Balances ==========
-const INITIAL_BALANCE_1B_PLUS_1: u128 = 1_000_000_001u128;
-const INITIAL_BALANCE_1B: u128 = 1_000_000_000u128;
 const INITIAL_BALANCE_1T: u128 = 1_000_000_000_000u128;
-const STARGATE_MOCK_UOM_AMOUNT: u128 = 8888u128;
 
 // ========== Pool Creation & Liquidity ==========
-const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = 1000u128;
 const LIQUIDITY_500K: u128 = 500_000u128;
-const LIQUIDITY_1M: u128 = 1_000_000u128;
 const LIQUIDITY_200K: u128 = 200_000u128;
 
 // ========== Swap Amounts ==========
-const SWAP_AMOUNT_1K: u128 = 1000u128;
 const SWAP_AMOUNT_2K: u128 = 2_000u128;
 const SWAP_AMOUNT_3K: u128 = 3_000u128;
 const SWAP_AMOUNT_1_5K: u128 = 1_500u128;
 const SWAP_AMOUNT_5K: u128 = 5_000u128;
 
 // ========== Fee Ratios & Percentages ==========
-const PROTOCOL_FEE_RATIO_1_1000: (u128, u128) = (1u128, 1000u128);
-const SWAP_FEE_RATIO_1_10000: (u128, u128) = (1u128, 10_000_u128);
 const SLIPPAGE_PERCENT_60: u64 = 60;
 const SLIPPAGE_PERCENT_20: u64 = 20;
 const SLIPPAGE_PERCENT_21: u64 = 21;
@@ -43,9 +36,6 @@ const FEE_PERCENT_7: u64 = 7;
 const FEE_PERCENT_3: u64 = 3;
 const FEE_PERCENT_15: u64 = 15;
 const FEE_PERCENT_5: u64 = 5;
-
-// ========== Asset Configuration ==========
-const ASSET_DECIMALS_6: u8 = 6u8;
 
 // ========== Pool Identifiers & LP Denoms ==========
 const WHALE_ULUNA_POOL_LABEL: &str = "whale.uluna";

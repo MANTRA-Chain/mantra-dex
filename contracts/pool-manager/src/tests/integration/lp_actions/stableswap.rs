@@ -8,36 +8,23 @@ use mantra_dex_std::{
     pool_manager::{PoolType, PoolsResponse},
 };
 
+use crate::tests::integration::common_constants::{
+    DECIMAL_PLACES as ASSET_DECIMALS, DENOM_ULUNA as ULUNA_DENOM, DENOM_UOM as UOM_DENOM,
+    DENOM_UUSD as UUSD_DENOM, DENOM_UUSDC as UUSDC_DENOM, DENOM_UUSDT as UUSDT_DENOM,
+    DENOM_UUSDY as UUSDY_DENOM, DENOM_UWHALE as UWHALE_DENOM,
+    INITIAL_BALANCE as INITIAL_BALANCE_1B, INITIAL_BALANCE_PLUS_ONE as INITIAL_BALANCE_1B_PLUS_1,
+    LIQUIDITY_AMOUNT as LIQUIDITY_1M, POOL_CREATION_FEE as POOL_CREATION_FEE_UUSD_AMOUNT,
+    PROTOCOL_FEE_RATIO_1_1000, STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT as SWAP_AMOUNT_1K,
+    SWAP_FEE_RATIO_1_10000,
+};
 use crate::{tests::suite::TestingSuite, ContractError};
-
-// ========== Asset Denoms ==========
-const UWHALE_DENOM: &str = "uwhale";
-const ULUNA_DENOM: &str = "uluna";
-const UUSD_DENOM: &str = "uusd";
-const UUSDC_DENOM: &str = "uusdc";
-const UUSDT_DENOM: &str = "uusdt";
-const UUSDY_DENOM: &str = "uusdy";
-const UOM_DENOM: &str = "uom";
-
-// ========== Initial Balances ==========
-const INITIAL_BALANCE_1B_PLUS_1: u128 = 1_000_000_001u128;
-const INITIAL_BALANCE_1B: u128 = 1_000_000_000u128;
-const STARGATE_MOCK_UOM_AMOUNT: u128 = 8888u128;
-
-// ========== Pool Creation & Fees ==========
-const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = 1000u128;
-const PROTOCOL_FEE_RATIO_1_1000: (u128, u128) = (1u128, 1000u128);
-const SWAP_FEE_RATIO_1_10000: (u128, u128) = (1u128, 10_000_u128);
-const STABLESWAP_AMP_FACTOR: u64 = 100;
-const ASSET_DECIMALS: u8 = 6u8;
 
 // ========== Liquidity Amounts ==========
 const LIQUIDITY_500K: u128 = 500_000u128;
-const LIQUIDITY_1M: u128 = 1_000_000u128;
 const LIQUIDITY_1_5M: u128 = 1_500_000u128;
 
-// ========== Swap Amounts ==========
-const SWAP_AMOUNT_1K: u128 = 1_000u128;
+// ========== Pool Constants ==========
+const STABLESWAP_AMP_FACTOR: u64 = 100;
 
 // ========== Pool Identifiers ==========
 const WHALE_ULUNA_UUSD_POOL_LABEL: &str = "whale.uluna.uusd";
