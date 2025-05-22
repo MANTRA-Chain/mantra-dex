@@ -1,4 +1,11 @@
 use super::super::suite::TestingSuite;
+use super::common_constants::{
+    DECIMAL_PLACES as DEFAULT_DECIMAL_PRECISION, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD,
+    DENOM_UUSDC, DENOM_UUSDT, DENOM_UUSDY, DENOM_UWHALE, INITIAL_BALANCE as BALANCE_AMOUNT_MEDIUM,
+    INITIAL_BALANCE_PLUS_ONE as BALANCE_AMOUNT_LARGE, LIQUIDITY_AMOUNT,
+    POOL_CREATION_FEE as REQUIRED_POOL_CREATION_FEE, STABLESWAP_AMP_FACTOR,
+    STARGATE_MOCK_UOM_AMOUNT as MOCK_AMOUNT_UOM, UNLOCKING_DURATION,
+};
 use crate::ContractError;
 use cosmwasm_std::coin;
 use cosmwasm_std::Coin;
@@ -12,24 +19,6 @@ use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::FeatureToggle;
 use mantra_dex_std::pool_manager::PoolType;
-use super::common_constants::{
-    DENOM_UWHALE, 
-    DENOM_ULUNA, 
-    DENOM_UUSD, 
-    DENOM_UOM, 
-    DENOM_UUSDC, 
-    DENOM_UUSDY, 
-    DENOM_UUSDT, 
-    DENOM_UOSMO,
-    INITIAL_BALANCE as BALANCE_AMOUNT_MEDIUM,
-    INITIAL_BALANCE_PLUS_ONE as BALANCE_AMOUNT_LARGE,
-    STARGATE_MOCK_UOM_AMOUNT as MOCK_AMOUNT_UOM,
-    LIQUIDITY_AMOUNT,
-    POOL_CREATION_FEE as REQUIRED_POOL_CREATION_FEE,
-    DECIMAL_PLACES as DEFAULT_DECIMAL_PRECISION,
-    STABLESWAP_AMP_FACTOR,
-    UNLOCKING_DURATION,
-};
 
 // Test constants
 const DENOM_UTEST: &str = "utest";

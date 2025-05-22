@@ -1,3 +1,8 @@
+use super::common_constants::{
+    DECIMAL_PLACES, DENOM_ULUNA as DENOM_LUNA, DENOM_UOM as DENOM_OM, DENOM_UUSD as DENOM_USD,
+    DENOM_UWHALE as DENOM_WHALE, INITIAL_BALANCE, INITIAL_BALANCE_PLUS_ONE, LIQUIDITY_AMOUNT,
+    POOL_CREATION_FEE, STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE, SWAP_AMOUNT,
+};
 use crate::tests::suite::TestingSuite;
 use crate::ContractError;
 use cosmwasm_std::coin;
@@ -9,19 +14,6 @@ use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::pool_manager::PoolType;
-use super::common_constants::{
-    DENOM_UWHALE as DENOM_WHALE,
-    DENOM_ULUNA as DENOM_LUNA,
-    DENOM_UUSD as DENOM_USD,
-    DENOM_UOM as DENOM_OM,
-    INITIAL_BALANCE,
-    INITIAL_BALANCE_PLUS_ONE,
-    LIQUIDITY_AMOUNT,
-    SWAP_AMOUNT,
-    POOL_CREATION_FEE,
-    STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE,
-    DECIMAL_PLACES,
-};
 
 // Pool identifiers
 const POOL_ID_WHALE_LUNA: &str = "whale.uluna";
