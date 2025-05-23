@@ -26,24 +26,18 @@ const LP_DEPOSIT_AMOUNT_10000: u128 = 10_000u128;
 
 // Farm Identifiers
 const FARM_IDENTIFIER_FARM: &str = "farm";
-const FARM_IDENTIFIER_NEW_FARM: &str = "new_farm";
-const FARM_IDENTIFIER_SHORT_FARM: &str = "short_farm";
-const FARM_IDENTIFIER_LONG_FARM: &str = "long_farm";
+
 const FARM_IDENTIFIER_ANOTHER_FARM: &str = "another_farm";
 
 // Expected Prefixed Farm Identifiers
 const EXPECTED_PREFIXED_FARM_ID_FARM: &str = "m-farm";
-const EXPECTED_PREFIXED_FARM_ID_NEW_FARM: &str = "m-new_farm";
-const EXPECTED_PREFIXED_FARM_ID_SHORT_FARM: &str = "m-short_farm";
+
 const EXPECTED_PREFIXED_FARM_ID_LONG_FARM: &str = "m-long_farm";
-const EXPECTED_PREFIXED_FARM_ID_ANOTHER_FARM: &str = "m-another_farm";
 
 // Epochs
 const START_EPOCH_12: u64 = 12;
 const PRELIMINARY_END_EPOCH_16: u64 = 16;
 const PRELIMINARY_END_EPOCH_100: u64 = 100;
-const PRELIMINARY_END_EPOCH_63: u64 = 63;
-const PRELIMINARY_END_EPOCH_15: u64 = 15;
 
 // Position Identifiers
 const POSITION_ID_P1: &str = "p-1";
@@ -126,7 +120,7 @@ fn test_close_expired_farms() {
                         denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_10000),
                     },
-                    farm_identifier: Some(FARM_IDENTIFIER_NEW_FARM.to_string()),
+                    farm_identifier: Some("new_farm".to_string()),
                 },
             },
             vec![
@@ -143,7 +137,7 @@ fn test_close_expired_farms() {
             assert_eq!(
                 farms_response.farms[0],
                 Farm {
-                    identifier: EXPECTED_PREFIXED_FARM_ID_NEW_FARM.to_string(),
+                    identifier: "m-new_farm".to_string(),
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
@@ -154,7 +148,7 @@ fn test_close_expired_farms() {
                     emission_rate: Uint128::new(714), // (10000 / (63 - 49 + 1)) * 1 = 10000 / 15 = 666 - check this logic based on current_epoch being 48
                     curve: Curve::Linear,
                     start_epoch: 48 + 1, // the default of (current epoch + 1u64) was used
-                    preliminary_end_epoch: PRELIMINARY_END_EPOCH_63,
+                    preliminary_end_epoch: 63,
                 }
             );
         });
@@ -216,7 +210,7 @@ fn expand_expired_farm() {
                     emission_rate: Uint128::new(285), // 4000 / 14 = 285.7...
                     curve: Curve::Linear,
                     start_epoch: 1u64,
-                    preliminary_end_epoch: PRELIMINARY_END_EPOCH_15,
+                    preliminary_end_epoch: 15,
                 }
             );
         });
@@ -297,7 +291,7 @@ fn test_farm_expired() {
                         denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                     },
-                    farm_identifier: Some(FARM_IDENTIFIER_SHORT_FARM.to_string()),
+                    farm_identifier: Some("short_farm".to_string()),
                 },
             },
             vec![
@@ -320,7 +314,7 @@ fn test_farm_expired() {
                         denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                     },
-                    farm_identifier: Some(FARM_IDENTIFIER_LONG_FARM.to_string()),
+                    farm_identifier: Some("long_farm".to_string()),
                 },
             },
             vec![
@@ -440,7 +434,7 @@ fn test_farm_expired() {
             );
             assert_eq!(
                 farms_response.farms[1].identifier,
-                EXPECTED_PREFIXED_FARM_ID_SHORT_FARM.to_string()
+                "m-short_farm".to_string()
             );
         });
 
@@ -477,7 +471,7 @@ fn test_farm_expired() {
             assert!(farms_response.farms[1].claimed_amount.is_zero());
             assert_eq!(
                 farms_response.farms[0].identifier,
-                EXPECTED_PREFIXED_FARM_ID_ANOTHER_FARM.to_string()
+                "m-another_farm".to_string()
             );
             assert_eq!(
                 farms_response.farms[1].identifier,

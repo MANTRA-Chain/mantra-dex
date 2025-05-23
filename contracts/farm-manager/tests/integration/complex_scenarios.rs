@@ -35,10 +35,7 @@ fn test_multiple_farms_and_positions() {
     const M_FARM_3_ID: &str = "m-farm_3";
     const M_FARM_4_ID: &str = "m-farm_4";
 
-    // Prefixed Position Identifiers (used in PositionAction::Withdraw, Close)
-    const U_OTHER_POS_1_ID: &str = "u-other_pos_1";
-    const U_OTHER_POS_2_ID: &str = "u-other_pos_2";
-    const U_ANOTHER_POS_1_ID: &str = "u-another_pos_1";
+    // Prefixed Position Identifiers - removed constants, using literal values directly
 
     // Farm Asset Amounts
     const FARM_1_UUSDY_ASSET_AMOUNT: u128 = 80_000u128;
@@ -49,12 +46,7 @@ fn test_multiple_farms_and_positions() {
     // Farm Creation Fee (uom based)
     const UOM_FARM_CREATION_FEE: u128 = 1_000u128;
 
-    // Position Lock Amounts
-    const CREATOR_LP1_LOCK_AMOUNT: u128 = 35_000;
-    const CREATOR_LP2_LOCK_AMOUNT: u128 = 70_000;
-    const OTHER_LP1_LOCK_AMOUNT: u128 = 40_000;
-    const OTHER_LP2_LOCK_AMOUNT: u128 = 80_000;
-    const ANOTHER_LP2_LOCK_AMOUNT: u128 = 6_000;
+    // Position Lock Amounts - removed constants, using literal values directly
 
     // Epoch IDs for various stages in the test
     const INITIAL_EPOCH_ID: u64 = 10;
@@ -204,7 +196,7 @@ fn test_multiple_farms_and_positions() {
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
-            vec![coin(CREATOR_LP1_LOCK_AMOUNT, lp_denom_1.clone())],
+            vec![coin(35_000, lp_denom_1.clone())],
             |result| {
                 result.unwrap();
             },
@@ -216,7 +208,7 @@ fn test_multiple_farms_and_positions() {
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
-            vec![coin(CREATOR_LP2_LOCK_AMOUNT, lp_denom_2.clone())],
+            vec![coin(70_000, lp_denom_2.clone())],
             |result| {
                 result.unwrap();
             },
@@ -236,7 +228,7 @@ fn test_multiple_farms_and_positions() {
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
-            vec![coin(OTHER_LP1_LOCK_AMOUNT, lp_denom_1.clone())],
+            vec![coin(40_000, lp_denom_1.clone())],
             |result| {
                 result.unwrap();
             },
@@ -248,7 +240,7 @@ fn test_multiple_farms_and_positions() {
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
-            vec![coin(OTHER_LP2_LOCK_AMOUNT, lp_denom_2.clone())],
+            vec![coin(80_000, lp_denom_2.clone())],
             |result| {
                 result.unwrap();
             },
@@ -401,7 +393,7 @@ fn test_multiple_farms_and_positions() {
         .manage_position(
             &other,
             PositionAction::Withdraw {
-                identifier: U_OTHER_POS_1_ID.to_string(),
+                identifier: "u-other_pos_1".to_string(),
                 emergency_unlock: Some(true),
             },
             vec![],
@@ -412,7 +404,7 @@ fn test_multiple_farms_and_positions() {
         .manage_position(
             &other,
             PositionAction::Withdraw {
-                identifier: U_OTHER_POS_2_ID.to_string(),
+                identifier: "u-other_pos_2".to_string(),
                 emergency_unlock: Some(true),
             },
             vec![],
@@ -450,7 +442,7 @@ fn test_multiple_farms_and_positions() {
             unlocking_duration: 15_778_476, // ~6 months
             receiver: None,
         },
-        vec![coin(ANOTHER_LP2_LOCK_AMOUNT, lp_denom_2.clone())],
+        vec![coin(6_000, lp_denom_2.clone())],
         |result| {
             result.unwrap();
         },
@@ -616,7 +608,7 @@ fn test_multiple_farms_and_positions() {
     suite.manage_position(
         &another,
         PositionAction::Close {
-            identifier: U_ANOTHER_POS_1_ID.to_string(),
+            identifier: "u-another_pos_1".to_string(),
             lp_asset: Some(coin(3_000, lp_denom_2.clone())),
         },
         vec![],

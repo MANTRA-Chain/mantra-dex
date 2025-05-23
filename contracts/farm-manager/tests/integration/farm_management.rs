@@ -24,33 +24,21 @@ const EXCESS_FARM_FEE: u128 = 3_000u128;
 
 const START_EPOCH_0: Option<u64> = Some(0);
 const START_EPOCH_1: Option<u64> = Some(1);
-const START_EPOCH_3: Option<u64> = Some(3);
 const START_EPOCH_12: Option<u64> = Some(12);
 const START_EPOCH_20: Option<u64> = Some(20);
 const START_EPOCH_25: Option<u64> = Some(25);
-const START_EPOCH_30: Option<u64> = Some(30);
 
-const END_EPOCH_3: Option<u64> = Some(3);
-const END_EPOCH_4: Option<u64> = Some(4);
 const END_EPOCH_5: Option<u64> = Some(5);
-const END_EPOCH_8: Option<u64> = Some(8);
-const END_EPOCH_13: Option<u64> = Some(13);
-const END_EPOCH_15: Option<u64> = Some(15);
 const END_EPOCH_16: Option<u64> = Some(16);
-const END_EPOCH_20: Option<u64> = Some(20);
 const END_EPOCH_28: Option<u64> = Some(28);
-const END_EPOCH_35: Option<u64> = Some(35);
 
 const FARM_ID_1: &str = "farm_1";
 const FARM_ID_2: &str = "farm_2";
-const FARM_ID_X: &str = "farm_x";
-const CUSTOM_ID_1: &str = "custom_id_1";
 const BOGUS_ID_1: &str = "1";
 
 const M_FARM_ID_1: &str = "m-farm_1";
 const M_FARM_ID_2: &str = "m-farm_2";
 const M_FARM_ID_X: &str = "m-farm_x";
-const M_CUSTOM_ID_1: &str = "m-custom_id_1";
 const F_1_ID: &str = "f-1";
 
 #[test]
@@ -301,7 +289,7 @@ fn create_farms() {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
-                    preliminary_end_epoch: END_EPOCH_8,
+                    preliminary_end_epoch: Some(8),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
@@ -331,7 +319,7 @@ fn create_farms() {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
-                    preliminary_end_epoch: END_EPOCH_15,
+                    preliminary_end_epoch: Some(15),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
@@ -361,7 +349,7 @@ fn create_farms() {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     // current epoch is 10
-                    start_epoch: START_EPOCH_3,
+                    start_epoch: Some(3),
                     preliminary_end_epoch: END_EPOCH_5,
                     curve: None,
                     farm_asset: Coin {
@@ -421,7 +409,7 @@ fn create_farms() {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
-                    preliminary_end_epoch: END_EPOCH_20,
+                    preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
@@ -450,8 +438,8 @@ fn create_farms() {
             FarmAction::Fill {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
-                    start_epoch: START_EPOCH_30,
-                    preliminary_end_epoch: END_EPOCH_35,
+                    start_epoch: Some(30),
+                    preliminary_end_epoch: Some(35),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
@@ -941,7 +929,7 @@ fn cant_expand_farm_too_late() {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_1,
-                    preliminary_end_epoch: END_EPOCH_3,
+                    preliminary_end_epoch: Some(3),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
@@ -998,7 +986,7 @@ fn cant_expand_farm_too_late() {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
-                    preliminary_end_epoch: END_EPOCH_4,
+                    preliminary_end_epoch: Some(4),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
@@ -1178,13 +1166,13 @@ fn close_farms() {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: START_EPOCH_12,
-                    preliminary_end_epoch: END_EPOCH_13,
+                    preliminary_end_epoch: Some(13),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
-                    farm_identifier: Some(FARM_ID_X.to_string()),
+                    farm_identifier: Some("farm_x".to_string()),
                 },
             },
             vec![
@@ -1764,7 +1752,7 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
                         denom: UOM_DENOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
-                    farm_identifier: Some(CUSTOM_ID_1.to_string()),
+                    farm_identifier: Some("custom_id_1".to_string()),
                 },
             },
             vec![coin(9_000, UOM_DENOM)], // 8000 farm asset + 1000 fee
@@ -1796,7 +1784,7 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
             let response = result.unwrap();
             assert_eq!(response.farms.len(), 2);
             assert_eq!(response.farms[0].identifier, F_1_ID);
-            assert_eq!(response.farms[1].identifier, M_CUSTOM_ID_1);
+            assert_eq!(response.farms[1].identifier, "m-custom_id_1");
         });
 }
 
