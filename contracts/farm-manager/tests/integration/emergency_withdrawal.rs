@@ -1,24 +1,18 @@
-use cosmwasm_std::{coin, coins, Addr, Coin, Decimal, StdResult, Timestamp, Uint128};
-use cw_utils::PaymentError;
-use farm_manager::state::{MAX_FARMS_LIMIT, MAX_POSITIONS_LIMIT};
-use farm_manager::ContractError;
-use mantra_dex_std::constants::{LP_SYMBOL, MONTH_IN_SECONDS};
+use cosmwasm_std::{coin, Coin, Uint128};
+use mantra_dex_std::constants::LP_SYMBOL;
 use mantra_dex_std::farm_manager::{
-    Config, Curve, Farm, FarmAction, FarmParams, FarmsBy, LpWeightResponse, Position,
-    PositionAction, PositionsBy, PositionsResponse, RewardsResponse,
+    FarmAction, FarmParams, Position, PositionAction, PositionsBy, RewardsResponse,
 };
 use test_utils::common_constants::{
     DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE as INITIAL_USER_BALANCE, UOM_FARM_CREATION_FEE,
+    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
 };
 
 use crate::common::suite::TestingSuite;
-use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
-
-const FARM_ASSET_AMOUNT: u128 = 8_000u128;
+use crate::common::MOCK_CONTRACT_ADDR_1;
 
 // Global constants for the test file
-const INITIAL_USER_BALANCE_LARGE: u128 = 1_000_000_000_000u128; // Used in test_managing_positions_close_and_emergency_withdraw
+const INITIAL_BALANCE_LARGE: u128 = 1_000_000_000_000u128; // Used in test_managing_positions_close_and_emergency_withdraw
 
 const YEAR_APPROX_UNLOCKING_DURATION_SECONDS: u64 = 31_556_926; // Used in test_emergency_withdrawal_with_proportional_penalty
 
@@ -69,7 +63,7 @@ const FARM_ASSET_UUSDY_ALICE_FARM1_MPCEW: u128 = 8_888u128;
 const FARM_ASSET_UUSDY_ALICE_FARM2_MPCEW: u128 = 666_666u128;
 const FARM_ASSET_UOSMO_ALICE_FARM3_MPCEW: u128 = 8_888u128;
 const FARM_ASSET_UOM_ALICE_FARM4_MPCEW: u128 = 1_000_000u128;
-const UOM_FARM4_TOTAL_FUNDS_MPCEW: u128 = 1_001_000u128; // FARM_ASSET_UOM_ALICE_FARM4_MPCEW + UOM_FARM_CREATION_FEE
+const UOM_FARM4_TOTAL_FUNDS_MPCEW: u128 = FARM_ASSET_UOM_ALICE_FARM4_MPCEW + UOM_FARM_CREATION_FEE;
 
 const ALICE_POS_1_RAW_ID_MPCEW: &str = "alice_position_1";
 const ALICE_POS_1_PREFIXED_ID_MPCEW: &str = "u-alice_position_1";
@@ -90,7 +84,6 @@ const ALICE_SECOND_POS_2_RAW_ID_MPCEW: &str = "alice_second_position_2";
 const ALICE_SECOND_POS_2_PREFIXED_ID_MPCEW: &str = "u-alice_second_position_2";
 const LP_LOCK_ALICE_SECOND_POS_1_MPCEW: u128 = 300u128;
 const LP_LOCK_ALICE_SECOND_POS_2_MPCEW: u128 = 700u128;
-const PARTIAL_UNLOCK_ALICE_SECOND_POS_2_MPCEW: u128 = 500u128;
 
 const PENDING_WITHDRAW_POS_ID_MPCEW: &str = "p-1";
 const FINAL_ALICE_POS_RAW_ID_MPCEW: &str = "final_alice_position";
@@ -116,10 +109,10 @@ fn test_emergency_withdrawal() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
     let other = suite.senders[1].clone();
@@ -194,10 +187,7 @@ fn test_emergency_withdrawal() {
 
     suite
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(INITIAL_USER_BALANCE - LP_LOCK_AMOUNT_EW)
-            );
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE - LP_LOCK_AMOUNT_EW));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
@@ -228,10 +218,10 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
     let other = suite.senders[1].clone();
@@ -313,10 +303,7 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
             }
         })
         .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(INITIAL_USER_BALANCE - FARM_ASSET_UUSDY_EW)
-            );
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE - FARM_ASSET_UUSDY_EW));
         })
         // the user emergency withdraws the position
         .manage_position(
@@ -332,10 +319,7 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
         )
         // rewards were not claimed
         .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(INITIAL_USER_BALANCE - FARM_ASSET_UUSDY_EW)
-            );
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE - FARM_ASSET_UUSDY_EW));
         });
 }
 
@@ -344,10 +328,10 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
     let other = suite.senders[0].clone();
@@ -445,13 +429,13 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
         )
         .add_one_epoch()
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
         .query_balance(lp_denom.clone().to_string(), &alice, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom.clone().to_string(), &farm_manager, |balance| {
             assert_eq!(balance, Uint128::new(LP_LOCK_AMOUNT_BOB_EWSP));
@@ -487,11 +471,11 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     let creator = suite.senders[0].clone();
@@ -589,17 +573,14 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
     suite
         .add_hours(12)
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(INITIAL_USER_BALANCE - LP_LOCK_AMOUNT_EW)
-            );
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE - LP_LOCK_AMOUNT_EW));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
         .query_balance(lp_denom.clone().to_string(), &creator, |balance| {
             // The creator of the farm gets a cut
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .manage_position(
             &other,
@@ -617,7 +598,7 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
         })
         .query_balance(lp_denom.clone().to_string(), &creator, |balance| {
             // Since the farm is not active, the creator of the farm does not gets a cut
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::new(50)); // Derived
@@ -625,17 +606,14 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
 
     suite
         .query_balance(lp_denom_2.clone().to_string(), &other, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(INITIAL_USER_BALANCE - LP_LOCK_AMOUNT_EW)
-            );
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE - LP_LOCK_AMOUNT_EW));
         })
         .query_balance(lp_denom_2.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
         .query_balance(lp_denom_2.clone().to_string(), &creator, |balance| {
             // The creator of the farm gets a cut
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         // withdraw all without closing the position, highest penalty
         .manage_position(
@@ -658,7 +636,7 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
         })
         .query_balance(lp_denom_2.clone().to_string(), &creator, |balance| {
             // The creator of the farm does not gets a cut since the farm is not active
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         });
 }
 
@@ -672,11 +650,11 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom_1.clone()),
-        coin(INITIAL_USER_BALANCE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom_1.clone()),
+        coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     let creator_1 = suite.senders[0].clone();
@@ -853,14 +831,14 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
         .query_balance(lp_denom_1.clone().to_string(), &other, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_USER_BALANCE - LP_LOCK_AMOUNT_EWPOAF)
+                Uint128::new(INITIAL_BALANCE - LP_LOCK_AMOUNT_EWPOAF)
             );
         })
         .query_balance(lp_denom_1.clone().to_string(), &creator_1, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom_1.clone().to_string(), &creator_2, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom_1.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
@@ -890,7 +868,7 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
         })
         .query_balance(lp_denom_1.clone().to_string(), &creator_2, |balance| {
             // creator_2 didn't get anything of the penalty since its farm starts in the future
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         });
 
     for _ in 0..33 {
@@ -908,14 +886,14 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
         .query_balance(lp_denom_2.clone().to_string(), &other, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_USER_BALANCE - LP_LOCK_AMOUNT_EWPOAF)
+                Uint128::new(INITIAL_BALANCE - LP_LOCK_AMOUNT_EWPOAF)
             );
         })
         .query_balance(lp_denom_2.clone().to_string(), &creator_1, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom_2.clone().to_string(), &creator_2, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom_2.clone().to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
@@ -941,11 +919,11 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
         })
         .query_balance(lp_denom_2.clone().to_string(), &creator_1, |balance| {
             // creator_2 didn't get anything of the penalty since its farm ended in the past
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom_2.clone().to_string(), &creator_2, |balance| {
             // creator_2 didn't get anything of the penalty since its farm starts in the future
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         });
 }
 
@@ -956,11 +934,11 @@ pub fn can_emergency_withdraw_an_lp_without_farm() {
     let lp_without_farm = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, lp_without_farm.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, lp_without_farm.clone()),
     ]);
 
     let creator = suite.creator();
@@ -1023,18 +1001,17 @@ pub fn can_emergency_withdraw_an_lp_without_farm() {
 /// This test creates multiple farms, and multiple positions with different users. Users open and close
 /// and withdraw positions in different fashion, and claim rewards. The test checks if the rewards
 /// are calculated correctly, and if the positions are managed correctly.
-// #[test]
-/// TODO: This test is failing, compare with version from main.
-fn _test_managing_positions_close_and_emergency_withdraw() {
+#[test]
+fn test_managing_positions_close_and_emergency_withdraw() {
     let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE_LARGE, lp_denom_1.clone()),
-        coin(INITIAL_USER_BALANCE_LARGE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE_LARGE, lp_denom_1.clone()),
+        coin(INITIAL_BALANCE_LARGE, lp_denom_2.clone()),
     ]);
 
     let alice = suite.creator();
@@ -1179,7 +1156,7 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
             assert_eq!(
                 balance,
                 Uint128::new(
-                    INITIAL_USER_BALANCE_LARGE
+                    INITIAL_BALANCE
                         - (FARM_ASSET_UUSDY_ALICE_FARM1_MPCEW + FARM_ASSET_UUSDY_ALICE_FARM2_MPCEW)
                 )
             );
@@ -1191,7 +1168,7 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
             assert_eq!(
                 balance,
                 Uint128::new(
-                    INITIAL_USER_BALANCE_LARGE
+                    INITIAL_BALANCE
                         - (FARM_ASSET_UUSDY_ALICE_FARM1_MPCEW + FARM_ASSET_UUSDY_ALICE_FARM2_MPCEW)
                         + 3_170u128
                 )
@@ -1258,7 +1235,7 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(FARM_ASSET_UOM_ALICE_FARM4_MPCEW, UOM_DENOM)],
+            vec![coin(UOM_FARM4_TOTAL_FUNDS_MPCEW, UOM_DENOM)],
             |result| {
                 result.unwrap();
             },
@@ -1577,20 +1554,20 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
             }
         })
         .query_balance(UUSDY_DENOM.to_string(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(UOSMO_DENOM.to_string(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
         .query_balance(UUSDY_DENOM.to_string(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE + 163_355u128));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE + 163_355u128));
             // Derived
         })
         .query_balance(UOSMO_DENOM.to_string(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE + 322u128)); // Derived
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE + 322u128)); // Derived
         });
 
     suite.add_epochs(3).query_current_epoch(|result| {

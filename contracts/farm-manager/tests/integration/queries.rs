@@ -13,7 +13,7 @@ use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 use test_utils::common_constants::{
     DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_USER_BALANCE, UOM_FARM_CREATION_FEE,
+    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
 };
 
 const FARM_START_EPOCH: u64 = 12;
@@ -34,11 +34,11 @@ fn test_rewards_query_overlapping_farms() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom_1.clone()),
-        coin(INITIAL_USER_BALANCE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom_1.clone()),
+        coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     let creator = suite.creator();
@@ -213,15 +213,15 @@ fn test_rewards_query_overlapping_farms() {
 #[test]
 fn test_positions_query_filters_and_pagination() {
     let mut balances = vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
     ];
 
     // prepare lp denoms
     for i in 1..MAX_FARMS_LIMIT * 2 {
         let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
-        balances.push(coin(INITIAL_USER_BALANCE, lp_denom.clone()));
+        balances.push(coin(INITIAL_BALANCE, lp_denom.clone()));
     }
 
     let mut suite = TestingSuite::default_with_balances(balances);
@@ -320,9 +320,9 @@ fn test_query_rewards_divide_by_zero() {
     let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
         coin(LP_DENOM_1_INITIAL_BALANCE, lp_denom_1.clone()),
     ]);
 
@@ -547,9 +547,9 @@ fn test_query_rewards_divide_by_zero_mitigated() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
         coin(LP_DENOM_1_INITIAL_BALANCE, lp_denom_1.clone()),
         coin(LP_DENOM_2_INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
