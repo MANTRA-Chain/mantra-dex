@@ -21,7 +21,6 @@ const FARM_AMOUNT_2K: u128 = 2_000u128;
 const FARM_AMOUNT_5K: u128 = 5_000u128;
 const FARM_AMOUNT_8K: u128 = 8_000u128;
 const EXCESS_FARM_FEE: u128 = 3_000u128;
-const UNDERPAID_FARM_FEE: u128 = 500u128;
 
 const START_EPOCH_0: Option<u64> = Some(0);
 const START_EPOCH_1: Option<u64> = Some(1);
@@ -31,7 +30,6 @@ const START_EPOCH_20: Option<u64> = Some(20);
 const START_EPOCH_25: Option<u64> = Some(25);
 const START_EPOCH_30: Option<u64> = Some(30);
 
-const END_EPOCH_2: Option<u64> = Some(2);
 const END_EPOCH_3: Option<u64> = Some(3);
 const END_EPOCH_4: Option<u64> = Some(4);
 const END_EPOCH_5: Option<u64> = Some(5);
@@ -47,7 +45,6 @@ const FARM_ID_1: &str = "farm_1";
 const FARM_ID_2: &str = "farm_2";
 const FARM_ID_X: &str = "farm_x";
 const CUSTOM_ID_1: &str = "custom_id_1";
-const UNDERPAID_FARM_ID: &str = "underpaid_farm";
 const BOGUS_ID_1: &str = "1";
 
 const M_FARM_ID_1: &str = "m-farm_1";
@@ -921,7 +918,7 @@ fn cant_expand_farm_too_late() {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_1,
-                    preliminary_end_epoch: END_EPOCH_2,
+                    preliminary_end_epoch: Some(2),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),
@@ -1486,13 +1483,10 @@ fn test_farm_helper() {
                     denom: UUSDY_DENOM.to_string(),
                     amount: Uint128::new(FARM_AMOUNT_2K),
                 },
-                farm_identifier: Some(UNDERPAID_FARM_ID.to_string()),
+                farm_identifier: Some("underpaid_farm".to_string()),
             },
         },
-        vec![
-            coin(FARM_AMOUNT_2K, UUSDY_DENOM),
-            coin(UNDERPAID_FARM_FEE, UOM_DENOM),
-        ],
+        vec![coin(FARM_AMOUNT_2K, UUSDY_DENOM), coin(500u128, UOM_DENOM)],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {

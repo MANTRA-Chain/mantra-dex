@@ -14,8 +14,6 @@ use crate::common::MOCK_CONTRACT_ADDR_1;
 // Global constants for the test file
 const INITIAL_BALANCE_LARGE: u128 = 1_000_000_000_000u128; // Used in test_managing_positions_close_and_emergency_withdraw
 
-const YEAR_APPROX_UNLOCKING_DURATION_SECONDS: u64 = 31_556_926; // Used in test_emergency_withdrawal_with_proportional_penalty
-
 // Constants for test_emergency_withdrawal & test_emergency_withdrawal_with_pending_rewards_are_lost
 const FARM_ID_EW: &str = "farm";
 const FARM_ASSET_UUSDY_EW: u128 = 4_000u128;
@@ -24,7 +22,6 @@ const OTHER_POS_RAW_ID_EW: &str = "other_position";
 const OTHER_POS_PREFIXED_ID_EW: &str = "u-other_position";
 
 // Constants for emergency_withdrawal_shares_penalty_with_active_farm_owners
-const FARM_ID_2_EWSP: &str = "farm_2";
 const BOB_POS_RAW_ID_EWSP: &str = "bob_position";
 const BOB_POS_PREFIXED_ID_EWSP: &str = "u-bob_position";
 const LP_LOCK_AMOUNT_BOB_EWSP: u128 = 6_000_000u128;
@@ -379,7 +376,7 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
                         denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EW),
                     },
-                    farm_identifier: Some(FARM_ID_2_EWSP.to_string()),
+                    farm_identifier: Some(FARM_ID_2_EWPP.to_string()),
                 },
             },
             vec![
@@ -548,7 +545,7 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
             &other,
             PositionAction::Create {
                 identifier: Some(OTHER_POS_MAX_RAW_ID_EWPP.to_string()),
-                unlocking_duration: YEAR_APPROX_UNLOCKING_DURATION_SECONDS,
+                unlocking_duration: 31_556_926,
                 receiver: None,
             },
             vec![coin(LP_LOCK_AMOUNT_EW, lp_denom_2.clone())],

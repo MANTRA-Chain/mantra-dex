@@ -29,32 +29,16 @@ use test_utils::common_constants::*;
 /// Verify users got rewards pro rata to their locked tokens
 #[test]
 fn test_multiple_farms_and_positions() {
-    // Farm Raw Identifiers (used in FarmParams)
-    const RAW_FARM_1_ID: &str = "farm_1";
-    const RAW_FARM_2_ID: &str = "farm_2";
-    const RAW_FARM_3_ID: &str = "farm_3";
-    const RAW_FARM_4_ID: &str = "farm_4";
-
     // Prefixed Farm Identifiers (used in queries and assertions)
     const M_FARM_1_ID: &str = "m-farm_1";
     const M_FARM_2_ID: &str = "m-farm_2";
     const M_FARM_3_ID: &str = "m-farm_3";
     const M_FARM_4_ID: &str = "m-farm_4";
 
-    // Position Raw Identifiers (used in PositionAction::Create)
-    const CREATOR_POS_1_RAW_ID: &str = "creator_pos_1";
-    const CREATOR_POS_2_RAW_ID: &str = "creator_pos_2";
-    const OTHER_POS_1_RAW_ID: &str = "other_pos_1";
-    const OTHER_POS_2_RAW_ID: &str = "other_pos_2";
-    const ANOTHER_POS_1_RAW_ID: &str = "another_pos_1";
-
     // Prefixed Position Identifiers (used in PositionAction::Withdraw, Close)
     const U_OTHER_POS_1_ID: &str = "u-other_pos_1";
     const U_OTHER_POS_2_ID: &str = "u-other_pos_2";
     const U_ANOTHER_POS_1_ID: &str = "u-another_pos_1";
-
-    // Unlocking Durations
-    const SIX_MONTHS_UNLOCKING_DURATION_SECONDS: u64 = 15_778_476; // ~6 months
 
     // Farm Asset Amounts
     const FARM_1_UUSDY_ASSET_AMOUNT: u128 = 80_000u128;
@@ -72,31 +56,16 @@ fn test_multiple_farms_and_positions() {
     const OTHER_LP2_LOCK_AMOUNT: u128 = 80_000;
     const ANOTHER_LP2_LOCK_AMOUNT: u128 = 6_000;
 
-    // Partial Unlock Amount
-    const ANOTHER_LP2_PARTIAL_UNLOCK_AMOUNT: u128 = 3_000;
-
     // Epoch IDs for various stages in the test
     const INITIAL_EPOCH_ID: u64 = 10;
     const FARM_1_START_EPOCH: u64 = 12;
     const FARM_1_END_EPOCH: u64 = 16;
-    const EPOCH_ID_13: u64 = 13;
     const FARM_2_START_EPOCH: u64 = 14;
     const FARM_2_END_EPOCH: u64 = 24;
-    const EPOCH_ID_15: u64 = 15;
-    const EPOCH_ID_19: u64 = 19;
     const FARM_3_START_EPOCH: u64 = 20;
     const FARM_3_END_EPOCH: u64 = 23;
-    const EPOCH_ID_20: u64 = 20;
     const FARM_4_START_EPOCH: u64 = 23;
     const FARM_4_ASSERTED_END_EPOCH: u64 = 37;
-
-    const EPOCH_ID_30: u64 = 30;
-    const EPOCH_ID_35: u64 = 35;
-    const FINAL_EPOCH_ID_FOR_TEST: u64 = 40;
-
-    // Expected emergency unlock fees collected by fee_collector
-    const EXPECTED_FEE_COLLECTED_LP1_EMERGENCY_UNLOCK: u128 = 2_000;
-    const EXPECTED_FEE_COLLECTED_LP2_EMERGENCY_UNLOCK: u128 = 8_000;
 
     // Emission rates (used in assertions of Farm struct)
     const FARM_1_EMISSION_RATE: u128 = 20_000;
@@ -145,7 +114,7 @@ fn test_multiple_farms_and_positions() {
                         denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_1_UUSDY_ASSET_AMOUNT),
                     },
-                    farm_identifier: Some(RAW_FARM_1_ID.to_string()),
+                    farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![
@@ -168,7 +137,7 @@ fn test_multiple_farms_and_positions() {
                         denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_2_UOSMO_ASSET_AMOUNT),
                     },
-                    farm_identifier: Some(RAW_FARM_2_ID.to_string()),
+                    farm_identifier: Some("farm_2".to_string()),
                 },
             },
             vec![
@@ -191,7 +160,7 @@ fn test_multiple_farms_and_positions() {
                         denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_3_UOM_ASSET_AMOUNT),
                     },
-                    farm_identifier: Some(RAW_FARM_3_ID.to_string()),
+                    farm_identifier: Some("farm_3".to_string()),
                 },
             },
             vec![coin(
@@ -214,7 +183,7 @@ fn test_multiple_farms_and_positions() {
                         denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_4_UUSDY_ASSET_AMOUNT),
                     },
-                    farm_identifier: Some(RAW_FARM_4_ID.to_string()),
+                    farm_identifier: Some("farm_4".to_string()),
                 },
             },
             vec![
@@ -231,7 +200,7 @@ fn test_multiple_farms_and_positions() {
         .manage_position(
             &creator,
             PositionAction::Create {
-                identifier: Some(CREATOR_POS_1_RAW_ID.to_string()),
+                identifier: Some("creator_pos_1".to_string()),
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
@@ -243,7 +212,7 @@ fn test_multiple_farms_and_positions() {
         .manage_position(
             &creator,
             PositionAction::Create {
-                identifier: Some(CREATOR_POS_2_RAW_ID.to_string()),
+                identifier: Some("creator_pos_2".to_string()),
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
@@ -255,7 +224,7 @@ fn test_multiple_farms_and_positions() {
 
     suite.add_epochs(3).query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, EPOCH_ID_13);
+        assert_eq!(epoch_response.epoch.id, 13);
     });
 
     // other fills a position
@@ -263,7 +232,7 @@ fn test_multiple_farms_and_positions() {
         .manage_position(
             &other,
             PositionAction::Create {
-                identifier: Some(OTHER_POS_1_RAW_ID.to_string()),
+                identifier: Some("other_pos_1".to_string()),
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
@@ -275,7 +244,7 @@ fn test_multiple_farms_and_positions() {
         .manage_position(
             &other,
             PositionAction::Create {
-                identifier: Some(OTHER_POS_2_RAW_ID.to_string()),
+                identifier: Some("other_pos_2".to_string()),
                 unlocking_duration: DEFAULT_UNLOCKING_DURATION_SECONDS,
                 receiver: None,
             },
@@ -287,7 +256,7 @@ fn test_multiple_farms_and_positions() {
 
     suite.add_epochs(2).query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, EPOCH_ID_15);
+        assert_eq!(epoch_response.epoch.id, 15);
     });
 
     suite
@@ -368,7 +337,7 @@ fn test_multiple_farms_and_positions() {
 
     suite.add_epochs(4).query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, EPOCH_ID_19);
+        assert_eq!(epoch_response.epoch.id, 19);
     });
 
     // other emergency unlocks mid-way farm 2
@@ -455,20 +424,14 @@ fn test_multiple_farms_and_positions() {
             lp_denom_1.clone().to_string(),
             &fee_collector_addr,
             |balance| {
-                assert_eq!(
-                    balance,
-                    Uint128::new(EXPECTED_FEE_COLLECTED_LP1_EMERGENCY_UNLOCK)
-                );
+                assert_eq!(balance, Uint128::new(2_000));
             },
         )
         .query_balance(
             lp_denom_2.clone().to_string(),
             &fee_collector_addr,
             |balance| {
-                assert_eq!(
-                    balance,
-                    Uint128::new(EXPECTED_FEE_COLLECTED_LP2_EMERGENCY_UNLOCK)
-                );
+                assert_eq!(balance, Uint128::new(8_000));
             },
         );
 
@@ -476,15 +439,15 @@ fn test_multiple_farms_and_positions() {
 
     suite.add_one_epoch().query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, EPOCH_ID_20);
+        assert_eq!(epoch_response.epoch.id, 20);
     });
 
     // another fills a position
     suite.manage_position(
         &another,
         PositionAction::Create {
-            identifier: Some(ANOTHER_POS_1_RAW_ID.to_string()),
-            unlocking_duration: SIX_MONTHS_UNLOCKING_DURATION_SECONDS,
+            identifier: Some("another_pos_1".to_string()),
+            unlocking_duration: 15_778_476, // ~6 months
             receiver: None,
         },
         vec![coin(ANOTHER_LP2_LOCK_AMOUNT, lp_denom_2.clone())],
@@ -496,7 +459,7 @@ fn test_multiple_farms_and_positions() {
     // creator that had 100% now has ~70% of the weight, while another has ~30%
     suite.add_epochs(10).query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, EPOCH_ID_30);
+        assert_eq!(epoch_response.epoch.id, 30);
     });
 
     suite
@@ -654,7 +617,7 @@ fn test_multiple_farms_and_positions() {
         &another,
         PositionAction::Close {
             identifier: U_ANOTHER_POS_1_ID.to_string(),
-            lp_asset: Some(coin(ANOTHER_LP2_PARTIAL_UNLOCK_AMOUNT, lp_denom_2.clone())),
+            lp_asset: Some(coin(3_000, lp_denom_2.clone())),
         },
         vec![],
         |result| {
@@ -664,7 +627,7 @@ fn test_multiple_farms_and_positions() {
 
     suite.add_epochs(5).query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, EPOCH_ID_35);
+        assert_eq!(epoch_response.epoch.id, 35);
     });
 
     suite
@@ -719,7 +682,7 @@ fn test_multiple_farms_and_positions() {
 
     suite.add_epochs(5).query_current_epoch(|result| {
         let epoch_response = result.unwrap();
-        assert_eq!(epoch_response.epoch.id, FINAL_EPOCH_ID_FOR_TEST);
+        assert_eq!(epoch_response.epoch.id, 40);
     });
 
     suite.manage_farm(
