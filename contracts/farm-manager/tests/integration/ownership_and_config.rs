@@ -19,12 +19,6 @@ const NEW_EMERGENCY_UNLOCK_PENALTY_PERCENT: u64 = 20;
 
 // Constants for invalid values
 const INVALID_MAX_CONCURRENT_FARMS_DECREASED: u32 = 0u32;
-const INVALID_MIN_UNLOCKING_DURATION_TOO_HIGH: u64 = 80_800u64;
-const INVALID_MAX_UNLOCKING_DURATION_TOO_LOW: u64 = 80_000u64;
-const INVALID_MIN_UNLOCKING_DURATION_RANGE: u64 = 300_000u64;
-const INVALID_MAX_UNLOCKING_DURATION_RANGE: u64 = 200_000u64;
-const INVALID_EMERGENCY_UNLOCK_PENALTY_TOO_HIGH: u64 = 105;
-const INVALID_FARM_EXPIRATION_TIME: u64 = MONTH_IN_SECONDS - 100;
 
 #[test]
 fn verify_ownership() {
@@ -200,8 +194,8 @@ pub fn update_config() {
         }),
         Some(NEW_MAX_CONCURRENT_FARMS),
         Some(NEW_MAX_FARM_EPOCH_BUFFER),
-        Some(INVALID_MIN_UNLOCKING_DURATION_TOO_HIGH),
-        Some(INVALID_MAX_UNLOCKING_DURATION_TOO_LOW),
+        Some(80_800u64),
+        Some(80_000u64),
         Some(NEW_FARM_EXPIRATION_TIME),
         Some(Decimal::percent(50)),
         vec![],
@@ -223,8 +217,8 @@ pub fn update_config() {
         }),
         Some(NEW_MAX_CONCURRENT_FARMS),
         Some(NEW_MAX_FARM_EPOCH_BUFFER),
-        Some(INVALID_MIN_UNLOCKING_DURATION_RANGE),
-        Some(INVALID_MAX_UNLOCKING_DURATION_RANGE),
+        Some(300_000u64),
+        Some(200_000u64),
         Some(NEW_FARM_EXPIRATION_TIME),
         Some(Decimal::percent(50)),
         vec![],
@@ -249,7 +243,7 @@ pub fn update_config() {
         Some(NEW_MIN_UNLOCKING_DURATION),
         Some(NEW_MAX_UNLOCKING_DURATION),
         Some(NEW_FARM_EXPIRATION_TIME),
-        Some(Decimal::percent(INVALID_EMERGENCY_UNLOCK_PENALTY_TOO_HIGH)),
+        Some(Decimal::percent(105)),
         vec![],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -310,7 +304,7 @@ pub fn update_config() {
         None,
         None,
         None,
-        Some(INVALID_FARM_EXPIRATION_TIME),
+        Some(MONTH_IN_SECONDS - 100),
         None,
         vec![],
         |result| {

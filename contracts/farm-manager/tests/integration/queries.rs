@@ -23,10 +23,9 @@ const PAGE_LIMIT_5: u32 = 5;
 const LP_DENOM_1_INITIAL_BALANCE: u128 = 1_000_000_000_000;
 const FARM_UUSDY_ASSET_AMOUNT: u128 = 3333;
 const CREATOR_ANOTHER_POSITION_LP_AMOUNT: u128 = 2_000;
-const LP_DENOM_2_INITIAL_BALANCE: u128 = 1_000_000_000_000;
+
 const FARM_1_UUSDY_ASSET_AMOUNT: u128 = 8_888;
 const FARM_2_UUSDY_ASSET_AMOUNT: u128 = 666_666;
-const FARM_2_END_EPOCH: u64 = 20;
 
 #[test]
 fn test_rewards_query_overlapping_farms() {
@@ -551,7 +550,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
         coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
         coin(LP_DENOM_1_INITIAL_BALANCE, lp_denom_1.clone()),
-        coin(LP_DENOM_2_INITIAL_BALANCE, lp_denom_2.clone()),
+        coin(1_000_000_000_000, lp_denom_2.clone()),
     ]);
 
     let alice = suite.creator();
@@ -590,7 +589,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
-                    preliminary_end_epoch: Some(FARM_2_END_EPOCH),
+                    preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
                         denom: UUSDY_DENOM.to_string(),

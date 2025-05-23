@@ -44,14 +44,11 @@ const PRELIMINARY_END_EPOCH_16: u64 = 16;
 const PRELIMINARY_END_EPOCH_100: u64 = 100;
 const PRELIMINARY_END_EPOCH_63: u64 = 63;
 const PRELIMINARY_END_EPOCH_15: u64 = 15;
-const DEFAULT_START_EPOCH_OFFSET: u64 = 1; // current epoch + 1
 
 // Position Identifiers
 const POSITION_ID_P1: &str = "p-1";
 
 // Emission Rates
-const EMISSION_RATE_714: u128 = 714;
-const EMISSION_RATE_285: u128 = 285;
 
 #[test]
 fn test_close_expired_farms() {
@@ -154,9 +151,9 @@ fn test_close_expired_farms() {
                         amount: Uint128::new(FARM_ASSET_AMOUNT_10000),
                     },
                     claimed_amount: Uint128::zero(),
-                    emission_rate: Uint128::new(EMISSION_RATE_714), // (10000 / (63 - 49 + 1)) * 1 = 10000 / 15 = 666 - check this logic based on current_epoch being 48
+                    emission_rate: Uint128::new(714), // (10000 / (63 - 49 + 1)) * 1 = 10000 / 15 = 666 - check this logic based on current_epoch being 48
                     curve: Curve::Linear,
-                    start_epoch: 48 + DEFAULT_START_EPOCH_OFFSET, // the default of (current epoch + 1u64) was used
+                    start_epoch: 48 + 1, // the default of (current epoch + 1u64) was used
                     preliminary_end_epoch: PRELIMINARY_END_EPOCH_63,
                 }
             );
@@ -216,7 +213,7 @@ fn expand_expired_farm() {
                         amount: Uint128::new(FARM_ASSET_AMOUNT_4000),
                     },
                     claimed_amount: Uint128::zero(),
-                    emission_rate: Uint128::new(EMISSION_RATE_285), // 4000 / 14 = 285.7...
+                    emission_rate: Uint128::new(285), // 4000 / 14 = 285.7...
                     curve: Curve::Linear,
                     start_epoch: 1u64,
                     preliminary_end_epoch: PRELIMINARY_END_EPOCH_15,

@@ -21,7 +21,6 @@ const UOSMO_DENOM: &str = "uosmo";
 
 // Unlocking Durations (seconds)
 const UNLOCKING_DURATION_1_DAY: u64 = 86_400; // Minimum unlocking duration
-const UNLOCKING_DURATION_INVALID_SHORT: u64 = 80_400;
 const UNLOCKING_DURATION_INVALID_LONG: u64 = 32_536_000;
 const UNLOCKING_DURATION_100K: u64 = 100_000;
 const UNLOCKING_DURATION_MAX_NEAR_YEAR: u64 = 31_556_926; // Nearly one year
@@ -31,7 +30,6 @@ const INITIAL_BALANCE: u128 = 1_000_000_000;
 const LP_TOKENS_FOR_POOL_MANAGER_SETUP: u128 = 100_000;
 
 const FARM_REWARD_UUSDY_AMOUNT: u128 = 8_000;
-const FARM_FUNDING_UOM_AMOUNT: u128 = 1_000;
 
 const LP_STAKE_AMOUNT_1K: u128 = 1_000;
 const LP_STAKE_AMOUNT_2K: u128 = 2_000;
@@ -117,7 +115,7 @@ pub fn test_manage_position() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(FARM_REWARD_UUSDY_AMOUNT, UUSDY_DENOM), coin(FARM_FUNDING_UOM_AMOUNT, UOM_DENOM)],
+            vec![coin(FARM_REWARD_UUSDY_AMOUNT, UUSDY_DENOM), coin(1_000, UOM_DENOM)],
             |result| {
                 result.unwrap();
             },
@@ -135,7 +133,7 @@ pub fn test_manage_position() {
             &creator,
             PositionAction::Create {
                 identifier: Some(USER_POS_ID_CREATOR.to_string()),
-                unlocking_duration: UNLOCKING_DURATION_INVALID_SHORT,
+                unlocking_duration: 80_400,
                 receiver: None,
             },
             vec![coin(LP_STAKE_AMOUNT_1K, lp_denom.clone())],
