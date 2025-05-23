@@ -27,7 +27,7 @@ const UNLOCKING_DURATION_100K: u64 = 100_000;
 const UNLOCKING_DURATION_MAX_NEAR_YEAR: u64 = 31_556_926; // Nearly one year
 
 // Amounts (as u128, use with Uint128::new())
-const INITIAL_USER_BALANCE: u128 = 1_000_000_000;
+const INITIAL_BALANCE: u128 = 1_000_000_000;
 const LP_TOKENS_FOR_POOL_MANAGER_SETUP: u128 = 100_000;
 
 const FARM_REWARD_UUSDY_AMOUNT: u128 = 8_000;
@@ -75,12 +75,12 @@ pub fn test_manage_position() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, invalid_lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, another_lp.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
+        coin(INITIAL_BALANCE, another_lp.clone()),
     ]);
 
     let creator = suite.creator();
@@ -406,7 +406,7 @@ pub fn test_manage_position() {
         .query_balance(UUSDY_DENOM.to_string(), &creator, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_USER_BALANCE - FARM_REWARD_UUSDY_AMOUNT)
+                Uint128::new(INITIAL_BALANCE - FARM_REWARD_UUSDY_AMOUNT)
             ); // Initial - farm funding
         })
         .claim(&creator, vec![], None, |result| {
@@ -416,9 +416,7 @@ pub fn test_manage_position() {
             // Initial - farm funding + 2k rewards
             assert_eq!(
                 balance,
-                Uint128::new(
-                    INITIAL_USER_BALANCE - FARM_REWARD_UUSDY_AMOUNT + CLAIMED_REWARDS_UUSDY_2K
-                )
+                Uint128::new(INITIAL_BALANCE - FARM_REWARD_UUSDY_AMOUNT + CLAIMED_REWARDS_UUSDY_2K)
             );
         })
         .query_farms(None, None, None, |result| {
@@ -651,9 +649,7 @@ pub fn test_manage_position() {
             // Balance after farm funding (INITIAL - 8k) + first claim (2k) = INITIAL - 6k
             assert_eq!(
                 balance,
-                Uint128::new(
-                    INITIAL_USER_BALANCE - FARM_REWARD_UUSDY_AMOUNT + CLAIMED_REWARDS_UUSDY_2K
-                )
+                Uint128::new(INITIAL_BALANCE - FARM_REWARD_UUSDY_AMOUNT + CLAIMED_REWARDS_UUSDY_2K)
             );
         })
         .claim(&creator, vec![], None, |result| {
@@ -677,8 +673,8 @@ pub fn test_manage_position() {
             }
         })
         .query_balance(UUSDY_DENOM.to_string(), &creator, |balance| {
-            // Balance after farm funding + all rewards claimed = INITIAL_USER_BALANCE
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            // Balance after farm funding + all rewards claimed = INITIAL_BALANCE
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_positions(
             Some(PositionsBy::Receiver(other.to_string())), // Other user has no positions
@@ -1066,12 +1062,12 @@ pub fn test_withdrawing_open_positions_updates_weight() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, invalid_lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, another_lp.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
+        coin(INITIAL_BALANCE, another_lp.clone()),
     ]);
 
     let creator = suite.creator();
@@ -1698,11 +1694,11 @@ fn test_refill_position_uses_current_position_unlocking_period() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom_1.clone()),
-        coin(INITIAL_USER_BALANCE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom_1.clone()),
+        coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     let creator = suite.creator();

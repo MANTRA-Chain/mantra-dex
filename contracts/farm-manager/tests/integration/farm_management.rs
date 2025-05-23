@@ -10,7 +10,7 @@ use crate::common::suite::TestingSuite;
 use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
 use test_utils::common_constants::{
     DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_USER_BALANCE, UOM_FARM_CREATION_FEE,
+    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
 };
 
 const INVALID_LP: &str = "invalid_lp";
@@ -62,11 +62,11 @@ fn create_farms() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, invalid_lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
     ]);
     suite.instantiate_default();
 
@@ -648,10 +648,10 @@ fn expand_farms() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
     let creator = suite.creator();
@@ -904,10 +904,10 @@ fn cant_expand_farm_too_late() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
     let creator = suite.creator();
@@ -1055,11 +1055,11 @@ fn close_farms() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     suite.instantiate_default();
@@ -1141,7 +1141,7 @@ fn close_farms() {
             },
         )
         .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE - FARM_AMOUNT_4K));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE - FARM_AMOUNT_4K));
         })
         .manage_farm(
             &other,
@@ -1154,7 +1154,7 @@ fn close_farms() {
             },
         )
         .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         });
 
     // open new farm
@@ -1210,7 +1210,7 @@ fn close_farms() {
 
     suite
         .query_balance(UUSDY_DENOM.to_string(), &another, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .claim(&another, vec![], None, |result| {
             result.unwrap();
@@ -1237,7 +1237,7 @@ fn close_farms() {
             },
         )
         .query_balance(UUSDY_DENOM.to_string(), &another, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE + FARM_AMOUNT_4K));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE + FARM_AMOUNT_4K));
         })
         .manage_farm(
             &other,
@@ -1261,11 +1261,11 @@ fn close_farms_wont_fail_with_malicious_tf_token() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, lp_denom_2.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
 
     suite.instantiate_default();
@@ -1387,10 +1387,10 @@ fn test_farm_helper() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
     let creator = suite.creator();
@@ -1429,7 +1429,7 @@ fn test_farm_helper() {
             },
         )
         .query_balance(UOM_DENOM.to_string(), &creator, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(UOM_DENOM.to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
@@ -1470,7 +1470,7 @@ fn test_farm_helper() {
             // got the excess of whale back
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_USER_BALANCE - UOM_FARM_CREATION_FEE)
+                Uint128::new(INITIAL_BALANCE - UOM_FARM_CREATION_FEE)
             );
         });
 
@@ -1509,11 +1509,11 @@ fn test_farm_helper() {
 fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, INVALID_LP),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, INVALID_LP),
     ]);
     let creator = suite.creator();
 
@@ -1628,11 +1628,11 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
 fn fails_to_create_farm_if_start_epoch_is_zero() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, INVALID_LP),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, INVALID_LP),
     ]);
     let creator = suite.creator();
 
@@ -1675,11 +1675,11 @@ fn fails_to_create_farm_if_start_epoch_is_zero() {
 fn overriding_farm_with_bogus_id_not_possible() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, INVALID_LP),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, INVALID_LP),
     ]);
     let creator = suite.creator();
 
@@ -1747,11 +1747,11 @@ fn overriding_farm_with_bogus_id_not_possible() {
 fn providing_custom_farm_id_doesnt_increment_farm_counter() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, INVALID_LP),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, INVALID_LP),
     ]);
     let creator = suite.creator();
 
@@ -1812,11 +1812,11 @@ fn farm_cant_be_created_in_the_past() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, invalid_lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
     ]);
     suite.instantiate_default();
 

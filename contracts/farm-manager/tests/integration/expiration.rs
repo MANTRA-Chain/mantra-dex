@@ -12,7 +12,7 @@ use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 use test_utils::common_constants::{
     DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_USER_BALANCE, UOM_FARM_CREATION_FEE,
+    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
 };
 
 // Denoms
@@ -58,11 +58,11 @@ fn test_close_expired_farms() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, INVALID_LP_DENOM),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, INVALID_LP_DENOM),
     ]);
 
     let creator = suite.creator();
@@ -168,10 +168,10 @@ fn expand_expired_farm() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM.to_string()),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
+        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
     let other = suite.senders[1].clone();
@@ -268,11 +268,11 @@ fn test_farm_expired() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, INVALID_LP_DENOM),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, INVALID_LP_DENOM),
     ]);
 
     let creator = suite.creator();
@@ -493,11 +493,11 @@ fn test_farm_expired() {
 fn closing_expired_farm_wont_pay_penalty() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_USER_BALANCE, UOM_DENOM),
-        coin(INITIAL_USER_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_USER_BALANCE, UOSMO_DENOM),
-        coin(INITIAL_USER_BALANCE, lp_denom.clone()),
-        coin(INITIAL_USER_BALANCE, INVALID_LP_DENOM),
+        coin(INITIAL_BALANCE, UOM_DENOM),
+        coin(INITIAL_BALANCE, UUSDY_DENOM),
+        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+        coin(INITIAL_BALANCE, INVALID_LP_DENOM),
     ]);
     let creator = suite.creator();
 
@@ -544,7 +544,7 @@ fn closing_expired_farm_wont_pay_penalty() {
         .query_balance(lp_denom.clone(), &creator, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(INITIAL_USER_BALANCE - LP_DEPOSIT_AMOUNT_10000)
+                Uint128::new(INITIAL_BALANCE - LP_DEPOSIT_AMOUNT_10000)
             );
         })
         .query_balance(lp_denom.clone(), &fee_collector, |balance| {
@@ -563,7 +563,7 @@ fn closing_expired_farm_wont_pay_penalty() {
             },
         )
         .query_balance(lp_denom.clone(), &creator, |balance| {
-            assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE));
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom.clone(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());

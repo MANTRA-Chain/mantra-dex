@@ -10,7 +10,6 @@ pub const DENOM_UUSDT: &str = "uusdt";
 
 // Common Amounts and Balances
 pub const INITIAL_BALANCE: u128 = 1_000_000_000;
-pub const INITIAL_USER_BALANCE: u128 = INITIAL_BALANCE; // Alias for backward compatibility
 pub const INITIAL_BALANCE_PLUS_ONE: u128 = 1_000_000_001;
 pub const LIQUIDITY_AMOUNT: u128 = 1_000_000;
 pub const STARGATE_MOCK_UOM_AMOUNT: u128 = 8888;
