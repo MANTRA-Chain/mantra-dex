@@ -7,7 +7,6 @@ use test_utils::common_constants::{DENOM_UOM, STARGATE_MOCK_UOM_AMOUNT};
 
 // Test constants
 // Common token amounts
-const POOL_CREATION_FEE_INCREMENT: u32 = 1;
 
 #[test]
 fn verify_ownership() {
@@ -111,7 +110,7 @@ fn updates_config_fields() {
         Some(coin(
             current_pool_creation_fee
                 .amount
-                .checked_add(Uint128::from(POOL_CREATION_FEE_INCREMENT))
+                .checked_add(Uint128::from(1u32))
                 .unwrap()
                 .u128(),
             current_pool_creation_fee.denom,

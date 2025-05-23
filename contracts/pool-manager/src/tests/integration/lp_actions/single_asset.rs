@@ -33,13 +33,8 @@ const TOTAL_LP_SUPPLY_AFTER_SINGLE_ASSET_DEPOSIT: u128 =
 const FINAL_UWHALE_IN_POOL: u128 = 1_020_000u128;
 const FINAL_ULUNA_IN_POOL: u128 = 999_901u128;
 
-const CREATOR_REMAINING_ULUNA: u128 = INITIAL_BALANCE - LIQUIDITY_AMOUNT; // 9_000_000
 const CREATOR_REMAINING_UOM: u128 = SMALL_BALANCE - UOM_POOL_CREATION_FEE; // 10_000 - 8888 = 1112
 const CREATOR_REMAINING_UUSD: u128 = SMALL_BALANCE - UUSD_POOL_CREATION_FEE; // 9_000
-const CREATOR_REMAINING_UWHALE: u128 = INITIAL_BALANCE - LIQUIDITY_AMOUNT; // 9_000_000
-
-const CREATOR_ULUNA_AFTER_WITHDRAW: u128 = 9_989_208u128;
-const CREATOR_UWHALE_AFTER_WITHDRAW: u128 = 10_009_092u128;
 
 const OTHER_REMAINING_UWHALE: u128 = INITIAL_BALANCE - SINGLE_ASSET_DEPOSIT_SMALL * 2; // 9_980_000 (10_000_000 - 20_000)
 
@@ -47,20 +42,16 @@ const OTHER_ULUNA_AFTER_WITHDRAW: u128 = 10_009_702u128;
 const OTHER_UWHALE_AFTER_WITHDRAW: u128 = 9_989_897u128;
 
 const FEE_COLLECTOR_ULUNA_FEES: u128 = 99u128;
-const CONTRACT_DUST_ULUNA: u128 = 991u128;
-const CONTRACT_DUST_UWHALE: u128 = 1_011u128;
 
 const LP_TOKENS_FOR_ANOTHER_USER: u128 = 981u128;
 
 const EDGE_CASE_INITIAL_LIQUIDITY: u128 = 1_100u128;
-const EDGE_CASE_SINGLE_ASSET_DEPOSIT_SLIPPAGE_FAIL: u128 = 1_760u128;
-const EDGE_CASE_SINGLE_ASSET_DEPOSIT_SLIPPAGE_FAIL_LARGE: u128 = 10_000u128;
+
 const EDGE_CASE_SINGLE_ASSET_DEPOSIT_SUCCESS: u128 = 1_000u128;
 
 const FIFTY_PERCENT_SLIPPAGE: Option<Decimal> = Some(Decimal::percent(50));
 const ONE_PERCENT_FEE: Decimal = Decimal::percent(1);
-const FIFTEEN_PERCENT_FEE: Decimal = Decimal::percent(15);
-const FIVE_PERCENT_FEE: Decimal = Decimal::percent(5);
+
 const ZERO_PERCENT_FEE: Decimal = Decimal::zero();
 const SIX_DECIMALS: u8 = 6u8;
 
@@ -378,7 +369,7 @@ fn provide_liquidity_with_single_asset() {
                     },
                     Coin {
                         denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(CREATOR_REMAINING_ULUNA),
+                        amount: Uint128::from(9_000_000u128), // INITIAL_BALANCE - LIQUIDITY_AMOUNT
                     },
                     Coin {
                         denom: UOM_DENOM.to_string(),
@@ -394,7 +385,7 @@ fn provide_liquidity_with_single_asset() {
                     },
                     Coin {
                         denom: UWHALE_DENOM.to_string(),
-                        amount: Uint128::from(CREATOR_REMAINING_UWHALE),
+                        amount: Uint128::from(9_000_000u128), // INITIAL_BALANCE - LIQUIDITY_AMOUNT
                     },
                 ]
             );
@@ -417,7 +408,7 @@ fn provide_liquidity_with_single_asset() {
                 vec![
                     Coin {
                         denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(CREATOR_ULUNA_AFTER_WITHDRAW),
+                        amount: Uint128::from(9_989_208u128),
                     },
                     Coin {
                         denom: UOM_DENOM.to_string(),
@@ -433,7 +424,7 @@ fn provide_liquidity_with_single_asset() {
                     },
                     Coin {
                         denom: UWHALE_DENOM.to_string(),
-                        amount: Uint128::from(CREATOR_UWHALE_AFTER_WITHDRAW),
+                        amount: Uint128::from(10_009_092u128),
                     },
                 ]
             );
@@ -543,11 +534,11 @@ fn provide_liquidity_with_single_asset() {
                     },
                     Coin {
                         denom: ULUNA_DENOM.to_string(),
-                        amount: Uint128::from(CONTRACT_DUST_ULUNA),
+                        amount: Uint128::from(991u128),
                     },
                     Coin {
                         denom: UWHALE_DENOM.to_string(),
-                        amount: Uint128::from(CONTRACT_DUST_UWHALE),
+                        amount: Uint128::from(1_011u128),
                     },
                 ]
             );
@@ -738,10 +729,10 @@ fn provide_liquidity_with_single_asset_edge_case() {
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: FIFTEEN_PERCENT_FEE,
+            share: Decimal::percent(15),
         },
         swap_fee: Fee {
-            share: FIVE_PERCENT_FEE,
+            share: Decimal::percent(5),
         },
         burn_fee: Fee {
             share: ZERO_PERCENT_FEE,
@@ -809,7 +800,7 @@ fn provide_liquidity_with_single_asset_edge_case() {
             None,
             vec![Coin {
                 denom: UWHALE_DENOM.to_string(),
-                amount: Uint128::from(EDGE_CASE_SINGLE_ASSET_DEPOSIT_SLIPPAGE_FAIL),
+                amount: Uint128::from(1_760u128),
             }],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -829,7 +820,7 @@ fn provide_liquidity_with_single_asset_edge_case() {
             None,
             vec![Coin {
                 denom: UWHALE_DENOM.to_string(),
-                amount: Uint128::from(EDGE_CASE_SINGLE_ASSET_DEPOSIT_SLIPPAGE_FAIL_LARGE),
+                amount: Uint128::from(10_000u128),
             }],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();

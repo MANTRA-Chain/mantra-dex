@@ -3,19 +3,13 @@ use cosmwasm_std::coin;
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use test_utils::common_constants::{DENOM_UOM, STARGATE_MOCK_UOM_AMOUNT};
 
-// Test token denominations
-const DENOM_TEST: &str = "utest";
-
-// Initial balances
-const INITIAL_TEST_BALANCE: u128 = 1000;
-
 #[test]
 fn instantiate_normal() {
     let mut suite = TestingSuite::default_with_balances(
         vec![],
         StargateMock::new(vec![
             coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
-            coin(INITIAL_TEST_BALANCE, DENOM_TEST),
+            coin(1000, "utest"),
         ]),
     );
 

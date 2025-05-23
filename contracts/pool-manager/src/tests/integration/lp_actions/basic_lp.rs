@@ -34,7 +34,6 @@ const ONE_TRILLION: Uint128 = Uint128::new(1_000_000_000_000u128);
 const FEE_AMOUNT_UOM: Uint128 = Uint128::new(8888u128);
 
 const POOL_ID_WHALE_LUNA: &str = "o.whale.uluna";
-const POOL_LABEL_WHALE_LUNA: &str = "whale.uluna";
 
 const DEFAULT_DECIMALS: u8 = 6u8;
 
@@ -77,7 +76,7 @@ fn deposit_and_withdraw_sanity_check() {
         vec![DEFAULT_DECIMALS, DEFAULT_DECIMALS],
         pool_fees,
         PoolType::ConstantProduct,
-        Some(POOL_LABEL_WHALE_LUNA.to_string()),
+        Some("whale.uluna".to_string()),
         vec![
             coin(ONE_THOUSAND.u128(), UUSD_DENOM.to_string()),
             coin(ONE_THOUSAND.u128(), UTEST_DENOM.to_string()),

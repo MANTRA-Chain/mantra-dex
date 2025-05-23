@@ -19,17 +19,12 @@ const LIQUIDITY_1_5M: u128 = 1_500_000u128;
 const STABLESWAP_AMP_FACTOR: u64 = 100;
 
 // ========== Pool Identifiers ==========
-const WHALE_ULUNA_UUSD_POOL_LABEL: &str = "whale.uluna.uusd";
 const O_WHALE_ULUNA_UUSD_ID: &str = "o.whale.uluna.uusd";
-const UUSDC_UUSDT_UUSDY_POOL_LABEL: &str = "uusdc.uusdt.uusdy";
 const O_UUSDC_UUSDT_UUSDY_ID: &str = "o.uusdc.uusdt.uusdy";
 
 // ========== Test Parameters ==========
 
 // ========== Expected Values ==========
-const EXPECTED_LP_AMOUNT_FIRST: u128 = LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();
-const EXPECTED_LP_AMOUNT_SECOND: u128 =
-    LIQUIDITY_1_5M + LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();
 
 // Add after the import of test_utils::common_constants::*
 const UWHALE_DENOM: &str = DENOM_UWHALE;
@@ -90,7 +85,7 @@ fn provide_liquidity_stable_swap() {
         PoolType::StableSwap {
             amp: STABLESWAP_AMP_FACTOR,
         },
-        Some(WHALE_ULUNA_UUSD_POOL_LABEL.to_string()),
+        Some("whale.uluna.uusd".to_string()),
         vec![
             coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
             coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
@@ -383,7 +378,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
         PoolType::StableSwap {
             amp: STABLESWAP_AMP_FACTOR,
         },
-        Some(UUSDC_UUSDT_UUSDY_POOL_LABEL.to_string()),
+        Some("uusdc.uusdt.uusdy".to_string()),
         vec![
             coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
             coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
@@ -427,7 +422,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
             assert_eq!(
                 result.unwrap().amount,
                 // liquidity provided - MINIMUM_LIQUIDITY_AMOUNT
-                Uint128::from(EXPECTED_LP_AMOUNT_FIRST)
+                Uint128::from(LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128())
             );
         });
 
@@ -463,7 +458,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
             assert_eq!(
                 result.unwrap().amount,
                 // we should expect another ~1_500_000
-                Uint128::from(EXPECTED_LP_AMOUNT_SECOND)
+                Uint128::from(LIQUIDITY_1_5M + LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128())
             );
         });
 
