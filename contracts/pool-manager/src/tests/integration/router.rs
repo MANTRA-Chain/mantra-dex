@@ -33,7 +33,6 @@ const SMALL_FEE_RATIO_DENOMINATOR: u128 = 100_000;
 const SWAP_RESULT_USD: u128 = 998;
 
 // Additional constants for checks_minimum_receive test
-const MINIMUM_RECEIVE_AMOUNT: u128 = 975;
 
 // Additional constants for query_swap_operations test
 const LARGE_SWAP_AMOUNT: u128 = 10_000;

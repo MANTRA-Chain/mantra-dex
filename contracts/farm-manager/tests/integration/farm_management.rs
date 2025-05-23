@@ -9,8 +9,8 @@ use mantra_dex_std::farm_manager::{FarmAction, FarmParams, FarmsBy, PositionActi
 use crate::common::suite::TestingSuite;
 use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
 use test_utils::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
+    DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM, DENOM_UUSDY as UUSDY_DENOM,
+    INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
 };
 
 const INVALID_LP: &str = "invalid_lp";

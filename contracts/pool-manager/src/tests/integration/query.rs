@@ -35,7 +35,6 @@ const EXPECTED_SWAP_FEE: u128 = 20;
 const EXPECTED_BURN_FEE: u128 = 30;
 const EXPECTED_EXTRA_FEE: u128 = 40;
 const EXPECTED_SLIPPAGE_AMOUNT: u128 = 100;
-const EXPECTED_ADDED_SHARES: &str = "999000";
 
 // Simulation parameters
 const SIMULATION_TOLERANCE: &str = "0.1";

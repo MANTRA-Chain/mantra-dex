@@ -185,14 +185,6 @@ const SWAP_4POOL_VAL7: Uint128 = Uint128::new(5_000_000_000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_4POOL_VAL8: Uint128 = Uint128::new(5_000_000_000000000000000000u128);
 
-const DEFAULT_ASSET_DECIMALS_4POOL: [u8; 4] =
-    [DECIMALS_6_U8, DECIMALS_6_U8, DECIMALS_12_U8, DECIMALS_18_U8];
-#[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_INITIAL_BALANCE_RAW_4POOL: Uint128 =
-    Uint128::new(300_000_000_000_000_000000000000000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_LIQUIDITY_BASE_100T_4POOL: Uint128 = Uint128::new(100_000_000_000_000u128); // 100 Trillion
-
 // -- Constants for simulation_vs_reverse_simulation_3pool --
 #[allow(clippy::inconsistent_digit_grouping)]
 const SIM_TEST_AMOUNT_UUSD_AS_OFFER_FOR_UUSDC: Uint128 = Uint128::new(333_000000u128);
@@ -265,8 +257,6 @@ const EVENT_TYPE_WASM: &str = "wasm";
 
 const BASIC_SWAP_ASSERT_APPROX_TOLERANCE_A: &str = "0.002";
 const BASIC_SWAP_ASSERT_APPROX_TOLERANCE_B: &str = "0.003";
-
-const TEST_CONST_ADDITION: bool = true;
 
 // -- Constants for basic_swapping_pool_reserves_event_test --
 const POOL_RESERVES_INITIAL_UWHALE_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);

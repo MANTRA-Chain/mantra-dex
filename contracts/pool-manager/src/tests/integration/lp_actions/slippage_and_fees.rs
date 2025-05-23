@@ -35,16 +35,13 @@ const WHALE_ULUNA_POOL_LABEL: &str = "whale.uluna";
 const O_WHALE_ULUNA_ID: &str = "o.whale.uluna";
 const WHALE_ULUNA_POOL_1_LABEL: &str = "whale.uluna.pool.1";
 const O_WHALE_ULUNA_POOL_1_ID: &str = "o.whale.uluna.pool.1";
-const O_WHALE_ULUNA_POOL_1_LP: &str = "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP";
+const WHALE_ULUNA_POOL_1_LP: &str = "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.1.LP";
 const WHALE_ULUNA_POOL_2_LABEL: &str = "whale.uluna.pool.2";
 const O_WHALE_ULUNA_POOL_2_ID: &str = "o.whale.uluna.pool.2";
 const O_WHALE_ULUNA_POOL_2_LP: &str = "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.pool.2.LP";
 const ULUNA_UUSD_POOL_1_LABEL: &str = "uluna.uusd.pool.1";
 const O_ULUNA_UUSD_POOL_1_ID: &str = "o.uluna.uusd.pool.1";
 const O_ULUNA_UUSD_POOL_1_LP: &str = "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.uluna.uusd.pool.1.LP";
-const DENOM_ULUNA_UUSD_POOL_1_LP: &str = "o.uluna.uusd.LP";
-const DENOM_UWHALE_ULUNA_POOL_1_LP: &str = "o.uwhale.uluna.LP";
-const DENOM_UWHALE_ULUNA_POOL_2_LP: &str = "o.uwhale.uluna.2.LP";
 
 // ========== Expected Balances & Test Values ==========
 const CONTRACT_LP_BALANCE_1K: u128 = 1_000u128;
@@ -75,43 +72,6 @@ const POOL_2_LUNA_AFTER_ROUTER_SWAP: u128 = 996_913u128;
 const POOL_3_LUNA_AFTER_ROUTER_SWAP: u128 = 1_005_587u128;
 const POOL_3_UUSD_AFTER_ROUTER_SWAP: u128 = 995_035u128;
 const FEE_COLLECTOR_UUSD_FINAL: u128 = 3_000u128 + 299u128 + 396u128; // Pool creation + swap1_pool3 + swap2_pool3(via router)
-
-// ========== Fee Calculation Constants ==========
-// Pool 1 Swap 1 (1000 uwhale)
-const SWAP_FEE_STAY_IN_POOL_1: u128 = 69u128; // ~7% of SWAP_AMOUNT_1K
-const PROTOCOL_FEE_1: u128 = 99u128; // ~10% of SWAP_AMOUNT_1K
-const BURN_FEE_1: u128 = 29u128; // ~3% of SWAP_AMOUNT_1K
-const TOTAL_FEES_1: u128 = 197u128; // SWAP_FEE_STAY_IN_POOL_1 + PROTOCOL_FEE_1 + BURN_FEE_1
-
-// Pool 1 Swap 2 (2000 uluna)
-const SWAP_FEE_STAY_IN_POOL_2: u128 = 139u128; // ~7% of SWAP_AMOUNT_2K
-const PROTOCOL_FEE_2: u128 = 199u128; // ~10% of SWAP_AMOUNT_2K
-const BURN_FEE_2: u128 = 59u128; // ~3% of SWAP_AMOUNT_2K
-const TOTAL_FEES_2: u128 = 397u128; // SWAP_FEE_STAY_IN_POOL_2 + PROTOCOL_FEE_2 + BURN_FEE_2
-
-// Pool 2 Swap 1 (1000 uwhale)
-const SWAP_FEE_STAY_IN_POOL_POOL2_1: u128 = 149u128; // ~15% of SWAP_AMOUNT_1K
-const PROTOCOL_FEE_POOL2_1: u128 = 0u128; // 0%
-const BURN_FEE_POOL2_1: u128 = 49u128; // ~5% of SWAP_AMOUNT_1K
-const TOTAL_FEES_POOL2_1: u128 = 198u128; // SWAP_FEE_STAY_IN_POOL_POOL2_1 + PROTOCOL_FEE_POOL2_1 + BURN_FEE_POOL2_1
-
-// Pool 2 Swap 2 (2000 uluna)
-const SWAP_FEE_STAY_IN_POOL_POOL2_2: u128 = 299u128; // ~15% of SWAP_AMOUNT_2K
-const PROTOCOL_FEE_POOL2_2: u128 = 0u128; // 0%
-const BURN_FEE_POOL2_2: u128 = 99u128; // ~5% of SWAP_AMOUNT_2K
-const TOTAL_FEES_POOL2_2: u128 = 398u128; // SWAP_FEE_STAY_IN_POOL_POOL2_2 + PROTOCOL_FEE_POOL2_2 + BURN_FEE_POOL2_2
-
-// Pool 3 Swap 1 (3000 uluna)
-const SWAP_FEE_STAY_IN_POOL_POOL3_1: u128 = 209u128; // ~7% of SWAP_AMOUNT_3K
-const PROTOCOL_FEE_POOL3_1: u128 = 299u128; // ~10% of SWAP_AMOUNT_3K
-const BURN_FEE_POOL3_1: u128 = 89u128; // ~3% of SWAP_AMOUNT_3K
-const TOTAL_FEES_POOL3_1: u128 = 597u128; // SWAP_FEE_STAY_IN_POOL_POOL3_1 + PROTOCOL_FEE_POOL3_1 + BURN_FEE_POOL3_1
-
-// Pool 3 Swap 2 (1500 uusd)
-const SWAP_FEE_STAY_IN_POOL_POOL3_2: u128 = 105u128; // ~7% of SWAP_AMOUNT_1_5K
-const PROTOCOL_FEE_POOL3_2: u128 = 150u128; // ~10% of SWAP_AMOUNT_1_5K
-const BURN_FEE_POOL3_2: u128 = 45u128; // ~3% of SWAP_AMOUNT_1_5K
-const TOTAL_FEES_POOL3_2: u128 = 300u128; // SWAP_FEE_STAY_IN_POOL_POOL3_2 + PROTOCOL_FEE_POOL3_2 + BURN_FEE_POOL3_2
 
 // Expected Pool Manager balances AFTER the final router swap in provide_liquidity_to_multiple_pools_check_fees
 const PM_ULUNA_BAL_AFTER_ROUTER: u128 = 3_003_570;
@@ -425,7 +385,7 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                         amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
                     },
                     Coin {
-                        denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        denom: WHALE_ULUNA_POOL_1_LP.to_string(),
                         amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
                     },
                     Coin {
@@ -483,7 +443,7 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                     PoolInfo {
                         pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
                         asset_denoms: vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()],
-                        lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        lp_denom: WHALE_ULUNA_POOL_1_LP.to_string(),
                         asset_decimals: vec![DECIMAL_PLACES, DECIMAL_PLACES],
                         assets: vec![
                             coin(POOL_1_WHALE_AFTER_SWAP_1, DENOM_UWHALE),
@@ -538,7 +498,7 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                     PoolInfo {
                         pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
                         asset_denoms: vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()],
-                        lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        lp_denom: WHALE_ULUNA_POOL_1_LP.to_string(),
                         asset_decimals: vec![DECIMAL_PLACES, DECIMAL_PLACES],
                         assets: vec![
                             coin(POOL_1_WHALE_AFTER_SWAP_2, DENOM_UWHALE),
@@ -818,7 +778,7 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                     amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
                 },
                 Coin {
-                    denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                    denom: WHALE_ULUNA_POOL_1_LP.to_string(),
                     amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
                 },
                 Coin {
@@ -881,7 +841,7 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                     PoolInfo {
                         pool_identifier: O_WHALE_ULUNA_POOL_1_ID.to_string(),
                         asset_denoms: vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()],
-                        lp_denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        lp_denom: WHALE_ULUNA_POOL_1_LP.to_string(),
                         asset_decimals: vec![DECIMAL_PLACES, DECIMAL_PLACES],
                         assets: vec![
                             coin(POOL_1_WHALE_AFTER_SWAP_2, DENOM_UWHALE),
@@ -990,7 +950,7 @@ fn provide_liquidity_to_multiple_pools_check_fees() {
                         amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
                     },
                     Coin {
-                        denom: O_WHALE_ULUNA_POOL_1_LP.to_string(),
+                        denom: WHALE_ULUNA_POOL_1_LP.to_string(),
                         amount: Uint128::from(CONTRACT_LP_BALANCE_1K),
                     },
                     Coin {
