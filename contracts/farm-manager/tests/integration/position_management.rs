@@ -22,7 +22,7 @@ const UOSMO_DENOM: &str = "uosmo";
 // Unlocking Durations (seconds)
 const UNLOCKING_DURATION_1_DAY: u64 = 86_400; // Minimum unlocking duration
 const UNLOCKING_DURATION_INVALID_LONG: u64 = 32_536_000;
-const UNLOCKING_DURATION_100K: u64 = 100_000;
+
 const UNLOCKING_DURATION_MAX_NEAR_YEAR: u64 = 31_556_926; // Nearly one year
 
 // Amounts (as u128, use with Uint128::new())
@@ -40,23 +40,14 @@ const LP_STAKE_AMOUNT_10K: u128 = 10_000;
 const EXPECTED_LP_WEIGHT_1K: u128 = 1_000; // For 1K stake with 1-day unlock
 const EXPECTED_LP_WEIGHT_2K: u128 = 2_000; // e.g. after 5k closed from 7k total, or 2k staked
 const EXPECTED_LP_WEIGHT_6K: u128 = 6_000; // e.g. 1k + 5k initial stakes
-const EXPECTED_LP_WEIGHT_1K_MAX_LOCK: u128 = 15_999; // ~16x multiplier for max lock, actual value
-const EXPECTED_LP_WEIGHT_2K_MAX_LOCK: u128 = 31_998; // ~16x multiplier for max lock, actual value
-
-const TOTAL_LP_IN_USER_POS_AT_7K: u128 = 7_000; // Max amount in u-creator_position (1k+5k+1k)
 
 const CLAIMED_REWARDS_UUSDY_2K: u128 = 2_000;
-const TOTAL_REWARDS_UUSDY_6K: u128 = 6_000;
-
-const EMERGENCY_WITHDRAW_FEE_LP_500: u128 = 500;
 
 // Position Identifiers (user-provided)
 const USER_POS_ID_CREATOR: &str = "creator_position";
 const USER_POS_ID_SPECIAL: &str = "special_position";
-const USER_POS_ID_INVALID_LP: &str = "a_new_position_with_invalid_lp";
+
 const USER_POS_ID_TO_BE_CLOSED_FULL: &str = "to_be_closed_in_full";
-const USER_POS_ID_NON_EXISTENT: &str = "non_existent_position";
-const USER_POS_ID_NON_EXISTENT_DUNDER: &str = "non_existent__position";
 
 // Generated Position Identifiers (contract-generated, specific to test_manage_position flow)
 const GEN_USER_POS_ID_CREATOR: &str = "u-creator_position";
@@ -428,7 +419,7 @@ pub fn test_manage_position() {
         .manage_position(
             &creator,
             PositionAction::Close {
-                identifier: USER_POS_ID_NON_EXISTENT_DUNDER.to_string(),
+                identifier: "non_existent__position".to_string(),
                 lp_asset: Some(Coin {
                     denom: lp_denom.clone(),
                     amount: Uint128::new(LP_STAKE_AMOUNT_4K),
@@ -493,7 +484,7 @@ pub fn test_manage_position() {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
                     ContractError::InvalidLpAmount { expected, actual } => {
-                        assert_eq!(expected, Uint128::new(TOTAL_LP_IN_USER_POS_AT_7K)); // 1k+5k+1k = 7k in the position before this close attempt
+                        assert_eq!(expected, Uint128::new(7_000)); // 1k+5k+1k = 7k in the position before this close attempt
                         assert_eq!(actual, Uint128::new(LP_STAKE_AMOUNT_10K));
                     }
                     _ => panic!("Wrong error type, should return ContractError::InvalidLpAmount"),
@@ -564,7 +555,7 @@ pub fn test_manage_position() {
         .manage_position(
             &creator,
             PositionAction::Withdraw {
-                identifier: USER_POS_ID_NON_EXISTENT.to_string(),
+                identifier: "non_existent_position".to_string(),
                 emergency_unlock: None,
             },
             vec![],
@@ -618,7 +609,7 @@ pub fn test_manage_position() {
                             // Epoch 4 active with 2k LP. Rewards = 2k
                             // Epoch 5 active with 2k LP. Rewards = 2k
                             // Total = 8k. But earlier 2k was already claimed. So 6k pending.
-                            amount: Uint128::new(TOTAL_REWARDS_UUSDY_6K),
+                            amount: Uint128::new(6_000),
                         }
                     );
                 }
@@ -812,7 +803,7 @@ pub fn test_manage_position() {
             &another,
             PositionAction::Create {
                 identifier: Some(USER_POS_ID_SPECIAL.to_string()),
-                unlocking_duration: UNLOCKING_DURATION_100K,
+                unlocking_duration: 100_000,
                 receiver: None,
             },
             vec![coin(LP_STAKE_AMOUNT_5K, lp_denom.clone())],
@@ -924,7 +915,7 @@ pub fn test_manage_position() {
             },
         )
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(EMERGENCY_WITHDRAW_FEE_LP_500)); // 10% of 5k
+            assert_eq!(balance, Uint128::new(500)); // 10% of 5k
         });
 
     // trying to open a position with an invalid lp which has not been created by the pool manager
@@ -932,7 +923,7 @@ pub fn test_manage_position() {
     suite.manage_position(
         &other,
         PositionAction::Create {
-            identifier: Some(USER_POS_ID_INVALID_LP.to_string()),
+            identifier: Some("a_new_position_with_invalid_lp".to_string()),
             unlocking_duration: UNLOCKING_DURATION_1_DAY,
             receiver: None,
         },
@@ -1856,10 +1847,7 @@ fn test_refill_position_uses_current_position_unlocking_period() {
             // Epoch after create (max lock)
             let response = result.unwrap();
             // ~16x multiplier for the large unlocking period with an 1_000 lp position
-            assert_eq!(
-                response.lp_weight,
-                Uint128::new(EXPECTED_LP_WEIGHT_1K_MAX_LOCK)
-            );
+            assert_eq!(response.lp_weight, Uint128::new(15_999));
         })
         .manage_position(
             &creator,
@@ -1908,10 +1896,7 @@ fn test_refill_position_uses_current_position_unlocking_period() {
             // Same epoch, after expand
             let response = result.unwrap();
             // the weight shouldn\'t be affected by the low unlocking period used in the refill
-            assert_eq!(
-                response.lp_weight,
-                Uint128::new(EXPECTED_LP_WEIGHT_2K_MAX_LOCK)
-            );
+            assert_eq!(response.lp_weight, Uint128::new(31_998));
         });
 }
 

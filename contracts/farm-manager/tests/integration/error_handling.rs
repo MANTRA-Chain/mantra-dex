@@ -21,7 +21,7 @@ const INVALID_ID_TOO_LONG: &str =
     "7105920181635468364293788789264771059201816354683642937887892647a";
 const INVALID_ID_NON_ASCII: &str = "感";
 const INVALID_ID_SQL_INJECTION_LIKE: &str = "INSERT INTO my_table (my_string) VALUES (values)";
-const VALID_ID: &str = "7105920181635468364293788789264771059201816354683642937887892647";
+
 const LP_STAKE_AMOUNT: u128 = 5_000;
 
 #[test]
@@ -156,7 +156,10 @@ fn test_farm_and_position_id_validation() {
                         denom: UUSDY_DENOM.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT),
                     },
-                    farm_identifier: Some(VALID_ID.to_string()),
+                    farm_identifier: Some(
+                        "7105920181635468364293788789264771059201816354683642937887892647"
+                            .to_string(),
+                    ),
                 },
             },
             vec![coin(FARM_ASSET_AMOUNT, UUSDY_DENOM), coin(1_000, "uom")],
