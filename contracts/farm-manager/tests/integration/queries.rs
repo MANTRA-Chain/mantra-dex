@@ -173,14 +173,10 @@ fn test_rewards_query_overlapping_farms() {
             },
         );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 13);
-        });
+    suite.add_epochs(3).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 13);
+    });
 
     suite.query_rewards(&creator, None, |result| {
         let rewards_response = result.unwrap();
@@ -374,16 +370,10 @@ fn test_query_rewards_divide_by_zero() {
         },
     );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 5);
-        });
+    suite.add_epochs(5).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 5);
+    });
 
     suite.query_rewards(&creator, None, |result| {
         result.unwrap();
@@ -431,20 +421,17 @@ fn test_query_rewards_divide_by_zero() {
             result.unwrap_err();
         });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_rewards(&creator, None, |result| {
-            let rewards_response = result.unwrap();
-            match rewards_response {
-                RewardsResponse::RewardsResponse { total_rewards, .. } => {
-                    assert!(total_rewards.is_empty());
-                }
-                _ => {
-                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
-                }
+    suite.add_epochs(2).query_rewards(&creator, None, |result| {
+        let rewards_response = result.unwrap();
+        match rewards_response {
+            RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                assert!(total_rewards.is_empty());
             }
-        });
+            _ => {
+                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+            }
+        }
+    });
 
     // open a new position
     suite.manage_position(
@@ -497,20 +484,17 @@ fn test_query_rewards_divide_by_zero() {
             result.unwrap_err();
         });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_rewards(&creator, None, |result| {
-            let rewards_response = result.unwrap();
-            match rewards_response {
-                RewardsResponse::RewardsResponse { total_rewards, .. } => {
-                    assert!(!total_rewards.is_empty());
-                }
-                _ => {
-                    panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
-                }
+    suite.add_epochs(2).query_rewards(&creator, None, |result| {
+        let rewards_response = result.unwrap();
+        match rewards_response {
+            RewardsResponse::RewardsResponse { total_rewards, .. } => {
+                assert!(!total_rewards.is_empty());
             }
-        });
+            _ => {
+                panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
+            }
+        }
+    });
 
     // let's emergency withdraw the new position
     suite
@@ -651,16 +635,10 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         },
     );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 5);
-        });
+    suite.add_epochs(5).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 5);
+    });
 
     suite.query_rewards(&bob, None, |result| {
         result.unwrap();
@@ -708,9 +686,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
             result.unwrap_err();
         });
 
-    suite
-        .add_one_epoch() //6
-        .add_one_epoch(); //7
+    suite.add_epochs(2); //6 & 7
 
     // open a new position
     suite.manage_position(

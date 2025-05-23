@@ -299,9 +299,7 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
                 );
             },
         )
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
+        .add_epochs(3)
         // rewards are pending to be claimed
         .query_rewards(&other, None, |result| {
             let response = result.unwrap();
@@ -1006,7 +1004,7 @@ pub fn can_emergency_withdraw_an_lp_without_farm() {
             },
         );
 
-    suite.add_one_epoch().add_one_epoch();
+    suite.add_epochs(2);
 
     // withdraw the position
     suite.manage_position(
@@ -1108,16 +1106,10 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
         },
     );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_5_MPCEW);
-        });
+    suite.add_epochs(5).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_5_MPCEW);
+    });
 
     // then bob joins alice after a few epochs, having positions in both farms
     suite
@@ -1207,14 +1199,10 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
         });
 
     // last claimed epoch for alice = 5
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_8_MPCEW);
-        });
+    suite.add_epochs(3).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_8_MPCEW);
+    });
 
     // then carol joins alice and bob after a few epochs
     suite.manage_position(
@@ -1417,7 +1405,7 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
             result.unwrap();
         });
 
-    suite.add_one_epoch().add_one_epoch();
+    suite.add_epochs(2);
 
     suite
         .manage_position(
@@ -1605,14 +1593,10 @@ fn _test_managing_positions_close_and_emergency_withdraw() {
             assert_eq!(balance, Uint128::new(INITIAL_USER_BALANCE + 322u128)); // Derived
         });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_18_MPCEW);
-        });
+    suite.add_epochs(3).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_18_MPCEW);
+    });
 
     suite
         .query_rewards(&bob, None, |result| {

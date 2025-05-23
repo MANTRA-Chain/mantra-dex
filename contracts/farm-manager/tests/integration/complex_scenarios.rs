@@ -253,14 +253,10 @@ fn test_multiple_farms_and_positions() {
             },
         );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_13);
-        });
+    suite.add_epochs(3).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_13);
+    });
 
     // other fills a position
     suite
@@ -289,13 +285,10 @@ fn test_multiple_farms_and_positions() {
             },
         );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_15);
-        });
+    suite.add_epochs(2).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_15);
+    });
 
     suite
         .query_farms(
@@ -373,15 +366,10 @@ fn test_multiple_farms_and_positions() {
             );
         });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_19);
-        });
+    suite.add_epochs(4).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_19);
+    });
 
     // other emergency unlocks mid-way farm 2
     suite
@@ -506,21 +494,10 @@ fn test_multiple_farms_and_positions() {
     );
 
     // creator that had 100% now has ~70% of the weight, while another has ~30%
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_30);
-        });
+    suite.add_epochs(10).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_30);
+    });
 
     suite
         .claim(&creator, vec![], None, |result| {
@@ -685,16 +662,10 @@ fn test_multiple_farms_and_positions() {
         },
     );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, EPOCH_ID_35);
-        });
+    suite.add_epochs(5).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, EPOCH_ID_35);
+    });
 
     suite
         .claim(&creator, vec![], None, |result| {
@@ -746,16 +717,10 @@ fn test_multiple_farms_and_positions() {
 
     // now the epochs go by, the farm expires and the creator withdraws the rest of the rewards
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, FINAL_EPOCH_ID_FOR_TEST);
-        });
+    suite.add_epochs(5).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, FINAL_EPOCH_ID_FOR_TEST);
+    });
 
     suite.manage_farm(
         &creator,

@@ -962,13 +962,10 @@ fn cant_expand_farm_too_late() {
             },
         );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 2);
-        });
+    suite.add_epochs(2).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 2);
+    });
 
     suite
         .manage_farm(
@@ -1019,13 +1016,10 @@ fn cant_expand_farm_too_late() {
             },
         );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 4);
-        });
+    suite.add_epochs(2).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 4);
+    });
 
     suite.manage_farm(
         &creator,

@@ -595,8 +595,7 @@ pub fn test_manage_position() {
                 }
             },
         )
-        .add_one_epoch()
-        .add_one_epoch()
+        .add_epochs(2)
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 5);
@@ -807,8 +806,7 @@ pub fn test_manage_position() {
         );
 
     suite // Epoch 7, 8
-        .add_one_epoch()
-        .add_one_epoch()
+        .add_epochs(2)
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 8);
@@ -1145,8 +1143,7 @@ pub fn test_withdrawing_open_positions_updates_weight() {
         });
 
     suite
-        .add_one_epoch()
-        .add_one_epoch()
+        .add_epochs(2)
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 2);
