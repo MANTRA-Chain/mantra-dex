@@ -25,8 +25,6 @@ const UUSDC_UUSDT_UUSDY_POOL_LABEL: &str = "uusdc.uusdt.uusdy";
 const O_UUSDC_UUSDT_UUSDY_ID: &str = "o.uusdc.uusdt.uusdy";
 
 // ========== Test Parameters ==========
-const SLIPPAGE_TOLERANCE: &str = "0.002";
-const SLIPPAGE_TOLERANCE_HIGH: &str = "0.003";
 
 // ========== Expected Values ==========
 const EXPECTED_LP_AMOUNT_FIRST: u128 = LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128();

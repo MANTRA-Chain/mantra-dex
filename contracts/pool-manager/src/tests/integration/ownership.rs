@@ -2,7 +2,7 @@ use cosmwasm_std::{coin, Addr, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 
 use super::super::suite::TestingSuite;
-use crate::{tests::suite::TestingSuite as OldTestingSuite, ContractError};
+use crate::ContractError;
 use test_utils::common_constants::{DENOM_UOM, STARGATE_MOCK_UOM_AMOUNT};
 
 // Test constants
