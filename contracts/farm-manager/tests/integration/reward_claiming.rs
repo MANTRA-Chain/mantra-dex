@@ -106,10 +106,7 @@ fn claim_expired_farm_returns_nothing() {
     // create a couple of epochs to make the farm active
 
     suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
+        .add_epochs(4)
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 14);
@@ -414,9 +411,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
     // another has 50% of the weight, with only 1 position
     // both should get an equal amount of rewards when claiming
     suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
+        .add_epochs(3)
         .query_current_epoch(|result| {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 13);
@@ -628,14 +623,10 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             );
         });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 16);
-        });
+    suite.add_epochs(3).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 16);
+    });
 
     // other claims
     suite
@@ -787,9 +778,7 @@ fn user_can_claim_expired_epochs() {
 
     // create enough epochs to make the farm expire
     // should expire at epoch 16 + config.farm_expiration_time, i.e. 16 + 30 = 46
-    for _ in 0..100 {
-        suite.add_one_epoch();
-    }
+    suite.add_epochs(100);
 
     suite
         .query_current_epoch(|result| {
@@ -1422,16 +1411,10 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
         },
     );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 5);
-        });
+    suite.add_epochs(5).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 5);
+    });
 
     suite.query_rewards(&bob, None, |result| {
         result.unwrap();
@@ -1479,9 +1462,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
             result.unwrap_err();
         });
 
-    suite
-        .add_one_epoch() //6
-        .add_one_epoch(); //7
+    suite.add_epochs(2); //6 & 7
 
     // open a new position
     suite.manage_position(
@@ -1670,16 +1651,10 @@ fn test_claim_until_epoch() {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 8);
-        });
+    suite.add_epochs(5).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 8);
+    });
 
     // epoch 8
 
@@ -1763,17 +1738,10 @@ fn test_claim_until_epoch() {
         }
     });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 14);
-        });
+    suite.add_epochs(6).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 14);
+    });
 
     suite
         .query_rewards(&bob, None, |result| {
@@ -1911,13 +1879,10 @@ fn test_claim_until_epoch_closing_positions() {
             },
         );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 2);
-        });
+    suite.add_epochs(2).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 2);
+    });
 
     suite.manage_position(
         &bob,
@@ -2011,13 +1976,10 @@ fn test_claim_until_epoch_closing_positions() {
             );
         });
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 4);
-        });
+    suite.add_epochs(2).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 4);
+    });
 
     suite.query_rewards(&bob, None, |result| {
         let rewards_response = result.unwrap();
@@ -2140,13 +2102,10 @@ fn test_claiming_while_expanding_farm() {
         },
     );
 
-    suite
-        .add_one_epoch()
-        .add_one_epoch()
-        .query_current_epoch(|result| {
-            let epoch_response = result.unwrap();
-            assert_eq!(epoch_response.epoch.id, 3);
-        });
+    suite.add_epochs(2).query_current_epoch(|result| {
+        let epoch_response = result.unwrap();
+        assert_eq!(epoch_response.epoch.id, 3);
+    });
 
     suite
         .query_balance("uusdy".to_string(), &bob, |balance| {
