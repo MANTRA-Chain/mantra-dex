@@ -45,3 +45,4 @@ proptest.workspace              = true
 rand.workspace                  = true
 stable-swap-sim                 = { path = "sim", version = "^0.1" }
 test-case.workspace             = true
+test-utils                      = { path = "../../test-utils" }
