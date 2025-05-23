@@ -22,7 +22,6 @@ const INITIAL_LARGE_BALANCE: u128 = 10_000_000u128;
 const INITIAL_SMALL_BALANCE: u128 = 10_000u128;
 const STARGATE_MOCK_UOM_AMOUNT: u128 = 8888u128;
 const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = 1000u128;
-// const POOL_CREATION_FEE_UOM_AMOUNT: u128 = 8888u128; // This is same as STARGATE_MOCK_UOM_AMOUNT
 
 const LIQUIDITY_AMOUNT_1M: u128 = 1_000_000u128;
 const LIQUIDITY_AMOUNT_2K: u128 = 2_000u128;
@@ -37,7 +36,6 @@ const ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA: &str = "o.whale.uluna"; // Used to d
 const UNLOCK_DURATION_ONE_DAY: u64 = 86_400u64;
 const UNLOCK_DURATION_OTHER: u64 = 200_000u64;
 const POSITION_IDENTIFIER_1: &str = "p-1";
-const POSITION_IDENTIFIER_2: &str = "p-2";
 const FARM_IDENTIFIER: &str = "farm_identifier";
 const USER_FARM_IDENTIFIER: &str = "u-farm_identifier";
 
@@ -255,7 +253,7 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
             assert_eq!(
                 positions[1],
                 Position {
-                    identifier: POSITION_IDENTIFIER_2.to_string(),
+                    identifier: "p-2".to_string(),
                     lp_asset: Coin {
                         denom: lp_denom.to_string(),
                         amount: Uint128::from(LIQUIDITY_AMOUNT_2K)

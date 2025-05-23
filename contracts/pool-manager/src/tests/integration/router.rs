@@ -19,7 +19,6 @@ const POOL_IDENTIFIER_LUNA_USD: &str = "o.uluna.uusd";
 
 // Fee percentages
 const DEFAULT_FEE_BPS: u64 = 50; // 0.5%
-const SLIPPAGE_TOLERANCE: u64 = 2; // 2%
 
 // Expected values
 const EXPECTED_ADDED_SHARES: &str = "999000";
@@ -36,11 +35,6 @@ const SWAP_RESULT_USD: u128 = 998;
 
 // Additional constants for query_swap_operations test
 const LARGE_SWAP_AMOUNT: u128 = 10_000;
-const LARGE_SLIPPAGE_TOLERANCE: u64 = 5; // 5%
-const SIMULATED_RESULT_AFTER_PRICE_CHANGE: u128 = 935;
-const REVERSE_SIMULATION_EXPECTED_AMOUNT: u128 = 1_007;
-const REVERSE_SIMULATION_TOLERANCE: &str = "0.1";
-const INITIAL_SIMULATION_TOLERANCE: &str = "0.006";
 
 // Add after the imports:
 const DENOM_WHALE: &str = DENOM_UWHALE;
@@ -202,7 +196,7 @@ fn basic_swap_operations_test() {
         swap_operations,
         None,
         None,
-        Some(Decimal::percent(SLIPPAGE_TOLERANCE)),
+        Some(Decimal::percent(2)),
         vec![coin(SWAP_AMOUNT, DENOM_WHALE.to_string())],
         |result| {
             result.unwrap();
@@ -1033,11 +1027,7 @@ fn query_swap_operations() {
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();
-            assert_approx_eq!(
-                result.offer_amount.u128(),
-                SWAP_AMOUNT,
-                INITIAL_SIMULATION_TOLERANCE
-            );
+            assert_approx_eq!(result.offer_amount.u128(), SWAP_AMOUNT, "0.006");
         },
     );
 
@@ -1065,7 +1055,7 @@ fn query_swap_operations() {
             swap_operations.clone(),
             None,
             None,
-            Some(Decimal::percent(LARGE_SLIPPAGE_TOLERANCE)),
+            Some(Decimal::percent(5)), // 5%
             vec![coin(LARGE_SWAP_AMOUNT, DENOM_WHALE.to_string())],
             |result| {
                 result.unwrap();
@@ -1078,11 +1068,7 @@ fn query_swap_operations() {
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();
-            assert_approx_eq!(
-                result.offer_amount.u128(),
-                REVERSE_SIMULATION_EXPECTED_AMOUNT,
-                REVERSE_SIMULATION_TOLERANCE
-            );
+            assert_approx_eq!(result.offer_amount.u128(), 1_007, "0.1");
         },
     );
 
@@ -1092,10 +1078,7 @@ fn query_swap_operations() {
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();
-            assert_eq!(
-                result.return_amount.u128(),
-                SIMULATED_RESULT_AFTER_PRICE_CHANGE
-            );
+            assert_eq!(result.return_amount.u128(), 935);
         },
     );
 }

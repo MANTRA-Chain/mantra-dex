@@ -36,7 +36,6 @@ const UOM_USDC_POOL_ID_RAW: &str = "p.1"; // Raw, because suite.get_lp_denom() i
 const SWAP_FEE_PERMILLE: u64 = 30;
 const UOM_LIQUIDITY_AMOUNT: u128 = 1_500_000u128;
 const USDC_LIQUIDITY_AMOUNT: u128 = 1_000_000u128;
-const EXPECTED_LP_SHARES_RIGHT_EMISSION: u128 = 1_223_744u128; // Original value was 1_223_744, (sqrt(1.5m * 1m) - 1k)
 
 // For withdraw_liquidity_burns_proportional_lp_shares test
 const ULUNA_LIQUIDITY_AMOUNT: u128 = 2_000_000u128;
@@ -257,8 +256,7 @@ fn provide_liquidity_emits_right_lp_shares() {
 
             // user should have (sqrt(1.5 * 1_000_000 * 1 * 1_000_000) - 1_000) LP shares = 1_224_744 - 1000 = 1_223_744
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom
-                    && coin.amount == Uint128::new(EXPECTED_LP_SHARES_RIGHT_EMISSION)
+                coin.denom == lp_denom && coin.amount == Uint128::new(1_223_744u128)
             }));
         })
         // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
