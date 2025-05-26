@@ -23,7 +23,7 @@ const UUSDT_DENOM: &str = "uusdt";
 // Constants for pool identifiers
 const WHALE_ULUNA_POOL_RAW: &str = "whale.uluna";
 const WHALE_ULUNA_POOL_ID: &str = "o.whale.uluna";
-const UOM_UUSD_POOL_RAW: &str = "uom.uusd";
+
 const UOM_UUSD_POOL_ID: &str = "o.uom.uusd";
 const ULUNA_UUSD_POOL_RAW: &str = "uluna.uusd";
 const ULUNA_UUSD_POOL_ID: &str = "o.uluna.uusd";
@@ -33,12 +33,10 @@ const P1_POOL_ID: &str = "p.1";
 const ONE_MILLION_U128: Uint128 = Uint128::new(1_000_000u128);
 const ONE_THOUSAND_U128: Uint128 = Uint128::new(1000u128);
 const EIGHT_EIGHT_EIGHT_EIGHT_U128: Uint128 = Uint128::new(8888u128);
-const UOM_LIQUIDITY_RESERVES: Uint128 = Uint128::new(1_000_000u128);
-const UUSD_LIQUIDITY_RESERVES_UOM_POOL: Uint128 = Uint128::new(6_000_000u128);
+
 const ULUNA_LIQUIDITY_RESERVES: Uint128 = Uint128::new(3_000_000u128);
 const UUSD_LIQUIDITY_RESERVES_ULUNA_POOL: Uint128 = Uint128::new(1_000_000u128);
-const SWAP_OFFER_1000_UUSD_U128: Uint128 = Uint128::new(1000u128); // Renamed to avoid conflict with ONE_THOUSAND_U128 if used differently
-const SWAP_OFFER_1000_UOM_U128: Uint128 = Uint128::new(1_000u128); // Renamed
+
 #[allow(clippy::inconsistent_digit_grouping)]
 const BALANCE_1T_U128: Uint128 = Uint128::new(1_000_000_000_000u128);
 
@@ -54,20 +52,13 @@ static DEFAULT_SWAP_FEE_SHARE: LazyLock<Decimal> =
 static DECIMAL_ZERO: LazyLock<Decimal> = LazyLock::new(Decimal::zero);
 
 // Fee Shares for specific tests
-static STABLE_SWAP_PROTOCOL_FEE_SHARE: LazyLock<Decimal> =
-    LazyLock::new(|| Decimal::from_ratio(1u128, 1000u128));
-static STABLE_SWAP_SWAP_FEE_SHARE: LazyLock<Decimal> =
-    LazyLock::new(|| Decimal::from_ratio(1u128, 10_000u128));
-static SWAP_FEE_SHARE_FOR_FEES_TEST: LazyLock<Decimal> =
-    LazyLock::new(|| Decimal::from_ratio(2u128, 100_000u128));
-static SWAP_FEE_PERMILLE_30: LazyLock<Decimal> = LazyLock::new(|| Decimal::permille(30));
+
 static SWAP_FEE_PERMILLE_5: LazyLock<Decimal> = LazyLock::new(|| Decimal::permille(5));
 
 // Other specific constants
 const STABLE_SWAP_AMP: u64 = 100;
 const LIQUIDITY_1B_U128: Uint128 = Uint128::new(1000_000000u128);
 const OFFER_10M_UWHALE_U128: Uint128 = Uint128::new(10000000u128);
-const EXPECTED_FEE_COLLECTOR_BALANCE_ULUNA_U128: Uint128 = Uint128::new(99u128);
 
 // -- Constants for swap_large_digits_xyk --
 #[allow(clippy::inconsistent_digit_grouping)]
@@ -75,18 +66,12 @@ const BALANCE_UOM_150T_XYK: Uint128 = Uint128::new(150_000_000_000_000_000000u12
 #[allow(clippy::inconsistent_digit_grouping)]
 const BALANCE_AUSDY_100Q_XYK: Uint128 = Uint128::new(100_000_000_000_000_000000000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const BALANCE_UUSDC_100T_XYK: Uint128 = Uint128::new(100_000_000_000_000_000000u128);
-
-const LIQUIDITY_UOM_150T_XYK: Uint128 = BALANCE_UOM_150T_XYK; // Same as balance for provider
-const LIQUIDITY_AUSDY_100Q_XYK: Uint128 = BALANCE_AUSDY_100Q_XYK; // Same as balance for provider
-
 #[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_2Q_AUSDY_XYK: Uint128 = Uint128::new(2_000_000_000_000_000000000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_10T_UOM_XYK: Uint128 = Uint128::new(10_000_000_000_000_000000u128);
 
 #[allow(clippy::inconsistent_digit_grouping)]
-const EXPECTED_LP_SHARES_XYK: Uint128 = Uint128::new(122_474_487_139_158_904_909_863_203u128);
 #[allow(clippy::inconsistent_digit_grouping)]
 const SIMULATED_RETURN_2_852T_UOM_XYK: Uint128 = Uint128::new(2_852_941_176_470_588236u128);
 #[allow(clippy::inconsistent_digit_grouping)]
@@ -99,7 +84,6 @@ const BALANCE_UUSDC_100T_STABLE: Uint128 = Uint128::new(100_000_000_000_000_0000
 #[allow(clippy::inconsistent_digit_grouping)]
 const BALANCE_AUSDY_100Q_STABLE: Uint128 = Uint128::new(100_000_000_000_000_000000000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const BALANCE_UOM_150T_STABLE: Uint128 = Uint128::new(150_000_000_000_000_000000u128);
 
 const LIQUIDITY_UUSDC_100T_STABLE: Uint128 = BALANCE_UUSDC_100T_STABLE;
 const LIQUIDITY_AUSDY_100Q_STABLE: Uint128 = BALANCE_AUSDY_100Q_STABLE;
@@ -130,19 +114,17 @@ const SWAP_50T_HIGH_PREC_U128: Uint128 = Uint128::new(50_000_000_000_000_0000000
 #[allow(clippy::inconsistent_digit_grouping)]
 const SIMULATED_RETURN_72_265T_HIGH_PREC_U128: Uint128 =
     Uint128::new(72_265_093_054_925_102133454380390377u128);
-static DECIMAL_PERCENT_20: LazyLock<Decimal> = LazyLock::new(|| Decimal::percent(20));
+
 static DECIMAL_PERCENT_30: LazyLock<Decimal> = LazyLock::new(|| Decimal::percent(30));
 
 // -- Constants for swap_3pool_same_decimals --
 #[allow(clippy::inconsistent_digit_grouping)]
 const BALANCE_300T_3POOL_U128: Uint128 = Uint128::new(300_000_000_000_000_000000000000000000u128);
-const STABLE_SWAP_AMP_85: u64 = 85;
+
 const SWAP_OFFER_200M_UUSDC_U128: Uint128 = Uint128::new(200_000_000u128);
 const SIMULATED_RETURN_199_517_195_UUSDT_U128: Uint128 = Uint128::new(199_517_195u128);
 
 // -- Constants for swap_3pool_different_decimals --
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_200T_PICO_UUSDC_3POOL_DIFFERENT_DECIMALS: Uint128 = Uint128::new(200_000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_10K_ATTO_UUSDT_3POOL_DIFFERENT_DECIMALS: Uint128 =
     Uint128::new(10_000_000000000000000000u128);
@@ -150,16 +132,11 @@ static MAX_SLIPPAGE_PERCENT_30_3POOL_DIFFERENT_DECIMALS: LazyLock<Decimal> =
     LazyLock::new(|| Decimal::percent(30));
 
 // -- Constants for setup_3pool_different_decimals helper --
-const DEFAULT_AMP_3POOL: u64 = 85;
+
 #[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_INITIAL_BALANCE_BASE_3POOL: Uint128 = Uint128::new(300_000_000_000_000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_LIQUIDITY_VALUE_1_3POOL: Uint128 = Uint128::new(100_000_000_000_000_000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_LIQUIDITY_VALUE_2_3POOL: Uint128 = Uint128::new(100_000_000_000_000_000000000000u128);
 #[allow(clippy::inconsistent_digit_grouping)]
-const DEFAULT_LIQUIDITY_VALUE_3_3POOL: Uint128 =
-    Uint128::new(100_000_000_000_000_000000000000000000u128);
 
 const DECIMALS_6_U8: u8 = 6u8;
 const DECIMALS_12_U8: u8 = 12u8;
@@ -168,89 +145,38 @@ const DECIMALS_18_U8: u8 = 18u8;
 // -- Constants for swap_4pool_different_decimals and its setup helper --
 const UUSDX_DENOM: &str = "uusdx";
 
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL1: Uint128 = Uint128::new(200_000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL2: Uint128 = Uint128::new(200_000000000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL3: Uint128 = Uint128::new(10_000_000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL4: Uint128 = Uint128::new(10_000_000000000000000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL5: Uint128 = Uint128::new(1_000_000_000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL6: Uint128 = Uint128::new(1_000_000_000000000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL7: Uint128 = Uint128::new(5_000_000_000000000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SWAP_4POOL_VAL8: Uint128 = Uint128::new(5_000_000_000000000000000000u128);
-
 // -- Constants for simulation_vs_reverse_simulation_3pool --
-#[allow(clippy::inconsistent_digit_grouping)]
-const SIM_TEST_AMOUNT_UUSD_AS_OFFER_FOR_UUSDC: Uint128 = Uint128::new(333_000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SIM_TEST_AMOUNT_UUSDC_AS_OFFER_FOR_UUSDT: Uint128 = Uint128::new(5_000000000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SIM_TEST_AMOUNT_UUSDT_AS_OFFER_FOR_UUSD: Uint128 =
-    Uint128::new(10_000_000000000000000000u128);
-#[allow(clippy::inconsistent_digit_grouping)]
-const SIM_TEST_AMOUNT_UUSD_AS_OFFER_FOR_UUSDT: Uint128 = Uint128::new(1_000_000_000000u128);
 
 static ONE_BPS_DECIMAL_TOLERANCE: LazyLock<Decimal> =
     LazyLock::new(|| Decimal::from_ratio(1u128, 10000u128));
 
 // -- Constants for belief_price_works_decimals_independent --
 const UWETH_DENOM: &str = "uweth";
-const UUSD_UWETH_POOL_RAW: &str = "uusd.uweth";
+
 const UUSD_UWETH_POOL_ID: &str = "o.uusd.uweth";
 
 #[allow(clippy::inconsistent_digit_grouping)]
-const INITIAL_BALANCE_UUSD_BELIEF_PRICE: Uint128 = Uint128::new(1_000_000_000u128); // 1_000 * 10^6
 #[allow(clippy::inconsistent_digit_grouping)]
-const INITIAL_BALANCE_UWETH_BELIEF_PRICE: Uint128 =
-    Uint128::new(1_000_000_000_000_000000000000000000u128); // 10^12 * 10^18 = 10^30
-const INITIAL_BALANCE_UOM_BELIEF_PRICE: Uint128 = Uint128::new(10_000u128);
-
-const LIQUIDITY_UUSD_BELIEF_PRICE: Uint128 = Uint128::new(100_000_000u128); // 100 * 10^6
-#[allow(clippy::inconsistent_digit_grouping)]
-const LIQUIDITY_UWETH_BELIEF_PRICE: Uint128 = Uint128::new(100_00000000000000000000u128); // 100 * 10^18
-
 #[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_OFFER_UWETH_BELIEF_PRICE: Uint128 = Uint128::new(10_0000000000000000000u128); // 10 * 10^18
 const SWAP_OFFER_UUSD_BELIEF_PRICE: Uint128 = Uint128::new(10_000_000u128); // 10 * 10^6
 
 // -- Constants for compute_offer_amount_floor --
 #[allow(clippy::inconsistent_digit_grouping)]
-const INITIAL_BALANCE_ULUNA_COMPUTE_OFFER: Uint128 = Uint128::new(100_000_000_000_000u128); // 100_000_000 * 10^6
 #[allow(clippy::inconsistent_digit_grouping)]
-const INITIAL_BALANCE_UUSD_COMPUTE_OFFER: Uint128 = Uint128::new(100_000_000_000_000u128); // 100_000_000 * 10^6
-const INITIAL_BALANCE_UOM_COMPUTE_OFFER: Uint128 = Uint128::new(10_000u128);
-
 #[allow(clippy::inconsistent_digit_grouping)]
-const LIQUIDITY_ULUNA_COMPUTE_OFFER: Uint128 = Uint128::new(100_000_000_000u128); // 100_000 * 10^6
 #[allow(clippy::inconsistent_digit_grouping)]
-const LIQUIDITY_UUSD_COMPUTE_OFFER: Uint128 = Uint128::new(100_000_000_000u128); // 100_000 * 10^6
-
-const NEEDED_UUSD_COMPUTE_OFFER: Uint128 = Uint128::new(99_900_099u128);
 
 // -- Constants for providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals --
-const UUSDC_UUSDT_POOL_RAW: &str = "uusdc.uusdt";
-const UUSDC_UUSDT_POOL_ID: &str = "o.uusdc.uusdt";
 
-static SWAP_FEE_PERCENT_5_SKEWED_LIQ_TEST: LazyLock<Decimal> =
-    LazyLock::new(|| Decimal::percent(5));
+const UUSDC_UUSDT_POOL_ID: &str = "o.uusdc.uusdt";
 
 const ALICE_INITIAL_LIQ_BASE_SKEWED_TEST: Uint128 = Uint128::new(1_000u128);
 const BOB_INITIAL_LIQ_USDT_BASE_SKEWED_TEST: Uint128 = Uint128::new(110u128);
 const BOB_INITIAL_LIQ_USDC_BASE_SKEWED_TEST: Uint128 = Uint128::new(90u128);
 
 // -- Constants for basic_swapping_test --
-const BASIC_SWAP_INITIAL_UWHALE_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
-const BASIC_SWAP_INITIAL_ULUNA_BALANCE: Uint128 = Uint128::new(1_000_000_000u128);
-const BASIC_SWAP_INITIAL_UUSD_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
-const BASIC_SWAP_INITIAL_UOM_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
 
-const EVENT_KEY_ADDED_SHARES: &str = "added_shares";
 const EVENT_KEY_RETURN_AMOUNT: &str = "return_amount";
 const EVENT_KEY_OFFER_AMOUNT: &str = "offer_amount";
 const EVENT_TYPE_WASM: &str = "wasm";
@@ -259,54 +185,30 @@ const BASIC_SWAP_ASSERT_APPROX_TOLERANCE_A: &str = "0.002";
 const BASIC_SWAP_ASSERT_APPROX_TOLERANCE_B: &str = "0.003";
 
 // -- Constants for basic_swapping_pool_reserves_event_test --
-const POOL_RESERVES_INITIAL_UWHALE_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
-const POOL_RESERVES_INITIAL_ULUNA_BALANCE: Uint128 = Uint128::new(1_000_000_000u128);
-const POOL_RESERVES_INITIAL_UUSD_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
-const POOL_RESERVES_INITIAL_UOM_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
+
 const POOL_RESERVES_KEY_POOL_RESERVES: &str = "pool_reserves";
 const POOL_RESERVES_KEY_POOL_IDENTIFIER: &str = "pool_identifier";
 static POOL_RESERVES_DECIMAL_PERCENT_10: LazyLock<Decimal> = LazyLock::new(|| Decimal::percent(10));
 
 // -- Constants for basic_swapping_test_stable_swap_two_assets --
-const STABLE_SWAP_TWO_ASSETS_INITIAL_UWHALE_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
-const STABLE_SWAP_TWO_ASSETS_INITIAL_ULUNA_BALANCE: Uint128 = Uint128::new(1_000_000_000u128);
-const STABLE_SWAP_TWO_ASSETS_INITIAL_UUSD_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
-const STABLE_SWAP_TWO_ASSETS_INITIAL_UOM_BALANCE: Uint128 = Uint128::new(1_000_000_001u128);
+
 const STABLE_SWAP_TWO_ASSETS_LIQUIDITY_AMOUNT: Uint128 = Uint128::new(1_000_000u128);
 
-const SWAP_WITH_FEES_INITIAL_UWHALE_BALANCE: Uint128 = Uint128::new(1_000_000_000_001u128);
-const SWAP_WITH_FEES_INITIAL_ULUNA_BALANCE: Uint128 = Uint128::new(1_000_000_000_000u128);
-const SWAP_WITH_FEES_INITIAL_UUSD_BALANCE: Uint128 = Uint128::new(1_000_000_000_001u128);
-const SWAP_WITH_FEES_INITIAL_UOM_BALANCE: Uint128 = Uint128::new(1_000_000_000_001u128);
 const SWAP_WITH_FEES_LIQUIDITY_AMOUNT: Uint128 = LIQUIDITY_1B_U128; // Reuse existing constant
-const SWAP_WITH_FEES_ASSERT_APPROX_TOLERANCE: &str = "0.01"; // Allow 1% difference due to fees
 
 // -- Constants for swap_large_digits_xyk --
 const SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE: Uint128 = Uint128::new(1_000_000_000_000u128);
-const SWAP_LARGE_DIGITS_XYK_MAX_SLIPPAGE: Decimal = Decimal::percent(5);
-const SWAP_LARGE_DIGITS_XYK_MAX_SLIPPAGE_2: Decimal = Decimal::percent(20);
 
 // -- Constants for swap_large_digits_stable --
-const SWAP_LARGE_DIGITS_STABLE_MAX_SLIPPAGE_1: Decimal = Decimal::percent(6);
-const SWAP_LARGE_DIGITS_STABLE_MAX_SLIPPAGE_2: Decimal = Decimal::percent(10);
 
 #[test]
 fn basic_swapping_test() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(
-                BASIC_SWAP_INITIAL_UWHALE_BALANCE.u128(),
-                UWHALE_DENOM.to_string(),
-            ),
-            coin(
-                BASIC_SWAP_INITIAL_ULUNA_BALANCE.u128(),
-                ULUNA_DENOM.to_string(),
-            ),
-            coin(
-                BASIC_SWAP_INITIAL_UUSD_BALANCE.u128(),
-                UUSD_DENOM.to_string(),
-            ),
-            coin(BASIC_SWAP_INITIAL_UOM_BALANCE.u128(), UOM_DENOM.to_string()),
+            coin(1_000_000_001u128, UWHALE_DENOM.to_string()),
+            coin(1_000_000_000u128, ULUNA_DENOM.to_string()),
+            coin(1_000_000_001u128, UUSD_DENOM.to_string()),
+            coin(1_000_000_001u128, UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -388,7 +290,7 @@ fn basic_swapping_test() {
                 // Ensure we got 999_000 in the response which is 1mil less the initial liquidity amount
                 assert!(result.unwrap().events.iter().any(|event| {
                     event.attributes.iter().any(|attr| {
-                        attr.key == EVENT_KEY_ADDED_SHARES
+                        attr.key == "added_shares"
                             && attr.value
                                 == (ONE_MILLION_U128 - MINIMUM_LIQUIDITY_AMOUNT).to_string()
                     })
@@ -533,22 +435,10 @@ fn basic_swapping_test() {
 fn basic_swapping_pool_reserves_event_test() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(
-                POOL_RESERVES_INITIAL_UWHALE_BALANCE.u128(),
-                UWHALE_DENOM.to_string(),
-            ),
-            coin(
-                POOL_RESERVES_INITIAL_ULUNA_BALANCE.u128(),
-                ULUNA_DENOM.to_string(),
-            ),
-            coin(
-                POOL_RESERVES_INITIAL_UUSD_BALANCE.u128(),
-                UUSD_DENOM.to_string(),
-            ),
-            coin(
-                POOL_RESERVES_INITIAL_UOM_BALANCE.u128(),
-                UOM_DENOM.to_string(),
-            ),
+            coin(1_000_000_001u128, UWHALE_DENOM.to_string()),
+            coin(1_000_000_000u128, ULUNA_DENOM.to_string()),
+            coin(1_000_000_001u128, UUSD_DENOM.to_string()),
+            coin(1_000_000_001u128, UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -582,7 +472,7 @@ fn basic_swapping_pool_reserves_event_test() {
             vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some(UOM_UUSD_POOL_RAW.to_string()),
+            Some("uom.uusd".to_string()),
             vec![
                 coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM.to_string()),
                 coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM.to_string()),
@@ -617,11 +507,11 @@ fn basic_swapping_pool_reserves_event_test() {
             vec![
                 Coin {
                     denom: UOM_DENOM.to_string(),
-                    amount: UOM_LIQUIDITY_RESERVES,
+                    amount: Uint128::new(1_000_000u128),
                 },
                 Coin {
                     denom: UUSD_DENOM.to_string(),
-                    amount: UUSD_LIQUIDITY_RESERVES_UOM_POOL,
+                    amount: Uint128::new(6_000_000u128),
                 },
             ],
             |result| {
@@ -662,10 +552,7 @@ fn basic_swapping_pool_reserves_event_test() {
             None,
             None,
             UOM_UUSD_POOL_ID.to_string(),
-            vec![coin(
-                SWAP_OFFER_1000_UUSD_U128.u128(),
-                UUSD_DENOM.to_string(),
-            )],
+            vec![coin(1000u128, UUSD_DENOM.to_string())],
             |result| {
                 for event in result.unwrap().events {
                     if event.ty == EVENT_TYPE_WASM {
@@ -725,7 +612,7 @@ fn basic_swapping_pool_reserves_event_test() {
             None,
             None,
             Some(POOL_RESERVES_DECIMAL_PERCENT_10.clone()),
-            vec![coin(SWAP_OFFER_1000_UOM_U128.u128(), UOM_DENOM.to_string())],
+            vec![coin(1_000u128, UOM_DENOM.to_string())],
             |result| {
                 for event in result.unwrap().events {
                     if event.ty == EVENT_TYPE_WASM {
@@ -789,7 +676,7 @@ fn basic_swapping_pool_reserves_event_test() {
             None,
             None,
             Some(POOL_RESERVES_DECIMAL_PERCENT_10.clone()),
-            vec![coin(SWAP_OFFER_1000_UOM_U128.u128(), UOM_DENOM.to_string())],
+            vec![coin(1_000u128, UOM_DENOM.to_string())],
             |result| {
                 let mut pool_identifiers = vec![];
 
@@ -833,22 +720,10 @@ fn basic_swapping_pool_reserves_event_test() {
 fn basic_swapping_test_stable_swap_two_assets() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(
-                STABLE_SWAP_TWO_ASSETS_INITIAL_UWHALE_BALANCE.u128(),
-                UWHALE_DENOM.to_string(),
-            ),
-            coin(
-                STABLE_SWAP_TWO_ASSETS_INITIAL_ULUNA_BALANCE.u128(),
-                ULUNA_DENOM.to_string(),
-            ),
-            coin(
-                STABLE_SWAP_TWO_ASSETS_INITIAL_UUSD_BALANCE.u128(),
-                UUSD_DENOM.to_string(),
-            ),
-            coin(
-                STABLE_SWAP_TWO_ASSETS_INITIAL_UOM_BALANCE.u128(),
-                UOM_DENOM.to_string(),
-            ),
+            coin(1_000_000_001u128, UWHALE_DENOM.to_string()),
+            coin(1_000_000_000u128, ULUNA_DENOM.to_string()),
+            coin(1_000_000_001u128, UUSD_DENOM.to_string()),
+            coin(1_000_000_001u128, UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -865,10 +740,10 @@ fn basic_swapping_test_stable_swap_two_assets() {
     // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: *STABLE_SWAP_PROTOCOL_FEE_SHARE,
+            share: Decimal::from_ratio(1u128, 1000u128),
         },
         swap_fee: Fee {
-            share: *STABLE_SWAP_SWAP_FEE_SHARE,
+            share: Decimal::from_ratio(1u128, 10_000u128),
         },
         burn_fee: Fee {
             share: *DECIMAL_ZERO,
@@ -1038,22 +913,10 @@ fn basic_swapping_test_stable_swap_two_assets() {
 fn swap_with_fees() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(
-                SWAP_WITH_FEES_INITIAL_UWHALE_BALANCE.u128(),
-                UWHALE_DENOM.to_string(),
-            ),
-            coin(
-                SWAP_WITH_FEES_INITIAL_ULUNA_BALANCE.u128(),
-                ULUNA_DENOM.to_string(),
-            ),
-            coin(
-                SWAP_WITH_FEES_INITIAL_UUSD_BALANCE.u128(),
-                UUSD_DENOM.to_string(),
-            ),
-            coin(
-                SWAP_WITH_FEES_INITIAL_UOM_BALANCE.u128(),
-                UOM_DENOM.to_string(),
-            ),
+            coin(1_000_000_000_001u128, UWHALE_DENOM.to_string()),
+            coin(1_000_000_000_000u128, ULUNA_DENOM.to_string()),
+            coin(1_000_000_000_001u128, UUSD_DENOM.to_string()),
+            coin(1_000_000_000_001u128, UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -1073,7 +936,7 @@ fn swap_with_fees() {
             share: *DEFAULT_PROTOCOL_FEE_SHARE, // Reused as it's 1/100_000
         },
         swap_fee: Fee {
-            share: *SWAP_FEE_SHARE_FOR_FEES_TEST,
+            share: Decimal::from_ratio(2u128, 100_000u128),
         },
         burn_fee: Fee {
             share: *DECIMAL_ZERO,
@@ -1170,7 +1033,7 @@ fn swap_with_fees() {
             assert_approx_eq!(
                 offer_amount.parse::<u128>().unwrap(),
                 return_amount.parse::<u128>().unwrap(),
-                SWAP_WITH_FEES_ASSERT_APPROX_TOLERANCE
+                "0.01"
             );
         },
     );
@@ -1181,10 +1044,7 @@ fn swap_with_fees() {
         &suite.fee_collector_addr.to_string(),
         ULUNA_DENOM.to_string(),
         |result| {
-            assert_eq!(
-                result.unwrap().amount,
-                EXPECTED_FEE_COLLECTOR_BALANCE_ULUNA_U128
-            );
+            assert_eq!(result.unwrap().amount, Uint128::new(99u128));
         },
     );
 }
@@ -1210,7 +1070,7 @@ fn swap_large_digits_xyk() {
                 SWAP_LARGE_DIGITS_XYK_DEFAULT_BALANCE.u128(),
                 UUSD_DENOM.to_string(),
             ),
-            coin(BALANCE_UUSDC_100T_XYK.u128(), UUSDC_DENOM.to_string()),
+            coin(100_000_000_000_000_000000u128, UUSDC_DENOM.to_string()),
             coin(BALANCE_AUSDY_100Q_XYK.u128(), AUSDY_DENOM.to_string()),
             coin(BALANCE_UOM_150T_XYK.u128(), UOM_DENOM.to_string()),
         ],
@@ -1231,7 +1091,7 @@ fn swap_large_digits_xyk() {
             share: Decimal::zero(),
         },
         swap_fee: Fee {
-            share: *SWAP_FEE_PERMILLE_30,
+            share: Decimal::permille(30),
         },
         burn_fee: Fee {
             share: *DECIMAL_ZERO,
@@ -1272,11 +1132,11 @@ fn swap_large_digits_xyk() {
             vec![
                 Coin {
                     denom: UOM_DENOM.to_string(),
-                    amount: LIQUIDITY_UOM_150T_XYK,
+                    amount: BALANCE_UOM_150T_XYK,
                 },
                 Coin {
                     denom: AUSDY_DENOM.to_string(),
-                    amount: LIQUIDITY_AUSDY_100Q_XYK,
+                    amount: BALANCE_AUSDY_100Q_XYK,
                 },
             ],
             |result| {
@@ -1292,7 +1152,8 @@ fn swap_large_digits_xyk() {
         .query_all_balances(&bob.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == EXPECTED_LP_SHARES_XYK
+                coin.denom == lp_denom.clone()
+                    && coin.amount == Uint128::new(122_474_487_139_158_904_909_863_203u128)
             }));
         });
 
@@ -1322,7 +1183,7 @@ fn swap_large_digits_xyk() {
             &carol,
             UOM_DENOM.to_string(),
             None,
-            Some(SWAP_LARGE_DIGITS_XYK_MAX_SLIPPAGE),
+            Some(Decimal::percent(5)),
             None,
             P1_POOL_ID.to_string(),
             vec![coin(SWAP_2Q_AUSDY_XYK.u128(), AUSDY_DENOM.to_string())],
@@ -1369,7 +1230,7 @@ fn swap_large_digits_xyk() {
             &dan,
             AUSDY_DENOM.to_string(),
             None,
-            Some(SWAP_LARGE_DIGITS_XYK_MAX_SLIPPAGE_2),
+            Some(Decimal::percent(20)),
             None,
             P1_POOL_ID.to_string(),
             vec![coin(SWAP_10T_UOM_XYK.u128(), UOM_DENOM.to_string())],
@@ -1402,7 +1263,7 @@ fn swap_large_digits_stable() {
             coin(BALANCE_1T_U128.u128(), UUSD_DENOM.to_string()),
             coin(BALANCE_UUSDC_100T_STABLE.u128(), UUSDC_DENOM.to_string()),
             coin(BALANCE_AUSDY_100Q_STABLE.u128(), AUSDY_DENOM.to_string()),
-            coin(BALANCE_UOM_150T_STABLE.u128(), UOM_DENOM.to_string()),
+            coin(150_000_000_000_000_000000u128, UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -1519,7 +1380,7 @@ fn swap_large_digits_stable() {
             &carol,
             AUSDY_DENOM.to_string(),
             None,
-            Some(SWAP_LARGE_DIGITS_STABLE_MAX_SLIPPAGE_1),
+            Some(Decimal::percent(6)),
             None,
             P1_POOL_ID.to_string(),
             vec![coin(SWAP_10T_UUSDC_STABLE.u128(), UUSDC_DENOM.to_string())],
@@ -1566,7 +1427,7 @@ fn swap_large_digits_stable() {
             &dan,
             UUSDC_DENOM.to_string(),
             None,
-            Some(SWAP_LARGE_DIGITS_STABLE_MAX_SLIPPAGE_2),
+            Some(Decimal::percent(10)),
             None,
             P1_POOL_ID.to_string(),
             vec![coin(SWAP_20Q_AUSDY_STABLE.u128(), AUSDY_DENOM.to_string())],
@@ -1743,7 +1604,7 @@ fn swap_large_digits_stable_18_digits() {
             &carol,
             PUSDC_DENOM.to_string(),
             None,
-            Some(*DECIMAL_PERCENT_20),
+            Some(Decimal::percent(20)),
             None,
             P1_POOL_ID.to_string(),
             vec![coin(
@@ -1811,9 +1672,7 @@ fn swap_3pool_same_decimals() {
         asset_denoms,
         vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
         pool_fees,
-        PoolType::StableSwap {
-            amp: STABLE_SWAP_AMP_85,
-        },
+        PoolType::StableSwap { amp: 85 },
         None,
         vec![
             coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM),
@@ -1910,7 +1769,7 @@ fn swap_3pool_different_decimals() {
     let bob = suite.senders[1].clone();
 
     let return_amount = RefCell::new(Uint128::zero());
-    let mut current_swap_amount = SWAP_200T_PICO_UUSDC_3POOL_DIFFERENT_DECIMALS;
+    let mut current_swap_amount = Uint128::new(200_000000000000u128);
 
     let bob_uusdc_balance = RefCell::new(Uint128::zero());
     let bob_uusdt_balance = RefCell::new(Uint128::zero());
@@ -2093,7 +1952,7 @@ fn swap_4pool_different_decimals() {
     let bob = suite.senders[1].clone();
 
     let return_amount = RefCell::new(Uint128::zero());
-    let mut swap_amount = SWAP_4POOL_VAL1;
+    let mut swap_amount = Uint128::new(200_000000u128);
 
     let bob_uusdx_balance = RefCell::new(Uint128::zero());
     let bob_uusdc_balance = RefCell::new(Uint128::zero());
@@ -2273,7 +2132,7 @@ fn swap_4pool_different_decimals() {
 
     println!("uusdc -> uusd");
 
-    swap_amount = SWAP_4POOL_VAL2;
+    swap_amount = Uint128::new(200_000000000000u128);
     println!("swap_amount : {:?}", swap_amount);
 
     suite
@@ -2324,7 +2183,7 @@ fn swap_4pool_different_decimals() {
 
     println!("uusd -> uusdt");
 
-    swap_amount = SWAP_4POOL_VAL3;
+    swap_amount = Uint128::new(10_000_000000u128);
     println!("swap_amount : {:?}", swap_amount);
 
     suite
@@ -2375,7 +2234,7 @@ fn swap_4pool_different_decimals() {
 
     println!("uusdt -> uusd");
 
-    swap_amount = SWAP_4POOL_VAL4;
+    swap_amount = Uint128::new(10_000_000000000000000000u128);
     println!("swap_amount : {:?}", swap_amount);
 
     suite
@@ -2426,7 +2285,7 @@ fn swap_4pool_different_decimals() {
 
     println!("uusdx -> uusdc");
 
-    swap_amount = SWAP_4POOL_VAL5;
+    swap_amount = Uint128::new(1_000_000_000000u128);
     println!("swap_amount : {:?}", swap_amount);
 
     suite
@@ -2477,7 +2336,7 @@ fn swap_4pool_different_decimals() {
 
     println!("uusdc -> uusdt");
 
-    swap_amount = SWAP_4POOL_VAL6;
+    swap_amount = Uint128::new(1_000_000_000000000000u128);
     println!("swap_amount : {:?}", swap_amount);
 
     suite
@@ -2528,7 +2387,7 @@ fn swap_4pool_different_decimals() {
 
     println!("uusdt -> uusdc");
 
-    swap_amount = SWAP_4POOL_VAL7;
+    swap_amount = Uint128::new(5_000_000_000000000000u128);
     println!("swap_amount : {:?}", swap_amount);
 
     suite
@@ -2579,7 +2438,7 @@ fn swap_4pool_different_decimals() {
 
     println!("uusdc -> uusdt");
 
-    swap_amount = SWAP_4POOL_VAL8;
+    swap_amount = Uint128::new(5_000_000_000000000000000000u128);
     println!("swap_amount : {:?}", swap_amount);
 
     suite
@@ -2637,28 +2496,16 @@ fn simulation_vs_reverse_simulation_3pool() {
     // Test cases with different amounts and token pairs
     let test_cases = vec![
         // Small amounts
-        (
-            UUSD_DENOM,
-            UUSDC_DENOM,
-            SIM_TEST_AMOUNT_UUSD_AS_OFFER_FOR_UUSDC,
-        ),
-        (
-            UUSDC_DENOM,
-            UUSDT_DENOM,
-            SIM_TEST_AMOUNT_UUSDC_AS_OFFER_FOR_UUSDT,
-        ),
+        (UUSD_DENOM, UUSDC_DENOM, Uint128::new(333_000000u128)),
+        (UUSDC_DENOM, UUSDT_DENOM, Uint128::new(5_000000000000u128)),
         // Medium amounts
         (
             UUSDT_DENOM,
             UUSD_DENOM,
-            SIM_TEST_AMOUNT_UUSDT_AS_OFFER_FOR_UUSD,
+            Uint128::new(10_000_000000000000000000u128),
         ),
         // Large amounts
-        (
-            UUSD_DENOM,
-            UUSDT_DENOM,
-            SIM_TEST_AMOUNT_UUSD_AS_OFFER_FOR_UUSDT,
-        ),
+        (UUSD_DENOM, UUSDT_DENOM, Uint128::new(1_000_000_000000u128)),
     ];
     let mut decimals_by_denom: HashMap<String, u8> = HashMap::new();
     decimals_by_denom.insert(UUSD_DENOM.to_string(), DECIMALS_6_U8);
@@ -2759,18 +2606,12 @@ fn simulation_vs_reverse_simulation_3pool() {
 fn belief_price_works_decimals_independent() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
+            coin(1_000_000_000u128, UUSD_DENOM.to_string()),
             coin(
-                INITIAL_BALANCE_UUSD_BELIEF_PRICE.u128(),
-                UUSD_DENOM.to_string(),
-            ),
-            coin(
-                INITIAL_BALANCE_UWETH_BELIEF_PRICE.u128(),
+                1_000_000_000_000_000000000000000000u128,
                 UWETH_DENOM.to_string(),
             ),
-            coin(
-                INITIAL_BALANCE_UOM_BELIEF_PRICE.u128(),
-                UOM_DENOM.to_string(),
-            ),
+            coin(10_000u128, UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -2800,7 +2641,7 @@ fn belief_price_works_decimals_independent() {
                 extra_fees: vec![],
             },
             PoolType::ConstantProduct,
-            Some(UUSD_UWETH_POOL_RAW.to_string()),
+            Some("uusd.uweth".to_string()),
             vec![
                 coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM),
                 coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM),
@@ -2820,11 +2661,11 @@ fn belief_price_works_decimals_independent() {
             vec![
                 Coin {
                     denom: UUSD_DENOM.to_string(),
-                    amount: LIQUIDITY_UUSD_BELIEF_PRICE,
+                    amount: Uint128::new(100_000_000u128),
                 },
                 Coin {
                     denom: UWETH_DENOM.to_string(),
-                    amount: LIQUIDITY_UWETH_BELIEF_PRICE,
+                    amount: Uint128::new(100_00000000000000000000u128),
                 },
             ],
             |result| {
@@ -2910,18 +2751,9 @@ fn belief_price_works_decimals_independent() {
 fn compute_offer_amount_floor() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(
-                INITIAL_BALANCE_ULUNA_COMPUTE_OFFER.u128(),
-                ULUNA_DENOM.to_string(),
-            ),
-            coin(
-                INITIAL_BALANCE_UUSD_COMPUTE_OFFER.u128(),
-                UUSD_DENOM.to_string(),
-            ),
-            coin(
-                INITIAL_BALANCE_UOM_COMPUTE_OFFER.u128(),
-                UOM_DENOM.to_string(),
-            ),
+            coin(100_000_000_000_000u128, ULUNA_DENOM.to_string()),
+            coin(100_000_000_000_000u128, UUSD_DENOM.to_string()),
+            coin(10_000u128, UOM_DENOM.to_string()),
         ],
         StargateMock::new(vec![coin(
             EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(),
@@ -2972,11 +2804,11 @@ fn compute_offer_amount_floor() {
             vec![
                 Coin {
                     denom: ULUNA_DENOM.to_string(),
-                    amount: LIQUIDITY_ULUNA_COMPUTE_OFFER,
+                    amount: Uint128::new(100_000_000_000u128),
                 },
                 Coin {
                     denom: UUSD_DENOM.to_string(),
-                    amount: LIQUIDITY_UUSD_COMPUTE_OFFER,
+                    amount: Uint128::new(100_000_000_000u128),
                 },
             ],
             |result| {
@@ -2985,7 +2817,7 @@ fn compute_offer_amount_floor() {
         );
 
     // Need uusd amount (amount out)
-    let needed_uusd = NEEDED_UUSD_COMPUTE_OFFER;
+    let needed_uusd = Uint128::new(99_900_099u128);
     let offer_uluna = std::cell::RefCell::new(Uint128::zero());
 
     suite
@@ -3043,12 +2875,12 @@ fn setup_3pool_different_decimals(
     // Default values
     let decimals =
         asset_decimals.unwrap_or_else(|| vec![DECIMALS_6_U8, DECIMALS_12_U8, DECIMALS_18_U8]);
-    let amp_val = amp.unwrap_or(DEFAULT_AMP_3POOL);
+    let amp_val = amp.unwrap_or(85);
 
     // Default initial balances (300T for each token)
     // The original calculation was: 300_000_000_000_000u128 * 10u128.pow(18)
-    // DEFAULT_INITIAL_BALANCE_BASE_3POOL is 300_000_000_000_000u128
-    let initial_balance_val = DEFAULT_INITIAL_BALANCE_BASE_3POOL * Uint128::from(10u128.pow(18));
+    // 300_000_000_000_000u128 is the base balance
+    let initial_balance_val = Uint128::new(300_000_000_000_000u128) * Uint128::from(10u128.pow(18));
     let balances = initial_balances.unwrap_or_else(|| {
         vec![
             initial_balance_val,
@@ -3060,9 +2892,9 @@ fn setup_3pool_different_decimals(
     // Default initial liquidity (100T for each token)
     let liquidity = initial_liquidity.unwrap_or_else(|| {
         vec![
-            DEFAULT_LIQUIDITY_VALUE_1_3POOL,
-            DEFAULT_LIQUIDITY_VALUE_2_3POOL,
-            DEFAULT_LIQUIDITY_VALUE_3_3POOL,
+            Uint128::new(100_000_000_000_000_000000u128),
+            Uint128::new(100_000_000_000_000_000000000000u128),
+            Uint128::new(100_000_000_000_000_000000000000000000u128),
         ]
     });
 
@@ -3302,7 +3134,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
             share: Decimal::zero(),
         },
         swap_fee: Fee {
-            share: *SWAP_FEE_PERCENT_5_SKEWED_LIQ_TEST,
+            share: Decimal::percent(5),
         },
         burn_fee: Fee {
             share: *DECIMAL_ZERO,
@@ -3319,7 +3151,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
         PoolType::StableSwap {
             amp: STABLE_SWAP_AMP,
         }, // Reusing existing STABLE_SWAP_AMP
-        Some(UUSDC_UUSDT_POOL_RAW.to_string()),
+        Some("uusdc.uusdt".to_string()),
         vec![
             coin(ONE_THOUSAND_U128.u128(), UUSD_DENOM),
             coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), UOM_DENOM),
