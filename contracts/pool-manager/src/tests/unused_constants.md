@@ -100,41 +100,41 @@ Total files scanned: 12
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:450
 - [x] **POOL_1_WHALE_AFTER_SWAP_1** (used 1 times) - Removed successfully, inlined as 1_001_000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:449
-- [ ] **POOL_2_LUNA_AFTER_ROUTER_SWAP** (used 1 times)
+- [x] **POOL_2_LUNA_AFTER_ROUTER_SWAP** (used 1 times) - Removed successfully, inlined as 996_913u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:879
-- [ ] **POOL_2_LUNA_AFTER_SWAP_1** (used 1 times)
+- [x] **POOL_2_LUNA_AFTER_SWAP_1** (used 1 times) - Removed successfully, inlined as 999_150u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:568
-- [ ] **POOL_2_LUNA_AFTER_SWAP_2** (used 1 times)
+- [x] **POOL_2_LUNA_AFTER_SWAP_2** (used 1 times) - Removed successfully, inlined as 1_001_150u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:616
-- [ ] **POOL_2_WHALE_AFTER_ROUTER_SWAP** (used 1 times)
+- [x] **POOL_2_WHALE_AFTER_ROUTER_SWAP** (used 1 times) - Removed successfully, inlined as 1_004_300u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:878
-- [ ] **POOL_2_WHALE_AFTER_SWAP_1** (used 1 times)
+- [x] **POOL_2_WHALE_AFTER_SWAP_1** (used 1 times) - Removed successfully, inlined as 1_001_000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:567
-- [ ] **POOL_2_WHALE_AFTER_SWAP_2** (used 1 times)
+- [x] **POOL_2_WHALE_AFTER_SWAP_2** (used 1 times) - Removed successfully, inlined as 999_300u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:615
-- [ ] **POOL_3_LUNA_AFTER_ROUTER_SWAP** (used 1 times)
+- [x] **POOL_3_LUNA_AFTER_ROUTER_SWAP** (used 1 times) - Removed successfully, inlined as 1_005_587u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:909
-- [ ] **POOL_3_LUNA_AFTER_SWAP_1** (used 1 times)
+- [x] **POOL_3_LUNA_AFTER_SWAP_1** (used 1 times) - Removed successfully, inlined as 1_003_000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:680
-- [ ] **POOL_3_LUNA_AFTER_SWAP_2** (used 1 times)
+- [x] **POOL_3_LUNA_AFTER_SWAP_2** (used 1 times) - Removed successfully, inlined as 1_001_599u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:736
-- [ ] **POOL_3_UUSD_AFTER_ROUTER_SWAP** (used 1 times)
+- [x] **POOL_3_UUSD_AFTER_ROUTER_SWAP** (used 1 times) - Removed successfully, inlined as 995_035u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:910
-- [ ] **POOL_3_UUSD_AFTER_SWAP_1** (used 1 times)
+- [x] **POOL_3_UUSD_AFTER_SWAP_1** (used 1 times) - Removed successfully, inlined as 997_218u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:681
-- [ ] **POOL_3_UUSD_AFTER_SWAP_2** (used 1 times)
+- [x] **POOL_3_UUSD_AFTER_SWAP_2** (used 1 times) - Removed successfully, inlined as 998_718u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:737
-- [ ] **POOL_MANAGER_ULUNA_BALANCE_3M** (used 1 times)
+- [x] **POOL_MANAGER_ULUNA_BALANCE_3M** (used 1 times) - Removed successfully, inlined as 3_000_000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:397
-- [ ] **POOL_MANAGER_ULUNA_FINAL** (used 1 times)
+- [x] **POOL_MANAGER_ULUNA_FINAL** (used 1 times) - Removed successfully, inlined as 3_003_819u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:790
-- [ ] **POOL_MANAGER_UUSD_BALANCE_1M** (used 1 times)
+- [x] **POOL_MANAGER_UUSD_BALANCE_1M** (used 1 times) - Removed successfully, inlined as 1_000_000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:401
-- [ ] **POOL_MANAGER_UUSD_FINAL** (used 1 times)
+- [x] **POOL_MANAGER_UUSD_FINAL** (used 1 times) - Removed successfully, inlined as 998_718u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:794
-- [ ] **POOL_MANAGER_UWHALE_BALANCE_2M** (used 1 times)
+- [x] **POOL_MANAGER_UWHALE_BALANCE_2M** (used 1 times) - Removed successfully, inlined as 2_000_000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:405
-- [ ] **POOL_MANAGER_UWHALE_FINAL** (used 1 times)
+- [x] **POOL_MANAGER_UWHALE_FINAL** (used 1 times) - Removed successfully, inlined as 1_998_440u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:798
 - [x] **SLIPPAGE_PERCENT_20** (used 1 times) - Removed successfully, inlined as 20
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:417
@@ -146,11 +146,13 @@ Total files scanned: 12
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:651
 - [x] **SWAP_AMOUNT_5K** (used 1 times) - Removed successfully, inlined as 5_000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:825
-- [ ] **ULUNA_UUSD_POOL_1_LABEL** (used 1 times)
+- [!] **ULUNA_UUSD_POOL_1_LABEL** (used 1 times) - Analysis error: constant does not exist in code
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:262
-- [ ] **WHALE_ULUNA_POOL_1_LABEL** (used 1 times)
+- [!] **WHALE_ULUNA_POOL_1_LABEL** (used 1 times) - Analysis error: constant does not exist in code
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:232
-- [ ] **WHALE_ULUNA_POOL_2_LABEL** (used 1 times)
+- [x] **WHALE_ULUNA_POOL_LABEL** (used 1 times) - Removed successfully, inlined as "whale.uluna"
+  - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:82
+- [!] **WHALE_ULUNA_POOL_2_LABEL** (used 1 times) - Analysis error: constant does not exist in code
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/slippage_and_fees.rs:247
 
 ### File: `../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/stableswap.rs`
@@ -438,49 +440,6 @@ Total files scanned: 12
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/swap.rs:624
 - [ ] **UUSD_UWETH_POOL_RAW** (used 1 times)
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/swap.rs:2803
-
-## Summary Statistics
-
-Usage distribution:
-
-- Used 0 times: 5 constants
-- Used 1 times: 196 constants
-- Used 2 times: 73 constants
-- Used 3 times: 35 constants
-- Used 4 times: 33 constants
-- Used 5 times: 18 constants
-- Used 6 times: 26 constants
-- Used 7 times: 6 constants
-- Used 8 times: 5 constants
-- Used 9 times: 11 constants
-- Used 10 times: 7 constants
-- Used 11 times: 2 constants
-- Used 12 times: 3 constants
-- Used 13 times: 2 constants
-- Used 14 times: 2 constants
-- Used 15 times: 2 constants
-- Used 16 times: 2 constants
-- Used 17 times: 1 constants
-- Used 20 times: 1 constants
-- Used 21 times: 1 constants
-- Used 22 times: 1 constants
-- Used 24 times: 1 constants
-- Used 25 times: 1 constants
-- Used 28 times: 1 constants
-- Used 34 times: 1 constants
-- Used 39 times: 1 constants
-- Used 42 times: 1 constants
-- Used 47 times: 1 constants
-- Used 48 times: 1 constants
-- Used 49 times: 1 constants
-- Used 56 times: 1 constants
-- Used 59 times: 1 constants
-- Used 65 times: 1 constants
-- Used 80 times: 1 constants
-- Used 81 times: 1 constants
-- Used 82 times: 1 constants
-- Used 99 times: 1 constants
-- Used 113 times: 1 constants
 
 ## Instructions for AI Coder Agent
 
