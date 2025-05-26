@@ -24,14 +24,12 @@ use test_utils::common_constants::{
 const DENOM_UTEST: &str = "utest";
 const DENOM_IBC_1: &str = "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A";
 const DENOM_IBC_2: &str = "ibc/A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2";
-const DENOM_FACTORY: &str = "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom";
 
 // Common token amounts
 const MOCK_AMOUNT_UTEST: u128 = 1000;
 const INSUFFICIENT_TF_FEE: u128 = 999;
 const INSUFFICIENT_POOL_AMOUNT: u128 = 999;
-const MOCK_AMOUNT_ULUNA: u128 = 1000;
-const INSUFFICIENT_POOL_CREATION_AMOUNT: u128 = 900;
+
 const TWICE_POOL_CREATION_FEE: u128 = 2000;
 const INSUFFICIENT_TWICE_POOL_CREATION_FEE: u128 = 1999;
 const EXCESSIVE_POOL_CREATION_FEE: u128 = 3000;
@@ -39,38 +37,30 @@ const ATTACKER_BALANCE_AMOUNT: u128 = 10_000_000;
 const SMALL_BALANCE_AMOUNT: u128 = 10_000;
 
 // Fee constants
-const INSUFFICIENT_POOL_CREATION_FEE: u128 = 90;
 
 // Fee percentages
 const DEFAULT_FEE_PERCENT: u64 = 1;
 const PROTOCOL_FEE_PERCENT: u64 = 10;
 const SWAP_FEE_PERCENT: u64 = 7;
 const BURN_FEE_PERCENT: u64 = 3;
-const SINGLE_SIDED_LP_PERCENT: u64 = 50;
 
 // Pool constants
 const STABLESWAP_TEST_AMP_FACTOR: u64 = 80;
 const STABLESWAP_POOL_ID: &str = "stableswap";
 
 // Pool identifier constants
-const INVALID_POOL_IDENTIFIER_DASH: &str = "invalid-identifier";
-const INVALID_POOL_IDENTIFIER_LONG: &str = "this.is.a.loooooooooooooooooong.identifier";
+
 const VALID_POOL_IDENTIFIER: &str = "mycoolpool";
 const WHALE_LUNA_POOL_IDENTIFIER: &str = "whale.uluna.pool.1";
 const OTHER_WHALE_LUNA_POOL_IDENTIFIER: &str = "o.whale.uluna.pool.1";
-const WHALE_LUNA_POOL_RAW_ID: &str = "whale.uluna";
+
 const WHALE_LUNA_POOL_PREFIX: &str = "o.whale.uluna";
 const POOL_ID_NUMERIC: &str = "1";
-const POOL_ID_PREFIX_O: &str = "o.1";
+
 const POOL_ID_PREFIX_P: &str = "p.1";
-const CUSTOM_POOL_ID_1: &str = "pool.1";
-const CUSTOM_POOL_ID_2: &str = "pool.2";
-const CUSTOM_POOL_PREFIX_1: &str = "o.pool.1";
-const CUSTOM_POOL_PREFIX_2: &str = "o.pool.2";
 
 // Position constants
 const SPAM_POSITION_ID: &str = "spam_position";
-const LEGIT_POSITION_ID: &str = "legit_position";
 
 // Lock pool test constants
 const LOCK_POOL_BALANCE_AMOUNT: u128 = 1_000_000_000u128;
@@ -78,17 +68,13 @@ const LOCK_POOL_TF_FEE: u128 = 1000u128;
 const LOCK_POOL_LIQUIDITY_AMOUNT: u128 = 1_000u128;
 const LOCK_POOL_LIQUIDITY_AMOUNT_2: u128 = 8_000u128;
 const LOCK_POOL_SWAP_AMOUNT: u128 = 100u128;
-const LOCK_POOL_SWAP_AMOUNT_2: u128 = 50u128;
-const LOCK_POOL_ID_1: &str = "uom.uusd.1";
-const LOCK_POOL_ID_2: &str = "uom.uusd.2";
+
 const LOCK_POOL_PREFIX_1: &str = "o.uom.uusd.1";
 const LOCK_POOL_PREFIX_2: &str = "o.uom.uusd.2";
 
 // Toggle pool test constants
 const TOGGLE_POOL_BALANCE_AMOUNT: u128 = 1_000_000_000u128;
 const TOGGLE_POOL_TF_FEE: u128 = 1000u128;
-const TOGGLE_POOL_ID: &str = "uom.uusd.1";
-const TOGGLE_INVALID_POOL_ID: &str = "xxx";
 
 // Add this after the imports
 const UNLOCKING_DURATION: u64 = DEFAULT_UNLOCKING_DURATION_SECONDS;
@@ -136,7 +122,7 @@ fn insufficient_pool_creation_fee() {
         pool_fees,
         PoolType::ConstantProduct,
         None,
-        vec![coin(INSUFFICIENT_POOL_CREATION_FEE, DENOM_UUSD)],
+        vec![coin(90u128, DENOM_UUSD)],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
@@ -809,7 +795,10 @@ fn wrong_pool_label() {
         vec![
             coin(BALANCE_AMOUNT_LARGE, DENOM_IBC_1),
             coin(BALANCE_AMOUNT_MEDIUM, DENOM_IBC_2),
-            coin(BALANCE_AMOUNT_LARGE, DENOM_FACTORY),
+            coin(
+                BALANCE_AMOUNT_LARGE,
+                "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom",
+            ),
             coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
             coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
@@ -844,7 +833,7 @@ fn wrong_pool_label() {
             vec![DEFAULT_DECIMAL_PRECISION, DEFAULT_DECIMAL_PRECISION],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some(INVALID_POOL_IDENTIFIER_DASH.to_string()),
+            Some("invalid-identifier".to_string()),
             vec![
                 coin(REQUIRED_POOL_CREATION_FEE, DENOM_UUSD),
                 coin(MOCK_AMOUNT_UOM, DENOM_UOM),
@@ -866,7 +855,7 @@ fn wrong_pool_label() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             //42 chars long
-            Some(INVALID_POOL_IDENTIFIER_LONG.to_string()),
+            Some("this.is.a.loooooooooooooooooong.identifier".to_string()),
             vec![
                 coin(REQUIRED_POOL_CREATION_FEE, DENOM_UUSD),
                 coin(MOCK_AMOUNT_UOM, DENOM_UOM),
@@ -1176,7 +1165,7 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
                 coin(REQUIRED_POOL_CREATION_FEE, DENOM_UUSD),
                 coin(MOCK_AMOUNT_UOM, DENOM_UOM),
                 coin(MOCK_AMOUNT_UTEST, DENOM_UTEST),
-                coin(MOCK_AMOUNT_ULUNA, DENOM_ULUNA),
+                coin(1000u128, DENOM_ULUNA),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1244,7 +1233,7 @@ fn cant_create_pool_without_paying_tf_fees_same_denom() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(WHALE_LUNA_POOL_IDENTIFIER.to_string()),
-            vec![coin(INSUFFICIENT_POOL_CREATION_AMOUNT, DENOM_UUSD)],
+            vec![coin(900u128, DENOM_UUSD)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -1352,7 +1341,7 @@ fn attacker_creates_farm_positions_through_pool_manager() {
         vec![DEFAULT_DECIMAL_PRECISION, DEFAULT_DECIMAL_PRECISION],
         pool_fees,
         PoolType::ConstantProduct,
-        Some(WHALE_LUNA_POOL_RAW_ID.to_string()),
+        Some("whale.uluna".to_string()),
         vec![
             coin(REQUIRED_POOL_CREATION_FEE, DENOM_UUSD),
             coin(MOCK_AMOUNT_UOM, DENOM_UOM),
@@ -1427,7 +1416,7 @@ fn attacker_creates_farm_positions_through_pool_manager() {
             Some(UNLOCKING_DURATION),
             Some(SPAM_POSITION_ID.to_string()),
             None,
-            Some(Decimal::percent(SINGLE_SIDED_LP_PERCENT)),
+            Some(Decimal::percent(50)),
             Some(victim.to_string()),
             vec![Coin {
                 denom: DENOM_UWHALE.to_string(),
@@ -1446,7 +1435,7 @@ fn attacker_creates_farm_positions_through_pool_manager() {
             &attacker,
             WHALE_LUNA_POOL_PREFIX.to_string(),
             Some(UNLOCKING_DURATION),
-            Some(LEGIT_POSITION_ID.to_string()),
+            Some("legit_position".to_string()),
             None,
             None,
             Some(attacker.to_string()),
@@ -1553,10 +1542,7 @@ fn cant_create_pool_with_bogus_identifier() {
         .query_pools(None, None, None, |result| {
             let response = result.unwrap();
             assert_eq!(response.pools.len(), 2);
-            assert_eq!(
-                response.pools[0].pool_info.pool_identifier,
-                POOL_ID_PREFIX_O
-            );
+            assert_eq!(response.pools[0].pool_info.pool_identifier, "o.1");
             assert_eq!(
                 response.pools[1].pool_info.pool_identifier,
                 POOL_ID_PREFIX_P
@@ -1781,7 +1767,7 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
             vec![DEFAULT_DECIMAL_PRECISION, DEFAULT_DECIMAL_PRECISION],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some(CUSTOM_POOL_ID_1.to_string()),
+            Some("pool.1".to_string()),
             vec![
                 coin(REQUIRED_POOL_CREATION_FEE, DENOM_UUSD),
                 coin(MOCK_AMOUNT_UOM, DENOM_UOM),
@@ -1796,7 +1782,7 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
             vec![DEFAULT_DECIMAL_PRECISION, DEFAULT_DECIMAL_PRECISION],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some(CUSTOM_POOL_ID_2.to_string()),
+            Some("pool.2".to_string()),
             vec![
                 coin(REQUIRED_POOL_CREATION_FEE, DENOM_UUSD),
                 coin(MOCK_AMOUNT_UOM, DENOM_UOM),
@@ -1823,14 +1809,8 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
         .query_pools(None, None, None, |result| {
             let response = result.unwrap();
             assert_eq!(response.pools.len(), 3);
-            assert_eq!(
-                response.pools[0].pool_info.pool_identifier,
-                CUSTOM_POOL_PREFIX_1
-            );
-            assert_eq!(
-                response.pools[1].pool_info.pool_identifier,
-                CUSTOM_POOL_PREFIX_2
-            );
+            assert_eq!(response.pools[0].pool_info.pool_identifier, "o.pool.1");
+            assert_eq!(response.pools[1].pool_info.pool_identifier, "o.pool.2");
             assert_eq!(
                 response.pools[2].pool_info.pool_identifier,
                 POOL_ID_PREFIX_P
@@ -1874,7 +1854,7 @@ fn lock_single_pool() {
             vec![DEFAULT_DECIMAL_PRECISION, DEFAULT_DECIMAL_PRECISION],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some(LOCK_POOL_ID_1.to_string()),
+            Some("uom.uusd.1".to_string()),
             vec![
                 coin(LOCK_POOL_TF_FEE, DENOM_UUSD),
                 coin(LOCK_POOL_TF_FEE, DENOM_UOM),
@@ -1889,7 +1869,7 @@ fn lock_single_pool() {
             vec![DEFAULT_DECIMAL_PRECISION, DEFAULT_DECIMAL_PRECISION],
             pool_fees,
             PoolType::ConstantProduct,
-            Some(LOCK_POOL_ID_2.to_string()),
+            Some("uom.uusd.2".to_string()),
             vec![
                 coin(LOCK_POOL_TF_FEE, DENOM_UUSD),
                 coin(LOCK_POOL_TF_FEE, DENOM_UOM),
@@ -2106,7 +2086,7 @@ fn lock_single_pool() {
             None,
             None,
             LOCK_POOL_PREFIX_1.to_string(),
-            vec![coin(LOCK_POOL_SWAP_AMOUNT_2, DENOM_UUSD)],
+            vec![coin(50u128, DENOM_UUSD)],
             |result| {
                 // should work, as it was enabled
                 result.unwrap();
@@ -2163,7 +2143,7 @@ fn cant_toggle_unexisting_pool() {
         vec![DEFAULT_DECIMAL_PRECISION, DEFAULT_DECIMAL_PRECISION],
         pool_fees.clone(),
         PoolType::ConstantProduct,
-        Some(TOGGLE_POOL_ID.to_string()),
+        Some("uom.uusd.1".to_string()),
         vec![
             coin(TOGGLE_POOL_TF_FEE, DENOM_UUSD),
             coin(TOGGLE_POOL_TF_FEE, DENOM_UOM),
@@ -2179,7 +2159,7 @@ fn cant_toggle_unexisting_pool() {
         None,
         None,
         Some(FeatureToggle {
-            pool_identifier: TOGGLE_INVALID_POOL_ID.to_string(),
+            pool_identifier: "xxx".to_string(),
             withdrawals_enabled: Some(false),
             deposits_enabled: Some(false),
             swaps_enabled: Some(false),

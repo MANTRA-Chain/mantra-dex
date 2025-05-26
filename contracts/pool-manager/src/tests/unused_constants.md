@@ -4,6 +4,29 @@ Analysis of directory: ../../mantra/mantra-dex/contracts/pool-manager/src/tests
 Total constants found: 449
 Total files scanned: 12
 
+## Progress Summary
+
+### Completed Files:
+- ✅ **basic_tests.rs** - 2/2 constants removed (100% complete)
+- ✅ **lp_actions/basic_lp.rs** - 1/1 constants removed (100% complete)  
+- ✅ **lp_actions/locking.rs** - 2/2 constants removed (100% complete)
+- ✅ **lp_actions/single_asset.rs** - 8/17 constants removed (47% complete, 9 kept for semantic value)
+- ✅ **lp_actions/slippage_and_fees.rs** - 35/39 constants removed (90% complete, 4 analysis errors)
+- ✅ **lp_actions/stableswap.rs** - 4/4 constants removed (100% complete)
+- ✅ **pool_management.rs** - 19/21 constants removed (90% complete, 2 kept for semantic value)
+- ✅ **router.rs** - 6/6 constants removed (100% complete)
+
+### Remaining Files:
+- ⏳ **query.rs** - 0/25 constants processed
+- ⏳ **swap.rs** - 0/67 constants processed
+
+### Overall Progress:
+- **Files completed**: 8/10 (80%)
+- **Constants processed**: 77/142 total single-use constants
+- **Constants successfully removed**: 77 constants
+- **Constants kept for semantic value**: 11 constants
+- **Analysis errors to review**: 4 constants
+
 ## Constants Used Only Once or Never (Likely Unused) - Grouped by File
 
 ### File: `../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/basic_tests.rs`
@@ -166,54 +189,49 @@ Total files scanned: 12
 - [x] **WHALE_ULUNA_UUSD_POOL_LABEL** (used 1 times) - Removed successfully, inlined as "whale.uluna.uusd"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/lp_actions/stableswap.rs:93
 
-### File: `../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/ownership.rs`
-
-- [x] **POOL_CREATION_FEE_INCREMENT** (used 1 times) - Removed successfully, inlined as 1u32
-  - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/ownership.rs:114
-
 ### File: `../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs`
 
-- [ ] **CUSTOM_POOL_ID_1** (used 1 times)
+- [x] **CUSTOM_POOL_ID_1** (used 1 times) - Removed successfully, inlined as "pool.1"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1784
-- [ ] **CUSTOM_POOL_ID_2** (used 1 times)
+- [x] **CUSTOM_POOL_ID_2** (used 1 times) - Removed successfully, inlined as "pool.2"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1799
-- [ ] **CUSTOM_POOL_PREFIX_1** (used 1 times)
+- [x] **CUSTOM_POOL_PREFIX_1** (used 1 times) - Removed successfully, inlined as "o.pool.1"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1828
-- [ ] **CUSTOM_POOL_PREFIX_2** (used 1 times)
+- [x] **CUSTOM_POOL_PREFIX_2** (used 1 times) - Removed successfully, inlined as "o.pool.2"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1832
-- [ ] **DENOM_FACTORY** (used 1 times)
+- [x] **DENOM_FACTORY** (used 1 times) - Removed successfully, inlined as "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:812
-- [ ] **INSUFFICIENT_POOL_CREATION_AMOUNT** (used 1 times)
+- [x] **INSUFFICIENT_POOL_CREATION_AMOUNT** (used 1 times) - Removed successfully, inlined as 900u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1247
-- [ ] **INSUFFICIENT_POOL_CREATION_FEE** (used 1 times)
+- [x] **INSUFFICIENT_POOL_CREATION_FEE** (used 1 times) - Removed successfully, inlined as 90u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:139
-- [ ] **INVALID_POOL_IDENTIFIER_DASH** (used 1 times)
+- [x] **INVALID_POOL_IDENTIFIER_DASH** (used 1 times) - Removed successfully, inlined as "invalid-identifier"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:847
-- [ ] **INVALID_POOL_IDENTIFIER_LONG** (used 1 times)
+- [x] **INVALID_POOL_IDENTIFIER_LONG** (used 1 times) - Removed successfully, inlined as "this.is.a.loooooooooooooooooong.identifier"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:869
-- [ ] **LEGIT_POSITION_ID** (used 1 times)
+- [x] **LEGIT_POSITION_ID** (used 1 times) - Removed successfully, inlined as "legit_position"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1449
-- [ ] **LIQUIDITY_AMOUNT_UOM** (used 1 times)
+- [!] **LIQUIDITY_AMOUNT_UOM** (used 1 times) - Cannot remove, used in local test scope with meaningful semantic value
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:527
-- [ ] **LIQUIDITY_AMOUNT_UUSD** (used 1 times)
+- [!] **LIQUIDITY_AMOUNT_UUSD** (used 1 times) - Cannot remove, used in local test scope with meaningful semantic value
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:528
-- [ ] **LOCK_POOL_ID_1** (used 1 times)
+- [x] **LOCK_POOL_ID_1** (used 1 times) - Removed successfully, inlined as "uom.uusd.1"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1877
-- [ ] **LOCK_POOL_ID_2** (used 1 times)
+- [x] **LOCK_POOL_ID_2** (used 1 times) - Removed successfully, inlined as "uom.uusd.2"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1892
-- [ ] **LOCK_POOL_SWAP_AMOUNT_2** (used 1 times)
+- [x] **LOCK_POOL_SWAP_AMOUNT_2** (used 1 times) - Removed successfully, inlined as 50u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:2109
-- [ ] **MOCK_AMOUNT_ULUNA** (used 1 times)
+- [x] **MOCK_AMOUNT_ULUNA** (used 1 times) - Removed successfully, inlined as 1000u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1179
-- [ ] **POOL_ID_PREFIX_O** (used 1 times)
+- [x] **POOL_ID_PREFIX_O** (used 1 times) - Removed successfully, inlined as "o.1"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1558
-- [ ] **SINGLE_SIDED_LP_PERCENT** (used 1 times)
+- [x] **SINGLE_SIDED_LP_PERCENT** (used 1 times) - Removed successfully, inlined as 50
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1430
-- [ ] **TOGGLE_INVALID_POOL_ID** (used 1 times)
+- [x] **TOGGLE_INVALID_POOL_ID** (used 1 times) - Removed successfully, inlined as "xxx"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:2182
-- [ ] **TOGGLE_POOL_ID** (used 1 times)
+- [x] **TOGGLE_POOL_ID** (used 1 times) - Removed successfully, inlined as "uom.uusd.1"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:2166
-- [ ] **WHALE_LUNA_POOL_RAW_ID** (used 1 times)
+- [x] **WHALE_LUNA_POOL_RAW_ID** (used 1 times) - Removed successfully, inlined as "whale.uluna"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/pool_management.rs:1355
 
 ### File: `../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs`
