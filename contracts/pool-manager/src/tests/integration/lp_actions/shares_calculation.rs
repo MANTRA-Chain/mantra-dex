@@ -5,26 +5,24 @@ use mantra_dex_std::{
     lp_common::MINIMUM_LIQUIDITY_AMOUNT,
     pool_manager::PoolType,
 };
+use test_utils::common_constants::{
+    DECIMAL_PLACES, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UUSDC, DENOM_UWHALE,
+    STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT,
+};
 
 use crate::tests::suite::TestingSuite;
 
-const UWHALE_DENOM: &str = "uwhale";
-const ULUNA_DENOM: &str = "uluna";
-const UOSMO_DENOM: &str = "uosmo";
-const UUSD_DENOM: &str = "uusd";
-const UOM_DENOM: &str = "uom";
-const UUSDC_DENOM: &str = "uusdc";
-
+// Constants using common_constants where available
 const INITIAL_BALANCE: u128 = 10_000_000u128;
 const SMALL_INITIAL_BALANCE: u128 = 10_000u128;
-const TF_FEE_UOM_AMOUNT: u128 = 8888u128;
-const TF_FEE_UUSD_AMOUNT: u128 = 1000u128;
+const TF_FEE_UOM_AMOUNT: u128 = STARGATE_MOCK_UOM_AMOUNT;
+const TF_FEE_UUSD_AMOUNT: u128 = SWAP_AMOUNT;
 
 const WHALE_ULUNA_POOL_LABEL: &str = "whale.uluna";
 const O_WHALE_ULUNA_LP_DENOM_RAW: &str = "o.whale.uluna"; // Raw, because suite.get_lp_denom() is used
 
 const POOL_FEE_PERCENT: u64 = 1;
-const ASSET_PRECISION: u8 = 6u8;
+const ASSET_PRECISION: u8 = DECIMAL_PLACES;
 
 const LIQUIDITY_10K: u128 = 10_000u128;
 const LIQUIDITY_9K: u128 = 9_000u128;
@@ -51,19 +49,19 @@ const EXPECTED_UWHALE_AFTER_WITHDRAW: u128 = 353_553u128; // Updated based on re
 fn provide_liquidity_emit_proportional_lp_shares() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_BALANCE, UWHALE_DENOM.to_string()),
-            coin(INITIAL_BALANCE, ULUNA_DENOM.to_string()),
-            coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
-            coin(SMALL_INITIAL_BALANCE, UUSD_DENOM.to_string()),
-            coin(SMALL_INITIAL_BALANCE, UOM_DENOM.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+            coin(SMALL_INITIAL_BALANCE, DENOM_UUSD.to_string()),
+            coin(SMALL_INITIAL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let other = suite.senders[1].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -87,8 +85,8 @@ fn provide_liquidity_emit_proportional_lp_shares() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
         vec![
-            coin(TF_FEE_UUSD_AMOUNT, UUSD_DENOM.to_string()),
-            coin(TF_FEE_UOM_AMOUNT, UOM_DENOM.to_string()),
+            coin(TF_FEE_UUSD_AMOUNT, DENOM_UUSD.to_string()),
+            coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string()),
         ],
         |result| {
             result.unwrap();
@@ -110,11 +108,11 @@ fn provide_liquidity_emit_proportional_lp_shares() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_10K),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_10K),
                 },
             ],
@@ -141,7 +139,7 @@ fn provide_liquidity_emit_proportional_lp_shares() {
 
     println!(
         ">>>> provide liquidity: {} {}, {} {}",
-        LIQUIDITY_5K, UWHALE_DENOM, LIQUIDITY_5K, ULUNA_DENOM
+        LIQUIDITY_5K, DENOM_UWHALE, LIQUIDITY_5K, DENOM_ULUNA
     );
     // other provides liquidity as well, half of the tokens the creator provided
     // this should result in ~half LP tokens given to other
@@ -156,11 +154,11 @@ fn provide_liquidity_emit_proportional_lp_shares() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_5K),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_5K),
                 },
             ],
@@ -181,18 +179,18 @@ fn provide_liquidity_emit_proportional_lp_shares() {
 fn provide_liquidity_emits_right_lp_shares() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(VERY_LARGE_INITIAL_BALANCE, UWHALE_DENOM.to_string()),
-            coin(VERY_LARGE_INITIAL_BALANCE, ULUNA_DENOM.to_string()),
-            coin(VERY_LARGE_INITIAL_BALANCE, UOSMO_DENOM.to_string()),
-            coin(VERY_LARGE_INITIAL_BALANCE, UUSD_DENOM.to_string()),
-            coin(VERY_LARGE_INITIAL_BALANCE, UUSDC_DENOM.to_string()),
-            coin(VERY_LARGE_INITIAL_BALANCE, UOM_DENOM.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UWHALE.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_ULUNA.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UUSD.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UUSDC.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
 
-    let asset_denoms = vec![UOM_DENOM.to_string(), UUSDC_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UOM.to_string(), DENOM_UUSDC.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -216,8 +214,8 @@ fn provide_liquidity_emits_right_lp_shares() {
         PoolType::ConstantProduct,
         None,
         vec![
-            coin(TF_FEE_UUSD_AMOUNT, UUSD_DENOM.to_string()),
-            coin(TF_FEE_UOM_AMOUNT, UOM_DENOM.to_string()),
+            coin(TF_FEE_UUSD_AMOUNT, DENOM_UUSD.to_string()),
+            coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string()),
         ],
         |result| {
             result.unwrap();
@@ -239,11 +237,11 @@ fn provide_liquidity_emits_right_lp_shares() {
             None,
             vec![
                 Coin {
-                    denom: UOM_DENOM.to_string(),
+                    denom: DENOM_UOM.to_string(),
                     amount: Uint128::new(UOM_LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: UUSDC_DENOM.to_string(),
+                    denom: DENOM_UUSDC.to_string(),
                     amount: Uint128::new(USDC_LIQUIDITY_AMOUNT),
                 },
             ],
@@ -272,18 +270,18 @@ fn provide_liquidity_emits_right_lp_shares() {
 fn withdraw_liquidity_burns_proportional_lp_shares() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_BALANCE, UWHALE_DENOM.to_string()),
-            coin(INITIAL_BALANCE, ULUNA_DENOM.to_string()),
-            coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
-            coin(SMALL_INITIAL_BALANCE, UUSD_DENOM.to_string()),
-            coin(SMALL_INITIAL_BALANCE, UOM_DENOM.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+            coin(SMALL_INITIAL_BALANCE, DENOM_UUSD.to_string()),
+            coin(SMALL_INITIAL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -307,8 +305,8 @@ fn withdraw_liquidity_burns_proportional_lp_shares() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
         vec![
-            coin(TF_FEE_UUSD_AMOUNT, UUSD_DENOM.to_string()),
-            coin(TF_FEE_UOM_AMOUNT, UOM_DENOM.to_string()),
+            coin(TF_FEE_UUSD_AMOUNT, DENOM_UUSD.to_string()),
+            coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string()),
         ],
         |result| {
             result.unwrap();
@@ -329,11 +327,11 @@ fn withdraw_liquidity_burns_proportional_lp_shares() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(UWHALE_LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(ULUNA_LIQUIDITY_AMOUNT),
                 },
             ],
@@ -364,12 +362,12 @@ fn withdraw_liquidity_burns_proportional_lp_shares() {
             let balances = result.unwrap();
             let uluna_balance = balances
                 .iter()
-                .find(|c| c.denom == ULUNA_DENOM.to_string())
+                .find(|c| c.denom == DENOM_ULUNA.to_string())
                 .unwrap()
                 .amount;
             let uwhale_balance = balances
                 .iter()
-                .find(|c| c.denom == UWHALE_DENOM.to_string())
+                .find(|c| c.denom == DENOM_UWHALE.to_string())
                 .unwrap()
                 .amount;
 

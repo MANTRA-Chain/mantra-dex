@@ -8,27 +8,25 @@ use mantra_dex_std::{
     lp_common::MINIMUM_LIQUIDITY_AMOUNT,
     pool_manager::PoolType,
 };
+use test_utils::common_constants::{
+    DECIMAL_PLACES, DENOM_ULUNA, DENOM_UOM, DENOM_UUSD, DENOM_UWHALE, LIQUIDITY_AMOUNT,
+    STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT,
+};
 
 use crate::tests::suite::TestingSuite;
 
-// Denoms
-const UWHALE_DENOM: &str = "uwhale";
-const ULUNA_DENOM: &str = "uluna";
-const UUSD_DENOM: &str = "uusd";
-const UOM_DENOM: &str = "uom";
-
+// Constants using common_constants where available
 // Amounts
 const INITIAL_LARGE_BALANCE: u128 = 10_000_000u128;
 const INITIAL_SMALL_BALANCE: u128 = 10_000u128;
-const STARGATE_MOCK_UOM_AMOUNT: u128 = 8888u128;
-const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = 1000u128;
+const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = SWAP_AMOUNT;
 
-const LIQUIDITY_AMOUNT_1M: u128 = 1_000_000u128;
+const LIQUIDITY_AMOUNT_1M: u128 = LIQUIDITY_AMOUNT;
 const LIQUIDITY_AMOUNT_2K: u128 = 2_000u128;
-const EXPECTED_SHARES_AFTER_1M_LIQUIDITY: u128 = 999_000u128; // 1_000_000 - MINIMUM_LIQUIDITY_AMOUNT (1000)
+const EXPECTED_SHARES_AFTER_1M_LIQUIDITY: u128 = 999_000u128; // LIQUIDITY_AMOUNT - MINIMUM_LIQUIDITY_AMOUNT (1000)
 
 // Pool Parameters
-const DEFAULT_ASSET_DECIMALS: u8 = 6u8;
+const DEFAULT_ASSET_DECIMALS: u8 = DECIMAL_PLACES;
 const WHALE_ULUNA_POOL_LABEL: &str = "whale.uluna";
 const ORIGINAL_POOL_IDENTIFIER_WHALE_ULUNA: &str = "o.whale.uluna"; // Used to derive LP token name
 
@@ -43,19 +41,19 @@ const USER_FARM_IDENTIFIER: &str = "u-farm_identifier";
 fn provide_liquidity_locking_lp_no_lock_position_identifier() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_LARGE_BALANCE, UWHALE_DENOM.to_string()),
-            coin(INITIAL_LARGE_BALANCE, ULUNA_DENOM.to_string()),
-            coin(INITIAL_SMALL_BALANCE, UUSD_DENOM.to_string()),
-            coin(INITIAL_SMALL_BALANCE, UOM_DENOM.to_string()),
+            coin(INITIAL_LARGE_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_LARGE_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_SMALL_BALANCE, DENOM_UUSD.to_string()),
+            coin(INITIAL_SMALL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -79,8 +77,8 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
         vec![
-            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
-            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -103,11 +101,11 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
             ],
@@ -191,11 +189,11 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
             ],
@@ -272,19 +270,19 @@ fn provide_liquidity_locking_lp_no_lock_position_identifier() {
 fn provide_liquidity_locking_lp_reusing_position_identifier() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_LARGE_BALANCE, UWHALE_DENOM.to_string()),
-            coin(INITIAL_LARGE_BALANCE, ULUNA_DENOM.to_string()),
-            coin(INITIAL_SMALL_BALANCE, UUSD_DENOM.to_string()),
-            coin(INITIAL_SMALL_BALANCE, UOM_DENOM.to_string()),
+            coin(INITIAL_LARGE_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_LARGE_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_SMALL_BALANCE, DENOM_UUSD.to_string()),
+            coin(INITIAL_SMALL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -308,8 +306,8 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
         vec![
-            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
-            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -332,11 +330,11 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
             ],
@@ -420,11 +418,11 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
             ],
@@ -488,19 +486,19 @@ fn provide_liquidity_locking_lp_reusing_position_identifier() {
 fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_LARGE_BALANCE, UWHALE_DENOM.to_string()),
-            coin(INITIAL_LARGE_BALANCE, ULUNA_DENOM.to_string()),
-            coin(INITIAL_SMALL_BALANCE, UUSD_DENOM.to_string()),
-            coin(INITIAL_SMALL_BALANCE, UOM_DENOM.to_string()),
+            coin(INITIAL_LARGE_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_LARGE_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_SMALL_BALANCE, DENOM_UUSD.to_string()),
+            coin(INITIAL_SMALL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -524,8 +522,8 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_POOL_LABEL.to_string()),
         vec![
-            coin(POOL_CREATION_FEE_UUSD_AMOUNT, UUSD_DENOM),
-            coin(STARGATE_MOCK_UOM_AMOUNT, UOM_DENOM),
+            coin(POOL_CREATION_FEE_UUSD_AMOUNT, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -548,11 +546,11 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_1M),
                 },
             ],
@@ -636,11 +634,11 @@ fn provide_liquidity_locking_lp_reusing_position_identifier_2() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT_2K),
                 },
             ],

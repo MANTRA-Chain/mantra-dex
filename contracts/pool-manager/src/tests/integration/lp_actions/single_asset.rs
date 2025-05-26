@@ -3,25 +3,25 @@ use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::PoolType;
+use test_utils::common_constants::{
+    DECIMAL_PLACES, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UWHALE,
+    LIQUIDITY_AMOUNT as COMMON_LIQUIDITY_AMOUNT, STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT,
+};
 
 use crate::tests::suite::TestingSuite;
 use crate::ContractError;
 
-const UWHALE_DENOM: &str = "uwhale";
-const ULUNA_DENOM: &str = "uluna";
-const UOSMO_DENOM: &str = "uosmo";
-const UUSD_DENOM: &str = "uusd";
-const UOM_DENOM: &str = "uom";
-const O_WHALE_ULUNA_DENOM: &str = "o.whale.uluna";
+// Constants using common_constants where available
+const O_WHALE_DENOM_ULUNA: &str = "o.whale.uluna";
 const WHALE_ULUNA_LABEL: &str = "whale.uluna";
 
 const INITIAL_BALANCE: u128 = 10_000_000u128;
 const SMALL_BALANCE: u128 = 10_000u128;
-const UOM_STARGATE_BALANCE: u128 = 8888u128;
-const UUSD_POOL_CREATION_FEE: u128 = 1000u128;
-const UOM_POOL_CREATION_FEE: u128 = UOM_STARGATE_BALANCE; // 8888u128
+const UOM_STARGATE_BALANCE: u128 = STARGATE_MOCK_UOM_AMOUNT;
+const UUSD_POOL_CREATION_FEE: u128 = SWAP_AMOUNT;
+const UOM_POOL_CREATION_FEE: u128 = UOM_STARGATE_BALANCE; // STARGATE_MOCK_UOM_AMOUNT
 
-const LIQUIDITY_AMOUNT: u128 = 1_000_000u128;
+const LIQUIDITY_AMOUNT: u128 = COMMON_LIQUIDITY_AMOUNT;
 const INITIAL_LP_TOKENS_MINTED: u128 = 999_000u128; // LIQUIDITY_AMOUNT - MINIMUM_LIQUIDITY_AMOUNT (1_000_000 - 1_000)
 const SINGLE_ASSET_DEPOSIT_SMALL: u128 = 10_000u128;
 const SINGLE_ASSET_DEPOSIT_THIRD_PARTY: u128 = 1_000u128;
@@ -53,26 +53,26 @@ const FIFTY_PERCENT_SLIPPAGE: Option<Decimal> = Some(Decimal::percent(50));
 const ONE_PERCENT_FEE: Decimal = Decimal::percent(1);
 
 const ZERO_PERCENT_FEE: Decimal = Decimal::zero();
-const SIX_DECIMALS: u8 = 6u8;
+const SIX_DECIMALS: u8 = DECIMAL_PLACES;
 
 #[test]
 fn provide_liquidity_with_single_asset() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_BALANCE, UWHALE_DENOM.to_string()),
-            coin(INITIAL_BALANCE, ULUNA_DENOM.to_string()),
-            coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
-            coin(SMALL_BALANCE, UUSD_DENOM.to_string()),
-            coin(SMALL_BALANCE, UOM_DENOM.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+            coin(SMALL_BALANCE, DENOM_UUSD.to_string()),
+            coin(SMALL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(UOM_STARGATE_BALANCE, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(UOM_STARGATE_BALANCE, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -96,8 +96,8 @@ fn provide_liquidity_with_single_asset() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_LABEL.to_string()),
         vec![
-            coin(UUSD_POOL_CREATION_FEE, UUSD_DENOM),
-            coin(UOM_POOL_CREATION_FEE, UOM_DENOM),
+            coin(UUSD_POOL_CREATION_FEE, DENOM_UUSD),
+            coin(UOM_POOL_CREATION_FEE, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -105,13 +105,13 @@ fn provide_liquidity_with_single_asset() {
     );
 
     let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom(O_WHALE_ULUNA_DENOM.to_string());
+    let lp_denom = suite.get_lp_denom(O_WHALE_DENOM_ULUNA.to_string());
 
     // Let's try to add liquidity
     suite
             .provide_liquidity(
                 &creator,
-                O_WHALE_ULUNA_DENOM.to_string(),
+                O_WHALE_DENOM_ULUNA.to_string(),
                 None,
                 None,
                 None,
@@ -129,14 +129,14 @@ fn provide_liquidity_with_single_asset() {
             )
             .provide_liquidity(
                 &creator,
-                O_WHALE_ULUNA_DENOM.to_string(),
+                O_WHALE_DENOM_ULUNA.to_string(),
                 None,
                 None,
                 None,
                 None,
                 None,
                 vec![Coin {
-                    denom: UOSMO_DENOM.to_string(),
+                    denom: DENOM_UOSMO.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 }],
                 |result| {
@@ -150,14 +150,14 @@ fn provide_liquidity_with_single_asset() {
             )
             .provide_liquidity(
                 &creator,
-                O_WHALE_ULUNA_DENOM.to_string(),
+                O_WHALE_DENOM_ULUNA.to_string(),
                 None,
                 None,
                 None,
                 None,
                 None,
                 vec![Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 }],
                 |result| {
@@ -176,7 +176,7 @@ fn provide_liquidity_with_single_asset() {
     suite
         .provide_liquidity(
             &creator,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
@@ -184,11 +184,11 @@ fn provide_liquidity_with_single_asset() {
             None,
             vec![
                 Coin {
-                    denom: UOSMO_DENOM.to_string(),
+                    denom: DENOM_UOSMO.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 },
             ],
@@ -203,7 +203,7 @@ fn provide_liquidity_with_single_asset() {
         )
         .provide_liquidity(
             &creator,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
@@ -211,11 +211,11 @@ fn provide_liquidity_with_single_asset() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 },
             ],
@@ -243,7 +243,7 @@ fn provide_liquidity_with_single_asset() {
     suite
         .provide_liquidity(
             &other,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
@@ -251,11 +251,11 @@ fn provide_liquidity_with_single_asset() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(1_000u128),
                 },
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(1_000u128),
                 },
             ],
@@ -269,7 +269,7 @@ fn provide_liquidity_with_single_asset() {
         )
         .provide_liquidity(
             &other,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
@@ -277,11 +277,11 @@ fn provide_liquidity_with_single_asset() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(SINGLE_ASSET_DEPOSIT_SMALL),
                 },
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(SINGLE_ASSET_DEPOSIT_SMALL),
                 },
             ],
@@ -307,7 +307,7 @@ fn provide_liquidity_with_single_asset() {
         });
 
     suite
-        .query_lp_supply(O_WHALE_ULUNA_DENOM.to_string(), |res| {
+        .query_lp_supply(O_WHALE_DENOM_ULUNA.to_string(), |res| {
             // total amount of LP tokens issued should be 1_009_798 = 999_000 to the first LP,
             // 1_000 to the contract, and 9_798 to the second, single-side LP
             assert_eq!(
@@ -315,20 +315,20 @@ fn provide_liquidity_with_single_asset() {
                 Uint128::from(TOTAL_LP_SUPPLY_AFTER_SINGLE_ASSET_DEPOSIT)
             );
         })
-        .query_pools(Some(O_WHALE_ULUNA_DENOM.to_string()), None, None, |res| {
+        .query_pools(Some(O_WHALE_DENOM_ULUNA.to_string()), None, None, |res| {
             let response = res.unwrap();
 
             let whale = response.pools[0]
                 .pool_info
                 .assets
                 .iter()
-                .find(|coin| coin.denom == *UWHALE_DENOM)
+                .find(|coin| coin.denom == *DENOM_UWHALE)
                 .unwrap();
             let luna = response.pools[0]
                 .pool_info
                 .assets
                 .iter()
-                .find(|coin| coin.denom == *ULUNA_DENOM)
+                .find(|coin| coin.denom == *DENOM_ULUNA)
                 .unwrap();
 
             assert_eq!(whale.amount, Uint128::from(FINAL_UWHALE_IN_POOL));
@@ -348,11 +348,11 @@ fn provide_liquidity_with_single_asset() {
                         amount: Uint128::from(1_000u128),
                     },
                     Coin {
-                        denom: ULUNA_DENOM.to_string(),
+                        denom: DENOM_ULUNA.to_string(),
                         amount: Uint128::from(FINAL_ULUNA_IN_POOL),
                     },
                     Coin {
-                        denom: UWHALE_DENOM.to_string(),
+                        denom: DENOM_UWHALE.to_string(),
                         amount: Uint128::from(FINAL_UWHALE_IN_POOL),
                     },
                 ]
@@ -368,23 +368,23 @@ fn provide_liquidity_with_single_asset() {
                         amount: Uint128::from(INITIAL_LP_TOKENS_MINTED),
                     },
                     Coin {
-                        denom: ULUNA_DENOM.to_string(),
+                        denom: DENOM_ULUNA.to_string(),
                         amount: Uint128::from(9_000_000u128), // INITIAL_BALANCE - LIQUIDITY_AMOUNT
                     },
                     Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::from(CREATOR_REMAINING_UOM),
                     },
                     Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::from(INITIAL_BALANCE),
                     },
                     Coin {
-                        denom: UUSD_DENOM.to_string(),
+                        denom: DENOM_UUSD.to_string(),
                         amount: Uint128::from(CREATOR_REMAINING_UUSD),
                     },
                     Coin {
-                        denom: UWHALE_DENOM.to_string(),
+                        denom: DENOM_UWHALE.to_string(),
                         amount: Uint128::from(9_000_000u128), // INITIAL_BALANCE - LIQUIDITY_AMOUNT
                     },
                 ]
@@ -392,7 +392,7 @@ fn provide_liquidity_with_single_asset() {
         })
         .withdraw_liquidity(
             &creator,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             vec![Coin {
                 denom: lp_denom.clone(),
                 amount: Uint128::from(INITIAL_LP_TOKENS_MINTED),
@@ -407,23 +407,23 @@ fn provide_liquidity_with_single_asset() {
                 balances,
                 vec![
                     Coin {
-                        denom: ULUNA_DENOM.to_string(),
+                        denom: DENOM_ULUNA.to_string(),
                         amount: Uint128::from(9_989_208u128),
                     },
                     Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::from(CREATOR_REMAINING_UOM),
                     },
                     Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::from(INITIAL_BALANCE),
                     },
                     Coin {
-                        denom: UUSD_DENOM.to_string(),
+                        denom: DENOM_UUSD.to_string(),
                         amount: Uint128::from(CREATOR_REMAINING_UUSD),
                     },
                     Coin {
-                        denom: UWHALE_DENOM.to_string(),
+                        denom: DENOM_UWHALE.to_string(),
                         amount: Uint128::from(10_009_092u128),
                     },
                 ]
@@ -443,23 +443,23 @@ fn provide_liquidity_with_single_asset() {
                         amount: Uint128::from(LP_TOKENS_FOR_OTHER_USER),
                     },
                     Coin {
-                        denom: ULUNA_DENOM.to_string(),
+                        denom: DENOM_ULUNA.to_string(),
                         amount: Uint128::from(INITIAL_BALANCE),
                     },
                     Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::from(SMALL_BALANCE),
                     },
                     Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::from(INITIAL_BALANCE),
                     },
                     Coin {
-                        denom: UUSD_DENOM.to_string(),
+                        denom: DENOM_UUSD.to_string(),
                         amount: Uint128::from(SMALL_BALANCE),
                     },
                     Coin {
-                        denom: UWHALE_DENOM.to_string(),
+                        denom: DENOM_UWHALE.to_string(),
                         amount: Uint128::from(OTHER_REMAINING_UWHALE),
                     },
                 ]
@@ -467,7 +467,7 @@ fn provide_liquidity_with_single_asset() {
         })
         .withdraw_liquidity(
             &other,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             vec![Coin {
                 denom: lp_denom.clone(),
                 amount: Uint128::from(LP_TOKENS_FOR_OTHER_USER),
@@ -482,23 +482,23 @@ fn provide_liquidity_with_single_asset() {
                 balances,
                 vec![
                     Coin {
-                        denom: ULUNA_DENOM.to_string(),
+                        denom: DENOM_ULUNA.to_string(),
                         amount: Uint128::from(OTHER_ULUNA_AFTER_WITHDRAW),
                     },
                     Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::from(SMALL_BALANCE),
                     },
                     Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::from(INITIAL_BALANCE),
                     },
                     Coin {
-                        denom: UUSD_DENOM.to_string(),
+                        denom: DENOM_UUSD.to_string(),
                         amount: Uint128::from(SMALL_BALANCE),
                     },
                     Coin {
-                        denom: UWHALE_DENOM.to_string(),
+                        denom: DENOM_UWHALE.to_string(),
                         amount: Uint128::from(OTHER_UWHALE_AFTER_WITHDRAW),
                     },
                 ]
@@ -512,11 +512,11 @@ fn provide_liquidity_with_single_asset() {
                 balances,
                 vec![
                     Coin {
-                        denom: ULUNA_DENOM.to_string(),
+                        denom: DENOM_ULUNA.to_string(),
                         amount: Uint128::from(FEE_COLLECTOR_ULUNA_FEES),
                     },
                     Coin {
-                        denom: UUSD_DENOM.to_string(),
+                        denom: DENOM_UUSD.to_string(),
                         amount: Uint128::from(UUSD_POOL_CREATION_FEE),
                     },
                 ]
@@ -533,11 +533,11 @@ fn provide_liquidity_with_single_asset() {
                         amount: Uint128::from(1_000u128),
                     },
                     Coin {
-                        denom: ULUNA_DENOM.to_string(),
+                        denom: DENOM_ULUNA.to_string(),
                         amount: Uint128::from(991u128),
                     },
                     Coin {
-                        denom: UWHALE_DENOM.to_string(),
+                        denom: DENOM_UWHALE.to_string(),
                         amount: Uint128::from(1_011u128),
                     },
                 ]
@@ -549,20 +549,20 @@ fn provide_liquidity_with_single_asset() {
 fn provide_liquidity_with_single_asset_to_third_party() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(INITIAL_BALANCE, UWHALE_DENOM.to_string()),
-            coin(INITIAL_BALANCE, ULUNA_DENOM.to_string()),
-            coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
-            coin(SMALL_BALANCE, UUSD_DENOM.to_string()),
-            coin(SMALL_BALANCE, UOM_DENOM.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+            coin(SMALL_BALANCE, DENOM_UUSD.to_string()),
+            coin(SMALL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(UOM_STARGATE_BALANCE, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(UOM_STARGATE_BALANCE, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let other = suite.senders[1].clone();
     let another = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -586,8 +586,8 @@ fn provide_liquidity_with_single_asset_to_third_party() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_LABEL.to_string()),
         vec![
-            coin(UUSD_POOL_CREATION_FEE, UUSD_DENOM),
-            coin(UOM_POOL_CREATION_FEE, UOM_DENOM),
+            coin(UUSD_POOL_CREATION_FEE, DENOM_UUSD),
+            coin(UOM_POOL_CREATION_FEE, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -595,13 +595,13 @@ fn provide_liquidity_with_single_asset_to_third_party() {
     );
 
     let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom(O_WHALE_ULUNA_DENOM.to_string());
+    let lp_denom = suite.get_lp_denom(O_WHALE_DENOM_ULUNA.to_string());
 
     // Let's try to add liquidity
     suite
         .provide_liquidity(
             &creator,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
@@ -609,11 +609,11 @@ fn provide_liquidity_with_single_asset_to_third_party() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(LIQUIDITY_AMOUNT),
                 },
             ],
@@ -641,7 +641,7 @@ fn provide_liquidity_with_single_asset_to_third_party() {
     suite
         .provide_liquidity(
             &other,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
@@ -649,11 +649,11 @@ fn provide_liquidity_with_single_asset_to_third_party() {
             Some(another.to_string()),
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(SINGLE_ASSET_DEPOSIT_THIRD_PARTY),
                 },
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(SINGLE_ASSET_DEPOSIT_THIRD_PARTY),
                 },
             ],
@@ -682,7 +682,7 @@ fn provide_liquidity_with_single_asset_to_third_party() {
 
     suite.provide_liquidity(
         &other,
-        O_WHALE_ULUNA_DENOM.to_string(),
+        O_WHALE_DENOM_ULUNA.to_string(),
         Some(86_400u64),
         None,
         None,
@@ -690,11 +690,11 @@ fn provide_liquidity_with_single_asset_to_third_party() {
         Some(another.to_string()),
         vec![
             Coin {
-                denom: UWHALE_DENOM.to_string(),
+                denom: DENOM_UWHALE.to_string(),
                 amount: Uint128::from(SINGLE_ASSET_DEPOSIT_THIRD_PARTY),
             },
             Coin {
-                denom: UWHALE_DENOM.to_string(),
+                denom: DENOM_UWHALE.to_string(),
                 amount: Uint128::from(SINGLE_ASSET_DEPOSIT_THIRD_PARTY),
             },
         ],
@@ -712,20 +712,20 @@ fn provide_liquidity_with_single_asset_to_third_party() {
 fn provide_liquidity_with_single_asset_edge_case() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(LIQUIDITY_AMOUNT, UWHALE_DENOM.to_string()),
-            coin(LIQUIDITY_AMOUNT, ULUNA_DENOM.to_string()),
-            coin(LIQUIDITY_AMOUNT, UOSMO_DENOM.to_string()),
-            coin(SMALL_BALANCE, UUSD_DENOM.to_string()),
-            coin(SMALL_BALANCE, UOM_DENOM.to_string()),
+            coin(LIQUIDITY_AMOUNT, DENOM_UWHALE.to_string()),
+            coin(LIQUIDITY_AMOUNT, DENOM_ULUNA.to_string()),
+            coin(LIQUIDITY_AMOUNT, DENOM_UOSMO.to_string()),
+            coin(SMALL_BALANCE, DENOM_UUSD.to_string()),
+            coin(SMALL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(UOM_STARGATE_BALANCE, UOM_DENOM.to_string())]),
+        StargateMock::new(vec![coin(UOM_STARGATE_BALANCE, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec![UWHALE_DENOM.to_string(), ULUNA_DENOM.to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -749,8 +749,8 @@ fn provide_liquidity_with_single_asset_edge_case() {
         PoolType::ConstantProduct,
         Some(WHALE_ULUNA_LABEL.to_string()),
         vec![
-            coin(UUSD_POOL_CREATION_FEE, UUSD_DENOM),
-            coin(UOM_POOL_CREATION_FEE, UOM_DENOM),
+            coin(UUSD_POOL_CREATION_FEE, DENOM_UUSD),
+            coin(UOM_POOL_CREATION_FEE, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -763,7 +763,7 @@ fn provide_liquidity_with_single_asset_edge_case() {
     suite
         .provide_liquidity(
             &creator,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
@@ -771,11 +771,11 @@ fn provide_liquidity_with_single_asset_edge_case() {
             None,
             vec![
                 Coin {
-                    denom: UWHALE_DENOM.to_string(),
+                    denom: DENOM_UWHALE.to_string(),
                     amount: Uint128::from(EDGE_CASE_INITIAL_LIQUIDITY),
                 },
                 Coin {
-                    denom: ULUNA_DENOM.to_string(),
+                    denom: DENOM_ULUNA.to_string(),
                     amount: Uint128::from(EDGE_CASE_INITIAL_LIQUIDITY),
                 },
             ],
@@ -792,14 +792,14 @@ fn provide_liquidity_with_single_asset_edge_case() {
     suite
         .provide_liquidity(
             &other,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
             FIFTY_PERCENT_SLIPPAGE,
             None,
             vec![Coin {
-                denom: UWHALE_DENOM.to_string(),
+                denom: DENOM_UWHALE.to_string(),
                 amount: Uint128::from(1_760u128),
             }],
             |result| {
@@ -812,14 +812,14 @@ fn provide_liquidity_with_single_asset_edge_case() {
         )
         .provide_liquidity(
             &other,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
             FIFTY_PERCENT_SLIPPAGE,
             None,
             vec![Coin {
-                denom: UWHALE_DENOM.to_string(),
+                denom: DENOM_UWHALE.to_string(),
                 amount: Uint128::from(10_000u128),
             }],
             |result| {
@@ -832,14 +832,14 @@ fn provide_liquidity_with_single_asset_edge_case() {
         )
         .provide_liquidity(
             &other,
-            O_WHALE_ULUNA_DENOM.to_string(),
+            O_WHALE_DENOM_ULUNA.to_string(),
             None,
             None,
             None,
             FIFTY_PERCENT_SLIPPAGE,
             None,
             vec![Coin {
-                denom: UWHALE_DENOM.to_string(),
+                denom: DENOM_UWHALE.to_string(),
                 amount: Uint128::from(EDGE_CASE_SINGLE_ASSET_DEPOSIT_SUCCESS),
             }],
             |result| {
