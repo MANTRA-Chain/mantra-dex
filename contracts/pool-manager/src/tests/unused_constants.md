@@ -7,8 +7,9 @@ Total files scanned: 12
 ## Progress Summary
 
 ### Completed Files:
+
 - ✅ **basic_tests.rs** - 2/2 constants removed (100% complete)
-- ✅ **lp_actions/basic_lp.rs** - 1/1 constants removed (100% complete)  
+- ✅ **lp_actions/basic_lp.rs** - 1/1 constants removed (100% complete)
 - ✅ **lp_actions/locking.rs** - 2/2 constants removed (100% complete)
 - ✅ **lp_actions/single_asset.rs** - 8/17 constants removed (47% complete, 9 kept for semantic value)
 - ✅ **lp_actions/slippage_and_fees.rs** - 35/39 constants removed (90% complete, 4 analysis errors)
@@ -17,13 +18,15 @@ Total files scanned: 12
 - ✅ **router.rs** - 6/6 constants removed (100% complete)
 
 ### Remaining Files:
-- ⏳ **query.rs** - 0/25 constants processed
+
+- ✅ **query.rs** - 25/25 constants removed (100% complete)
 - ⏳ **swap.rs** - 0/67 constants processed
 
 ### Overall Progress:
-- **Files completed**: 8/10 (80%)
-- **Constants processed**: 77/142 total single-use constants
-- **Constants successfully removed**: 77 constants
+
+- **Files completed**: 9/10 (90%)
+- **Constants processed**: 102/142 total single-use constants
+- **Constants successfully removed**: 102 constants
 - **Constants kept for semantic value**: 11 constants
 - **Analysis errors to review**: 4 constants
 
@@ -236,57 +239,57 @@ Total files scanned: 12
 
 ### File: `../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs`
 
-- [ ] **DESIRED_OUTPUT_AMOUNT** (used 1 times)
+- [x] **DESIRED_OUTPUT_AMOUNT** (used 1 times) - Removed successfully, inlined as 3240u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:996
-- [ ] **EXPECTED_BURN_FEE_USDC** (used 1 times)
+- [x] **EXPECTED_BURN_FEE_USDC** (used 1 times) - Removed successfully, inlined as 108u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:527
-- [ ] **EXPECTED_BURN_FEE_USDC_REV** (used 1 times)
+- [x] **EXPECTED_BURN_FEE_USDC_REV** (used 1 times) - Removed successfully, inlined as 107u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1044
-- [ ] **EXPECTED_BURN_FEE_USDT** (used 1 times)
+- [x] **EXPECTED_BURN_FEE_USDT** (used 1 times) - Removed successfully, inlined as 119u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:528
-- [ ] **EXPECTED_BURN_FEE_USDT_REV** (used 1 times)
+- [x] **EXPECTED_BURN_FEE_USDT_REV** (used 1 times) - Removed successfully, inlined as 119u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1045
-- [ ] **EXPECTED_EXTRA_FEE_USDC** (used 1 times)
+- [x] **EXPECTED_EXTRA_FEE_USDC** (used 1 times) - Removed successfully, inlined as 144u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:534
-- [ ] **EXPECTED_EXTRA_FEE_USDC_REV** (used 1 times)
+- [x] **EXPECTED_EXTRA_FEE_USDC_REV** (used 1 times) - Removed successfully, inlined as 143u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1051
-- [ ] **EXPECTED_EXTRA_FEE_USDT** (used 1 times)
+- [x] **EXPECTED_EXTRA_FEE_USDT** (used 1 times) - Removed successfully, inlined as 159u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:535
-- [ ] **EXPECTED_EXTRA_FEE_USDT_REV** (used 1 times)
+- [x] **EXPECTED_EXTRA_FEE_USDT_REV** (used 1 times) - Removed successfully, inlined as 159u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1052
-- [ ] **EXPECTED_OFFER_AMOUNT_TOLERANCE** (used 1 times)
+- [x] **EXPECTED_OFFER_AMOUNT_TOLERANCE** (used 1 times) - Removed successfully, inlined as "0.001"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1018
-- [ ] **EXPECTED_PROTOCOL_FEE_USDC** (used 1 times)
+- [x] **EXPECTED_PROTOCOL_FEE_USDC** (used 1 times) - Removed successfully, inlined as 36u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:520
-- [ ] **EXPECTED_PROTOCOL_FEE_USDC_REV** (used 1 times)
+- [x] **EXPECTED_PROTOCOL_FEE_USDC_REV** (used 1 times) - Removed successfully, inlined as 35u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1037
-- [ ] **EXPECTED_PROTOCOL_FEE_USDT** (used 1 times)
+- [x] **EXPECTED_PROTOCOL_FEE_USDT** (used 1 times) - Removed successfully, inlined as 39u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:521
-- [ ] **EXPECTED_PROTOCOL_FEE_USDT_REV** (used 1 times)
+- [x] **EXPECTED_PROTOCOL_FEE_USDT_REV** (used 1 times) - Removed successfully, inlined as 39u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1038
-- [ ] **EXPECTED_RETURN_AMOUNT** (used 1 times)
+- [x] **EXPECTED_RETURN_AMOUNT** (used 1 times) - Removed successfully, inlined as 3243u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:501
-- [ ] **EXPECTED_RETURN_AMOUNT_TOLERANCE** (used 1 times)
+- [x] **EXPECTED_RETURN_AMOUNT_TOLERANCE** (used 1 times) - Removed successfully, inlined as "0.001"
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1100
-- [ ] **EXPECTED_SLIPPAGE_AMOUNT** (used 1 times)
+- [x] **EXPECTED_SLIPPAGE_AMOUNT** (used 1 times) - Removed successfully, inlined as 100u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:297
-- [ ] **EXPECTED_SLIPPAGE_USDC** (used 1 times)
+- [x] **EXPECTED_SLIPPAGE_USDC** (used 1 times) - Removed successfully, inlined as 360u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:506
-- [ ] **EXPECTED_SLIPPAGE_USDC_REV** (used 1 times)
+- [x] **EXPECTED_SLIPPAGE_USDC_REV** (used 1 times) - Removed successfully, inlined as 1u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1023
-- [ ] **EXPECTED_SLIPPAGE_USDT** (used 1 times)
+- [x] **EXPECTED_SLIPPAGE_USDT** (used 1 times) - Removed successfully, inlined as 397u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:507
-- [ ] **EXPECTED_SLIPPAGE_USDT_REV** (used 1 times)
+- [x] **EXPECTED_SLIPPAGE_USDT_REV** (used 1 times) - Removed successfully, inlined as 1u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1024
-- [ ] **EXPECTED_SWAP_FEE_USDC** (used 1 times)
+- [x] **EXPECTED_SWAP_FEE_USDC** (used 1 times) - Removed successfully, inlined as 72u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:513
-- [ ] **EXPECTED_SWAP_FEE_USDC_REV** (used 1 times)
+- [x] **EXPECTED_SWAP_FEE_USDC_REV** (used 1 times) - Removed successfully, inlined as 71u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1030
-- [ ] **EXPECTED_SWAP_FEE_USDT** (used 1 times)
+- [x] **EXPECTED_SWAP_FEE_USDT** (used 1 times) - Removed successfully, inlined as 79u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:514
-- [ ] **EXPECTED_SWAP_FEE_USDT_REV** (used 1 times)
+- [x] **EXPECTED_SWAP_FEE_USDT_REV** (used 1 times) - Removed successfully, inlined as 79u128
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:1031
-- [ ] **REVERSE_SIMULATION_SLIPPAGE_PERCENT** (used 1 times)
+- [x] **REVERSE_SIMULATION_SLIPPAGE_PERCENT** (used 1 times) - Removed successfully, inlined as 11
   - Usage locations: ../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/query.rs:755
 
 ### File: `../../mantra/mantra-dex/contracts/pool-manager/src/tests/integration/router.rs`

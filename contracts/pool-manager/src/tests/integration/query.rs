@@ -34,7 +34,6 @@ const EXPECTED_PROTOCOL_FEE: u128 = 10;
 const EXPECTED_SWAP_FEE: u128 = 20;
 const EXPECTED_BURN_FEE: u128 = 30;
 const EXPECTED_EXTRA_FEE: u128 = 40;
-const EXPECTED_SLIPPAGE_AMOUNT: u128 = 100;
 
 // Simulation parameters
 const SIMULATION_TOLERANCE: &str = "0.1";
@@ -50,40 +49,16 @@ const USDT_OM_POOL_LIQUIDITY: u128 = 4_000_000_000;
 const USDT_USDC_POOL_LIQUIDITY: u128 = 1_000_000_000;
 
 // Expected values for simulate_swap_operations_query_verification
-const EXPECTED_RETURN_AMOUNT: u128 = 3243;
-const EXPECTED_SLIPPAGE_USDC: u128 = 360;
-const EXPECTED_SLIPPAGE_USDT: u128 = 397;
-const EXPECTED_SWAP_FEE_USDC: u128 = 72;
-const EXPECTED_SWAP_FEE_USDT: u128 = 79;
-const EXPECTED_PROTOCOL_FEE_USDC: u128 = 36;
-const EXPECTED_PROTOCOL_FEE_USDT: u128 = 39;
-const EXPECTED_BURN_FEE_USDC: u128 = 108;
-const EXPECTED_BURN_FEE_USDT: u128 = 119;
-const EXPECTED_EXTRA_FEE_USDC: u128 = 144;
-const EXPECTED_EXTRA_FEE_USDT: u128 = 159;
 
 // Additional constants for reverse_simulation_queries_fees_verification test
 const REVERSE_SIMULATION_AMOUNT_WHALE: u128 = 903;
 const REVERSE_SIMULATION_AMOUNT_USD: u128 = 900;
-const REVERSE_SIMULATION_SLIPPAGE_PERCENT: u64 = 11;
+
 const OFFER_AMOUNT_TOLERANCE: &str = "0.002";
 const RETURN_AMOUNT_TOLERANCE_WHALE: &str = "0.002";
 const WHALE_LIQUIDITY_AMOUNT: u128 = 1_000_000_000;
 
 // Additional constants for reverse_simulate_swap_operations_query_verification test
-const DESIRED_OUTPUT_AMOUNT: u128 = 3240;
-const EXPECTED_OFFER_AMOUNT_TOLERANCE: &str = "0.001";
-const EXPECTED_RETURN_AMOUNT_TOLERANCE: &str = "0.001";
-const EXPECTED_SLIPPAGE_USDC_REV: u128 = 1;
-const EXPECTED_SLIPPAGE_USDT_REV: u128 = 1;
-const EXPECTED_SWAP_FEE_USDC_REV: u128 = 71;
-const EXPECTED_SWAP_FEE_USDT_REV: u128 = 79;
-const EXPECTED_PROTOCOL_FEE_USDC_REV: u128 = 35;
-const EXPECTED_PROTOCOL_FEE_USDT_REV: u128 = 39;
-const EXPECTED_BURN_FEE_USDC_REV: u128 = 107;
-const EXPECTED_BURN_FEE_USDT_REV: u128 = 119;
-const EXPECTED_EXTRA_FEE_USDC_REV: u128 = 143;
-const EXPECTED_EXTRA_FEE_USDT_REV: u128 = 159;
 
 #[test]
 fn simulation_queries_fees_verification() {
@@ -292,10 +267,7 @@ fn simulation_queries_fees_verification() {
         |result| {
             let response = result.as_ref().unwrap();
 
-            assert_eq!(
-                response.slippage_amount,
-                Uint128::new(EXPECTED_SLIPPAGE_AMOUNT)
-            );
+            assert_eq!(response.slippage_amount, Uint128::new(100u128));
 
             // the protocol fee is 1% of the output amount
             assert_approx_eq!(
@@ -496,43 +468,40 @@ fn simulate_swap_operations_query_verification() {
             println!("{:?}", result);
             let response = result.unwrap();
 
-            assert_eq!(
-                response.return_amount,
-                Uint128::from(EXPECTED_RETURN_AMOUNT)
-            );
+            assert_eq!(response.return_amount, Uint128::from(3243u128));
             assert_eq!(
                 response.slippage_amounts,
                 vec![
-                    coin(EXPECTED_SLIPPAGE_USDC, DENOM_USDC.to_string()),
-                    coin(EXPECTED_SLIPPAGE_USDT, DENOM_USDT.to_string())
+                    coin(360u128, DENOM_USDC.to_string()),
+                    coin(397u128, DENOM_USDT.to_string())
                 ]
             );
             assert_eq!(
                 response.swap_fees,
                 vec![
-                    coin(EXPECTED_SWAP_FEE_USDC, DENOM_USDC.to_string()),
-                    coin(EXPECTED_SWAP_FEE_USDT, DENOM_USDT.to_string()),
+                    coin(72u128, DENOM_USDC.to_string()),
+                    coin(79u128, DENOM_USDT.to_string()),
                 ]
             );
             assert_eq!(
                 response.protocol_fees,
                 vec![
-                    coin(EXPECTED_PROTOCOL_FEE_USDC, DENOM_USDC.to_string()),
-                    coin(EXPECTED_PROTOCOL_FEE_USDT, DENOM_USDT.to_string()),
+                    coin(36u128, DENOM_USDC.to_string()),
+                    coin(39u128, DENOM_USDT.to_string()),
                 ]
             );
             assert_eq!(
                 response.burn_fees,
                 vec![
-                    coin(EXPECTED_BURN_FEE_USDC, DENOM_USDC.to_string()),
-                    coin(EXPECTED_BURN_FEE_USDT, DENOM_USDT.to_string()),
+                    coin(108u128, DENOM_USDC.to_string()),
+                    coin(119u128, DENOM_USDT.to_string()),
                 ]
             );
             assert_eq!(
                 response.extra_fees,
                 vec![
-                    coin(EXPECTED_EXTRA_FEE_USDC, DENOM_USDC.to_string()),
-                    coin(EXPECTED_EXTRA_FEE_USDT, DENOM_USDT.to_string()),
+                    coin(144u128, DENOM_USDC.to_string()),
+                    coin(159u128, DENOM_USDT.to_string()),
                 ]
             );
 
@@ -752,7 +721,7 @@ fn reverse_simulation_queries_fees_verification() {
         &creator,
         DENOM_WHALE.to_string(),
         None,
-        Some(Decimal::percent(REVERSE_SIMULATION_SLIPPAGE_PERCENT)),
+        Some(Decimal::percent(11)),
         None,
         POOL_IDENTIFIER_WHALE_LUNA.to_string(),
         vec![coin(
@@ -993,7 +962,7 @@ fn reverse_simulate_swap_operations_query_verification() {
         );
 
     let simulated_input_amount = RefCell::new(Uint128::zero());
-    let desired_output_amount = Uint128::from(DESIRED_OUTPUT_AMOUNT);
+    let desired_output_amount = Uint128::from(3240u128);
     suite.query_reverse_simulate_swap_operations(
         desired_output_amount,
         vec![
@@ -1012,44 +981,40 @@ fn reverse_simulate_swap_operations_query_verification() {
             let response = result.unwrap();
 
             // this is the value we got in the previous test for the regular simulation
-            assert_approx_eq!(
-                response.offer_amount,
-                Uint128::from(SWAP_AMOUNT),
-                EXPECTED_OFFER_AMOUNT_TOLERANCE
-            );
+            assert_approx_eq!(response.offer_amount, Uint128::from(SWAP_AMOUNT), "0.001");
             assert_eq!(
                 response.slippage_amounts,
                 vec![
-                    coin(EXPECTED_SLIPPAGE_USDC_REV, DENOM_USDC.to_string()),
-                    coin(EXPECTED_SLIPPAGE_USDT_REV, DENOM_USDT.to_string()),
+                    coin(1u128, DENOM_USDC.to_string()),
+                    coin(1u128, DENOM_USDT.to_string()),
                 ]
             );
             assert_eq!(
                 response.swap_fees,
                 vec![
-                    coin(EXPECTED_SWAP_FEE_USDC_REV, DENOM_USDC.to_string()),
-                    coin(EXPECTED_SWAP_FEE_USDT_REV, DENOM_USDT.to_string()),
+                    coin(71u128, DENOM_USDC.to_string()),
+                    coin(79u128, DENOM_USDT.to_string()),
                 ]
             );
             assert_eq!(
                 response.protocol_fees,
                 vec![
-                    coin(EXPECTED_PROTOCOL_FEE_USDC_REV, DENOM_USDC.to_string()),
-                    coin(EXPECTED_PROTOCOL_FEE_USDT_REV, DENOM_USDT.to_string()),
+                    coin(35u128, DENOM_USDC.to_string()),
+                    coin(39u128, DENOM_USDT.to_string()),
                 ]
             );
             assert_eq!(
                 response.burn_fees,
                 vec![
-                    coin(EXPECTED_BURN_FEE_USDC_REV, DENOM_USDC.to_string()),
-                    coin(EXPECTED_BURN_FEE_USDT_REV, DENOM_USDT.to_string()),
+                    coin(107u128, DENOM_USDC.to_string()),
+                    coin(119u128, DENOM_USDT.to_string()),
                 ]
             );
             assert_eq!(
                 response.extra_fees,
                 vec![
-                    coin(EXPECTED_EXTRA_FEE_USDC_REV, DENOM_USDC.to_string()),
-                    coin(EXPECTED_EXTRA_FEE_USDT_REV, DENOM_USDT.to_string()),
+                    coin(143u128, DENOM_USDC.to_string()),
+                    coin(159u128, DENOM_USDT.to_string()),
                 ]
             );
 
@@ -1097,7 +1062,7 @@ fn reverse_simulate_swap_operations_query_verification() {
             assert_approx_eq!(
                 desired_output_amount.u128(),
                 return_amount.parse::<u128>().unwrap(),
-                EXPECTED_RETURN_AMOUNT_TOLERANCE
+                "0.001"
             );
         },
     );
