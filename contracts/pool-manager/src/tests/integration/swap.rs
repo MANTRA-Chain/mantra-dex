@@ -10,8 +10,9 @@ use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::{PoolType, SimulationResponse};
 use test_utils::common_constants::{
-    DECIMAL_PLACES, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UUSDC, DENOM_UUSDT,
-    DENOM_UWHALE, LIQUIDITY_AMOUNT, STABLESWAP_AMP_FACTOR, STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT,
+    DECIMALS_12, DECIMALS_18, DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD,
+    DENOM_UUSDC, DENOM_UUSDT, DENOM_UWHALE, ONE_HUNDRED_TRILLION, ONE_MILLION, ONE_THOUSAND,
+    STABLESWAP_AMP_FACTOR, STARGATE_MOCK_UOM_AMOUNT,
 };
 
 // Constants for denoms (using common constants where available)
@@ -27,8 +28,8 @@ const ULUNA_UUSD_POOL_ID: &str = "o.uluna.uusd";
 const P1_POOL_ID: &str = "p.1";
 
 // Common Amounts (using common constants)
-const ONE_MILLION_U128: Uint128 = Uint128::new(LIQUIDITY_AMOUNT);
-const ONE_THOUSAND_U128: Uint128 = Uint128::new(SWAP_AMOUNT);
+const ONE_MILLION_U128: Uint128 = Uint128::new(ONE_MILLION);
+const ONE_THOUSAND_U128: Uint128 = Uint128::new(ONE_THOUSAND);
 const EIGHT_EIGHT_EIGHT_EIGHT_U128: Uint128 = Uint128::new(STARGATE_MOCK_UOM_AMOUNT);
 
 const ULUNA_LIQUIDITY_RESERVES: Uint128 = Uint128::new(3_000_000u128);
@@ -36,10 +37,6 @@ const UUSD_LIQUIDITY_RESERVES_ULUNA_POOL: Uint128 = Uint128::new(1_000_000u128);
 
 #[allow(clippy::inconsistent_digit_grouping)]
 const BALANCE_1T_U128: Uint128 = Uint128::new(1_000_000_000_000u128);
-
-// Common Decimals (using common constants where available)
-const DECIMALS_6: u8 = DECIMAL_PLACES;
-const DECIMALS_18: u8 = 18u8;
 
 // Default Fee Shares
 static DEFAULT_PROTOCOL_FEE_SHARE: LazyLock<Decimal> =
@@ -128,16 +125,6 @@ const SWAP_10K_ATTO_UUSDT_3POOL_DIFFERENT_DECIMALS: Uint128 =
 static MAX_SLIPPAGE_PERCENT_30_3POOL_DIFFERENT_DECIMALS: LazyLock<Decimal> =
     LazyLock::new(|| Decimal::percent(30));
 
-// -- Constants for setup_3pool_different_decimals helper --
-
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
-
-const DECIMALS_12_U8: u8 = 12u8;
-const DECIMALS_18_U8: u8 = 18u8;
-
 // -- Constants for swap_4pool_different_decimals and its setup helper --
 const UUSDX_DENOM: &str = "uusdx";
 
@@ -150,21 +137,8 @@ static ONE_BPS_DECIMAL_TOLERANCE: LazyLock<Decimal> =
 const UWETH_DENOM: &str = "uweth";
 
 const UUSD_UWETH_POOL_ID: &str = "o.uusd.uweth";
-
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
 const SWAP_OFFER_UWETH_BELIEF_PRICE: Uint128 = Uint128::new(10_0000000000000000000u128); // 10 * 10^18
 const SWAP_OFFER_UUSD_BELIEF_PRICE: Uint128 = Uint128::new(10_000_000u128); // 10 * 10^6
-
-// -- Constants for compute_offer_amount_floor --
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
-#[allow(clippy::inconsistent_digit_grouping)]
-
-// -- Constants for providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals --
-
 const UUSDC_UUSDT_POOL_ID: &str = "o.uusdc.uusdt";
 
 const ALICE_INITIAL_LIQ_BASE_SKEWED_TEST: Uint128 = Uint128::new(1_000u128);
@@ -2504,9 +2478,9 @@ fn simulation_vs_reverse_simulation_3pool() {
         (DENOM_UUSD, DENOM_UUSDT, Uint128::new(1_000_000_000000u128)),
     ];
     let mut decimals_by_denom: HashMap<String, u8> = HashMap::new();
-    decimals_by_denom.insert(DENOM_UUSD.to_string(), DECIMAL_PLACES);
-    decimals_by_denom.insert(DENOM_UUSDC.to_string(), DECIMALS_12_U8);
-    decimals_by_denom.insert(DENOM_UUSDT.to_string(), DECIMALS_18_U8);
+    decimals_by_denom.insert(DENOM_UUSD.to_string(), DECIMALS_6);
+    decimals_by_denom.insert(DENOM_UUSDC.to_string(), DECIMALS_12);
+    decimals_by_denom.insert(DENOM_UUSDT.to_string(), DECIMALS_18);
 
     // Test each case
     for (token_in, token_out, amount_in) in test_cases {
@@ -2623,7 +2597,7 @@ fn belief_price_works_decimals_independent() {
         .create_pool(
             &creator,
             vec![DENOM_UUSD.to_string(), UWETH_DENOM.to_string()],
-            vec![DECIMAL_PLACES, DECIMALS_18_U8],
+            vec![DECIMALS_6, DECIMALS_18],
             PoolFee {
                 protocol_fee: Fee {
                     share: Decimal::zero(),
@@ -2747,8 +2721,8 @@ fn belief_price_works_decimals_independent() {
 fn compute_offer_amount_floor() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(100_000_000_000_000u128, DENOM_ULUNA.to_string()),
-            coin(100_000_000_000_000u128, DENOM_UUSD.to_string()),
+            coin(ONE_HUNDRED_TRILLION, DENOM_ULUNA.to_string()),
+            coin(ONE_HUNDRED_TRILLION, DENOM_UUSD.to_string()),
             coin(10_000u128, DENOM_UOM.to_string()),
         ],
         StargateMock::new(vec![coin(
@@ -2766,7 +2740,7 @@ fn compute_offer_amount_floor() {
         .create_pool(
             &creator,
             vec![DENOM_ULUNA.to_string(), DENOM_UUSD.to_string()],
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             PoolFee {
                 protocol_fee: Fee {
                     share: Decimal::percent(0),
@@ -2869,8 +2843,7 @@ fn setup_3pool_different_decimals(
     initial_liquidity: Option<Vec<Uint128>>,
 ) -> TestingSuite {
     // Default values
-    let decimals =
-        asset_decimals.unwrap_or_else(|| vec![DECIMAL_PLACES, DECIMALS_12_U8, DECIMALS_18_U8]);
+    let decimals = asset_decimals.unwrap_or_else(|| vec![DECIMALS_6, DECIMALS_12, DECIMALS_18]);
     let amp_val = amp.unwrap_or(85);
 
     // Default initial balances (300T for each token)
@@ -2991,7 +2964,8 @@ fn setup_4pool_different_decimals(
     initial_liquidity: Option<Vec<Uint128>>,
 ) -> TestingSuite {
     // Default values
-    let decimals = asset_decimals.unwrap_or_else(|| vec![6u8, 6u8, 12u8, 18u8]);
+    let decimals =
+        asset_decimals.unwrap_or_else(|| vec![DECIMALS_6, DECIMALS_6, DECIMALS_12, DECIMALS_18]);
     let amp = amp.unwrap_or(85);
 
     // Default initial balances (300T for each token)
@@ -3008,10 +2982,10 @@ fn setup_4pool_different_decimals(
     // Default initial liquidity (100T for each token)
     let liquidity = initial_liquidity.unwrap_or_else(|| {
         vec![
-            Uint128::new(100_000_000_000_000u128 * 10u128.pow(6)), // 100T with 6 decimals
-            Uint128::new(100_000_000_000_000u128 * 10u128.pow(6)), // 100T with 6 decimals
-            Uint128::new(100_000_000_000_000u128 * 10u128.pow(12)), // 100T with 12 decimals
-            Uint128::new(100_000_000_000_000u128 * 10u128.pow(18)), // 100T with 18 decimals
+            Uint128::new(ONE_HUNDRED_TRILLION * 10u128.pow(6)), // 100T with 6 decimals
+            Uint128::new(ONE_HUNDRED_TRILLION * 10u128.pow(6)), // 100T with 6 decimals
+            Uint128::new(ONE_HUNDRED_TRILLION * 10u128.pow(12)), // 100T with 12 decimals
+            Uint128::new(ONE_HUNDRED_TRILLION * 10u128.pow(18)), // 100T with 18 decimals
         ]
     });
 
@@ -3142,7 +3116,7 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
     suite.instantiate_default().create_pool(
         &alice,
         asset_infos,
-        vec![DECIMAL_PLACES, DECIMAL_PLACES],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap {
             amp: STABLE_SWAP_AMP,
@@ -3159,9 +3133,9 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
 
     // Initial liquidity
     let alice_initial_uusdt_liquidity =
-        ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMAL_PLACES)));
+        ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6)));
     let alice_initial_uusdc_liquidity =
-        ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMAL_PLACES)));
+        ALICE_INITIAL_LIQ_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6)));
     println!("{}", separator);
     println!("==== Alice provides 1k usdt and 1k usdc as initial liquidity to the pool");
     suite.provide_liquidity(
@@ -3189,10 +3163,10 @@ fn providing_skewed_liquidity_on_stableswap_gets_punished_same_decimals() {
 
     println!("{}", separator);
     println!("==== Bob provides 110 usdt and 90 usdc of liquidity");
-    let bob_initial_uusdt_liquidity = BOB_INITIAL_LIQ_USDT_BASE_SKEWED_TEST
-        * Uint128::from(10u128.pow(u32::from(DECIMAL_PLACES)));
-    let bob_initial_uusdc_liquidity = BOB_INITIAL_LIQ_USDC_BASE_SKEWED_TEST
-        * Uint128::from(10u128.pow(u32::from(DECIMAL_PLACES)));
+    let bob_initial_uusdt_liquidity =
+        BOB_INITIAL_LIQ_USDT_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6)));
+    let bob_initial_uusdc_liquidity =
+        BOB_INITIAL_LIQ_USDC_BASE_SKEWED_TEST * Uint128::from(10u128.pow(u32::from(DECIMALS_6)));
     suite.provide_liquidity(
         &bob,
         UUSDC_UUSDT_POOL_ID.to_string(),

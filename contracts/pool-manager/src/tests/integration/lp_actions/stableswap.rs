@@ -34,9 +34,9 @@ const UOM_DENOM: &str = DENOM_UOM;
 const UUSDC_DENOM: &str = DENOM_UUSDC;
 const UUSDT_DENOM: &str = DENOM_UUSDT;
 const UUSDY_DENOM: &str = DENOM_UUSDY;
-const LIQUIDITY_1M: u128 = LIQUIDITY_AMOUNT;
-const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = POOL_CREATION_FEE;
-const ASSET_DECIMALS: u8 = DECIMAL_PLACES;
+const LIQUIDITY_1M: u128 = ONE_MILLION;
+const POOL_CREATION_FEE_UUSD_AMOUNT: u128 = ONE_THOUSAND;
+const ASSET_DECIMALS: u8 = DECIMALS_6;
 const SWAP_FEE_RATIO_1_10000: (u128, u128) = SWAP_FEE_RATIO_1_1000;
 const INITIAL_BALANCE_1B: u128 = INITIAL_BALANCE;
 const INITIAL_BALANCE_1B_PLUS_1: u128 = INITIAL_BALANCE_PLUS_ONE;
@@ -130,7 +130,7 @@ fn provide_liquidity_stable_swap() {
         O_WHALE_ULUNA_UUSD_ID.to_string(),
         Coin {
             denom: UWHALE_DENOM.to_string(),
-            amount: Uint128::from(SWAP_AMOUNT),
+            amount: Uint128::from(ONE_THOUSAND),
         },
         ULUNA_DENOM.to_string(),
         |result| {
@@ -467,7 +467,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
         O_UUSDC_UUSDT_UUSDY_ID.to_string(),
         Coin {
             denom: UUSDC_DENOM.to_string(),
-            amount: Uint128::from(SWAP_AMOUNT),
+            amount: Uint128::from(ONE_THOUSAND),
         },
         UUSDT_DENOM.to_string(),
         |result| {
@@ -781,7 +781,7 @@ fn provide_liquidity_stable_swap_edge_case() {
     suite.instantiate_default().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 100 },
         Some("whale.uluna.uusd".to_string()),
@@ -963,7 +963,7 @@ fn provide_incomplete_liquidity_fails_on_stableswaps() {
     suite.instantiate_default().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 100 },
         Some("whale.uluna.uusd".to_string()),
@@ -1108,7 +1108,7 @@ fn provide_liquidity_stable_invalid_slippage_check() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 10 },
         Some("whale.uluna".to_string()),
@@ -1197,7 +1197,7 @@ fn setup_stable_swap() -> (TestingSuite, Addr, Addr, String) {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
-        vec![6u8, 6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -1425,7 +1425,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
             uusd_decimals as u8,
             uweth_decimals as u8,
         ],
-        // vec![6u8, 6u8, 18u8],
+        // vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -1729,7 +1729,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit_large_amounts() {
             uusd_decimals as u8,
             uweth_decimals as u8,
         ],
-        // vec![6u8, 6u8, 18u8],
+        // vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -2091,7 +2091,7 @@ fn python_simulation_comparison() {
     suite.instantiate_default().create_pool(
         &creator,
         vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
-        vec![6u8, 6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -2236,7 +2236,7 @@ fn python_simulation_comparison() {
     suite.instantiate_default().create_pool(
         &creator,
         vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
-        vec![6u8, 6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),

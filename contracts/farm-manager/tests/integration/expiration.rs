@@ -11,8 +11,8 @@ use mantra_dex_std::farm_manager::{
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 use test_utils::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
+    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM, DENOM_UOSMO, DENOM_UUSDY, INITIAL_BALANCE,
+    ONE_THOUSAND,
 };
 
 // Denoms
@@ -49,9 +49,9 @@ fn test_close_expired_farms() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, INVALID_LP_DENOM),
     ]);
@@ -74,15 +74,15 @@ fn test_close_expired_farms() {
                 preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH_16),
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                 },
                 farm_identifier: Some(FARM_IDENTIFIER_FARM.to_string()),
             },
         },
         vec![
-            coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-            coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+            coin(FARM_ASSET_AMOUNT_8000, DENOM_UUSDY),
+            coin(ONE_THOUSAND, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -117,15 +117,15 @@ fn test_close_expired_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_10000),
                     },
                     farm_identifier: Some("new_farm".to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_AMOUNT_10000, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_AMOUNT_10000, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -141,7 +141,7 @@ fn test_close_expired_farms() {
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_10000),
                     },
                     claimed_amount: Uint128::zero(),
@@ -159,9 +159,9 @@ fn expand_expired_farm() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
@@ -179,15 +179,15 @@ fn expand_expired_farm() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_4000),
                     },
                     farm_identifier: Some(FARM_IDENTIFIER_FARM.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_AMOUNT_4000, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_AMOUNT_4000, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -203,7 +203,7 @@ fn expand_expired_farm() {
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_4000),
                     },
                     claimed_amount: Uint128::zero(),
@@ -235,13 +235,13 @@ fn expand_expired_farm() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                     },
                     farm_identifier: Some(EXPECTED_PREFIXED_FARM_ID_FARM.to_string()),
                 },
             },
-            vec![coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM)],
+            vec![coin(FARM_ASSET_AMOUNT_8000, DENOM_UUSDY)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -259,9 +259,9 @@ fn test_farm_expired() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, INVALID_LP_DENOM),
     ]);
@@ -288,15 +288,15 @@ fn test_farm_expired() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH_16),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                     },
                     farm_identifier: Some("short_farm".to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_AMOUNT_8000, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -311,15 +311,15 @@ fn test_farm_expired() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH_100),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                     },
                     farm_identifier: Some("long_farm".to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_AMOUNT_8000, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -334,15 +334,15 @@ fn test_farm_expired() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH_100),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                     },
                     farm_identifier: Some(FARM_IDENTIFIER_ANOTHER_FARM.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_AMOUNT_8000, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -389,15 +389,15 @@ fn test_farm_expired() {
                 preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH_100),
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                 },
                 farm_identifier: Some(FARM_IDENTIFIER_ANOTHER_FARM.to_string()),
             },
         },
         vec![
-            coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-            coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+            coin(FARM_ASSET_AMOUNT_8000, DENOM_UUSDY),
+            coin(ONE_THOUSAND, DENOM_UOM),
         ],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -449,15 +449,15 @@ fn test_farm_expired() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH_100),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT_8000),
                     },
                     farm_identifier: Some(FARM_IDENTIFIER_ANOTHER_FARM.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_AMOUNT_8000, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_AMOUNT_8000, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -484,9 +484,9 @@ fn test_farm_expired() {
 fn closing_expired_farm_wont_pay_penalty() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, INVALID_LP_DENOM),
     ]);

@@ -12,8 +12,8 @@ use mantra_dex_std::farm_manager::{
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 use test_utils::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
+    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM, DENOM_UOSMO, DENOM_UUSDY, INITIAL_BALANCE,
+    ONE_THOUSAND,
 };
 
 const FARM_START_EPOCH: u64 = 12;
@@ -33,9 +33,9 @@ fn test_rewards_query_overlapping_farms() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom_1.clone()),
         coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
@@ -64,15 +64,15 @@ fn test_rewards_query_overlapping_farms() {
                     preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(80_000u128),
                     },
                     farm_identifier: Some("farm_1".to_string()),
                 },
             },
             vec![
-                coin(80_000u128, UUSDY_DENOM.to_string()),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM.to_string()),
+                coin(80_000u128, DENOM_UUSDY.to_string()),
+                coin(ONE_THOUSAND, DENOM_UOM.to_string()),
             ],
             |result| {
                 result.unwrap();
@@ -87,15 +87,15 @@ fn test_rewards_query_overlapping_farms() {
                     preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     farm_identifier: Some("farm_2".to_string()),
                 },
             },
             vec![
-                coin(10_000u128, UOSMO_DENOM.to_string()),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM.to_string()),
+                coin(10_000u128, DENOM_UOSMO.to_string()),
+                coin(ONE_THOUSAND, DENOM_UOM.to_string()),
             ],
             |result| {
                 result.unwrap();
@@ -110,13 +110,13 @@ fn test_rewards_query_overlapping_farms() {
                     preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(30_000u128),
                     },
                     farm_identifier: Some("farm_3".to_string()),
                 },
             },
-            vec![coin(31_000u128, UOM_DENOM.to_string())], // 30_000 + 1_000 fee
+            vec![coin(31_000u128, DENOM_UOM.to_string())], // 30_000 + 1_000 fee
             |result| {
                 result.unwrap();
             },
@@ -130,15 +130,15 @@ fn test_rewards_query_overlapping_farms() {
                     preliminary_end_epoch: Some(FARM_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(70_000u128),
                     },
                     farm_identifier: Some("farm_4".to_string()),
                 },
             },
             vec![
-                coin(70_000u128, UUSDY_DENOM.to_string()),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM.to_string()),
+                coin(70_000u128, DENOM_UUSDY.to_string()),
+                coin(ONE_THOUSAND, DENOM_UOM.to_string()),
             ],
             |result| {
                 result.unwrap();
@@ -184,23 +184,23 @@ fn test_rewards_query_overlapping_farms() {
             rewards_response,
             RewardsResponse::RewardsResponse {
                 total_rewards: vec![
-                    coin(15000, UOM_DENOM.to_string()),
-                    coin(5000, UOSMO_DENOM.to_string()),
-                    coin(75000, UUSDY_DENOM.to_string()),
+                    coin(15000, DENOM_UOM.to_string()),
+                    coin(5000, DENOM_UOSMO.to_string()),
+                    coin(75000, DENOM_UUSDY.to_string()),
                 ],
                 rewards_per_lp_denom: vec![
                     (
                         lp_denom_1.clone(),
                         vec![
-                            coin(5000, UOSMO_DENOM.to_string()),
-                            coin(40000, UUSDY_DENOM.to_string())
+                            coin(5000, DENOM_UOSMO.to_string()),
+                            coin(40000, DENOM_UUSDY.to_string())
                         ]
                     ),
                     (
                         lp_denom_2.clone(),
                         vec![
-                            coin(15000, UOM_DENOM.to_string()),
-                            coin(35000, UUSDY_DENOM.to_string())
+                            coin(15000, DENOM_UOM.to_string()),
+                            coin(35000, DENOM_UUSDY.to_string())
                         ]
                     ),
                 ],
@@ -212,9 +212,9 @@ fn test_rewards_query_overlapping_farms() {
 #[test]
 fn test_positions_query_filters_and_pagination() {
     let mut balances = vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
     ];
 
     // prepare lp denoms
@@ -319,9 +319,9 @@ fn test_query_rewards_divide_by_zero() {
     let lp_denom_1 = format!("factory/{MOCK_CONTRACT_ADDR_1}/1.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(LP_DENOM_1_INITIAL_BALANCE, lp_denom_1.clone()),
     ]);
 
@@ -340,15 +340,15 @@ fn test_query_rewards_divide_by_zero() {
                 preliminary_end_epoch: None,
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_UUSDY_ASSET_AMOUNT),
                 },
                 farm_identifier: None,
             },
         },
         vec![
-            coin(FARM_UUSDY_ASSET_AMOUNT, UUSDY_DENOM.to_string()),
-            coin(UOM_FARM_CREATION_FEE, UOM_DENOM.to_string()),
+            coin(FARM_UUSDY_ASSET_AMOUNT, DENOM_UUSDY.to_string()),
+            coin(ONE_THOUSAND, DENOM_UOM.to_string()),
         ],
         |result| {
             result.unwrap();
@@ -546,9 +546,9 @@ fn test_query_rewards_divide_by_zero_mitigated() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(LP_DENOM_1_INITIAL_BALANCE, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
     ]);
@@ -569,15 +569,15 @@ fn test_query_rewards_divide_by_zero_mitigated() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_1_UUSDY_ASSET_AMOUNT),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_1_UUSDY_ASSET_AMOUNT, UUSDY_DENOM.to_string()),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM.to_string()),
+                coin(FARM_1_UUSDY_ASSET_AMOUNT, DENOM_UUSDY.to_string()),
+                coin(ONE_THOUSAND, DENOM_UOM.to_string()),
             ],
             |result| {
                 result.unwrap();
@@ -592,15 +592,15 @@ fn test_query_rewards_divide_by_zero_mitigated() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_2_UUSDY_ASSET_AMOUNT),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_2_UUSDY_ASSET_AMOUNT, UUSDY_DENOM.to_string()),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM.to_string()),
+                coin(FARM_2_UUSDY_ASSET_AMOUNT, DENOM_UUSDY.to_string()),
+                coin(ONE_THOUSAND, DENOM_UOM.to_string()),
             ],
             |result| {
                 result.unwrap();
@@ -711,12 +711,12 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         assert_eq!(
             rewards_response,
             RewardsResponse::RewardsResponse {
-                total_rewards: vec![coin(105895u128, UUSDY_DENOM.to_string())],
+                total_rewards: vec![coin(105895u128, DENOM_UUSDY.to_string())],
                 rewards_per_lp_denom: vec![
-                    (lp_denom_1.clone(), coins(634u128, UUSDY_DENOM.to_string())),
+                    (lp_denom_1.clone(), coins(634u128, DENOM_UUSDY.to_string())),
                     (
                         lp_denom_2.clone(),
-                        coins(105261u128, UUSDY_DENOM.to_string())
+                        coins(105261u128, DENOM_UUSDY.to_string())
                     ),
                 ],
             }

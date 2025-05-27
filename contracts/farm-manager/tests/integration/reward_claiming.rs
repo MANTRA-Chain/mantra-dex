@@ -17,7 +17,7 @@ fn claim_expired_farm_returns_nothing() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -44,13 +44,13 @@ fn claim_expired_farm_returns_nothing() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -111,13 +111,13 @@ fn claim_expired_farm_returns_nothing() {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 14);
         })
-        .query_balance("uusdy".to_string(), &other, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
         .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &other, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_006_000u128));
         });
 
@@ -140,7 +140,7 @@ fn claim_expired_farm_returns_nothing() {
         .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &other, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             // the balance hasn't changed
             assert_eq!(balance, Uint128::new(1_000_008_000u128));
         })
@@ -162,7 +162,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, lp_denom_2.clone()),
@@ -190,13 +190,13 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                     preliminary_end_epoch: Some(15),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(12_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(12_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(12_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -416,22 +416,22 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             let epoch_response = result.unwrap();
             assert_eq!(epoch_response.epoch.id, 13);
         })
-        .query_balance("uusdy".to_string(), &other, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
         .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &other, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
-        .query_balance("uusdy".to_string(), &another, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
         .claim(&another, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &another, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         });
 
@@ -466,13 +466,13 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(8_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -508,7 +508,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         owner: creator.clone(),
                         lp_denom: lp_denom.clone(),
                         farm_asset: Coin {
-                            denom: "uusdy".to_string(),
+                            denom: "DENOM_UUSDY".to_string(),
                             amount: Uint128::new(12_000u128),
                         },
                         claimed_amount: Uint128::new(8_000u128),
@@ -536,7 +536,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         owner: creator.clone(),
                         lp_denom: lp_denom_2.clone(),
                         farm_asset: Coin {
-                            denom: "uusdy".to_string(),
+                            denom: "DENOM_UUSDY".to_string(),
                             amount: Uint128::new(8_000u128),
                         },
                         claimed_amount: Uint128::zero(),
@@ -630,7 +630,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
 
     // other claims
     suite
-        .query_balance("uusdy".to_string(), &other, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
         .query_balance("uom".to_string(), &other, |balance| {
@@ -642,7 +642,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .claim(&other, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &other, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             assert_eq!(
                 balance,
                 Uint128::new(1_000_004_000u128) + Uint128::new(4_000) + Uint128::new(997) // + Uint128::new(1_333)
@@ -668,7 +668,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
 
     // another claims the rest
     suite
-        .query_balance("uusdy".to_string(), &another, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
         .query_balance("uom".to_string(), &another, |balance| {
@@ -680,7 +680,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .claim(&another, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &another, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &another, |balance| {
             assert_eq!(
                 balance,
                 Uint128::new(1_000_004_000u128) + Uint128::new(2_000) + Uint128::new(999) // + Uint128::new(1_333)
@@ -711,7 +711,7 @@ fn user_can_claim_expired_epochs() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(2_000_000_000u128, "uom".to_string()),
-        coin(2_000_000_000u128, "uusdy".to_string()),
+        coin(2_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(2_000_000_000u128, "uosmo".to_string()),
         coin(2_000_000_000u128, lp_denom.clone()),
     ]);
@@ -731,13 +731,13 @@ fn user_can_claim_expired_epochs() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     farm_identifier: Some("farm".to_string()),
                 },
             },
-            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(4_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -752,7 +752,7 @@ fn user_can_claim_expired_epochs() {
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     claimed_amount: Uint128::zero(),
@@ -795,13 +795,13 @@ fn user_can_claim_expired_epochs() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: Some("m-farm".to_string()),
                 },
             },
-            vec![coin(8_000u128, "uusdy")],
+            vec![coin(8_000u128, "DENOM_UUSDY")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -826,7 +826,7 @@ fn user_can_claim_expired_epochs() {
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     claimed_amount: Uint128::zero(),
@@ -837,13 +837,13 @@ fn user_can_claim_expired_epochs() {
                 }
             );
         })
-        .query_balance("uusdy".to_string(), &alice, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(2_000_000_000));
         })
         .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &alice, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(2_000_004_000));
         })
         .query_farms(None, None, None, |result| {
@@ -856,7 +856,7 @@ fn user_can_claim_expired_epochs() {
                     owner: other.clone(),
                     lp_denom: lp_denom.clone(),
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     claimed_amount: Uint128::new(4_000u128),
@@ -877,7 +877,7 @@ fn farm_owners_get_penalty_fees() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom_1.clone()),
         coin(1_000_000_000u128, lp_denom_2.clone()),
@@ -903,13 +903,13 @@ fn farm_owners_get_penalty_fees() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(4_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(4_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(4_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -923,13 +923,13 @@ fn farm_owners_get_penalty_fees() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -943,13 +943,13 @@ fn farm_owners_get_penalty_fees() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1049,7 +1049,7 @@ fn farm_owners_get_penalty_fees() {
         match rewards_response {
             RewardsResponse::RewardsResponse { total_rewards, .. } => {
                 assert_eq!(total_rewards.len(), 1);
-                assert_eq!(total_rewards[0], coin(2_854u128, "uusdy"));
+                assert_eq!(total_rewards[0], coin(2_854u128, "DENOM_UUSDY"));
             }
             _ => {
                 panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1330,7 +1330,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
@@ -1352,13 +1352,13 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_888u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_888u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(8_888u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1372,13 +1372,13 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(666_666u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(666_666u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(666_666u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1495,7 +1495,7 @@ fn test_claim_until_epoch() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
@@ -1520,13 +1520,13 @@ fn test_claim_until_epoch() {
                     preliminary_end_epoch: Some(14),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1540,13 +1540,13 @@ fn test_claim_until_epoch() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1613,7 +1613,7 @@ fn test_claim_until_epoch() {
                 }
             }
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         });
 
@@ -1621,7 +1621,7 @@ fn test_claim_until_epoch() {
         .claim(&bob, vec![], Some(0), |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         });
 
@@ -1639,7 +1639,7 @@ fn test_claim_until_epoch() {
                 }
             }
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         });
 
@@ -1647,7 +1647,7 @@ fn test_claim_until_epoch() {
         .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         });
 
@@ -1662,7 +1662,7 @@ fn test_claim_until_epoch() {
         let rewards_response = result.unwrap();
         match rewards_response {
             RewardsResponse::RewardsResponse { total_rewards, .. } => {
-                assert_eq!(total_rewards, coins(5_000, "uusdy"));
+                assert_eq!(total_rewards, coins(5_000, "DENOM_UUSDY"));
             }
             _ => {
                 panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1673,13 +1673,13 @@ fn test_claim_until_epoch() {
 
     // claim only until epoch 5, so two epochs should be claimed
     suite
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
         .claim(&bob, vec![], Some(5), |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000 + 1000 * 2));
         })
         // query rewards for epoch 5, which was claimed
@@ -1703,7 +1703,7 @@ fn test_claim_until_epoch() {
 
     // try claiming in the past again
     suite
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000 + 1000 * 2));
         })
         .claim(&bob, vec![], Some(4), |result| {
@@ -1721,7 +1721,7 @@ fn test_claim_until_epoch() {
             result.unwrap();
         })
         // nothing was transferred when trying to claim until epoch 5 again
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000 + 1000 * 2));
         });
 
@@ -1748,7 +1748,7 @@ fn test_claim_until_epoch() {
             let rewards_response = result.unwrap();
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
-                    assert_eq!(total_rewards, coins(8_000 + 5_000, "uusdy"));
+                    assert_eq!(total_rewards, coins(8_000 + 5_000, "DENOM_UUSDY"));
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1758,7 +1758,7 @@ fn test_claim_until_epoch() {
         .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(
                 balance,
                 Uint128::new(1_000_000_000 + (1000 * 2) + 8_000 + 5_000)
@@ -1773,7 +1773,7 @@ fn test_claim_until_epoch_closing_positions() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
@@ -1795,13 +1795,13 @@ fn test_claim_until_epoch_closing_positions() {
                     preliminary_end_epoch: Some(11),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1815,13 +1815,13 @@ fn test_claim_until_epoch_closing_positions() {
                     preliminary_end_epoch: Some(11),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -1902,13 +1902,13 @@ fn test_claim_until_epoch_closing_positions() {
 
     // claim some rewards, but not all
     suite
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
         .claim(&bob, vec![], Some(1), |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000 + 1_000 + 500));
         });
 
@@ -1930,13 +1930,13 @@ fn test_claim_until_epoch_closing_positions() {
     );
 
     suite
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000 + 1_000 + 500));
         })
         .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_001_500 + 1_000 + 500));
         });
 
@@ -1986,7 +1986,7 @@ fn test_claim_until_epoch_closing_positions() {
         match rewards_response {
             RewardsResponse::RewardsResponse { total_rewards, .. } => {
                 // 666 comes from 2 epochs of 333 rewards, 2 * 1000 * (500 / 1500)
-                assert_eq!(total_rewards, coins(2000 + 666, "uusdy"));
+                assert_eq!(total_rewards, coins(2000 + 666, "DENOM_UUSDY"));
             }
             _ => {
                 panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1995,7 +1995,7 @@ fn test_claim_until_epoch_closing_positions() {
     });
 
     suite
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_001_500 + 1_000 + 500));
         })
         .claim(&bob, vec![], Some(1), |result| {
@@ -2006,7 +2006,7 @@ fn test_claim_until_epoch_closing_positions() {
             // can't claim in the past
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_003_000 + 2_000 + 666));
         })
         .claim(&bob, vec![], Some(3), |result| {
@@ -2021,7 +2021,7 @@ fn test_claim_until_epoch_closing_positions() {
             // can "claim" the current epoch, but it will return nothing as it was already claimed.
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_003_000 + 2_000 + 666));
         });
 }
@@ -2033,7 +2033,7 @@ fn test_claiming_while_expanding_farm() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
@@ -2054,13 +2054,13 @@ fn test_claiming_while_expanding_farm() {
                 preliminary_end_epoch: Some(2),
                 curve: None,
                 farm_asset: Coin {
-                    denom: "uusdy".to_string(),
+                    denom: "DENOM_UUSDY".to_string(),
                     amount: Uint128::new(10_000u128),
                 },
                 farm_identifier: Some("farm-1".to_string()),
             },
         },
-        vec![coin(10_000u128, "uusdy"), coin(1_000, "uom")],
+        vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
         |result| {
             result.unwrap();
         },
@@ -2090,13 +2090,13 @@ fn test_claiming_while_expanding_farm() {
                 preliminary_end_epoch: Some(3),
                 curve: None,
                 farm_asset: Coin {
-                    denom: "uusdy".to_string(),
+                    denom: "DENOM_UUSDY".to_string(),
                     amount: Uint128::new(10_000u128),
                 },
                 farm_identifier: Some("m-farm-1".to_string()),
             },
         },
-        vec![coin(10_000u128, "uusdy")],
+        vec![coin(10_000u128, "DENOM_UUSDY")],
         |result| {
             result.unwrap();
         },
@@ -2108,13 +2108,13 @@ fn test_claiming_while_expanding_farm() {
     });
 
     suite
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000));
         })
         .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &bob, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000 + 10_000));
         });
 }

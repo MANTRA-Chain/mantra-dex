@@ -82,12 +82,12 @@ fn basic_swap_operations_test() {
         .create_pool(
             &creator,
             first_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -97,12 +97,12 @@ fn basic_swap_operations_test() {
         .create_pool(
             &creator,
             second_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -122,11 +122,11 @@ fn basic_swap_operations_test() {
         vec![
             Coin {
                 denom: DENOM_WHALE.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -150,11 +150,11 @@ fn basic_swap_operations_test() {
         vec![
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_USD.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -186,7 +186,7 @@ fn basic_swap_operations_test() {
     // - 2*1_000 pool creation fee
     // - 1_000_000 liquidity provision
     // = 998_998_000
-    let pre_swap_amount = INITIAL_BALANCE - 2 * POOL_CREATION_FEE - LIQUIDITY_AMOUNT;
+    let pre_swap_amount = INITIAL_BALANCE - 2 * ONE_THOUSAND - ONE_MILLION;
     suite.query_balance(&creator.to_string(), DENOM_USD.to_string(), |amt| {
         assert_eq!(amt.unwrap().amount.u128(), pre_swap_amount);
     });
@@ -197,7 +197,7 @@ fn basic_swap_operations_test() {
         None,
         None,
         Some(Decimal::percent(2)),
-        vec![coin(SWAP_AMOUNT, DENOM_WHALE.to_string())],
+        vec![coin(ONE_THOUSAND, DENOM_WHALE.to_string())],
         |result| {
             result.unwrap();
         },
@@ -216,7 +216,7 @@ fn basic_swap_operations_test() {
         &suite.fee_collector_addr.to_string(),
         DENOM_USD.to_string(),
         |amt| {
-            assert_eq!(amt.unwrap().amount.u128(), 2 * POOL_CREATION_FEE + 4);
+            assert_eq!(amt.unwrap().amount.u128(), 2 * ONE_THOUSAND + 4);
         },
     );
     suite.query_balance(
@@ -236,6 +236,7 @@ fn basic_swap_operations_test() {
 }
 
 #[test]
+/// TODO: Revert or compare with original logic, shouldn't have changed.
 fn rejects_empty_swaps() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
@@ -275,12 +276,12 @@ fn rejects_empty_swaps() {
         .create_pool(
             &creator,
             first_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -290,12 +291,12 @@ fn rejects_empty_swaps() {
         .create_pool(
             &creator,
             second_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -310,7 +311,7 @@ fn rejects_empty_swaps() {
         None,
         None,
         None,
-        vec![coin(SWAP_AMOUNT, DENOM_WHALE.to_string())],
+        vec![coin(ONE_THOUSAND, DENOM_WHALE.to_string())],
     );
     let err = result.unwrap_err();
     let err_string = err.to_string();
@@ -363,12 +364,12 @@ fn rejects_non_consecutive_swaps() {
         .create_pool(
             &creator,
             first_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -378,12 +379,12 @@ fn rejects_non_consecutive_swaps() {
         .create_pool(
             &creator,
             second_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -403,11 +404,11 @@ fn rejects_non_consecutive_swaps() {
         vec![
             Coin {
                 denom: DENOM_WHALE.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -431,11 +432,11 @@ fn rejects_non_consecutive_swaps() {
         vec![
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_USD.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -469,7 +470,7 @@ fn rejects_non_consecutive_swaps() {
         None,
         None,
         None,
-        vec![coin(SWAP_AMOUNT, DENOM_WHALE.to_string())],
+        vec![coin(ONE_THOUSAND, DENOM_WHALE.to_string())],
         |result| {
             assert_eq!(
                 result.unwrap_err().downcast_ref::<self::ContractError>(),
@@ -522,12 +523,12 @@ fn sends_to_correct_receiver() {
         .create_pool(
             &creator,
             first_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -537,12 +538,12 @@ fn sends_to_correct_receiver() {
         .create_pool(
             &creator,
             second_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -562,11 +563,11 @@ fn sends_to_correct_receiver() {
         vec![
             Coin {
                 denom: DENOM_WHALE.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -590,11 +591,11 @@ fn sends_to_correct_receiver() {
         vec![
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_USD.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -650,21 +651,21 @@ fn sends_to_correct_receiver() {
         &suite.pool_manager_addr.to_string(),
         DENOM_USD.to_string(),
         |amt| {
-            assert_eq!(amt.unwrap().amount.u128(), LIQUIDITY_AMOUNT);
+            assert_eq!(amt.unwrap().amount.u128(), ONE_MILLION);
         },
     );
     suite.query_balance(
         &suite.pool_manager_addr.to_string(),
         DENOM_WHALE.to_string(),
         |amt| {
-            assert_eq!(amt.unwrap().amount.u128(), LIQUIDITY_AMOUNT);
+            assert_eq!(amt.unwrap().amount.u128(), ONE_MILLION);
         },
     );
     suite.query_balance(
         &suite.pool_manager_addr.to_string(),
         DENOM_LUNA.to_string(),
         |amt| {
-            assert_eq!(amt.unwrap().amount.u128(), 2 * LIQUIDITY_AMOUNT);
+            assert_eq!(amt.unwrap().amount.u128(), 2 * ONE_MILLION);
         },
     );
 
@@ -675,7 +676,7 @@ fn sends_to_correct_receiver() {
         None,
         Some(unauthorized.to_string()),
         None,
-        vec![coin(SWAP_AMOUNT, DENOM_WHALE.to_string())],
+        vec![coin(ONE_THOUSAND, DENOM_WHALE.to_string())],
         |result| {
             result.unwrap();
         },
@@ -692,24 +693,21 @@ fn sends_to_correct_receiver() {
         &suite.pool_manager_addr.to_string(),
         DENOM_USD.to_string(),
         |amt| {
-            assert_eq!(
-                amt.unwrap().amount.u128(),
-                LIQUIDITY_AMOUNT - SWAP_RESULT_USD
-            );
+            assert_eq!(amt.unwrap().amount.u128(), ONE_MILLION - SWAP_RESULT_USD);
         },
     );
     suite.query_balance(
         &suite.pool_manager_addr.to_string(),
         DENOM_WHALE.to_string(),
         |amt| {
-            assert_eq!(amt.unwrap().amount.u128(), LIQUIDITY_AMOUNT + SWAP_AMOUNT);
+            assert_eq!(amt.unwrap().amount.u128(), ONE_MILLION + ONE_THOUSAND);
         },
     );
     suite.query_balance(
         &suite.pool_manager_addr.to_string(),
         DENOM_LUNA.to_string(),
         |amt| {
-            assert_eq!(amt.unwrap().amount.u128(), 2 * LIQUIDITY_AMOUNT);
+            assert_eq!(amt.unwrap().amount.u128(), 2 * ONE_MILLION);
         },
     );
 }
@@ -753,7 +751,7 @@ fn checks_minimum_receive() {
         .create_pool(
             &creator,
             first_pool,
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
@@ -765,7 +763,7 @@ fn checks_minimum_receive() {
         .create_pool(
             &creator,
             second_pool,
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             Some("uluna.uusd".to_string()),
@@ -911,12 +909,12 @@ fn query_swap_operations() {
         .create_pool(
             &creator,
             first_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -926,12 +924,12 @@ fn query_swap_operations() {
         .create_pool(
             &creator,
             second_pool,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             Some(POOL_ID_LUNA_USD.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -951,11 +949,11 @@ fn query_swap_operations() {
         vec![
             Coin {
                 denom: DENOM_WHALE.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -979,11 +977,11 @@ fn query_swap_operations() {
         vec![
             Coin {
                 denom: DENOM_LUNA.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
                 denom: DENOM_USD.to_string(),
-                amount: Uint128::from(LIQUIDITY_AMOUNT),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -1015,7 +1013,7 @@ fn query_swap_operations() {
     // going from whale -> uusd should return 974 uusd
     // going in reverse, 974 uusd -> whale should require approximately 1000 whale
     suite.query_simulate_swap_operations(
-        Uint128::new(SWAP_AMOUNT),
+        Uint128::new(ONE_THOUSAND),
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();
@@ -1027,7 +1025,7 @@ fn query_swap_operations() {
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();
-            assert_approx_eq!(result.offer_amount.u128(), SWAP_AMOUNT, "0.006");
+            assert_approx_eq!(result.offer_amount.u128(), ONE_THOUSAND, "0.006");
         },
     );
 
@@ -1074,7 +1072,7 @@ fn query_swap_operations() {
 
     // and if simulate swap operations with 1_000 more whale we should get even less uusd than before
     suite.query_simulate_swap_operations(
-        Uint128::new(SWAP_AMOUNT),
+        Uint128::new(ONE_THOUSAND),
         swap_operations.clone(),
         |result| {
             let result = result.unwrap();

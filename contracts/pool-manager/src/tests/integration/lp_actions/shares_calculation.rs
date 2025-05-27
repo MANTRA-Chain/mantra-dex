@@ -6,8 +6,8 @@ use mantra_dex_std::{
     pool_manager::PoolType,
 };
 use test_utils::common_constants::{
-    DECIMAL_PLACES, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UUSDC, DENOM_UWHALE,
-    STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT,
+    DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UUSDC, DENOM_UWHALE,
+    ONE_THOUSAND, STARGATE_MOCK_UOM_AMOUNT,
 };
 
 use crate::tests::suite::TestingSuite;
@@ -16,13 +16,13 @@ use crate::tests::suite::TestingSuite;
 const INITIAL_BALANCE: u128 = 10_000_000u128;
 const SMALL_INITIAL_BALANCE: u128 = 10_000u128;
 const TF_FEE_UOM_AMOUNT: u128 = STARGATE_MOCK_UOM_AMOUNT;
-const TF_FEE_UUSD_AMOUNT: u128 = SWAP_AMOUNT;
+const TF_FEE_UUSD_AMOUNT: u128 = ONE_THOUSAND;
 
 const WHALE_ULUNA_POOL_LABEL: &str = "whale.uluna";
 const O_WHALE_ULUNA_LP_DENOM_RAW: &str = "o.whale.uluna"; // Raw, because suite.get_lp_denom() is used
 
 const POOL_FEE_PERCENT: u64 = 1;
-const ASSET_PRECISION: u8 = DECIMAL_PLACES;
+const ASSET_PRECISION: u8 = DECIMALS_6;
 
 const LIQUIDITY_10K: u128 = 10_000u128;
 const LIQUIDITY_9K: u128 = 9_000u128;

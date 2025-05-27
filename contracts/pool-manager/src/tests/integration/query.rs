@@ -6,10 +6,10 @@ use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::pool_manager::{PoolType, SwapOperation};
 use test_utils::common_constants::{
-    DECIMAL_PLACES, DENOM_ULUNA as DENOM_LUNA, DENOM_UOM as DENOM_OM, DENOM_UUSD as DENOM_USD,
+    DECIMALS_6, DENOM_ULUNA as DENOM_LUNA, DENOM_UOM as DENOM_OM, DENOM_UUSD as DENOM_USD,
     DENOM_UUSDC as DENOM_USDC, DENOM_UUSDT as DENOM_USDT, DENOM_UWHALE as DENOM_WHALE,
-    INITIAL_BALANCE, INITIAL_BALANCE_PLUS_ONE, LIQUIDITY_AMOUNT, POOL_CREATION_FEE,
-    STABLESWAP_AMP_FACTOR, STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE, SWAP_AMOUNT,
+    INITIAL_BALANCE, INITIAL_BALANCE_PLUS_ONE, ONE_MILLION, ONE_THOUSAND, STABLESWAP_AMP_FACTOR,
+    STARGATE_MOCK_UOM_AMOUNT as OM_STARGATE_BALANCE,
 };
 
 // Token amounts
@@ -105,12 +105,12 @@ fn simulation_queries_fees_verification() {
         .create_pool(
             &creator,
             asset_infos,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -120,14 +120,14 @@ fn simulation_queries_fees_verification() {
         .create_pool(
             &creator,
             vec![DENOM_USD.to_string(), DENOM_USDC.to_string()],
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::StableSwap {
                 amp: STABLESWAP_AMP_FACTOR,
             },
             Some(POOL_ID_USD_USDC.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -148,11 +148,11 @@ fn simulation_queries_fees_verification() {
             vec![
                 Coin {
                     denom: DENOM_WHALE.to_string(),
-                    amount: Uint128::from(LIQUIDITY_AMOUNT),
+                    amount: Uint128::from(ONE_MILLION),
                 },
                 Coin {
                     denom: DENOM_LUNA.to_string(),
-                    amount: Uint128::from(LIQUIDITY_AMOUNT),
+                    amount: Uint128::from(ONE_MILLION),
                 },
             ],
             |result| {
@@ -170,11 +170,11 @@ fn simulation_queries_fees_verification() {
             vec![
                 Coin {
                     denom: DENOM_USDC.to_string(),
-                    amount: Uint128::from(LIQUIDITY_AMOUNT),
+                    amount: Uint128::from(ONE_MILLION),
                 },
                 Coin {
                     denom: DENOM_USD.to_string(),
-                    amount: Uint128::from(LIQUIDITY_AMOUNT),
+                    amount: Uint128::from(ONE_MILLION),
                 },
             ],
             |result| {
@@ -187,7 +187,7 @@ fn simulation_queries_fees_verification() {
         POOL_IDENTIFIER_WHALE_LUNA.to_string(),
         Coin {
             denom: DENOM_WHALE.to_string(),
-            amount: Uint128::from(SWAP_AMOUNT),
+            amount: Uint128::from(ONE_THOUSAND),
         },
         DENOM_LUNA.to_string(),
         |result| {
@@ -233,7 +233,7 @@ fn simulation_queries_fees_verification() {
         Some(Decimal::percent(SLIPPAGE_TOLERANCE_PERCENT)),
         None,
         POOL_IDENTIFIER_WHALE_LUNA.to_string(),
-        vec![coin(SWAP_AMOUNT, DENOM_WHALE.to_string())],
+        vec![coin(ONE_THOUSAND, DENOM_WHALE.to_string())],
         |result| {
             let mut return_amount = String::new();
             for event in result.unwrap().events {
@@ -261,7 +261,7 @@ fn simulation_queries_fees_verification() {
         POOL_IDENTIFIER_USD_USDC.to_string(),
         Coin {
             denom: DENOM_USD.to_string(),
-            amount: Uint128::from(SWAP_AMOUNT),
+            amount: Uint128::from(ONE_THOUSAND),
         },
         DENOM_USDC.to_string(),
         |result| {
@@ -308,7 +308,7 @@ fn simulation_queries_fees_verification() {
         Some(Decimal::percent(SLIPPAGE_TOLERANCE_PERCENT)),
         None,
         POOL_IDENTIFIER_USD_USDC.to_string(),
-        vec![coin(SWAP_AMOUNT, DENOM_USD.to_string())],
+        vec![coin(ONE_THOUSAND, DENOM_USD.to_string())],
         |result| {
             let mut return_amount = String::new();
             for event in result.unwrap().events {
@@ -372,12 +372,12 @@ fn simulate_swap_operations_query_verification() {
         .create_pool(
             &creator,
             asset_infos,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_OM_USDT.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -387,14 +387,14 @@ fn simulate_swap_operations_query_verification() {
         .create_pool(
             &creator,
             vec![DENOM_USDT.to_string(), DENOM_USDC.to_string()],
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::StableSwap {
                 amp: STABLESWAP_AMP_FACTOR,
             },
             Some(POOL_ID_USDT_USDC.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -451,7 +451,7 @@ fn simulate_swap_operations_query_verification() {
 
     let simulated_return_amount = RefCell::new(Uint128::zero());
     suite.query_simulate_swap_operations(
-        Uint128::from(SWAP_AMOUNT),
+        Uint128::from(ONE_THOUSAND),
         vec![
             SwapOperation::MantraSwap {
                 token_in_denom: DENOM_OM.to_string(),
@@ -529,7 +529,7 @@ fn simulate_swap_operations_query_verification() {
         None,
         None,
         Some(Decimal::percent(SLIPPAGE_TOLERANCE_PERCENT)),
-        vec![coin(SWAP_AMOUNT, DENOM_OM.to_string())],
+        vec![coin(ONE_THOUSAND, DENOM_OM.to_string())],
         |result| {
             println!("{:?}", result);
             let mut return_amount = String::new();
@@ -595,12 +595,12 @@ fn reverse_simulation_queries_fees_verification() {
         .create_pool(
             &creator,
             asset_infos,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_WHALE_LUNA.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -610,14 +610,14 @@ fn reverse_simulation_queries_fees_verification() {
         .create_pool(
             &creator,
             vec![DENOM_USD.to_string(), DENOM_USDC.to_string()],
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::StableSwap {
                 amp: STABLESWAP_AMP_FACTOR,
             },
             Some(POOL_ID_USD_USDC.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -884,12 +884,12 @@ fn reverse_simulate_swap_operations_query_verification() {
         .create_pool(
             &creator,
             asset_infos,
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some(POOL_ID_OM_USDT.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -899,14 +899,14 @@ fn reverse_simulate_swap_operations_query_verification() {
         .create_pool(
             &creator,
             vec![DENOM_USDT.to_string(), DENOM_USDC.to_string()],
-            vec![DECIMAL_PLACES, DECIMAL_PLACES],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::StableSwap {
                 amp: STABLESWAP_AMP_FACTOR,
             },
             Some(POOL_ID_USDT_USDC.to_string()),
             vec![
-                coin(POOL_CREATION_FEE, DENOM_USD),
+                coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
             |result| {
@@ -981,7 +981,7 @@ fn reverse_simulate_swap_operations_query_verification() {
             let response = result.unwrap();
 
             // this is the value we got in the previous test for the regular simulation
-            assert_approx_eq!(response.offer_amount, Uint128::from(SWAP_AMOUNT), "0.001");
+            assert_approx_eq!(response.offer_amount, Uint128::from(ONE_THOUSAND), "0.001");
             assert_eq!(
                 response.slippage_amounts,
                 vec![

@@ -4,8 +4,8 @@ use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::PoolType;
 use test_utils::common_constants::{
-    DECIMAL_PLACES, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UWHALE,
-    LIQUIDITY_AMOUNT as COMMON_LIQUIDITY_AMOUNT, STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT,
+    DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UWHALE,
+    ONE_MILLION as COMMON_LIQUIDITY_AMOUNT, ONE_THOUSAND, STARGATE_MOCK_UOM_AMOUNT,
 };
 
 use crate::tests::suite::TestingSuite;
@@ -18,7 +18,7 @@ const WHALE_ULUNA_LABEL: &str = "whale.uluna";
 const INITIAL_BALANCE: u128 = 10_000_000u128;
 const SMALL_BALANCE: u128 = 10_000u128;
 const UOM_STARGATE_BALANCE: u128 = STARGATE_MOCK_UOM_AMOUNT;
-const UUSD_POOL_CREATION_FEE: u128 = SWAP_AMOUNT;
+const UUSD_POOL_CREATION_FEE: u128 = ONE_THOUSAND;
 const UOM_POOL_CREATION_FEE: u128 = UOM_STARGATE_BALANCE; // STARGATE_MOCK_UOM_AMOUNT
 
 const LIQUIDITY_AMOUNT: u128 = COMMON_LIQUIDITY_AMOUNT;
@@ -53,7 +53,7 @@ const FIFTY_PERCENT_SLIPPAGE: Option<Decimal> = Some(Decimal::percent(50));
 const ONE_PERCENT_FEE: Decimal = Decimal::percent(1);
 
 const ZERO_PERCENT_FEE: Decimal = Decimal::zero();
-const SIX_DECIMALS: u8 = DECIMAL_PLACES;
+const SIX_DECIMALS: u8 = DECIMALS_6;
 
 #[test]
 fn provide_liquidity_with_single_asset() {

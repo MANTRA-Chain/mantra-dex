@@ -9,8 +9,7 @@ use mantra_dex_std::farm_manager::{FarmAction, FarmParams, FarmsBy, PositionActi
 use crate::common::suite::TestingSuite;
 use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
 use test_utils::common_constants::{
-    DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM, DENOM_UUSDY as UUSDY_DENOM,
-    INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
+    DENOM_UOM, DENOM_UOSMO, DENOM_UUSDY, INITIAL_BALANCE, ONE_THOUSAND,
 };
 
 const INVALID_LP: &str = "invalid_lp";
@@ -47,9 +46,9 @@ fn create_farms() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
     ]);
@@ -74,15 +73,15 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -111,7 +110,7 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Default::default(),
                     },
                     farm_identifier: None,
@@ -136,13 +135,13 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_2K),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(FARM_AMOUNT_2K, UUSDY_DENOM)],
+            vec![coin(FARM_AMOUNT_2K, DENOM_UUSDY)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -162,13 +161,13 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_5K),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(FARM_AMOUNT_8K, UOM_DENOM)],
+            vec![coin(FARM_AMOUNT_8K, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -186,13 +185,13 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_2K),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(UOM_FARM_CREATION_FEE, UOM_DENOM)],
+            vec![coin(ONE_THOUSAND, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -210,15 +209,15 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_2K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_5K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_5K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -237,15 +236,15 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_5K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -264,15 +263,15 @@ fn create_farms() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -292,15 +291,15 @@ fn create_farms() {
                     preliminary_end_epoch: Some(8),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -322,15 +321,15 @@ fn create_farms() {
                     preliminary_end_epoch: Some(15),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -353,15 +352,15 @@ fn create_farms() {
                     preliminary_end_epoch: END_EPOCH_5,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -383,15 +382,15 @@ fn create_farms() {
                     preliminary_end_epoch: END_EPOCH_5,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -412,15 +411,15 @@ fn create_farms() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -442,15 +441,15 @@ fn create_farms() {
                     preliminary_end_epoch: Some(35),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -470,15 +469,15 @@ fn create_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(FARM_ID_1.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -502,15 +501,15 @@ fn create_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(FARM_ID_1.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -525,15 +524,15 @@ fn create_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_10K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_10K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_10K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -548,15 +547,15 @@ fn create_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -582,7 +581,7 @@ fn create_farms() {
                 assert_eq!(
                     farms_response.farms[0].farm_asset,
                     Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     }
                 );
@@ -598,14 +597,14 @@ fn create_farms() {
                 assert_eq!(
                     farms_response.farms[0].farm_asset,
                     Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_10K),
                     }
                 );
             },
         )
         .query_farms(
-            Some(FarmsBy::FarmAsset(UUSDY_DENOM.to_string())),
+            Some(FarmsBy::FarmAsset(DENOM_UUSDY.to_string())),
             None,
             None,
             |result| {
@@ -623,8 +622,8 @@ fn create_farms() {
             },
         )
         // two farms were created, therefore the fee collector should have received 2_000 uom
-        .query_balance(UOM_DENOM.to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(2 * UOM_FARM_CREATION_FEE));
+        .query_balance(DENOM_UOM.to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(2 * ONE_THOUSAND));
         });
 }
 
@@ -633,9 +632,9 @@ fn expand_farms() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
@@ -659,15 +658,15 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(FARM_ID_1.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -682,13 +681,13 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
                 },
             },
-            vec![coin(FARM_AMOUNT_4K, UUSDY_DENOM)],
+            vec![coin(FARM_AMOUNT_4K, DENOM_UUSDY)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -707,13 +706,13 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
                 },
             },
-            vec![coin(FARM_AMOUNT_8K, UOM_DENOM)],
+            vec![coin(FARM_AMOUNT_8K, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -731,13 +730,13 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(4_100u128),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
                 },
             },
-            vec![coin(4_100, UUSDY_DENOM)],
+            vec![coin(4_100, DENOM_UUSDY)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -758,7 +757,7 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(4_100u128),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
@@ -785,13 +784,13 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(4_100u128),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
                 },
             },
-            vec![coin(4_100u128, UOM_DENOM)], // sending different funds than the one provided in the params should fail
+            vec![coin(4_100u128, DENOM_UOM)], // sending different funds than the one provided in the params should fail
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -810,13 +809,13 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(4_100u128),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
                 },
             },
-            vec![coin(4_100u128, UOM_DENOM)], // sending different funds than the one provided in the params should fail
+            vec![coin(4_100u128, DENOM_UOM)], // sending different funds than the one provided in the params should fail
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -836,7 +835,7 @@ fn expand_farms() {
                 assert_eq!(
                     farm.farm_asset,
                     Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     }
                 );
@@ -853,13 +852,13 @@ fn expand_farms() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_5K),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
                 },
             },
-            vec![coin(FARM_AMOUNT_5K, UUSDY_DENOM)],
+            vec![coin(FARM_AMOUNT_5K, DENOM_UUSDY)],
             |result| {
                 result.unwrap();
             },
@@ -874,7 +873,7 @@ fn expand_farms() {
                 assert_eq!(
                     farm.farm_asset,
                     Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(9_000), // 4_000 + 5_000
                     }
                 );
@@ -889,9 +888,9 @@ fn cant_expand_farm_too_late() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
@@ -909,15 +908,15 @@ fn cant_expand_farm_too_late() {
                     preliminary_end_epoch: Some(2),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(FARM_ID_1.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -932,15 +931,15 @@ fn cant_expand_farm_too_late() {
                     preliminary_end_epoch: Some(3),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(FARM_ID_2.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -962,13 +961,13 @@ fn cant_expand_farm_too_late() {
                     preliminary_end_epoch: END_EPOCH_28,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
                     farm_identifier: Some(M_FARM_ID_1.to_string()),
                 },
             },
-            vec![coin(FARM_AMOUNT_8K, UUSDY_DENOM)],
+            vec![coin(FARM_AMOUNT_8K, DENOM_UUSDY)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -989,13 +988,13 @@ fn cant_expand_farm_too_late() {
                     preliminary_end_epoch: Some(4),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_2K),
                     },
                     farm_identifier: Some(M_FARM_ID_2.to_string()),
                 },
             },
-            vec![coin(FARM_AMOUNT_2K, UUSDY_DENOM)],
+            vec![coin(FARM_AMOUNT_2K, DENOM_UUSDY)],
             |result| {
                 result.unwrap();
             },
@@ -1015,13 +1014,13 @@ fn cant_expand_farm_too_late() {
                 preliminary_end_epoch: None,
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_AMOUNT_2K),
                 },
                 farm_identifier: Some(M_FARM_ID_2.to_string()),
             },
         },
-        vec![coin(FARM_AMOUNT_2K, UUSDY_DENOM)],
+        vec![coin(FARM_AMOUNT_2K, DENOM_UUSDY)],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -1040,9 +1039,9 @@ fn close_farms() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
@@ -1066,15 +1065,15 @@ fn close_farms() {
                 preliminary_end_epoch: END_EPOCH_28,
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_AMOUNT_4K),
                 },
                 farm_identifier: Some(FARM_ID_1.to_string()),
             },
         },
         vec![
-            coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-            coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+            coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+            coin(ONE_THOUSAND, DENOM_UOM),
         ],
         |result| {
             result.unwrap();
@@ -1086,7 +1085,7 @@ fn close_farms() {
             FarmAction::Close {
                 farm_identifier: M_FARM_ID_1.to_string(),
             },
-            vec![coin(UOM_FARM_CREATION_FEE, UOM_DENOM)],
+            vec![coin(ONE_THOUSAND, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -1125,7 +1124,7 @@ fn close_farms() {
                 }
             },
         )
-        .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE - FARM_AMOUNT_4K));
         })
         .manage_farm(
@@ -1138,7 +1137,7 @@ fn close_farms() {
                 result.unwrap();
             },
         )
-        .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         });
 
@@ -1155,7 +1154,7 @@ fn close_farms() {
                 unlocking_duration: 86_400,
                 receiver: None,
             },
-            vec![coin(UOM_FARM_CREATION_FEE, lp_denom_2.clone())],
+            vec![coin(ONE_THOUSAND, lp_denom_2.clone())],
             |result| {
                 result.unwrap();
             },
@@ -1169,15 +1168,15 @@ fn close_farms() {
                     preliminary_end_epoch: Some(13),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some("farm_x".to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1194,7 +1193,7 @@ fn close_farms() {
     });
 
     suite
-        .query_balance(UUSDY_DENOM.to_string(), &another, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .claim(&another, vec![], None, |result| {
@@ -1210,7 +1209,7 @@ fn close_farms() {
                 assert_eq!(
                     farm.farm_asset,
                     Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     }
                 );
@@ -1221,7 +1220,7 @@ fn close_farms() {
                 assert_eq!(farm.start_epoch, 12);
             },
         )
-        .query_balance(UUSDY_DENOM.to_string(), &another, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE + FARM_AMOUNT_4K));
         })
         .manage_farm(
@@ -1246,9 +1245,9 @@ fn close_farms_wont_fail_with_malicious_tf_token() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
@@ -1268,15 +1267,15 @@ fn close_farms_wont_fail_with_malicious_tf_token() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(FARM_ID_1.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1291,15 +1290,15 @@ fn close_farms_wont_fail_with_malicious_tf_token() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(FARM_ID_2.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UOSMO_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UOSMO),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1309,28 +1308,21 @@ fn close_farms_wont_fail_with_malicious_tf_token() {
     let farm_manager = suite.farm_manager_addr.clone();
 
     suite
-        .query_balance(UUSDY_DENOM.to_string(), &farm_manager, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &farm_manager, |balance| {
             assert_eq!(balance, Uint128::new(FARM_AMOUNT_4K));
         })
-        .query_balance(UOSMO_DENOM.to_string(), &farm_manager, |balance| {
+        .query_balance(DENOM_UOSMO.to_string(), &farm_manager, |balance| {
             assert_eq!(balance, Uint128::new(FARM_AMOUNT_4K));
         });
 
     // let's burn tokens from the contract to simulate the case where a malicious TF token freezes
     // token transfers
     suite
-        .burn_tokens(
-            &farm_manager,
-            coins(UOM_FARM_CREATION_FEE, UOSMO_DENOM),
-            |result| {
-                result.unwrap();
-            },
-        )
-        .query_balance(UOSMO_DENOM.to_string(), &farm_manager, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(FARM_AMOUNT_4K - UOM_FARM_CREATION_FEE)
-            );
+        .burn_tokens(&farm_manager, coins(ONE_THOUSAND, DENOM_UOSMO), |result| {
+            result.unwrap();
+        })
+        .query_balance(DENOM_UOSMO.to_string(), &farm_manager, |balance| {
+            assert_eq!(balance, Uint128::new(FARM_AMOUNT_4K - ONE_THOUSAND));
         });
 
     // closing the farm would have failed and bricked the rewards claiming, but not anymore
@@ -1372,9 +1364,9 @@ fn test_farm_helper() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
@@ -1396,13 +1388,13 @@ fn test_farm_helper() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some("farm".to_string()),
                 },
             },
-            vec![coin(EXCESS_FARM_FEE, UOM_DENOM)],
+            vec![coin(EXCESS_FARM_FEE, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -1413,13 +1405,13 @@ fn test_farm_helper() {
                 }
             },
         )
-        .query_balance(UOM_DENOM.to_string(), &creator, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &creator, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
-        .query_balance(UOM_DENOM.to_string(), &fee_collector, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &fee_collector, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
-        .query_balance(UOM_DENOM.to_string(), &farm_manager, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &farm_manager, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
         .manage_farm(
@@ -1431,32 +1423,29 @@ fn test_farm_helper() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_2K),
                     },
                     farm_identifier: Some("farm".to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_2K, UUSDY_DENOM),
-                coin(EXCESS_FARM_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_2K, DENOM_UUSDY),
+                coin(EXCESS_FARM_FEE, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
             },
         )
-        .query_balance(UOM_DENOM.to_string(), &fee_collector, |balance| {
-            assert_eq!(balance, Uint128::new(UOM_FARM_CREATION_FEE));
+        .query_balance(DENOM_UOM.to_string(), &fee_collector, |balance| {
+            assert_eq!(balance, Uint128::new(ONE_THOUSAND));
         })
-        .query_balance(UOM_DENOM.to_string(), &farm_manager, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &farm_manager, |balance| {
             assert_eq!(balance, Uint128::zero());
         })
-        .query_balance(UOM_DENOM.to_string(), &creator, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &creator, |balance| {
             // got the excess of whale back
-            assert_eq!(
-                balance,
-                Uint128::new(INITIAL_BALANCE - UOM_FARM_CREATION_FEE)
-            );
+            assert_eq!(balance, Uint128::new(INITIAL_BALANCE - ONE_THOUSAND));
         });
 
     suite.manage_farm(
@@ -1468,13 +1457,13 @@ fn test_farm_helper() {
                 preliminary_end_epoch: None,
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_AMOUNT_2K),
                 },
                 farm_identifier: Some("underpaid_farm".to_string()),
             },
         },
-        vec![coin(FARM_AMOUNT_2K, UUSDY_DENOM), coin(500u128, UOM_DENOM)],
+        vec![coin(FARM_AMOUNT_2K, DENOM_UUSDY), coin(500u128, DENOM_UOM)],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
@@ -1491,9 +1480,9 @@ fn test_farm_helper() {
 fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, INVALID_LP),
     ]);
@@ -1511,16 +1500,16 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOSMO_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
+                coin(ONE_THOUSAND, DENOM_UOSMO),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1541,15 +1530,15 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_5K, UOM_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOSMO_DENOM),
+                coin(FARM_AMOUNT_5K, DENOM_UOM),
+                coin(ONE_THOUSAND, DENOM_UOSMO),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1570,15 +1559,15 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
                     preliminary_end_epoch: END_EPOCH_16,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_8K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_8K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1593,13 +1582,13 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
                     preliminary_end_epoch: END_EPOCH_16,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(9_000, UOM_DENOM)], // 8000 farm asset + 1000 fee
+            vec![coin(9_000, DENOM_UOM)], // 8000 farm asset + 1000 fee
             |result| {
                 result.unwrap();
             },
@@ -1610,9 +1599,9 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
 fn fails_to_create_farm_if_start_epoch_is_zero() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, INVALID_LP),
     ]);
@@ -1629,15 +1618,15 @@ fn fails_to_create_farm_if_start_epoch_is_zero() {
                 preliminary_end_epoch: END_EPOCH_28,
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_AMOUNT_4K),
                 },
                 farm_identifier: Some("farm_1".to_string()),
             },
         },
         vec![
-            coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-            coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+            coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+            coin(ONE_THOUSAND, DENOM_UOM),
         ],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1657,9 +1646,9 @@ fn fails_to_create_farm_if_start_epoch_is_zero() {
 fn overriding_farm_with_bogus_id_not_possible() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, INVALID_LP),
     ]);
@@ -1677,15 +1666,15 @@ fn overriding_farm_with_bogus_id_not_possible() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: Some(BOGUS_ID_1.to_string()),
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1700,15 +1689,15 @@ fn overriding_farm_with_bogus_id_not_possible() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_4K),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1729,9 +1718,9 @@ fn overriding_farm_with_bogus_id_not_possible() {
 fn providing_custom_farm_id_doesnt_increment_farm_counter() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, INVALID_LP),
     ]);
@@ -1749,13 +1738,13 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
                     preliminary_end_epoch: END_EPOCH_16,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
                     farm_identifier: Some("custom_id_1".to_string()),
                 },
             },
-            vec![coin(9_000, UOM_DENOM)], // 8000 farm asset + 1000 fee
+            vec![coin(9_000, DENOM_UOM)], // 8000 farm asset + 1000 fee
             |result| {
                 result.unwrap();
             },
@@ -1769,13 +1758,13 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
                     preliminary_end_epoch: END_EPOCH_16,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_8K),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(9_000, UOM_DENOM)], // 8000 farm asset + 1000 fee
+            vec![coin(9_000, DENOM_UOM)], // 8000 farm asset + 1000 fee
             |result| {
                 result.unwrap();
             },
@@ -1794,9 +1783,9 @@ fn farm_cant_be_created_in_the_past() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
     ]);
@@ -1819,15 +1808,15 @@ fn farm_cant_be_created_in_the_past() {
                 preliminary_end_epoch: END_EPOCH_28,
                 curve: None,
                 farm_asset: Coin {
-                    denom: UUSDY_DENOM.to_string(),
+                    denom: DENOM_UUSDY.to_string(),
                     amount: Uint128::new(FARM_AMOUNT_4K),
                 },
                 farm_identifier: Some("farm_1".to_string()),
             },
         },
         vec![
-            coin(FARM_AMOUNT_4K, UUSDY_DENOM),
-            coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+            coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+            coin(ONE_THOUSAND, DENOM_UOM),
         ],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();

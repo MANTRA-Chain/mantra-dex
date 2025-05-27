@@ -4,8 +4,8 @@ use mantra_dex_std::farm_manager::{
     FarmAction, FarmParams, Position, PositionAction, PositionsBy, RewardsResponse,
 };
 use test_utils::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM as UOM_DENOM, DENOM_UOSMO as UOSMO_DENOM,
-    DENOM_UUSDY as UUSDY_DENOM, INITIAL_BALANCE, UOM_FARM_CREATION_FEE,
+    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM, DENOM_UOSMO, DENOM_UUSDY, INITIAL_BALANCE,
+    ONE_THOUSAND,
 };
 
 use crate::common::suite::TestingSuite;
@@ -66,9 +66,9 @@ fn test_emergency_withdrawal() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
@@ -88,15 +88,15 @@ fn test_emergency_withdrawal() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EW),
                     },
                     farm_identifier: Some(FARM_ID_EW.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -175,9 +175,9 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
@@ -195,15 +195,15 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EW),
                     },
                     farm_identifier: Some(FARM_ID_EW.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -254,12 +254,12 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
             match response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1);
-                    assert_eq!(total_rewards[0], coin(855, UUSDY_DENOM)); // Derived value
+                    assert_eq!(total_rewards[0], coin(855, DENOM_UUSDY)); // Derived value
                 }
                 _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
-        .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE - FARM_ASSET_UUSDY_EW));
         })
         // the user emergency withdraws the position
@@ -275,7 +275,7 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
             },
         )
         // rewards were not claimed
-        .query_balance(UUSDY_DENOM.to_string(), &other, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE - FARM_ASSET_UUSDY_EW));
         });
 }
@@ -285,9 +285,9 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
     ]);
 
@@ -310,15 +310,15 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EW),
                     },
                     farm_identifier: Some(FARM_ID_EW.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -333,15 +333,15 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EW),
                     },
                     farm_identifier: Some(FARM_ID_2_EWPP.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -428,9 +428,9 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
@@ -452,15 +452,15 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EW),
                     },
                     farm_identifier: Some(FARM_ID_EW.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -475,15 +475,15 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EW),
                     },
                     farm_identifier: Some(FARM_ID_2_EWPP.to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -607,9 +607,9 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom_1.clone()),
         coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
@@ -632,15 +632,15 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
                     preliminary_end_epoch: Some(EPOCH_ID_2),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EWPOAF),
                     },
                     farm_identifier: Some("farm-1".to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EWPOAF, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EWPOAF, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -655,15 +655,15 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
                     preliminary_end_epoch: Some(EPOCH_ID_36),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EWPOAF),
                     },
                     farm_identifier: Some("farm-2".to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EWPOAF, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EWPOAF, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -678,15 +678,15 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
                     preliminary_end_epoch: Some(EPOCH_ID_2),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EWPOAF),
                     },
                     farm_identifier: Some("farm-3".to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EWPOAF, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EWPOAF, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -701,15 +701,15 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
                     preliminary_end_epoch: Some(EPOCH_ID_36),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_EWPOAF),
                     },
                     farm_identifier: Some("farm-4".to_string()),
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_EWPOAF, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_EWPOAF, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -891,9 +891,9 @@ pub fn can_emergency_withdraw_an_lp_without_farm() {
     let lp_without_farm = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, lp_without_farm.clone()),
     ]);
@@ -912,15 +912,15 @@ pub fn can_emergency_withdraw_an_lp_without_farm() {
                     preliminary_end_epoch: Some(6),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_CEW),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_CEW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_CEW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -964,9 +964,9 @@ fn test_managing_positions_close_and_emergency_withdraw() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE_LARGE, lp_denom_1.clone()),
         coin(INITIAL_BALANCE_LARGE, lp_denom_2.clone()),
     ]);
@@ -988,15 +988,15 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_ALICE_FARM1_MPCEW),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_ALICE_FARM1_MPCEW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_ALICE_FARM1_MPCEW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1011,15 +1011,15 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_UUSDY_ALICE_FARM2_MPCEW),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_ASSET_UUSDY_ALICE_FARM2_MPCEW, UUSDY_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UUSDY_ALICE_FARM2_MPCEW, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1078,7 +1078,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1);
-                    assert_eq!(total_rewards[0], coin(3_170u128, UUSDY_DENOM)); // Derived
+                    assert_eq!(total_rewards[0], coin(3_170u128, DENOM_UUSDY)); // Derived
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1109,7 +1109,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         });
 
     suite
-        .query_balance(UUSDY_DENOM.to_string(), &alice, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &alice, |balance| {
             assert_eq!(
                 balance,
                 Uint128::new(
@@ -1121,7 +1121,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance(UUSDY_DENOM.to_string(), &alice, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &alice, |balance| {
             assert_eq!(
                 balance,
                 Uint128::new(
@@ -1163,15 +1163,15 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                     preliminary_end_epoch: Some(20),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOSMO_DENOM.to_string(),
+                        denom: DENOM_UOSMO.to_string(),
                         amount: Uint128::new(FARM_ASSET_UOSMO_ALICE_FARM3_MPCEW),
                     },
                     farm_identifier: None,
                 },
             },
             vec![
-                coin(FARM_ASSET_UOSMO_ALICE_FARM3_MPCEW, UOSMO_DENOM),
-                coin(UOM_FARM_CREATION_FEE, UOM_DENOM),
+                coin(FARM_ASSET_UOSMO_ALICE_FARM3_MPCEW, DENOM_UOSMO),
+                coin(ONE_THOUSAND, DENOM_UOM),
             ],
             |result| {
                 result.unwrap();
@@ -1186,13 +1186,13 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                     preliminary_end_epoch: None,
                     curve: None,
                     farm_asset: Coin {
-                        denom: UOM_DENOM.to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(1_000_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(1_000_000u128 + UOM_FARM_CREATION_FEE, UOM_DENOM)],
+            vec![coin(1_000_000u128 + ONE_THOUSAND, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1204,7 +1204,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1);
-                    assert_eq!(total_rewards[0], coin(633u128, UUSDY_DENOM)); // Derived
+                    assert_eq!(total_rewards[0], coin(633u128, DENOM_UUSDY)); // Derived
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1216,7 +1216,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1);
-                    assert_eq!(total_rewards[0], coin(1_266u128, UUSDY_DENOM)); // Derived
+                    assert_eq!(total_rewards[0], coin(1_266u128, DENOM_UUSDY)); // Derived
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1265,7 +1265,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1);
-                    assert_eq!(total_rewards[0], coin(1_266u128, UUSDY_DENOM)); // Derived
+                    assert_eq!(total_rewards[0], coin(1_266u128, DENOM_UUSDY)); // Derived
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1284,7 +1284,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             RewardsResponse::RewardsResponse { total_rewards, .. } => {
                 assert_eq!(total_rewards.len(), 1);
                 // 634 is the emission rate for farm 1
-                assert_eq!(total_rewards[0], coin(1_266u128 + 634, UUSDY_DENOM));
+                assert_eq!(total_rewards[0], coin(1_266u128 + 634, DENOM_UUSDY));
                 // Derived
             }
             _ => {
@@ -1328,7 +1328,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1);
-                    assert_eq!(total_rewards[0], coin(380u128, UUSDY_DENOM)); // Derived
+                    assert_eq!(total_rewards[0], coin(380u128, DENOM_UUSDY)); // Derived
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1364,20 +1364,20 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1usize);
-                    assert_eq!(total_rewards[0], coin(324u128, UUSDY_DENOM)); // Derived
+                    assert_eq!(total_rewards[0], coin(324u128, DENOM_UUSDY)); // Derived
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
                 }
             }
         })
-        .query_balance(UUSDY_DENOM.to_string(), &alice, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(999_328_756u128)); // Derived
         })
         .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance(UUSDY_DENOM.to_string(), &alice, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(999_328_756u128 + 324u128)); // Derived
         })
         .manage_position(
@@ -1486,7 +1486,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1usize);
-                    assert_eq!(total_rewards[0], coin(1_454, UOSMO_DENOM)); // Derived
+                    assert_eq!(total_rewards[0], coin(1_454, DENOM_UOSMO)); // Derived
                 }
                 _ => {
                     panic!("Wrong response type, should return RewardsResponse::RewardsResponse")
@@ -1502,7 +1502,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                     assert_eq!(total_rewards.len(), 2usize);
                     assert_eq!(
                         total_rewards,
-                        vec![coin(322u128, UOSMO_DENOM), coin(163_355u128, UUSDY_DENOM)]
+                        vec![coin(322u128, DENOM_UOSMO), coin(163_355u128, DENOM_UUSDY)]
                     );
                 }
                 _ => {
@@ -1510,20 +1510,20 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                 }
             }
         })
-        .query_balance(UUSDY_DENOM.to_string(), &bob, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
-        .query_balance(UOSMO_DENOM.to_string(), &bob, |balance| {
+        .query_balance(DENOM_UOSMO.to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .claim(&bob, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance(UUSDY_DENOM.to_string(), &bob, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE + 163_355u128));
             // Derived
         })
-        .query_balance(UOSMO_DENOM.to_string(), &bob, |balance| {
+        .query_balance(DENOM_UOSMO.to_string(), &bob, |balance| {
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE + 322u128)); // Derived
         });
 
@@ -1540,7 +1540,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                     assert_eq!(total_rewards.len(), 2usize);
                     assert_eq!(
                         total_rewards,
-                        vec![coin(966u128, UOSMO_DENOM), coin(79_950u128, UUSDY_DENOM)]
+                        vec![coin(966u128, DENOM_UOSMO), coin(79_950u128, DENOM_UUSDY)]
                     );
                 }
                 _ => {
@@ -1565,7 +1565,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1usize);
-                    assert_eq!(total_rewards, vec![coin(79_950u128, UUSDY_DENOM)]);
+                    assert_eq!(total_rewards, vec![coin(79_950u128, DENOM_UUSDY)]);
                     // Derived
                 }
                 _ => {
@@ -1592,7 +1592,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
             match rewards_response {
                 RewardsResponse::RewardsResponse { total_rewards, .. } => {
                     assert_eq!(total_rewards.len(), 1usize);
-                    assert_eq!(total_rewards, vec![coin(79_950u128, UUSDY_DENOM)]);
+                    assert_eq!(total_rewards, vec![coin(79_950u128, DENOM_UUSDY)]);
                     // Derived
                 }
                 _ => {
@@ -1611,7 +1611,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
                     assert_eq!(total_rewards.len(), 2usize);
                     assert_eq!(
                         total_rewards,
-                        vec![coin(444, UOSMO_DENOM), coin(26_650u128, UUSDY_DENOM)]
+                        vec![coin(444, DENOM_UOSMO), coin(26_650u128, DENOM_UUSDY)]
                     );
                 }
                 _ => {

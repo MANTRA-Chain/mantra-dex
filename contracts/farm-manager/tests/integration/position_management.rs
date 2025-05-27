@@ -14,10 +14,11 @@ use mantra_dex_std::farm_manager::{
 use crate::common::suite::TestingSuite;
 use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
 
+use test_utils::common_constants::DENOM_UUSDY;
+
 // Denoms
-const UUSDY_DENOM: &str = "uusdy";
-const UOM_DENOM: &str = "uom";
-const UOSMO_DENOM: &str = "uosmo";
+const DENOM_UOM: &str = "uom";
+const DENOM_UOSMO: &str = "uosmo";
 
 // Unlocking Durations (seconds)
 const UNLOCKING_DURATION_1_DAY: u64 = 86_400; // Minimum unlocking duration
@@ -64,9 +65,9 @@ pub fn test_manage_position() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM),
-        coin(INITIAL_BALANCE, UUSDY_DENOM),
-        coin(INITIAL_BALANCE, UOSMO_DENOM),
+        coin(INITIAL_BALANCE, DENOM_UOM),
+        coin(INITIAL_BALANCE, DENOM_UUSDY),
+        coin(INITIAL_BALANCE, DENOM_UOSMO),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
         coin(INITIAL_BALANCE, another_lp.clone()),
@@ -100,13 +101,13 @@ pub fn test_manage_position() {
                     preliminary_end_epoch: Some(6),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_REWARD_UUSDY_AMOUNT),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(FARM_REWARD_UUSDY_AMOUNT, UUSDY_DENOM), coin(1_000, UOM_DENOM)],
+            vec![coin(FARM_REWARD_UUSDY_AMOUNT, DENOM_UUSDY), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -392,7 +393,7 @@ pub fn test_manage_position() {
                 _ => panic!("Wrong error type, should return ContractError::NoOpenPositions"),
             }
         })
-        .query_balance(UUSDY_DENOM.to_string(), &creator, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &creator, |balance| {
             assert_eq!(
                 balance,
                 Uint128::new(INITIAL_BALANCE - FARM_REWARD_UUSDY_AMOUNT)
@@ -401,7 +402,7 @@ pub fn test_manage_position() {
         .claim(&creator, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance(UUSDY_DENOM.to_string(), &creator, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &creator, |balance| {
             // Initial - farm funding + 2k rewards
             assert_eq!(
                 balance,
@@ -596,7 +597,7 @@ pub fn test_manage_position() {
                     assert_eq!(
                         total_rewards[0],
                         Coin {
-                            denom: UUSDY_DENOM.to_string(),
+                            denom: DENOM_UUSDY.to_string(),
                             // Rewards from epoch 2 (7k), 3 (2k), 4 (2k), 5 (2k), 6 (2k)
                             // Total farm reward 8k.
                             // Epoch 2: 7k/(7k) * (8k/4 epochs) = 2k
@@ -634,7 +635,7 @@ pub fn test_manage_position() {
                 result.unwrap();
             },
         )
-        .query_balance(UUSDY_DENOM.to_string(), &creator, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &creator, |balance| {
             // Balance after farm funding (INITIAL - 8k) + first claim (2k) = INITIAL - 6k
             assert_eq!(
                 balance,
@@ -661,7 +662,7 @@ pub fn test_manage_position() {
                 _ => panic!("shouldn't return this but RewardsResponse"),
             }
         })
-        .query_balance(UUSDY_DENOM.to_string(), &creator, |balance| {
+        .query_balance(DENOM_UUSDY.to_string(), &creator, |balance| {
             // Balance after farm funding + all rewards claimed = INITIAL_BALANCE
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
@@ -1051,9 +1052,9 @@ pub fn test_withdrawing_open_positions_updates_weight() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom.clone()),
         coin(INITIAL_BALANCE, invalid_lp_denom.clone()),
         coin(INITIAL_BALANCE, another_lp.clone()),
@@ -1084,13 +1085,13 @@ pub fn test_withdrawing_open_positions_updates_weight() {
                     preliminary_end_epoch: Some(6),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, UUSDY_DENOM), coin(1_000, UOM_DENOM)],
+            vec![coin(8_000, DENOM_UUSDY), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1141,7 +1142,7 @@ pub fn test_withdrawing_open_positions_updates_weight() {
                     assert_eq!(
                         total_rewards[0],
                         Coin {
-                            denom: UUSDY_DENOM.to_string(),
+                            denom: DENOM_UUSDY.to_string(),
                             amount: Uint128::new(CLAIMED_REWARDS_UUSDY_2K),
                         }
                     );
@@ -1210,7 +1211,7 @@ pub fn test_expand_position_unsuccessfully() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, invalid_lp_denom.clone()),
@@ -1324,7 +1325,7 @@ pub fn cant_create_position_with_overlapping_identifier() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, invalid_lp_denom.clone()),
@@ -1423,7 +1424,7 @@ fn test_fill_closed_position() {
 
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "uusdy".to_string()),
+        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(1_000_000_000u128, "uosmo".to_string()),
         coin(1_000_000_000u128, lp_denom_1.clone()),
         coin(1_000_000_000u128, lp_denom_2.clone()),
@@ -1683,9 +1684,9 @@ fn test_refill_position_uses_current_position_unlocking_period() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(INITIAL_BALANCE, UOM_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UUSDY_DENOM.to_string()),
-        coin(INITIAL_BALANCE, UOSMO_DENOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
         coin(INITIAL_BALANCE, lp_denom_1.clone()),
         coin(INITIAL_BALANCE, lp_denom_2.clone()),
     ]);
@@ -1905,7 +1906,7 @@ fn position_fill_attack_is_not_possible() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -1927,13 +1928,13 @@ fn position_fill_attack_is_not_possible() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2037,7 +2038,7 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -2201,7 +2202,7 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
 fn test_positions_limits() {
     let mut balances = vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
     ];
 
@@ -2228,13 +2229,13 @@ fn test_positions_limits() {
                     preliminary_end_epoch: Some(2),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(1_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(1_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(1_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2297,14 +2298,14 @@ fn test_positions_limits() {
     // move an epoch and claim
     suite
         .add_one_epoch()
-        .query_balance("uusdy".to_string(), &alice, |balance| {
+        .query_balance("DENOM_UUSDY".to_string(), &alice, |balance| {
             assert_eq!(balance, Uint128::new(1_000_000_000u128));
         })
         .claim(&alice, vec![], None, |result| {
             result.unwrap();
         })
-        .query_balance("uusdy".to_string(), &alice, |balance| {
-            // all the rewards were claimed, 1000 uusdy * 10
+        .query_balance("DENOM_UUSDY".to_string(), &alice, |balance| {
+            // all the rewards were claimed, 1000 DENOM_UUSDY * 10
             assert_eq!(balance, Uint128::new(1_000_010_000u128));
         })
         .query_positions(
@@ -2496,7 +2497,7 @@ fn test_overwriting_position_is_not_possible() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -2536,13 +2537,13 @@ fn test_overwriting_position_is_not_possible() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uusdy".to_string(),
+                        denom: "DENOM_UUSDY".to_string(),
                         amount: Uint128::new(8_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "uusdy"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
@@ -2601,7 +2602,7 @@ fn providing_custom_position_id_doesnt_increment_position_counter() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, "DENOM_UUSDY"),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),

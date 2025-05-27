@@ -8,8 +8,8 @@ use mantra_dex_std::{
     pool_manager::PoolType,
 };
 use test_utils::common_constants::{
-    DECIMAL_PLACES, DENOM_ULUNA, DENOM_UOM, DENOM_UUSD, DENOM_UUSDC, DENOM_UUSDT, DENOM_UWHALE,
-    LIQUIDITY_AMOUNT, STARGATE_MOCK_UOM_AMOUNT, SWAP_AMOUNT,
+    DECIMALS_18, DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UUSD, DENOM_UUSDC, DENOM_UUSDT,
+    DENOM_UWHALE, ONE_MILLION, ONE_THOUSAND, STARGATE_MOCK_UOM_AMOUNT,
 };
 
 use crate::tests::{integration::helpers::extract_pool_reserves, suite::TestingSuite};
@@ -19,8 +19,6 @@ const UTEST_DENOM: &str = "utest";
 const AUSDT_DENOM: &str = "ausdy";
 const PUSDC_DENOM: &str = "pusdc";
 
-const ONE_MILLION: Uint128 = Uint128::new(LIQUIDITY_AMOUNT);
-const ONE_THOUSAND: Uint128 = Uint128::new(SWAP_AMOUNT);
 const TEN_THOUSAND: Uint128 = Uint128::new(10_000u128);
 const NINE_NINE_NINE_THOUSAND: Uint128 = Uint128::new(999_000u128);
 const LP_AMOUNT_18_DECIMALS: Uint128 = Uint128::new(300_000_000_000_000_000000000000000000u128);
@@ -34,19 +32,19 @@ const FEE_AMOUNT_UOM: Uint128 = Uint128::new(STARGATE_MOCK_UOM_AMOUNT);
 
 const POOL_ID_WHALE_LUNA: &str = "o.whale.uluna";
 
-const DEFAULT_DECIMALS: u8 = DECIMAL_PLACES;
+const DEFAULT_DECIMALS: u8 = DECIMALS_6;
 
 #[test]
 fn deposit_and_withdraw_sanity_check() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(ONE_MILLION.u128(), DENOM_UWHALE.to_string()),
-            coin(ONE_MILLION.u128(), DENOM_ULUNA.to_string()),
-            coin(ONE_THOUSAND.u128(), DENOM_UUSD.to_string()),
+            coin(ONE_MILLION, DENOM_UWHALE.to_string()),
+            coin(ONE_MILLION, DENOM_ULUNA.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
             coin(TEN_THOUSAND.u128(), DENOM_UOM.to_string()),
             coin(TEN_THOUSAND.u128(), UTEST_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(ONE_THOUSAND.u128(), UTEST_DENOM.to_string())]),
+        StargateMock::new(vec![coin(ONE_THOUSAND, UTEST_DENOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
@@ -77,8 +75,8 @@ fn deposit_and_withdraw_sanity_check() {
         PoolType::ConstantProduct,
         Some("whale.uluna".to_string()),
         vec![
-            coin(ONE_THOUSAND.u128(), DENOM_UUSD.to_string()),
-            coin(ONE_THOUSAND.u128(), UTEST_DENOM.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, UTEST_DENOM.to_string()),
         ],
         |result| {
             result.unwrap();
@@ -102,11 +100,11 @@ fn deposit_and_withdraw_sanity_check() {
             vec![
                 Coin {
                     denom: DENOM_UWHALE.to_string(),
-                    amount: ONE_MILLION,
+                    amount: Uint128::from(ONE_MILLION),
                 },
                 Coin {
                     denom: DENOM_ULUNA.to_string(),
-                    amount: ONE_MILLION,
+                    amount: Uint128::from(ONE_MILLION),
                 },
             ],
             |result| {
@@ -122,7 +120,9 @@ fn deposit_and_withdraw_sanity_check() {
                     }
                     event.attributes.iter().any(|attr| {
                         attr.key == "added_shares"
-                            && attr.value == (ONE_MILLION - MINIMUM_LIQUIDITY_AMOUNT).to_string()
+                            && attr.value
+                                == (Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT)
+                                    .to_string()
                     })
                 }));
             },
@@ -181,7 +181,9 @@ fn deposit_and_withdraw_sanity_check() {
                 assert!(events.iter().any(|event| {
                     event.attributes.iter().any(|attr| {
                         attr.key == "withdrawn_shares"
-                            && attr.value == (ONE_MILLION - MINIMUM_LIQUIDITY_AMOUNT).to_string()
+                            && attr.value
+                                == (Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT)
+                                    .to_string()
                     })
                 }));
             },
@@ -201,10 +203,12 @@ fn deposit_and_withdraw_sanity_check() {
         .query_all_balances(&creator.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == *DENOM_UWHALE && coin.amount == ONE_MILLION - MINIMUM_LIQUIDITY_AMOUNT
+                coin.denom == *DENOM_UWHALE
+                    && coin.amount == Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT
             }));
             assert!(balances.iter().any(|coin| {
-                coin.denom == *DENOM_ULUNA && coin.amount == ONE_MILLION - MINIMUM_LIQUIDITY_AMOUNT
+                coin.denom == *DENOM_ULUNA
+                    && coin.amount == Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT
             }));
         })
         .query_pools(Some(POOL_ID_WHALE_LUNA.to_string()), None, None, |result| {
@@ -221,11 +225,11 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
         vec![
             coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDC.to_string()),
             coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDT.to_string()),
-            coin(ONE_THOUSAND.u128(), DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
             coin(TEN_THOUSAND.u128(), DENOM_UOM.to_string()),
             coin(TEN_THOUSAND.u128(), UTEST_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(ONE_THOUSAND.u128(), UTEST_DENOM.to_string())]),
+        StargateMock::new(vec![coin(ONE_THOUSAND, UTEST_DENOM.to_string())]),
     );
     let alice = suite.creator();
     let bob = suite.senders[1].clone();
@@ -248,13 +252,13 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &alice,
         asset_denoms,
-        vec![6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_18],
         pool_fees,
         PoolType::StableSwap { amp: 85 },
         None,
         vec![
-            coin(ONE_THOUSAND.u128(), DENOM_UUSD.to_string()),
-            coin(ONE_THOUSAND.u128(), UTEST_DENOM.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, UTEST_DENOM.to_string()),
         ],
         |result| {
             result.unwrap();
@@ -414,11 +418,11 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
         vec![
             coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDC.to_string()),
             coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDT.to_string()),
-            coin(ONE_THOUSAND.u128(), DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
             coin(TEN_THOUSAND.u128(), DENOM_UOM.to_string()),
             coin(TEN_THOUSAND.u128(), UTEST_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(ONE_THOUSAND.u128(), UTEST_DENOM.to_string())]),
+        StargateMock::new(vec![coin(ONE_THOUSAND, UTEST_DENOM.to_string())]),
     );
     let alice = suite.creator();
     let bob = suite.senders[1].clone();
@@ -441,13 +445,13 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &alice,
         asset_denoms,
-        vec![3u8, 6u8],
+        vec![3u8, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 85 },
         None,
         vec![
-            coin(ONE_THOUSAND.u128(), DENOM_UUSD.to_string()),
-            coin(ONE_THOUSAND.u128(), UTEST_DENOM.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, UTEST_DENOM.to_string()),
         ],
         |result| {
             result.unwrap();
@@ -635,12 +639,12 @@ fn provide_and_remove_liquidity_18_decimals() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &alice,
         asset_denoms,
-        vec![18u8, 18u8],
+        vec![DECIMALS_18, DECIMALS_18],
         pool_fees,
         PoolType::ConstantProduct,
         None,
         vec![
-            coin(ONE_THOUSAND.u128(), DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
             coin(FEE_AMOUNT_UOM.u128(), DENOM_UOM.to_string()),
         ],
         |result| {
@@ -696,14 +700,14 @@ fn provide_and_remove_liquidity_18_decimals() {
                 result.unwrap();
             },
         )
-        .query_balance(&alice.to_string(), PUSDC_DENOM.to_string(), |result| {
+        .query_balance(&alice.to_string(), PUSDC_DENOM, |result| {
             assert_approx_eq!(
                 result.unwrap().amount,
                 LP_AMOUNT_18_DECIMALS,
                 "0.000000000000000001"
             );
         })
-        .query_balance(&alice.to_string(), AUSDT_DENOM.to_string(), |result| {
+        .query_balance(&alice.to_string(), AUSDT_DENOM, |result| {
             assert_approx_eq!(
                 result.unwrap().amount,
                 LP_AMOUNT_18_DECIMALS,

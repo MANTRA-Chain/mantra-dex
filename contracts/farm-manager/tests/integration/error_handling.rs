@@ -8,9 +8,7 @@ use mantra_dex_std::farm_manager::{FarmAction, FarmParams, PositionAction};
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
-use test_utils::common_constants::{
-    DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UUSDY as UUSDY_DENOM,
-};
+use test_utils::common_constants::{DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UUSDY};
 
 const FARM_ASSET_AMOUNT: u128 = 8_000u128;
 const START_EPOCH: u64 = 12;
@@ -29,7 +27,7 @@ fn test_farm_and_position_id_validation() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
         coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "uusdy"),
+        coin(1_000_000_000u128, DENOM_UUSDY),
         coin(1_000_000_000u128, "uosmo"),
         coin(1_000_000_000u128, lp_denom.clone()),
         coin(1_000_000_000u128, "invalid_lp"),
@@ -49,13 +47,13 @@ fn test_farm_and_position_id_validation() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT),
                     },
                     farm_identifier: Some(INVALID_ID_SPECIAL_CHARS.to_string()),
                 },
             },
-            vec![coin(FARM_ASSET_AMOUNT, UUSDY_DENOM), coin(1_000, "uom")],
+            vec![coin(FARM_ASSET_AMOUNT, DENOM_UUSDY), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -75,13 +73,13 @@ fn test_farm_and_position_id_validation() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT),
                     },
                     farm_identifier: Some(INVALID_ID_TOO_LONG.to_string()),
                 },
             },
-            vec![coin(FARM_ASSET_AMOUNT, UUSDY_DENOM), coin(1_000, "uom")],
+            vec![coin(FARM_ASSET_AMOUNT, DENOM_UUSDY), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -101,13 +99,13 @@ fn test_farm_and_position_id_validation() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT),
                     },
                     farm_identifier: Some(INVALID_ID_NON_ASCII.to_string()),
                 },
             },
-            vec![coin(FARM_ASSET_AMOUNT, UUSDY_DENOM), coin(1_000, "uom")],
+            vec![coin(FARM_ASSET_AMOUNT, DENOM_UUSDY), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -127,13 +125,13 @@ fn test_farm_and_position_id_validation() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT),
                     },
                     farm_identifier: Some(INVALID_ID_SQL_INJECTION_LIKE.to_string()),
                 },
             },
-            vec![coin(FARM_ASSET_AMOUNT, UUSDY_DENOM), coin(1_000, "uom")],
+            vec![coin(FARM_ASSET_AMOUNT, DENOM_UUSDY), coin(1_000, "uom")],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -153,7 +151,7 @@ fn test_farm_and_position_id_validation() {
                     preliminary_end_epoch: Some(PRELIMINARY_END_EPOCH),
                     curve: None,
                     farm_asset: Coin {
-                        denom: UUSDY_DENOM.to_string(),
+                        denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_ASSET_AMOUNT),
                     },
                     farm_identifier: Some(
@@ -162,7 +160,7 @@ fn test_farm_and_position_id_validation() {
                     ),
                 },
             },
-            vec![coin(FARM_ASSET_AMOUNT, UUSDY_DENOM), coin(1_000, "uom")],
+            vec![coin(FARM_ASSET_AMOUNT, DENOM_UUSDY), coin(1_000, "uom")],
             |result| {
                 result.unwrap();
             },
