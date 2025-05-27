@@ -9,6 +9,7 @@ use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::Fee;
 use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::pool_manager::PoolType;
+use mantra_dex_std::pool_manager::SwapOperation;
 use test_utils::common_constants::*;
 
 // Pool identifiers
@@ -236,7 +237,6 @@ fn basic_swap_operations_test() {
 }
 
 #[test]
-/// TODO: Revert or compare with original logic, shouldn't have changed.
 fn rejects_empty_swaps() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
@@ -250,12 +250,11 @@ fn rejects_empty_swaps() {
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
-    // Asset infos with uwhale and uluna
 
     let first_pool = vec![DENOM_WHALE.to_string(), DENOM_LUNA.to_string()];
     let second_pool = vec![DENOM_LUNA.to_string(), DENOM_USD.to_string()];
 
-    // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
+    // Protocol fee 0.01 %, swap fee 0.02 %, burn fee 0 %
     let pool_fees = PoolFee {
         protocol_fee: Fee {
             share: Decimal::from_ratio(SMALL_FEE_RATIO_NUMERATOR, SMALL_FEE_RATIO_DENOMINATOR),
@@ -269,7 +268,6 @@ fn rejects_empty_swaps() {
         extra_fees: vec![],
     };
 
-    // Create a pool
     suite
         .instantiate_default()
         .add_one_epoch()
@@ -284,8 +282,8 @@ fn rejects_empty_swaps() {
                 coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
-            |result| {
-                result.unwrap();
+            |r| {
+                r.unwrap();
             },
         )
         .create_pool(
@@ -299,28 +297,77 @@ fn rejects_empty_swaps() {
                 coin(ONE_THOUSAND, DENOM_USD),
                 coin(OM_STARGATE_BALANCE, DENOM_OM),
             ],
-            |result| {
-                result.unwrap();
+            |r| {
+                r.unwrap();
             },
         );
 
-    // Let's try to execute an empty set of swap operations
-    let result = suite.execute_swap_operations_raw(
+    suite.provide_liquidity(
         &creator,
-        vec![],
+        format!("o.{}", POOL_ID_WHALE_LUNA),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: DENOM_WHALE.to_string(),
+                amount: Uint128::from(1_000_000u128),
+            },
+            Coin {
+                denom: DENOM_LUNA.to_string(),
+                amount: Uint128::from(1_000_000u128),
+            },
+        ],
+        |r| {
+            let res = r.unwrap();
+            assert!(res.has_event(&Event::new("wasm").add_attribute("added_shares", "999000")));
+        },
+    );
+
+    suite.provide_liquidity(
+        &creator,
+        format!("o.{}", POOL_ID_LUNA_USD),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            Coin {
+                denom: DENOM_LUNA.to_string(),
+                amount: Uint128::from(1_000_000u128),
+            },
+            Coin {
+                denom: DENOM_USD.to_string(),
+                amount: Uint128::from(1_000_000u128),
+            },
+        ],
+        |r| {
+            let res = r.unwrap();
+            assert!(res.has_event(&Event::new("wasm").add_attribute("added_shares", "999000")));
+        },
+    );
+
+    // ------------------------------------------------------------------
+    // 4.  Execute an empty swap-operations vector – should throw
+    // ------------------------------------------------------------------
+    let swap_operations: Vec<SwapOperation> = vec![];
+
+    suite.execute_swap_operations(
+        &creator,
+        swap_operations,
         None,
         None,
         None,
         vec![coin(ONE_THOUSAND, DENOM_WHALE.to_string())],
-    );
-    let err = result.unwrap_err();
-    let err_string = err.to_string();
-    assert!(
-        err_string.contains("Execute {")
-            && err_string.contains("execute_swap_operations")
-            && err_string.contains("operations"),
-        "Expected error related to swap operations execution, got: {}",
-        err_string
+        |r| {
+            assert_eq!(
+                r.unwrap_err().downcast_ref::<ContractError>(),
+                Some(&ContractError::NoSwapOperationsProvided)
+            );
+        },
     );
 }
 

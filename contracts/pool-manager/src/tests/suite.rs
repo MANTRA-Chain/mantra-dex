@@ -418,29 +418,6 @@ impl TestingSuite {
         self
     }
 
-    // TODO: do we really need this?
-    #[track_caller]
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn execute_swap_operations_raw(
-        &mut self,
-        sender: &Addr,
-        operations: Vec<SwapOperation>,
-        minimum_receive: Option<Uint128>,
-        receiver: Option<String>,
-        max_slippage: Option<Decimal>,
-        funds: Vec<Coin>,
-    ) -> Result<AppResponse, anyhow::Error> {
-        let msg = mantra_dex_std::pool_manager::ExecuteMsg::ExecuteSwapOperations {
-            operations,
-            minimum_receive,
-            receiver,
-            max_slippage,
-        };
-
-        self.app
-            .execute_contract(sender.clone(), self.pool_manager_addr.clone(), &msg, &funds)
-    }
-
     #[track_caller]
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn create_pool(
