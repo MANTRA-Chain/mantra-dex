@@ -1543,9 +1543,6 @@ mod tests {
     use rand::Rng;
 
     use sim::Model;
-    use test_utils::common_constants::{
-        DECIMALS_18, DECIMALS_6, DENOM_UUSD, DENOM_UWETH, ONE_MILLION,
-    };
 
     use super::*;
 
@@ -2059,28 +2056,25 @@ mod tests {
     fn test_lp_mint_with_mixed_decimals() {
         // Initial pool state with 1.0 of each token
         let old_pool_assets = vec![
-            coin(10u128.pow(DECIMALS_6.into()), DENOM_UUSD), // 1.0 uusd with 6 decimals
-            coin(10u128.pow(DECIMALS_18.into()), DENOM_UWETH), // 1.0 DENOM_UWETH with 18 decimals
+            coin(10u128.pow(6), "uusd"),   // 1.0 uusd with 6 decimals
+            coin(10u128.pow(18), "uweth"), // 1.0 uweth with 18 decimals
         ];
 
         // Add 0.5 of each token
         let new_pool_assets = vec![
-            coin(1_5u128 * 10u128.pow(5), DENOM_UUSD), // 1.5 uusd with 6 decimals
-            coin(1_5u128 * 10u128.pow(17), DENOM_UWETH), // 1.5 DENOM_UWETH with 18 decimals
+            coin(1_5u128 * 10u128.pow(5), "uusd"), // 1.5 uusd with 6 decimals
+            coin(1_5u128 * 10u128.pow(17), "uweth"), // 1.5 uweth with 18 decimals
         ];
 
         let amp_factor = 100u64;
-        let total_supply = Uint128::from(2u128 * 10u128.pow(DECIMALS_6.into())); // Initial LP supply
+        let total_supply = Uint128::from(2u128 * 10u128.pow(6)); // Initial LP supply
 
         let pool_info = PoolInfo {
             pool_identifier: "x".to_string(),
-            asset_denoms: vec![DENOM_UUSD.to_string(), DENOM_UWETH.to_string()],
+            asset_denoms: vec!["uusd".to_string(), "uweth".to_string()],
             lp_denom: "lp".to_string(),
-            asset_decimals: vec![DECIMALS_6, DECIMALS_18],
-            assets: vec![
-                coin(10u128.pow(DECIMALS_6.into()), DENOM_UUSD),
-                coin(10u128.pow(DECIMALS_18.into()), DENOM_UWETH),
-            ],
+            asset_decimals: vec![6, 18],
+            assets: vec![coin(10u128.pow(6), "uusd"), coin(10u128.pow(18), "uweth")],
             pool_type: PoolType::StableSwap { amp: amp_factor },
             pool_fees: PoolFee {
                 protocol_fee: Fee {
@@ -2112,7 +2106,7 @@ mod tests {
         assert!(!mint_amount.is_zero(), "No LP tokens were minted");
 
         // IMPORTANT NOTE ABOUT MIXED DECIMALS:
-        // When we have mixed decimals (uusd=6, DENOM_UWETH=18), the computation internally normalizes
+        // When we have mixed decimals (uusd=6, uweth=18), the computation internally normalizes
         // all amounts to the highest precision (18 decimals in this case). This normalization
         // ensures proper handling of mixed decimals in D value calculations.
         //
@@ -2123,7 +2117,7 @@ mod tests {
         println!("mint_amount: {}", mint_amount);
 
         // Expected is 1M tokens with a 2% tolerance
-        let expected_amount = Uint128::from(ONE_MILLION);
+        let expected_amount = Uint128::from(1_000_000u128);
         let tolerance_pct = Decimal::percent(2);
         let tolerance_amount =
             expected_amount.multiply_ratio(tolerance_pct.atomics(), Uint128::new(10u128.pow(18)));
