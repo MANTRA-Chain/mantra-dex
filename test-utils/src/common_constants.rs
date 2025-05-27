@@ -12,9 +12,9 @@ pub const DENOM_UWETH: &str = "uweth";
 // Common Amounts and Balances
 pub const INITIAL_BALANCE: u128 = 1_000_000_000;
 pub const INITIAL_BALANCE_PLUS_ONE: u128 = 1_000_000_001;
-pub const ONE_MILLION: u128 = 1_000_000;
 pub const STARGATE_MOCK_UOM_AMOUNT: u128 = 8888;
 pub const ONE_THOUSAND: u128 = 1000;
+pub const ONE_MILLION: u128 = 1_000_000;
 pub const ONE_HUNDRED_TRILLION: u128 = 100_000_000_000_000;
 
 // Fee Constants
