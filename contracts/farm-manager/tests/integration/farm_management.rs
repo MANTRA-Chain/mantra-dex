@@ -1798,7 +1798,7 @@ fn farm_cant_be_created_in_the_past() {
     }
     // current epoch is 10
 
-    // We can create a farm in a past epoch
+    // We cannot create a farm in a past epoch
     suite.manage_farm(
         &other,
         FarmAction::Fill {
