@@ -9,7 +9,6 @@ use crate::{state::CONFIG, ContractError};
 
 use super::perform_swap::perform_swap;
 
-#[allow(clippy::too_many_arguments)]
 pub fn swap(
     mut deps: DepsMut,
     info: MessageInfo,
