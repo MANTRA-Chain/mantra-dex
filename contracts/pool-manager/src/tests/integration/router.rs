@@ -763,10 +763,10 @@ fn sends_to_correct_receiver() {
 fn checks_minimum_receive() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-            coin(1_000_000_000u128, "uom".to_string()),
+            coin(ONE_BILLION, "uwhale".to_string()),
+            coin(ONE_BILLION, "uluna".to_string()),
+            coin(ONE_BILLION, "uusd".to_string()),
+            coin(ONE_BILLION, "uom".to_string()),
         ],
         StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
     );

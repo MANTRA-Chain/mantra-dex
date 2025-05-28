@@ -731,7 +731,7 @@ fn provide_liquidity_stable_swap_edge_case() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
             coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
+            coin(ONE_BILLION, "uluna".to_string()),
             coin(1_000_000_001u128, "uusd".to_string()),
             coin(1_000_000_001u128, "uom".to_string()),
         ],
@@ -916,7 +916,7 @@ fn provide_incomplete_liquidity_fails_on_stableswaps() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
             coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
+            coin(ONE_BILLION, "uluna".to_string()),
             coin(1_000_000_001u128, "uusd".to_string()),
             coin(1_000_000_001u128, "uom".to_string()),
         ],

@@ -11,8 +11,8 @@ use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::{PoolType, SimulationResponse};
 use test_utils::common_constants::{
     DECIMALS_12, DECIMALS_18, DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD,
-    DENOM_UUSDC, DENOM_UUSDT, DENOM_UWHALE, ONE_HUNDRED_TRILLION, ONE_MILLION, ONE_THOUSAND,
-    STABLESWAP_AMP_FACTOR, STARGATE_MOCK_UOM_AMOUNT,
+    DENOM_UUSDC, DENOM_UUSDT, DENOM_UWHALE, ONE_BILLION, ONE_HUNDRED_TRILLION, ONE_MILLION,
+    ONE_THOUSAND, STABLESWAP_AMP_FACTOR, STARGATE_MOCK_UOM_AMOUNT,
 };
 
 // Constants for denoms (using common constants where available)
@@ -176,7 +176,7 @@ fn basic_swapping_test() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
             coin(1_000_000_001u128, DENOM_UWHALE.to_string()),
-            coin(1_000_000_000u128, DENOM_ULUNA.to_string()),
+            coin(ONE_BILLION, DENOM_ULUNA.to_string()),
             coin(1_000_000_001u128, DENOM_UUSD.to_string()),
             coin(1_000_000_001u128, DENOM_UOM.to_string()),
         ],
@@ -406,7 +406,7 @@ fn basic_swapping_pool_reserves_event_test() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
             coin(1_000_000_001u128, DENOM_UWHALE.to_string()),
-            coin(1_000_000_000u128, DENOM_ULUNA.to_string()),
+            coin(ONE_BILLION, DENOM_ULUNA.to_string()),
             coin(1_000_000_001u128, DENOM_UUSD.to_string()),
             coin(1_000_000_001u128, DENOM_UOM.to_string()),
         ],
@@ -691,7 +691,7 @@ fn basic_swapping_test_stable_swap_two_assets() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
             coin(1_000_000_001u128, DENOM_UWHALE.to_string()),
-            coin(1_000_000_000u128, DENOM_ULUNA.to_string()),
+            coin(ONE_BILLION, DENOM_ULUNA.to_string()),
             coin(1_000_000_001u128, DENOM_UUSD.to_string()),
             coin(1_000_000_001u128, DENOM_UOM.to_string()),
         ],
@@ -2576,7 +2576,7 @@ fn simulation_vs_reverse_simulation_3pool() {
 fn belief_price_works_decimals_independent() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000u128, DENOM_UUSD.to_string()),
+            coin(ONE_BILLION, DENOM_UUSD.to_string()),
             coin(
                 1_000_000_000_000_000000000000000000u128,
                 UWETH_DENOM.to_string(),

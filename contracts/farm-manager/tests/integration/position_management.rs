@@ -14,7 +14,7 @@ use mantra_dex_std::farm_manager::{
 use crate::common::suite::TestingSuite;
 use crate::common::{MOCK_CONTRACT_ADDR_1, MOCK_CONTRACT_ADDR_2};
 
-use test_utils::common_constants::DENOM_UUSDY;
+use test_utils::common_constants::{DENOM_UUSDY, ONE_BILLION};
 
 // Denoms
 const DENOM_UOM: &str = "uom";
@@ -1210,12 +1210,12 @@ pub fn test_expand_position_unsuccessfully() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, invalid_lp_denom.clone()),
-        coin(1_000_000_000u128, another_lp.clone()),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, invalid_lp_denom.clone()),
+        coin(ONE_BILLION, another_lp.clone()),
     ]);
 
     let creator = suite.creator();
@@ -1324,12 +1324,12 @@ pub fn cant_create_position_with_overlapping_identifier() {
     let invalid_lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_2}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, invalid_lp_denom.clone()),
-        coin(1_000_000_000u128, another_lp.clone()),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, invalid_lp_denom.clone()),
+        coin(ONE_BILLION, another_lp.clone()),
     ]);
 
     let alice = suite.creator();
@@ -1423,11 +1423,11 @@ fn test_fill_closed_position() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
-        coin(1_000_000_000u128, lp_denom_1.clone()),
-        coin(1_000_000_000u128, lp_denom_2.clone()),
+        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
+        coin(ONE_BILLION, "uosmo".to_string()),
+        coin(ONE_BILLION, lp_denom_1.clone()),
+        coin(ONE_BILLION, lp_denom_2.clone()),
     ]);
 
     let creator = suite.creator();
@@ -1905,11 +1905,11 @@ fn test_refill_position_uses_current_position_unlocking_period() {
 fn position_fill_attack_is_not_possible() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, "invalid_lp"),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, "invalid_lp"),
     ]);
 
     let creator = suite.creator();
@@ -2037,11 +2037,11 @@ fn position_fill_attack_is_not_possible() {
 fn positions_can_handled_by_pool_manager_for_the_user() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, "invalid_lp"),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, "invalid_lp"),
     ]);
 
     let creator = suite.creator();
@@ -2201,15 +2201,15 @@ fn positions_can_handled_by_pool_manager_for_the_user() {
 #[test]
 fn test_positions_limits() {
     let mut balances = vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
     ];
 
     // prepare lp denoms
     for i in 1..MAX_FARMS_LIMIT * 2 {
         let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}");
-        balances.push(coin(1_000_000_000u128, lp_denom.clone()));
+        balances.push(coin(ONE_BILLION, lp_denom.clone()));
     }
 
     let mut suite = TestingSuite::default_with_balances(balances);
@@ -2299,7 +2299,7 @@ fn test_positions_limits() {
     suite
         .add_one_epoch()
         .query_balance("DENOM_UUSDY".to_string(), &alice, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .claim(&alice, vec![], None, |result| {
             result.unwrap();
@@ -2496,11 +2496,11 @@ fn test_positions_limits() {
 fn test_overwriting_position_is_not_possible() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, "invalid_lp"),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, "invalid_lp"),
     ]);
     let creator = suite.creator();
     let victim = suite.senders[1].clone();
@@ -2601,11 +2601,11 @@ fn test_overwriting_position_is_not_possible() {
 fn providing_custom_position_id_doesnt_increment_position_counter() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, "invalid_lp"),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, "invalid_lp"),
     ]);
     let creator = suite.creator();
 

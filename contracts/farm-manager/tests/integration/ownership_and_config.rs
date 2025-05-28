@@ -7,7 +7,7 @@ use mantra_dex_std::farm_manager::Config;
 
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
-use test_utils::common_constants::{DENOM_UOM, DENOM_UOSMO, DENOM_UUSDY};
+use test_utils::common_constants::{DENOM_UOM, DENOM_UOSMO, DENOM_UUSDY, ONE_BILLION};
 
 const NEW_CREATE_FARM_FEE_AMOUNT: u128 = 2_000u128;
 const NEW_MAX_CONCURRENT_FARMS: u32 = 5u32;
@@ -79,10 +79,10 @@ pub fn update_config() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, DENOM_UOM.to_string()),
-        coin(1_000_000_000u128, DENOM_UUSDY.to_string()),
-        coin(1_000_000_000u128, DENOM_UOSMO.to_string()),
-        coin(1_000_000_000u128, lp_denom.clone()),
+        coin(ONE_BILLION, DENOM_UOM.to_string()),
+        coin(ONE_BILLION, DENOM_UUSDY.to_string()),
+        coin(ONE_BILLION, DENOM_UOSMO.to_string()),
+        coin(ONE_BILLION, lp_denom.clone()),
     ]);
 
     let creator = suite.creator();

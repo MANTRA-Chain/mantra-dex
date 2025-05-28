@@ -11,16 +11,18 @@ use mantra_dex_std::farm_manager::{
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
+use test_utils::common_constants::ONE_BILLION;
+
 #[test]
 fn claim_expired_farm_returns_nothing() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, "invalid_lp"),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, "invalid_lp"),
     ]);
 
     let creator = suite.creator();
@@ -112,7 +114,7 @@ fn claim_expired_farm_returns_nothing() {
             assert_eq!(epoch_response.epoch.id, 14);
         })
         .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .claim(&other, vec![], None, |result| {
             result.unwrap();
@@ -161,11 +163,11 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom"),
-        coin(1_000_000_000u128, "DENOM_UUSDY"),
-        coin(1_000_000_000u128, "uosmo"),
-        coin(1_000_000_000u128, lp_denom.clone()),
-        coin(1_000_000_000u128, lp_denom_2.clone()),
+        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, "DENOM_UUSDY"),
+        coin(ONE_BILLION, "uosmo"),
+        coin(ONE_BILLION, lp_denom.clone()),
+        coin(ONE_BILLION, lp_denom_2.clone()),
     ]);
 
     let creator = suite.creator();
@@ -417,7 +419,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             assert_eq!(epoch_response.epoch.id, 13);
         })
         .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .claim(&other, vec![], None, |result| {
             result.unwrap();
@@ -426,7 +428,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
         .query_balance("DENOM_UUSDY".to_string(), &another, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .claim(&another, vec![], None, |result| {
             result.unwrap();
@@ -634,10 +636,10 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
         .query_balance("uom".to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .query_balance("uosmo".to_string(), &other, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .claim(&other, vec![], None, |result| {
             result.unwrap();
@@ -651,15 +653,12 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             );
         })
         .query_balance("uom".to_string(), &other, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(1_000_000_000u128) + Uint128::new(5_000)
-            );
+            assert_eq!(balance, Uint128::new(ONE_BILLION) + Uint128::new(5_000));
         })
         .query_balance("uosmo".to_string(), &other, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(1_000_000_000u128)
+                Uint128::new(ONE_BILLION)
                     + Uint128::new(2_500)
                         .checked_multiply_ratio(75u128, 100u128)
                         .unwrap()
@@ -672,10 +671,10 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
         .query_balance("uom".to_string(), &another, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .query_balance("uosmo".to_string(), &another, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .claim(&another, vec![], None, |result| {
             result.unwrap();
@@ -689,15 +688,12 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
             );
         })
         .query_balance("uom".to_string(), &another, |balance| {
-            assert_eq!(
-                balance,
-                Uint128::new(1_000_000_000u128) + Uint128::new(5_000)
-            );
+            assert_eq!(balance, Uint128::new(ONE_BILLION) + Uint128::new(5_000));
         })
         .query_balance("uosmo".to_string(), &another, |balance| {
             assert_eq!(
                 balance,
-                Uint128::new(1_000_000_000u128)
+                Uint128::new(ONE_BILLION)
                     + Uint128::new(2_500)
                         .checked_multiply_ratio(25u128, 100u128)
                         .unwrap()
@@ -876,12 +872,12 @@ fn farm_owners_get_penalty_fees() {
     let lp_denom_3 = format!("factory/{MOCK_CONTRACT_ADDR_1}/3.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
-        coin(1_000_000_000u128, lp_denom_1.clone()),
-        coin(1_000_000_000u128, lp_denom_2.clone()),
-        coin(1_000_000_000u128, lp_denom_3.clone()),
+        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
+        coin(ONE_BILLION, "uosmo".to_string()),
+        coin(ONE_BILLION, lp_denom_1.clone()),
+        coin(ONE_BILLION, lp_denom_2.clone()),
+        coin(ONE_BILLION, lp_denom_3.clone()),
     ]);
 
     let alice = suite.senders[0].clone();
@@ -1086,7 +1082,7 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::zero());
         })
         .query_balance(lp_denom_2.clone(), &carol, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .manage_position(
             &dan,
@@ -1103,7 +1099,7 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::new(50u128));
         })
         .query_balance(lp_denom_2.clone(), &carol, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 50u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 50u128));
         });
 
     // dan emergency withdraws the position for the lp_1, which has two farms.
@@ -1114,10 +1110,10 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::zero());
         })
         .query_balance(lp_denom_1.clone(), &alice, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .query_balance(lp_denom_1.clone(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .manage_position(
             &dan,
@@ -1134,10 +1130,10 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::new(50u128));
         })
         .query_balance(lp_denom_1.clone(), &alice, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 25u128));
         })
         .query_balance(lp_denom_1.clone(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 25u128));
         });
 
     // now let's create a new position with such a small amount that the penalty fee could go
@@ -1268,7 +1264,7 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::new(50u128));
         })
         .query_balance(lp_denom_2.clone(), &carol, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 50u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 50u128));
         })
         .manage_position(
             &dan,
@@ -1285,7 +1281,7 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::new(51u128));
         })
         .query_balance(lp_denom_2.clone(), &carol, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 50u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 50u128));
         });
 
     // dan emergency withdraws the position for the lp_1, which has two farms.
@@ -1296,10 +1292,10 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::new(50u128));
         })
         .query_balance(lp_denom_1.clone(), &alice, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 25u128));
         })
         .query_balance(lp_denom_1.clone(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 25u128));
         })
         .manage_position(
             &dan,
@@ -1316,10 +1312,10 @@ fn farm_owners_get_penalty_fees() {
             assert_eq!(balance, Uint128::new(52u128));
         })
         .query_balance(lp_denom_1.clone(), &alice, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 25u128));
         })
         .query_balance(lp_denom_1.clone(), &bob, |balance| {
-            assert_eq!(balance, Uint128::new(1_000_000_000u128 + 25u128));
+            assert_eq!(balance, Uint128::new(ONE_BILLION + 25u128));
         });
 }
 
@@ -1329,9 +1325,9 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
+        coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
     ]);
@@ -1494,9 +1490,9 @@ fn test_claim_until_epoch() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
+        coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
     ]);
@@ -1772,9 +1768,9 @@ fn test_claim_until_epoch_closing_positions() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
+        coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
     ]);
@@ -2032,9 +2028,9 @@ fn test_claiming_while_expanding_farm() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(1_000_000_000u128, "uom".to_string()),
-        coin(1_000_000_000u128, "DENOM_UUSDY".to_string()),
-        coin(1_000_000_000u128, "uosmo".to_string()),
+        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
+        coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
         coin(1_000_000_000_000, lp_denom_2.clone()),
     ]);

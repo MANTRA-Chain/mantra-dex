@@ -6,7 +6,7 @@ use mantra_dex_std::constants::MONTH_IN_SECONDS;
 
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
-use test_utils::common_constants::{DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM};
+use test_utils::common_constants::{DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_UOM, ONE_BILLION};
 
 const INITIAL_AMOUNT_UOM_RAW: u128 = 1_000u128;
 
@@ -21,7 +21,7 @@ const INVALID_EMERGENCY_UNLOCK_PENALTY: Decimal = Decimal::percent(101);
 #[test]
 fn instantiate_farm_manager() {
     let mut suite =
-        TestingSuite::default_with_balances(vec![coin(1_000_000_000u128, DENOM_UOM.to_string())]);
+        TestingSuite::default_with_balances(vec![coin(ONE_BILLION, DENOM_UOM.to_string())]);
 
     suite.instantiate_err(
         MOCK_CONTRACT_ADDR_1.to_string(),
