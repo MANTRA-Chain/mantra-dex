@@ -2,7 +2,11 @@ use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 use mantra_dex_std::fee::{Fee, PoolFee};
 use mantra_dex_std::pool_manager::{PoolInfo, PoolStatus, PoolType, SwapOperation};
-use test_utils::common_constants::*;
+use test_utils::common_constants::{
+    DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UWHALE, INITIAL_BALANCE,
+    INITIAL_BALANCE_PLUS_ONE, ONE_MILLION, ONE_THOUSAND, PROTOCOL_FEE_RATIO_1_1000,
+    STARGATE_MOCK_UOM_AMOUNT, SWAP_FEE_RATIO_1_1000,
+};
 
 use crate::tests::suite::TestingSuite;
 use crate::ContractError;
