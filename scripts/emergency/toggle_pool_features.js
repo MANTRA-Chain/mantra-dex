@@ -1,17 +1,12 @@
 const { SigningCosmWasmClient } = require('@cosmjs/cosmwasm-stargate');
-// For LedgerSigner, if you are using CosmJS v0.28+ with protobuf signing for Ledger,
-// you might need a different import or setup.
-// The @cosmjs/ledger-amino is typically for Amino signing.
-// However, many projects still use LedgerSigner from @cosmjs/ledger-amino for proto txs by adapting it
-// or if the chain's Ledger app primarily supports Amino-style signing UX.
-// Let's proceed with ledger-amino's LedgerSigner for now as it's a common setup,
-// but be aware you might need to use @cosmjs/proto-signing's LedgerSigner if available and preferred.
 const { LedgerSigner } = require('@cosmjs/ledger-amino');
 const { makeCosmoshubPath } = require("@cosmjs/amino"); // makeCosmoshubPath is often in @cosmjs/amino
 const TransportNodeHid = require('@ledgerhq/hw-transport-node-hid').default;
 const { GasPrice } = require('@cosmjs/stargate');
 const { toUtf8 } = require("@cosmjs/encoding");
 const fs = require('fs');
+
+const GAS_PRICE_STRING = "0.025uom"; 
 
 // Main function
 async function main() {
@@ -62,7 +57,7 @@ async function main() {
     const senderAddress = accounts[0].address;
 
     const client = await SigningCosmWasmClient.connectWithSigner(rpcEndpoint, ledgerSigner, {
-        gasPrice: GasPrice.fromString("0.025uom")
+        gasPrice: GasPrice.fromString(GAS_PRICE_STRING)
     });
 
     console.log(`Successfully connected to Ledger. Using address: ${senderAddress}`);
@@ -193,15 +188,27 @@ async function main() {
         console.log("Proceeding with signing and broadcasting...");
         console.log("Please confirm each message (or the transaction bundle) on your Ledger device.");
         
-        // Estimate gas. This is a rough estimate. Adjust per message or total.
-        // For N messages, a base fee + N * per_message_complexity_gas.
-        // 250,000 gas per message is a generous starting point for a config change.
         const gasPerMessage = 250000; 
+        const totalGas = BigInt(messages.length * gasPerMessage);
+
+        // Parse the gas price string to get amount and denom for fee calculation
+        const feeGasPrice = GasPrice.fromString(GAS_PRICE_STRING);
+        
+        // Calculate the fee amount: totalGas * price_per_gas.
+        // feeGasPrice.amount is a Decimal. parseFloat converts it to a number.
+        // Math.ceil ensures you pay at least the calculated amount, rounded up to the nearest whole unit of the denom.
+        const calculatedFeeAmount = Math.ceil(Number(totalGas) * parseFloat(feeGasPrice.amount.toString())).toString();
+
         const fee = {
-            amount: [],
-            gas: (messages.length * gasPerMessage).toString(),
+            amount: [{
+                denom: feeGasPrice.denom, // e.g., "uom"
+                amount: calculatedFeeAmount, // The calculated amount as a string
+            }],
+            gas: totalGas.toString(), // Total gas limit for the transaction
         };
         const memo = "Emergency: Toggle OFF all pool features (disable deposits/withdrawals/swaps)";
+
+        console.log(`Calculated fee: ${calculatedFeeAmount}${feeGasPrice.denom} for ${totalGas.toString()} gas.`); // Log the calculated fee
 
         try {
             const result = await client.signAndBroadcast(senderAddress, messages, fee, memo);
