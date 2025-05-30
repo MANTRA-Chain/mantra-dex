@@ -154,7 +154,6 @@ fn calculate_pool_sum(
 }
 
 /// Calculates the coefficient c for stableswap_y calculation
-#[allow(clippy::too_many_arguments)]
 fn calculate_stableswap_coefficient_c(
     pool_info: &PoolInfo,
     offer_ask_denoms: &OfferAskDenoms,
@@ -489,9 +488,7 @@ mod test {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 /// computes a swap
-#[allow(clippy::too_many_arguments)]
 pub fn compute_swap(
     pool_info: &PoolInfo,
     offer_asset: &Coin,

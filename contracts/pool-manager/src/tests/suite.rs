@@ -391,7 +391,6 @@ impl TestingSuite {
     }
 
     #[track_caller]
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn execute_swap_operations(
         &mut self,
         sender: &Addr,

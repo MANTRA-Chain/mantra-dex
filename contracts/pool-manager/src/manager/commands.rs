@@ -71,7 +71,6 @@ pub const AUTO_POOL_ID_PREFIX: &str = "p.";
 /// # }
 /// ```
 #[allow(unreachable_code)]
-#[allow(clippy::too_many_arguments)]
 pub fn create_pool(
     deps: DepsMut,
     env: Env,
