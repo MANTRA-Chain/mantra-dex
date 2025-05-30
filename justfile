@@ -89,3 +89,7 @@ deploy-pool CHAIN='mantra-testnet' POOL_FILE='pool.json' AMOUNT_DENOM_0='0' AMOU
 install-git-hooks:
     ./scripts/hooks/commit-msg.sh --install
     ./scripts/hooks/pre-commit.sh --install
+
+# ⚠️ Toggles OFF all features (deposits, withdrawals, swaps) for all pools in a Pool Manager.⚠️
+emergency-toggle-pool-features-off:
+    scripts/emergency/toggle_pool_features.sh
