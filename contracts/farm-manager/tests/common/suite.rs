@@ -73,6 +73,13 @@ impl TestingSuite {
         self
     }
 
+    pub(crate) fn add_epochs(&mut self, epochs: u64) -> &mut Self {
+        for _ in 0..epochs {
+            self.add_one_epoch();
+        }
+        self
+    }
+
     pub(crate) fn add_hours(&mut self, hours: u64) -> &mut Self {
         let mut block_info = self.app.block_info();
         block_info.time = block_info.time.plus_hours(hours);

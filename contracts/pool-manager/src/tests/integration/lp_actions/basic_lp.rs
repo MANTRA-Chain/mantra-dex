@@ -7,27 +7,51 @@ use mantra_dex_std::{
     lp_common::MINIMUM_LIQUIDITY_AMOUNT,
     pool_manager::PoolType,
 };
+use test_utils::common_constants::{
+    DECIMALS_18, DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UUSD, DENOM_UUSDC, DENOM_UUSDT,
+    DENOM_UWHALE, ONE_MILLION, ONE_THOUSAND, STARGATE_MOCK_UOM_AMOUNT,
+};
 
 use crate::tests::{integration::helpers::extract_pool_reserves, suite::TestingSuite};
+
+// Constants using common_constants where available
+const UTEST_DENOM: &str = "utest";
+const AUSDT_DENOM: &str = "ausdy";
+const PUSDC_DENOM: &str = "pusdc";
+
+const TEN_THOUSAND: Uint128 = Uint128::new(10_000u128);
+const NINE_NINE_NINE_THOUSAND: Uint128 = Uint128::new(999_000u128);
+const LP_AMOUNT_18_DECIMALS: Uint128 = Uint128::new(300_000_000_000_000_000000000000000000u128);
+const INITIAL_BALANCE_STABLESWAP: Uint128 = Uint128::new(1_000_00000000000000u128);
+const LIQUIDITY_ADD_UUSDC_STABLESWAP: Uint128 = Uint128::new(10u128.pow(3));
+const LIQUIDITY_ADD_UUSDT_STABLESWAP: Uint128 = Uint128::new(10u128.pow(15));
+const LIQUIDITY_ADD_UUSDC_LOW_DECIMALS: Uint128 = Uint128::new(1_000u128);
+const LIQUIDITY_ADD_UUSDT_LOW_DECIMALS: Uint128 = Uint128::new(1_000_000u128);
+const ONE_TRILLION: Uint128 = Uint128::new(1_000_000_000_000u128);
+const FEE_AMOUNT_UOM: Uint128 = Uint128::new(STARGATE_MOCK_UOM_AMOUNT);
+
+const POOL_ID_WHALE_LUNA: &str = "o.whale.uluna";
+
+const DEFAULT_DECIMALS: u8 = DECIMALS_6;
 
 #[test]
 fn deposit_and_withdraw_sanity_check() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000u128, "uwhale".to_string()),
-            coin(1_000_000u128, "uluna".to_string()),
-            coin(1_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
-            coin(10_000u128, "utest".to_string()),
+            coin(ONE_MILLION, DENOM_UWHALE.to_string()),
+            coin(ONE_MILLION, DENOM_ULUNA.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(TEN_THOUSAND.u128(), DENOM_UOM.to_string()),
+            coin(TEN_THOUSAND.u128(), UTEST_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(1000u128, "utest".to_string())]),
+        StargateMock::new(vec![coin(ONE_THOUSAND, UTEST_DENOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -46,25 +70,28 @@ fn deposit_and_withdraw_sanity_check() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms,
-        vec![6u8, 6u8],
+        vec![DEFAULT_DECIMALS, DEFAULT_DECIMALS],
         pool_fees,
         PoolType::ConstantProduct,
         Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd"), coin(1000, "utest")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, UTEST_DENOM.to_string()),
+        ],
         |result| {
             result.unwrap();
         },
     );
 
     let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
+    let lp_denom = suite.get_lp_denom(POOL_ID_WHALE_LUNA.to_string());
     let expected_pool_reserves = RefCell::<Vec<Vec<Coin>>>::new(vec![]);
 
     // Let's try to add liquidity
     suite
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
+            POOL_ID_WHALE_LUNA.to_string(),
             None,
             None,
             None,
@@ -72,12 +99,12 @@ fn deposit_and_withdraw_sanity_check() {
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_UWHALE.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_ULUNA.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
             ],
             |result| {
@@ -94,7 +121,7 @@ fn deposit_and_withdraw_sanity_check() {
                     event.attributes.iter().any(|attr| {
                         attr.key == "added_shares"
                             && attr.value
-                                == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
+                                == (Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
                     })
                 }));
@@ -104,9 +131,9 @@ fn deposit_and_withdraw_sanity_check() {
         .query_all_balances(&creator.to_string(), |result| {
             let balances = result.unwrap();
 
-            assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom && coin.amount == Uint128::from(999_000u128)
-            }));
+            assert!(balances
+                .iter()
+                .any(|coin| { coin.denom == lp_denom && coin.amount == NINE_NINE_NINE_THOUSAND }));
         })
         // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
         .query_all_balances(&contract_addr.to_string(), |result| {
@@ -116,7 +143,7 @@ fn deposit_and_withdraw_sanity_check() {
                 coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
             }));
         })
-        .query_pools(Some("o.whale.uluna".to_string()), None, None, |result| {
+        .query_pools(Some(POOL_ID_WHALE_LUNA.to_string()), None, None, |result| {
             let response = result.unwrap();
             let mut assets = response.pools[0].pool_info.assets.clone();
             assets.sort_by(|a, b| a.denom.cmp(&b.denom));
@@ -128,10 +155,10 @@ fn deposit_and_withdraw_sanity_check() {
     suite
         .withdraw_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
+            POOL_ID_WHALE_LUNA.to_string(),
             vec![Coin {
                 denom: lp_denom.clone(),
-                amount: Uint128::from(999_000u128),
+                amount: NINE_NINE_NINE_THOUSAND,
             }],
             |result| {
                 let events = result.unwrap().events;
@@ -143,7 +170,7 @@ fn deposit_and_withdraw_sanity_check() {
                                     extract_pool_reserves(attribute, &expected_pool_reserves);
                                 }
                                 "pool_identifier" => {
-                                    assert_eq!(attribute.value, "o.whale.uluna");
+                                    assert_eq!(attribute.value, POOL_ID_WHALE_LUNA);
                                 }
                                 _ => {}
                             }
@@ -155,7 +182,7 @@ fn deposit_and_withdraw_sanity_check() {
                     event.attributes.iter().any(|attr| {
                         attr.key == "withdrawn_shares"
                             && attr.value
-                                == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
+                                == (Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
                     })
                 }));
@@ -163,7 +190,7 @@ fn deposit_and_withdraw_sanity_check() {
         )
         // creator should have 0 LP shares in the contract and 0 LP shares in their account balance
         .query_amount_of_lp_token(
-            "o.whale.uluna".to_string(),
+            POOL_ID_WHALE_LUNA.to_string(),
             &creator.to_string(),
             |result| {
                 assert_eq!(result.unwrap(), Uint128::zero());
@@ -176,15 +203,15 @@ fn deposit_and_withdraw_sanity_check() {
         .query_all_balances(&creator.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == *"uwhale"
-                    && coin.amount == Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT
+                coin.denom == *DENOM_UWHALE
+                    && coin.amount == Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT
             }));
             assert!(balances.iter().any(|coin| {
-                coin.denom == *"uluna"
-                    && coin.amount == Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT
+                coin.denom == *DENOM_ULUNA
+                    && coin.amount == Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT
             }));
         })
-        .query_pools(Some("o.whale.uluna".to_string()), None, None, |result| {
+        .query_pools(Some(POOL_ID_WHALE_LUNA.to_string()), None, None, |result| {
             let response = result.unwrap();
             let mut assets = response.pools[0].pool_info.assets.clone();
             assets.sort_by(|a, b| a.denom.cmp(&b.denom));
@@ -196,17 +223,17 @@ fn deposit_and_withdraw_sanity_check() {
 fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_00000000000000u128, "uusdc".to_string()),
-            coin(1_000_00000000000000u128, "uusdt".to_string()),
-            coin(1_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
-            coin(10_000u128, "utest".to_string()),
+            coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDC.to_string()),
+            coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDT.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(TEN_THOUSAND.u128(), DENOM_UOM.to_string()),
+            coin(TEN_THOUSAND.u128(), UTEST_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(1000u128, "utest".to_string())]),
+        StargateMock::new(vec![coin(ONE_THOUSAND, UTEST_DENOM.to_string())]),
     );
     let alice = suite.creator();
     let bob = suite.senders[1].clone();
-    let asset_denoms = vec!["uusdc".to_string(), "uusdt".to_string()];
+    let asset_denoms = vec![DENOM_UUSDC.to_string(), DENOM_UUSDT.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -225,11 +252,14 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &alice,
         asset_denoms,
-        vec![6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_18],
         pool_fees,
         PoolType::StableSwap { amp: 85 },
         None,
-        vec![coin(1000, "uusd"), coin(1000, "utest")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, UTEST_DENOM.to_string()),
+        ],
         |result| {
             result.unwrap();
         },
@@ -246,8 +276,14 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
             None,
             None,
             vec![
-                coin(10u128.pow(3), "uusdc".to_string()),
-                coin(10u128.pow(15), "uusdt".to_string()),
+                coin(
+                    LIQUIDITY_ADD_UUSDC_STABLESWAP.u128(),
+                    DENOM_UUSDC.to_string(),
+                ),
+                coin(
+                    LIQUIDITY_ADD_UUSDT_STABLESWAP.u128(),
+                    DENOM_UUSDT.to_string(),
+                ),
             ],
             |result| {
                 println!("result: {:?}", result);
@@ -264,8 +300,14 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
             None,
             None,
             vec![
-                coin(10u128.pow(3), "uusdc".to_string()),
-                coin(10u128.pow(15), "uusdt".to_string()),
+                coin(
+                    LIQUIDITY_ADD_UUSDC_STABLESWAP.u128(),
+                    DENOM_UUSDC.to_string(),
+                ),
+                coin(
+                    LIQUIDITY_ADD_UUSDT_STABLESWAP.u128(),
+                    DENOM_UUSDT.to_string(),
+                ),
             ],
             |result| {
                 println!("result: {:?}", result);
@@ -282,11 +324,11 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
                 *lp_shares_alice.borrow_mut() = coin.clone();
                 println!("lp_shares_alice: {:?}", lp_shares_alice.borrow());
             }
-            if coin.denom.contains("uusdc") {
+            if coin.denom.contains(DENOM_UUSDC) {
                 *uusdc_alice.borrow_mut() = coin.clone();
                 println!("uusdc_alice: {:?}", uusdc_alice.borrow());
             }
-            if coin.denom.contains("uusdt") {
+            if coin.denom.contains(DENOM_UUSDT) {
                 *uusdt_alice.borrow_mut() = coin.clone();
                 println!("uusdt_alice: {:?}", uusdt_alice.borrow());
             }
@@ -302,11 +344,11 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
                 *lp_shares_bob.borrow_mut() = coin.clone();
                 println!("lp_shares_bob: {:?}", lp_shares_bob.borrow());
             }
-            if coin.denom.contains("uusdc") {
+            if coin.denom.contains(DENOM_UUSDC) {
                 *uusdc_bob.borrow_mut() = coin.clone();
                 println!("uusdc_bob: {:?}", uusdc_bob.borrow());
             }
-            if coin.denom.contains("uusdt") {
+            if coin.denom.contains(DENOM_UUSDT) {
                 *uusdt_bob.borrow_mut() = coin.clone();
                 println!("uusdt_bob: {:?}", uusdt_bob.borrow());
             }
@@ -325,16 +367,16 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
         )
         .query_all_balances(&bob.to_string(), |balances| {
             for coin in balances.unwrap().iter() {
-                if coin.denom.contains("uusdc") {
+                if coin.denom.contains(DENOM_UUSDC) {
                     assert_eq!(
                         coin.amount,
-                        uusdc_bob.borrow().clone().amount + Uint128::new(10u128.pow(3))
+                        uusdc_bob.borrow().clone().amount + LIQUIDITY_ADD_UUSDC_STABLESWAP
                     );
                 }
-                if coin.denom.contains("uusdt") {
+                if coin.denom.contains(DENOM_UUSDT) {
                     assert_eq!(
                         coin.amount,
-                        uusdt_bob.borrow().clone().amount + Uint128::new(10u128.pow(15))
+                        uusdt_bob.borrow().clone().amount + LIQUIDITY_ADD_UUSDT_STABLESWAP
                     );
                 }
             }
@@ -352,17 +394,17 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
         )
         .query_all_balances(&alice.to_string(), |balances| {
             for coin in balances.unwrap().iter() {
-                if coin.denom.contains("uusdc") {
+                if coin.denom.contains(DENOM_UUSDC) {
                     assert_approx_eq!(
                         coin.amount,
-                        uusdc_alice.borrow().clone().amount + Uint128::new(10u128.pow(3)),
+                        uusdc_alice.borrow().clone().amount + LIQUIDITY_ADD_UUSDC_STABLESWAP,
                         "50"
                     );
                 }
-                if coin.denom.contains("uusdt") {
+                if coin.denom.contains(DENOM_UUSDT) {
                     assert_approx_eq!(
                         coin.amount,
-                        uusdt_alice.borrow().clone().amount + Uint128::new(10u128.pow(15)),
+                        uusdt_alice.borrow().clone().amount + LIQUIDITY_ADD_UUSDT_STABLESWAP,
                         "50"
                     );
                 }
@@ -374,17 +416,17 @@ fn lp_mint_stableswap_different_decimals_scaling_min_liquidity() {
 fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_00000000000000u128, "uusdc".to_string()),
-            coin(1_000_00000000000000u128, "uusdt".to_string()),
-            coin(1_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
-            coin(10_000u128, "utest".to_string()),
+            coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDC.to_string()),
+            coin(INITIAL_BALANCE_STABLESWAP.u128(), DENOM_UUSDT.to_string()),
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(TEN_THOUSAND.u128(), DENOM_UOM.to_string()),
+            coin(TEN_THOUSAND.u128(), UTEST_DENOM.to_string()),
         ],
-        StargateMock::new(vec![coin(1000u128, "utest".to_string())]),
+        StargateMock::new(vec![coin(ONE_THOUSAND, UTEST_DENOM.to_string())]),
     );
     let alice = suite.creator();
     let bob = suite.senders[1].clone();
-    let asset_denoms = vec!["uusdc".to_string(), "uusdt".to_string()];
+    let asset_denoms = vec![DENOM_UUSDC.to_string(), DENOM_UUSDT.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -403,11 +445,14 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &alice,
         asset_denoms,
-        vec![3u8, 6u8],
+        vec![3u8, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 85 },
         None,
-        vec![coin(1000, "uusd"), coin(1000, "utest")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(ONE_THOUSAND, UTEST_DENOM.to_string()),
+        ],
         |result| {
             result.unwrap();
         },
@@ -424,8 +469,14 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
             None,
             None,
             vec![
-                coin(1_000u128, "uusdc".to_string()),
-                coin(1_000_000, "uusdt".to_string()),
+                coin(
+                    LIQUIDITY_ADD_UUSDC_LOW_DECIMALS.u128(),
+                    DENOM_UUSDC.to_string(),
+                ),
+                coin(
+                    LIQUIDITY_ADD_UUSDT_LOW_DECIMALS.u128(),
+                    DENOM_UUSDT.to_string(),
+                ),
             ],
             |result| {
                 println!("result: {:?}", result);
@@ -442,8 +493,14 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
             None,
             None,
             vec![
-                coin(1_000u128, "uusdc".to_string()),
-                coin(1_000_000, "uusdt".to_string()),
+                coin(
+                    LIQUIDITY_ADD_UUSDC_LOW_DECIMALS.u128(),
+                    DENOM_UUSDC.to_string(),
+                ),
+                coin(
+                    LIQUIDITY_ADD_UUSDT_LOW_DECIMALS.u128(),
+                    DENOM_UUSDT.to_string(),
+                ),
             ],
             |result| {
                 println!("result: {:?}", result);
@@ -460,11 +517,11 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
                 *lp_shares_alice.borrow_mut() = coin.clone();
                 println!("lp_shares_alice: {:?}", lp_shares_alice.borrow());
             }
-            if coin.denom.contains("uusdc") {
+            if coin.denom.contains(DENOM_UUSDC) {
                 *uusdc_alice.borrow_mut() = coin.clone();
                 println!("uusdc_alice: {:?}", uusdc_alice.borrow());
             }
-            if coin.denom.contains("uusdt") {
+            if coin.denom.contains(DENOM_UUSDT) {
                 *uusdt_alice.borrow_mut() = coin.clone();
                 println!("uusdt_alice: {:?}", uusdt_alice.borrow());
             }
@@ -480,11 +537,11 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
                 *lp_shares_bob.borrow_mut() = coin.clone();
                 println!("lp_shares_bob: {:?}", lp_shares_bob.borrow());
             }
-            if coin.denom.contains("uusdc") {
+            if coin.denom.contains(DENOM_UUSDC) {
                 *uusdc_bob.borrow_mut() = coin.clone();
                 println!("uusdc_bob: {:?}", uusdc_bob.borrow());
             }
-            if coin.denom.contains("uusdt") {
+            if coin.denom.contains(DENOM_UUSDT) {
                 *uusdt_bob.borrow_mut() = coin.clone();
                 println!("uusdt_bob: {:?}", uusdt_bob.borrow());
             }
@@ -503,16 +560,16 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
         )
         .query_all_balances(&bob.to_string(), |balances| {
             for coin in balances.unwrap().iter() {
-                if coin.denom.contains("uusdc") {
+                if coin.denom.contains(DENOM_UUSDC) {
                     assert_eq!(
                         coin.amount,
-                        uusdc_bob.borrow().clone().amount + Uint128::new(1000u128)
+                        uusdc_bob.borrow().clone().amount + LIQUIDITY_ADD_UUSDC_LOW_DECIMALS
                     );
                 }
-                if coin.denom.contains("uusdt") {
+                if coin.denom.contains(DENOM_UUSDT) {
                     assert_eq!(
                         coin.amount,
-                        uusdt_bob.borrow().clone().amount + Uint128::new(1000u128 * 10u128.pow(3))
+                        uusdt_bob.borrow().clone().amount + LIQUIDITY_ADD_UUSDT_LOW_DECIMALS
                     );
                 }
             }
@@ -530,18 +587,17 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
         )
         .query_all_balances(&alice.to_string(), |balances| {
             for coin in balances.unwrap().iter() {
-                if coin.denom.contains("uusdc") {
+                if coin.denom.contains(DENOM_UUSDC) {
                     assert_approx_eq!(
                         coin.amount,
-                        uusdc_alice.borrow().clone().amount + Uint128::new(1000u128),
+                        uusdc_alice.borrow().clone().amount + LIQUIDITY_ADD_UUSDC_LOW_DECIMALS,
                         "50"
                     );
                 }
-                if coin.denom.contains("uusdt") {
+                if coin.denom.contains(DENOM_UUSDT) {
                     assert_approx_eq!(
                         coin.amount,
-                        uusdt_alice.borrow().clone().amount
-                            + Uint128::new(1000u128 * 10u128.pow(3)),
+                        uusdt_alice.borrow().clone().amount + LIQUIDITY_ADD_UUSDT_LOW_DECIMALS,
                         "50"
                     );
                 }
@@ -554,23 +610,17 @@ fn lp_mint_stableswap_low_decimals_scaling_min_liquidity() {
 fn provide_and_remove_liquidity_18_decimals() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000_000u128, "uusd".to_string()),
-            coin(1_000_000_000_000u128, "uusdc".to_string()),
-            coin(
-                300_000_000_000_000_000000000000000000u128,
-                "ausdy".to_string(),
-            ),
-            coin(
-                300_000_000_000_000_000000000000000000u128,
-                "pusdc".to_string(),
-            ),
-            coin(1_000_000_000_000u128, "uom".to_string()),
+            coin(ONE_TRILLION.u128(), DENOM_UUSD.to_string()),
+            coin(ONE_TRILLION.u128(), DENOM_UUSDC.to_string()),
+            coin(LP_AMOUNT_18_DECIMALS.u128(), AUSDT_DENOM.to_string()),
+            coin(LP_AMOUNT_18_DECIMALS.u128(), PUSDC_DENOM.to_string()),
+            coin(ONE_TRILLION.u128(), DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(FEE_AMOUNT_UOM.u128(), DENOM_UOM.to_string())]),
     );
     let alice = suite.creator();
 
-    let asset_denoms = vec!["ausdy".to_string(), "pusdc".to_string()];
+    let asset_denoms = vec![AUSDT_DENOM.to_string(), PUSDC_DENOM.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -589,11 +639,14 @@ fn provide_and_remove_liquidity_18_decimals() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &alice,
         asset_denoms,
-        vec![18u8, 18u8],
+        vec![DECIMALS_18, DECIMALS_18],
         pool_fees,
         PoolType::ConstantProduct,
         None,
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD.to_string()),
+            coin(FEE_AMOUNT_UOM.u128(), DENOM_UOM.to_string()),
+        ],
         |result| {
             result.unwrap();
         },
@@ -610,12 +663,12 @@ fn provide_and_remove_liquidity_18_decimals() {
         None,
         vec![
             Coin {
-                denom: "pusdc".to_string(),
-                amount: Uint128::new(300_000_000_000_000_000000000000000000u128),
+                denom: PUSDC_DENOM.to_string(),
+                amount: LP_AMOUNT_18_DECIMALS,
             },
             Coin {
-                denom: "ausdy".to_string(),
-                amount: Uint128::new(300_000_000_000_000_000000000000000000u128),
+                denom: AUSDT_DENOM.to_string(),
+                amount: LP_AMOUNT_18_DECIMALS,
             },
         ],
         |result| {
@@ -633,10 +686,10 @@ fn provide_and_remove_liquidity_18_decimals() {
     });
 
     suite
-        .query_balance(&alice.to_string(), "pusdc".to_string(), |result| {
+        .query_balance(&alice.to_string(), PUSDC_DENOM.to_string(), |result| {
             assert_eq!(result.unwrap().amount, Uint128::zero());
         })
-        .query_balance(&alice.to_string(), "usdy".to_string(), |result| {
+        .query_balance(&alice.to_string(), AUSDT_DENOM.to_string(), |result| {
             assert_eq!(result.unwrap().amount, Uint128::zero());
         })
         .withdraw_liquidity(
@@ -647,17 +700,17 @@ fn provide_and_remove_liquidity_18_decimals() {
                 result.unwrap();
             },
         )
-        .query_balance(&alice.to_string(), "pusdc".to_string(), |result| {
+        .query_balance(&alice.to_string(), PUSDC_DENOM, |result| {
             assert_approx_eq!(
                 result.unwrap().amount,
-                Uint128::new(300_000_000_000_000_000000000000000000u128),
+                LP_AMOUNT_18_DECIMALS,
                 "0.000000000000000001"
             );
         })
-        .query_balance(&alice.to_string(), "ausdy".to_string(), |result| {
+        .query_balance(&alice.to_string(), AUSDT_DENOM, |result| {
             assert_approx_eq!(
                 result.unwrap().amount,
-                Uint128::new(300_000_000_000_000_000000000000000000u128),
+                LP_AMOUNT_18_DECIMALS,
                 "0.000000000000000001"
             );
         });

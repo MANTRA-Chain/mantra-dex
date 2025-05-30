@@ -9,36 +9,51 @@ use mantra_dex_std::{
 };
 
 use crate::{tests::suite::TestingSuite, ContractError};
+use test_utils::common_constants::*;
+
+// ========== Liquidity Amounts ==========
+const LIQUIDITY_500K: u128 = 500_000u128;
+const LIQUIDITY_1_5M: u128 = 1_500_000u128;
+
+// ========== Pool Constants ==========
+const STABLESWAP_AMP_FACTOR: u64 = 100;
+
+// ========== Pool Identifiers ==========
+const O_WHALE_ULUNA_UUSD_ID: &str = "o.whale.uluna.uusd";
+const O_UUSDC_UUSDT_UUSDY_ID: &str = "o.uusdc.uusdt.uusdy";
+
+// ========== Test Parameters ==========
+
+// ========== Expected Values ==========
 
 #[test]
 fn provide_liquidity_stable_swap() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(INITIAL_BALANCE_PLUS_ONE, DENOM_UWHALE),
+            coin(INITIAL_BALANCE, DENOM_ULUNA),
+            coin(INITIAL_BALANCE_PLUS_ONE, DENOM_UUSD),
+            coin(INITIAL_BALANCE_PLUS_ONE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
-    // Asset infos with uwhale and uluna
 
     let asset_infos = vec![
-        "uwhale".to_string(),
-        "uluna".to_string(),
-        "uusd".to_string(),
+        DENOM_UWHALE.to_string(),
+        DENOM_ULUNA.to_string(),
+        DENOM_UUSD.to_string(),
     ];
 
     // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::from_ratio(1u128, 1000u128),
+            share: Decimal::from_ratio(PROTOCOL_FEE_RATIO_1_1000.0, PROTOCOL_FEE_RATIO_1_1000.1),
         },
         swap_fee: Fee {
-            share: Decimal::from_ratio(1u128, 10_000_u128),
+            share: Decimal::from_ratio(SWAP_FEE_RATIO_1_1000.0, SWAP_FEE_RATIO_1_1000.1),
         },
         burn_fee: Fee {
             share: Decimal::zero(),
@@ -50,11 +65,16 @@ fn provide_liquidity_stable_swap() {
     suite.instantiate_default().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
         pool_fees,
-        PoolType::StableSwap { amp: 100 },
+        PoolType::StableSwap {
+            amp: STABLESWAP_AMP_FACTOR,
+        },
         Some("whale.uluna.uusd".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -63,7 +83,7 @@ fn provide_liquidity_stable_swap() {
     // Let's try to add liquidity
     suite.provide_liquidity(
         &creator,
-        "o.whale.uluna.uusd".to_string(),
+        O_WHALE_ULUNA_UUSD_ID.to_string(),
         None,
         None,
         None,
@@ -71,16 +91,16 @@ fn provide_liquidity_stable_swap() {
         None,
         vec![
             Coin {
-                denom: "uwhale".to_string(),
-                amount: Uint128::from(1_000_000u128),
+                denom: DENOM_UWHALE.to_string(),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
-                denom: "uluna".to_string(),
-                amount: Uint128::from(1_000_000u128),
+                denom: DENOM_ULUNA.to_string(),
+                amount: Uint128::from(ONE_MILLION),
             },
             Coin {
-                denom: "uusd".to_string(),
-                amount: Uint128::from(1_000_000u128),
+                denom: DENOM_UUSD.to_string(),
+                amount: Uint128::from(ONE_MILLION),
             },
         ],
         |result| {
@@ -92,12 +112,12 @@ fn provide_liquidity_stable_swap() {
     );
     let simulated_return_amount = RefCell::new(Uint128::zero());
     suite.query_simulation(
-        "o.whale.uluna.uusd".to_string(),
+        O_WHALE_ULUNA_UUSD_ID.to_string(),
         Coin {
-            denom: "uwhale".to_string(),
-            amount: Uint128::from(1_000u128),
+            denom: DENOM_UWHALE.to_string(),
+            amount: Uint128::from(ONE_THOUSAND),
         },
-        "uluna".to_string(),
+        DENOM_ULUNA.to_string(),
         |result| {
             *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
         },
@@ -303,30 +323,30 @@ fn provide_liquidity_stable_swap() {
 fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uusdc".to_string()),
-            coin(1_000_000_000u128, "uusdt".to_string()),
-            coin(1_000_000_001u128, "uusdy".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(INITIAL_BALANCE_PLUS_ONE, DENOM_UUSD),
+            coin(INITIAL_BALANCE_PLUS_ONE, DENOM_UUSDC),
+            coin(INITIAL_BALANCE, DENOM_UUSDT),
+            coin(INITIAL_BALANCE_PLUS_ONE, DENOM_UUSDY),
+            coin(INITIAL_BALANCE_PLUS_ONE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
     let alice = suite.senders[1].clone();
 
     let asset_infos = vec![
-        "uusdc".to_string(),
-        "uusdt".to_string(),
-        "uusdy".to_string(),
+        DENOM_UUSDC.to_string(),
+        DENOM_UUSDT.to_string(),
+        DENOM_UUSDY.to_string(),
     ];
 
     // Protocol fee is 0.01% and swap fee is 0.02% and burn fee is 0%
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::from_ratio(1u128, 1000u128),
+            share: Decimal::from_ratio(PROTOCOL_FEE_RATIO_1_1000.0, PROTOCOL_FEE_RATIO_1_1000.1),
         },
         swap_fee: Fee {
-            share: Decimal::from_ratio(1u128, 10_000_u128),
+            share: Decimal::from_ratio(SWAP_FEE_RATIO_1_1000.0, SWAP_FEE_RATIO_1_1000.1),
         },
         burn_fee: Fee {
             share: Decimal::zero(),
@@ -338,23 +358,28 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
     suite.instantiate_default().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
         pool_fees,
-        PoolType::StableSwap { amp: 100 },
+        PoolType::StableSwap {
+            amp: STABLESWAP_AMP_FACTOR,
+        },
         Some("uusdc.uusdt.uusdy".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+        ],
         |result| {
             result.unwrap();
         },
     );
 
-    let lp_denom = suite.get_lp_denom("o.uusdc.uusdt.uusdy".to_string());
+    let lp_denom = suite.get_lp_denom(O_UUSDC_UUSDT_UUSDY_ID.to_string());
 
     // Let's try to add liquidity
     suite
         .provide_liquidity(
             &creator,
-            "o.uusdc.uusdt.uusdy".to_string(),
+            O_UUSDC_UUSDT_UUSDY_ID.to_string(),
             None,
             None,
             None,
@@ -362,16 +387,16 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
             None,
             vec![
                 Coin {
-                    denom: "uusdc".to_string(),
-                    amount: Uint128::from(500_000u128),
+                    denom: DENOM_UUSDC.to_string(),
+                    amount: Uint128::from(LIQUIDITY_500K),
                 },
                 Coin {
-                    denom: "uusdt".to_string(),
-                    amount: Uint128::from(500_000u128),
+                    denom: DENOM_UUSDT.to_string(),
+                    amount: Uint128::from(LIQUIDITY_500K),
                 },
                 Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::from(500_000u128),
+                    denom: DENOM_UUSDY.to_string(),
+                    amount: Uint128::from(LIQUIDITY_500K),
                 },
             ],
             |result| {
@@ -382,7 +407,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
             assert_eq!(
                 result.unwrap().amount,
                 // liquidity provided - MINIMUM_LIQUIDITY_AMOUNT
-                Uint128::from(1_500_000u128 - 1_000u128)
+                Uint128::from(LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128())
             );
         });
 
@@ -390,7 +415,7 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
     suite
         .provide_liquidity(
             &creator,
-            "o.uusdc.uusdt.uusdy".to_string(),
+            O_UUSDC_UUSDT_UUSDY_ID.to_string(),
             None,
             None,
             None,
@@ -398,16 +423,16 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
             None,
             vec![
                 Coin {
-                    denom: "uusdc".to_string(),
-                    amount: Uint128::from(500_000u128),
+                    denom: DENOM_UUSDC.to_string(),
+                    amount: Uint128::from(LIQUIDITY_500K),
                 },
                 Coin {
-                    denom: "uusdt".to_string(),
-                    amount: Uint128::from(500_000u128),
+                    denom: DENOM_UUSDT.to_string(),
+                    amount: Uint128::from(LIQUIDITY_500K),
                 },
                 Coin {
-                    denom: "uusdy".to_string(),
-                    amount: Uint128::from(500_000u128),
+                    denom: DENOM_UUSDY.to_string(),
+                    amount: Uint128::from(LIQUIDITY_500K),
                 },
             ],
             |result| {
@@ -418,18 +443,18 @@ fn provide_liquidity_stable_swap_shouldnt_double_count_deposits_or_inflate_lp() 
             assert_eq!(
                 result.unwrap().amount,
                 // we should expect another ~1_500_000
-                Uint128::from(1_500_000u128 + 1_500_000u128 - 1_000u128)
+                Uint128::from(LIQUIDITY_1_5M + LIQUIDITY_1_5M - MINIMUM_LIQUIDITY_AMOUNT.u128())
             );
         });
 
     let simulated_return_amount = RefCell::new(Uint128::zero());
     suite.query_simulation(
-        "o.uusdc.uusdt.uusdy".to_string(),
+        O_UUSDC_UUSDT_UUSDY_ID.to_string(),
         Coin {
-            denom: "uusdc".to_string(),
-            amount: Uint128::from(1_000u128),
+            denom: DENOM_UUSDC.to_string(),
+            amount: Uint128::from(ONE_THOUSAND),
         },
-        "uusdt".to_string(),
+        DENOM_UUSDT.to_string(),
         |result| {
             *simulated_return_amount.borrow_mut() = result.unwrap().return_amount;
         },
@@ -706,7 +731,7 @@ fn provide_liquidity_stable_swap_edge_case() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
             coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
+            coin(ONE_BILLION, "uluna".to_string()),
             coin(1_000_000_001u128, "uusd".to_string()),
             coin(1_000_000_001u128, "uom".to_string()),
         ],
@@ -741,7 +766,7 @@ fn provide_liquidity_stable_swap_edge_case() {
     suite.instantiate_default().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 100 },
         Some("whale.uluna.uusd".to_string()),
@@ -891,7 +916,7 @@ fn provide_incomplete_liquidity_fails_on_stableswaps() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
             coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
+            coin(ONE_BILLION, "uluna".to_string()),
             coin(1_000_000_001u128, "uusd".to_string()),
             coin(1_000_000_001u128, "uom".to_string()),
         ],
@@ -923,7 +948,7 @@ fn provide_incomplete_liquidity_fails_on_stableswaps() {
     suite.instantiate_default().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 100 },
         Some("whale.uluna.uusd".to_string()),
@@ -1068,7 +1093,7 @@ fn provide_liquidity_stable_invalid_slippage_check() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::StableSwap { amp: 10 },
         Some("whale.uluna".to_string()),
@@ -1157,7 +1182,7 @@ fn setup_stable_swap() -> (TestingSuite, Addr, Addr, String) {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
-        vec![6u8, 6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -1385,7 +1410,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
             uusd_decimals as u8,
             uweth_decimals as u8,
         ],
-        // vec![6u8, 6u8, 18u8],
+        // vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -1689,7 +1714,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit_large_amounts() {
             uusd_decimals as u8,
             uweth_decimals as u8,
         ],
-        // vec![6u8, 6u8, 18u8],
+        // vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -2051,7 +2076,7 @@ fn python_simulation_comparison() {
     suite.instantiate_default().create_pool(
         &creator,
         vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
-        vec![6u8, 6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),
@@ -2196,7 +2221,7 @@ fn python_simulation_comparison() {
     suite.instantiate_default().create_pool(
         &creator,
         vec!["uluna".to_string(), "uusd".to_string(), "uweth".to_string()],
-        vec![6u8, 6u8, 18u8],
+        vec![DECIMALS_6, DECIMALS_6, DECIMALS_18],
         PoolFee {
             protocol_fee: Fee {
                 share: Decimal::zero(),

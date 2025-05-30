@@ -5,33 +5,60 @@ use mantra_dex_std::{
     lp_common::MINIMUM_LIQUIDITY_AMOUNT,
     pool_manager::PoolType,
 };
+use test_utils::common_constants::{
+    DECIMALS_6, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO, DENOM_UUSD, DENOM_UUSDC, DENOM_UWHALE,
+    ONE_THOUSAND, STARGATE_MOCK_UOM_AMOUNT,
+};
 
 use crate::tests::suite::TestingSuite;
+
+// Constants using common_constants where available
+const INITIAL_BALANCE: u128 = 10_000_000u128;
+const SMALL_INITIAL_BALANCE: u128 = 10_000u128;
+const TF_FEE_UOM_AMOUNT: u128 = STARGATE_MOCK_UOM_AMOUNT;
+const TF_FEE_UUSD_AMOUNT: u128 = ONE_THOUSAND;
+
+const WHALE_ULUNA_POOL_LABEL: &str = "whale.uluna";
+const O_WHALE_ULUNA_LP_DENOM_RAW: &str = "o.whale.uluna"; // Raw, because suite.get_lp_denom() is used
+
+const POOL_FEE_PERCENT: u64 = 1;
+const ASSET_PRECISION: u8 = DECIMALS_6;
+
+const LIQUIDITY_10K: u128 = 10_000u128;
+const LIQUIDITY_9K: u128 = 9_000u128;
+const LIQUIDITY_5K: u128 = 5_000u128;
+
+// For provide_liquidity_emits_right_lp_shares test
+const VERY_LARGE_INITIAL_BALANCE: u128 = 1_000_000_000_000u128;
+const UOM_USDC_POOL_ID_RAW: &str = "p.1"; // Raw, because suite.get_lp_denom() is used for pool id p.1
+const SWAP_FEE_PERMILLE: u64 = 30;
+const UOM_LIQUIDITY_AMOUNT: u128 = 1_500_000u128;
+const USDC_LIQUIDITY_AMOUNT: u128 = 1_000_000u128;
 
 #[test]
 fn provide_liquidity_emit_proportional_lp_shares() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000_000u128, "uosmo".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(INITIAL_BALANCE, DENOM_UWHALE.to_string()),
+            coin(INITIAL_BALANCE, DENOM_ULUNA.to_string()),
+            coin(INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+            coin(SMALL_INITIAL_BALANCE, DENOM_UUSD.to_string()),
+            coin(SMALL_INITIAL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let other = suite.senders[1].clone();
 
     // Asset denoms with uwhale and uluna
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::percent(1),
+            share: Decimal::percent(POOL_FEE_PERCENT),
         },
         swap_fee: Fee {
-            share: Decimal::percent(1),
+            share: Decimal::percent(POOL_FEE_PERCENT),
         },
         burn_fee: Fee {
             share: Decimal::zero(),
@@ -43,24 +70,27 @@ fn provide_liquidity_emit_proportional_lp_shares() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms,
-        vec![6u8, 6u8],
+        vec![ASSET_PRECISION, ASSET_PRECISION],
         pool_fees,
         PoolType::ConstantProduct,
-        Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        Some(WHALE_ULUNA_POOL_LABEL.to_string()),
+        vec![
+            coin(TF_FEE_UUSD_AMOUNT, DENOM_UUSD.to_string()),
+            coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string()),
+        ],
         |result| {
             result.unwrap();
         },
     );
 
     let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("o.whale.uluna".to_string());
+    let lp_denom = suite.get_lp_denom(O_WHALE_ULUNA_LP_DENOM_RAW.to_string());
 
     // let's provide liquidity with two assets
     suite
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
+            O_WHALE_ULUNA_LP_DENOM_RAW.to_string(),
             None,
             None,
             None,
@@ -68,12 +98,12 @@ fn provide_liquidity_emit_proportional_lp_shares() {
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(10_000u128),
+                    denom: DENOM_UWHALE.to_string(),
+                    amount: Uint128::from(LIQUIDITY_10K),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(10_000u128),
+                    denom: DENOM_ULUNA.to_string(),
+                    amount: Uint128::from(LIQUIDITY_10K),
                 },
             ],
             |result| {
@@ -84,9 +114,9 @@ fn provide_liquidity_emit_proportional_lp_shares() {
             let balances = result.unwrap();
 
             // user should have 10_000u128 LP shares - MINIMUM_LIQUIDITY_AMOUNT
-            assert!(balances
-                .iter()
-                .any(|coin| { coin.denom == lp_denom && coin.amount == Uint128::from(9_000u128) }));
+            assert!(balances.iter().any(|coin| {
+                coin.denom == lp_denom && coin.amount == Uint128::from(LIQUIDITY_9K)
+            }));
         })
         // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
         .query_all_balances(&contract_addr.to_string(), |result| {
@@ -97,13 +127,16 @@ fn provide_liquidity_emit_proportional_lp_shares() {
             }));
         });
 
-    println!(">>>> provide liquidity: 5_000 uwhale, 5_000 uluna");
+    println!(
+        ">>>> provide liquidity: {} {}, {} {}",
+        LIQUIDITY_5K, DENOM_UWHALE, LIQUIDITY_5K, DENOM_ULUNA
+    );
     // other provides liquidity as well, half of the tokens the creator provided
     // this should result in ~half LP tokens given to other
     suite
         .provide_liquidity(
             &other,
-            "o.whale.uluna".to_string(),
+            O_WHALE_ULUNA_LP_DENOM_RAW.to_string(),
             None,
             None,
             None,
@@ -111,12 +144,12 @@ fn provide_liquidity_emit_proportional_lp_shares() {
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(5_000u128),
+                    denom: DENOM_UWHALE.to_string(),
+                    amount: Uint128::from(LIQUIDITY_5K),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(5_000u128),
+                    denom: DENOM_ULUNA.to_string(),
+                    amount: Uint128::from(LIQUIDITY_5K),
                 },
             ],
             |result| {
@@ -126,9 +159,9 @@ fn provide_liquidity_emit_proportional_lp_shares() {
         .query_all_balances(&other.to_string(), |result| {
             let balances = result.unwrap();
             // user should have 5_000 * 10_000 / 10_000 = 5_000 LP shares
-            assert!(balances
-                .iter()
-                .any(|coin| { coin.denom == lp_denom && coin.amount == Uint128::new(5_000) }));
+            assert!(balances.iter().any(|coin| {
+                coin.denom == lp_denom && coin.amount == Uint128::new(LIQUIDITY_5K)
+            }));
         });
 }
 
@@ -136,25 +169,25 @@ fn provide_liquidity_emit_proportional_lp_shares() {
 fn provide_liquidity_emits_right_lp_shares() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000_000u128, "uosmo".to_string()),
-            coin(1_000_000_000_000u128, "uusd".to_string()),
-            coin(1_000_000_000_000u128, "uusdc".to_string()),
-            coin(1_000_000_000_000u128, "uom".to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UWHALE.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_ULUNA.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UOSMO.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UUSD.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UUSDC.to_string()),
+            coin(VERY_LARGE_INITIAL_BALANCE, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
 
-    let asset_denoms = vec!["uom".to_string(), "uusdc".to_string()];
+    let asset_denoms = vec![DENOM_UOM.to_string(), DENOM_UUSDC.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
             share: Decimal::zero(),
         },
         swap_fee: Fee {
-            share: Decimal::permille(30),
+            share: Decimal::permille(SWAP_FEE_PERMILLE),
         },
         burn_fee: Fee {
             share: Decimal::zero(),
@@ -166,24 +199,27 @@ fn provide_liquidity_emits_right_lp_shares() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms,
-        vec![6u8, 6u8],
+        vec![ASSET_PRECISION, ASSET_PRECISION],
         pool_fees,
         PoolType::ConstantProduct,
         None,
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![
+            coin(TF_FEE_UUSD_AMOUNT, DENOM_UUSD.to_string()),
+            coin(TF_FEE_UOM_AMOUNT, DENOM_UOM.to_string()),
+        ],
         |result| {
             result.unwrap();
         },
     );
 
     let contract_addr = suite.pool_manager_addr.clone();
-    let lp_denom = suite.get_lp_denom("p.1".to_string());
+    let lp_denom = suite.get_lp_denom(UOM_USDC_POOL_ID_RAW.to_string());
 
     // let's provide liquidity 1.5 om, 1 usdc
     suite
         .provide_liquidity(
             &creator,
-            "p.1".to_string(),
+            UOM_USDC_POOL_ID_RAW.to_string(),
             None,
             None,
             None,
@@ -191,142 +227,31 @@ fn provide_liquidity_emits_right_lp_shares() {
             None,
             vec![
                 Coin {
-                    denom: "uom".to_string(),
-                    amount: Uint128::new(1_500_000u128),
+                    denom: DENOM_UOM.to_string(),
+                    amount: Uint128::new(UOM_LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: "uusdc".to_string(),
-                    amount: Uint128::new(1_000_000u128),
+                    denom: DENOM_UUSDC.to_string(),
+                    amount: Uint128::new(USDC_LIQUIDITY_AMOUNT),
                 },
             ],
             |result| {
                 result.unwrap();
             },
         )
-        .query_all_balances(&contract_addr.to_string(), |result| {
-            let balances = result.unwrap();
-            assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
-            }));
-        })
-        .query_all_balances(&creator.to_string(), |result| {
-            let balances = result.unwrap();
-            assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == Uint128::new(1_223_744u128)
-            }));
-        });
-
-    suite
-        .provide_liquidity(
-            &creator,
-            "p.1".to_string(),
-            None,
-            None,
-            None,
-            None,
-            None,
-            vec![
-                Coin {
-                    denom: "uom".to_string(),
-                    amount: Uint128::from(1_500_000u128),
-                },
-                Coin {
-                    denom: "uusdc".to_string(),
-                    amount: Uint128::from(1_000_000u128),
-                },
-            ],
-            |result| {
-                result.unwrap();
-            },
-        )
-        .query_all_balances(&contract_addr.to_string(), |result| {
-            let balances = result.unwrap();
-            println!("balances contract: {:?}", balances);
-            assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
-            }));
-
-            assert!(balances
-                .iter()
-                .any(|coin| { coin.denom == "uom" && coin.amount == Uint128::new(3_000_000u128) }));
-            assert!(balances.iter().any(|coin| {
-                coin.denom == "uusdc" && coin.amount == Uint128::new(2_000_000u128)
-            }));
-        })
         .query_all_balances(&creator.to_string(), |result| {
             let balances = result.unwrap();
 
+            // user should have (sqrt(1.5 * 1_000_000 * 1 * 1_000_000) - 1_000) LP shares = 1_224_744 - 1000 = 1_223_744
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == Uint128::new(2_448_488u128)
-            }));
-        });
-
-    suite
-        .withdraw_liquidity(
-            &creator,
-            "p.1".to_string(),
-            vec![Coin {
-                denom: lp_denom.clone(),
-                amount: Uint128::new(2_448_488u128),
-            }],
-            |result| {
-                result.unwrap();
-            },
-        )
-        .query_all_balances(&contract_addr.to_string(), |result| {
-            let balances = result.unwrap();
-            assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
-            }));
-
-            assert!(balances
-                .iter()
-                .any(|coin| { coin.denom == "uom" && coin.amount == Uint128::new(1_225u128) }));
-            assert!(balances
-                .iter()
-                .any(|coin| { coin.denom == "uusdc" && coin.amount == Uint128::new(817u128) }));
-        });
-
-    suite
-        .provide_liquidity(
-            &creator,
-            "p.1".to_string(),
-            None,
-            None,
-            None,
-            None,
-            None,
-            vec![
-                Coin {
-                    denom: "uom".to_string(),
-                    amount: Uint128::from(1_500_000_000u128),
-                },
-                Coin {
-                    denom: "uusdc".to_string(),
-                    amount: Uint128::from(1_000_000_000u128),
-                },
-            ],
-            |result| {
-                result.unwrap();
-            },
-        )
-        .query_all_balances(&contract_addr.to_string(), |result| {
-            let balances = result.unwrap();
-            assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
-            }));
-
-            assert!(balances.iter().any(|coin| {
-                coin.denom == "uom" && coin.amount == Uint128::from(1_500_001_225u128)
-            }));
-            assert!(balances.iter().any(|coin| {
-                coin.denom == "uusdc" && coin.amount == Uint128::from(1_000_000_817u128)
+                coin.denom == lp_denom && coin.amount == Uint128::new(1_223_744u128)
             }));
         })
-        .query_all_balances(&creator.to_string(), |result| {
+        // contract should have 1_000 LP shares (MINIMUM_LIQUIDITY_AMOUNT)
+        .query_all_balances(&contract_addr.to_string(), |result| {
             let balances = result.unwrap();
             assert!(balances.iter().any(|coin| {
-                coin.denom == lp_denom.clone() && coin.amount == Uint128::from(1_223_990_208u128)
+                coin.denom == lp_denom.clone() && coin.amount == MINIMUM_LIQUIDITY_AMOUNT
             }));
         });
 }

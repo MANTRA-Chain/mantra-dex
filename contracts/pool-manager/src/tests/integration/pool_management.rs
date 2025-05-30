@@ -12,20 +12,85 @@ use mantra_dex_std::fee::PoolFee;
 use mantra_dex_std::lp_common::MINIMUM_LIQUIDITY_AMOUNT;
 use mantra_dex_std::pool_manager::FeatureToggle;
 use mantra_dex_std::pool_manager::PoolType;
+use test_utils::common_constants::{
+    DECIMALS_6, DEFAULT_UNLOCKING_DURATION_SECONDS, DENOM_ULUNA, DENOM_UOM, DENOM_UOSMO,
+    DENOM_UUSD, DENOM_UUSDC, DENOM_UUSDT, DENOM_UUSDY, DENOM_UWHALE,
+    INITIAL_BALANCE as BALANCE_AMOUNT_MEDIUM, INITIAL_BALANCE_PLUS_ONE as BALANCE_AMOUNT_LARGE,
+    ONE_BILLION, ONE_MILLION, ONE_THOUSAND, STABLESWAP_AMP_FACTOR, STARGATE_MOCK_UOM_AMOUNT,
+};
+
+// Test constants
+const DENOM_UTEST: &str = "utest";
+const DENOM_IBC_1: &str = "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A";
+const DENOM_IBC_2: &str = "ibc/A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2";
+
+// Common token amounts
+const MOCK_AMOUNT_UTEST: u128 = 1000;
+const INSUFFICIENT_TF_FEE: u128 = 999;
+const INSUFFICIENT_POOL_AMOUNT: u128 = 999;
+
+const TWICE_POOL_CREATION_FEE: u128 = 2000;
+const INSUFFICIENT_TWICE_POOL_CREATION_FEE: u128 = 1999;
+const EXCESSIVE_POOL_CREATION_FEE: u128 = 3000;
+const ATTACKER_BALANCE_AMOUNT: u128 = 10_000_000;
+const SMALL_BALANCE_AMOUNT: u128 = 10_000;
+
+// Fee constants
+
+// Fee percentages
+const DEFAULT_FEE_PERCENT: u64 = 1;
+const PROTOCOL_FEE_PERCENT: u64 = 10;
+const SWAP_FEE_PERCENT: u64 = 7;
+const BURN_FEE_PERCENT: u64 = 3;
+
+// Pool constants
+const STABLESWAP_TEST_AMP_FACTOR: u64 = 80;
+const STABLESWAP_POOL_ID: &str = "stableswap";
+
+// Pool identifier constants
+
+const VALID_POOL_IDENTIFIER: &str = "mycoolpool";
+const WHALE_LUNA_POOL_IDENTIFIER: &str = "whale.uluna.pool.1";
+const OTHER_WHALE_LUNA_POOL_IDENTIFIER: &str = "o.whale.uluna.pool.1";
+
+const WHALE_LUNA_POOL_PREFIX: &str = "o.whale.uluna";
+const POOL_ID_NUMERIC: &str = "1";
+
+const POOL_ID_PREFIX_P: &str = "p.1";
+
+// Position constants
+const SPAM_POSITION_ID: &str = "spam_position";
+
+// Lock pool test constants
+const LOCK_POOL_BALANCE_AMOUNT: u128 = ONE_BILLION;
+const LOCK_POOL_TF_FEE: u128 = 1000u128;
+const LOCK_POOL_LIQUIDITY_AMOUNT: u128 = 1_000u128;
+const LOCK_POOL_LIQUIDITY_AMOUNT_2: u128 = 8_000u128;
+const LOCK_POOL_SWAP_AMOUNT: u128 = 100u128;
+
+const LOCK_POOL_PREFIX_1: &str = "o.uom.uusd.1";
+const LOCK_POOL_PREFIX_2: &str = "o.uom.uusd.2";
+
+// Toggle pool test constants
+const TOGGLE_POOL_BALANCE_AMOUNT: u128 = ONE_BILLION;
+const TOGGLE_POOL_TF_FEE: u128 = 1000u128;
+
+// Add this after the imports
+const UNLOCKING_DURATION: u64 = DEFAULT_UNLOCKING_DURATION_SECONDS;
 
 // Insufficient fee to create pool; 90 instead of 100
 #[test]
 fn insufficient_pool_creation_fee() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
         StargateMock::new(vec![
-            coin(8888u128, "uom".to_string()),
-            coin(1000u128, "utest".to_string()),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            coin(MOCK_AMOUNT_UTEST, DENOM_UTEST),
         ]),
     );
     let creator = suite.creator();
@@ -33,7 +98,7 @@ fn insufficient_pool_creation_fee() {
     let _unauthorized = suite.senders[2].clone();
     // Asset infos with uwhale
 
-    let asset_infos = vec!["uwhale".to_string(), "uom".to_string()];
+    let asset_infos = vec![DENOM_UWHALE.to_string(), DENOM_UOM.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -52,11 +117,11 @@ fn insufficient_pool_creation_fee() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_infos,
-        vec![6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::ConstantProduct,
         None,
-        vec![coin(90, "uusd")],
+        vec![coin(90u128, DENOM_UUSD)],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
@@ -74,12 +139,12 @@ fn insufficient_pool_creation_fee() {
 fn invalid_assets_on_pool_creation() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
@@ -103,11 +168,14 @@ fn invalid_assets_on_pool_creation() {
         .create_pool(
             &creator,
             vec![],
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -118,12 +186,15 @@ fn invalid_assets_on_pool_creation() {
         )
         .create_pool(
             &creator,
-            vec!["uom".to_string()],
-            vec![6u8],
+            vec![DENOM_UOM.to_string()],
+            vec![DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -134,12 +205,15 @@ fn invalid_assets_on_pool_creation() {
         )
         .create_pool(
             &creator,
-            vec!["uom".to_string(), "uom".to_string()],
-            vec![6u8, 6u8],
+            vec![DENOM_UOM.to_string(), DENOM_UOM.to_string()],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -154,13 +228,13 @@ fn invalid_assets_on_pool_creation() {
 fn invalid_amount_assets_xyk_pool() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uusdc".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSDC),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
@@ -183,12 +257,12 @@ fn invalid_amount_assets_xyk_pool() {
         .add_one_epoch()
         .create_pool(
             &creator,
-            vec!["uom".to_string(), "uusdc".to_string(), "uusd".to_string()],
-            vec![6u8, 6u8, 6u8],
+            vec![DENOM_UOM.to_string(), DENOM_UUSDC.to_string(), DENOM_UUSD.to_string()],
+            vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![coin(ONE_THOUSAND, DENOM_UUSD), coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -199,12 +273,12 @@ fn invalid_amount_assets_xyk_pool() {
         )
         .create_pool(
             &creator,
-            vec!["uom".to_string()],
-            vec![6u8],
+            vec![DENOM_UOM.to_string()],
+            vec![DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![coin(ONE_THOUSAND, DENOM_UUSD), coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -215,24 +289,24 @@ fn invalid_amount_assets_xyk_pool() {
         )
         .create_pool(
             &creator,
-            vec!["uom".to_string(), "uusd".to_string()],
-            vec![6u8, 6u8],
+            vec![DENOM_UOM.to_string(), DENOM_UUSD.to_string()],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![coin(ONE_THOUSAND, DENOM_UUSD), coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
         )
         .create_pool(
             &creator,
-            vec!["uom".to_string(), "uusdc".to_string(), "uusd".to_string()],
-            vec![6u8, 6u8, 6u8],
+            vec![DENOM_UOM.to_string(), DENOM_UUSDC.to_string(), DENOM_UUSD.to_string()],
+            vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
-            PoolType::StableSwap { amp: 85 },
+            PoolType::StableSwap { amp: STABLESWAP_AMP_FACTOR },
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![coin(ONE_THOUSAND, DENOM_UUSD), coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -244,16 +318,20 @@ fn invalid_amount_assets_xyk_pool() {
 fn sends_more_funds_than_needed() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
-    let asset_infos = vec!["uom".to_string(), "uusd".to_string()];
+    let asset_infos = vec![DENOM_UOM.to_string(), DENOM_UUSD.to_string()];
+
+    // Additional constants specific to this test
+    const EXTRA_FEE_AMOUNT: u128 = 2000;
+    const INVALID_TF_FEE_AMOUNT: u128 = 10_000;
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -274,285 +352,14 @@ fn sends_more_funds_than_needed() {
         .create_pool(
             &creator,
             asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(8888, "uom"), coin(1000, "uusd"), coin(1000, "uluna")],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::ExtraFundsSent => {}
-                    _ => {
-                        panic!("Wrong error type, should return ContractError::ExtraFundsSent")
-                    }
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(8888, "uom"), coin(2000, "uusd")],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::InvalidPoolCreationFee { amount, expected } => {
-                        assert_eq!(amount, Uint128::new(2000));
-                        assert_eq!(expected, Uint128::new(1000));
-                    }
-                    _ => {
-                        panic!(
-                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
-                        )
-                    }
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(10_000, "uom"), coin(1000, "uusd")],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::InvalidTokenFactoryFee {
-                        denom,
-                        amount,
-                        expected,
-                    } => {
-                        assert_eq!(denom, "uom");
-                        assert_eq!(amount, Uint128::new(10_000));
-                        assert_eq!(expected, Uint128::new(8888));
-                    }
-                    _ => {
-                        panic!(
-                            "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
-                        )
-                    }
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos,
-            vec![6u8, 6u8],
-            pool_fees,
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(8888, "uom"), coin(1000, "uusd")],
-            |result| {
-                result.unwrap();
-            },
-        );
-}
-
-#[test]
-fn sends_less_tf_denoms_than_needed_with_funds_in_pools() {
-    let mut suite = TestingSuite::default_with_balances(
-        vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
-        ],
-        StargateMock::new(vec![
-            coin(8888u128, "uom".to_string()),
-            coin(1000u128, "uusd".to_string()),
-        ]),
-    );
-    let creator = suite.creator();
-
-    let asset_infos = vec!["uom".to_string(), "uusd".to_string()];
-
-    let pool_fees = PoolFee {
-        protocol_fee: Fee {
-            share: Decimal::zero(),
-        },
-        swap_fee: Fee {
-            share: Decimal::zero(),
-        },
-        burn_fee: Fee {
-            share: Decimal::zero(),
-        },
-        extra_fees: vec![],
-    };
-
-    suite
-        .instantiate_default()
-        .add_one_epoch()
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            Some("uom.uusd".to_string()),
-            vec![coin(8888, "uom"), coin(2000, "uusd")],
-            |result| {
-                result.unwrap();
-            },
-        )
-        .provide_liquidity(
-            &creator,
-            "o.uom.uusd".to_string(),
-            None,
-            None,
-            None,
-            None,
-            None,
-            vec![coin(1_000_000, "uom"), coin(6_000_000, "uusd")],
-            |result| {
-                result.unwrap();
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::InvalidPoolCreationFee { amount, expected } => {
-                        assert_eq!(amount, Uint128::zero());
-                        assert_eq!(expected, Uint128::new(2000));
-                    }
-                    _ => {
-                        panic!(
-                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
-                        )
-                    }
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(2000, "uusd")],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::InvalidTokenFactoryFee {
-                        denom,
-                        amount,
-                        expected,
-                    } => {
-                        assert_eq!(denom, "uom");
-                        assert_eq!(amount, Uint128::zero());
-                        assert_eq!(expected, Uint128::new(8888));
-                    }
-                    _ => {
-                        panic!(
-                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
-                        )
-                    }
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(2000, "uusd"), coin(8887, "uom")],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::InvalidTokenFactoryFee {
-                        denom,
-                        amount,
-                        expected,
-                    } => {
-                        assert_eq!(denom, "uom");
-                        assert_eq!(amount, Uint128::new(8887));
-                        assert_eq!(expected, Uint128::new(8888));
-                    }
-                    _ => {
-                        panic!(
-                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
-                        )
-                    }
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(2000, "uusd"), coin(8888, "uom")],
-            |result| {
-                result.unwrap();
-            },
-        );
-}
-#[test]
-fn sends_more_funds_than_needed_3_tf_denoms() {
-    let mut suite = TestingSuite::default_with_balances(
-        vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
-            coin(1_000_000_001u128, "utest".to_string()),
-        ],
-        StargateMock::new(vec![
-            coin(8888u128, "uom".to_string()),
-            coin(1000u128, "utest".to_string()),
-            coin(1000u128, "uusd".to_string()),
-        ]),
-    );
-    let creator = suite.creator();
-
-    let asset_infos = vec!["uom".to_string(), "uusd".to_string()];
-
-    let pool_fees = PoolFee {
-        protocol_fee: Fee {
-            share: Decimal::zero(),
-        },
-        swap_fee: Fee {
-            share: Decimal::zero(),
-        },
-        burn_fee: Fee {
-            share: Decimal::zero(),
-        },
-        extra_fees: vec![],
-    };
-
-    suite
-        .instantiate_default()
-        .add_one_epoch()
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
             vec![
-                coin(8888, "uom"),
-                coin(2000, "uusd"),
-                coin(1000, "utest"),
-                coin(1000, "uluna"),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(ONE_THOUSAND, DENOM_ULUNA),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -567,17 +374,20 @@ fn sends_more_funds_than_needed_3_tf_denoms() {
         .create_pool(
             &creator,
             asset_infos.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(8888, "uom"), coin(3000, "uusd"), coin(1000, "utest")],
+            vec![
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(EXTRA_FEE_AMOUNT, DENOM_UUSD),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
                     ContractError::InvalidPoolCreationFee { amount, expected } => {
-                        assert_eq!(amount, Uint128::new(3000));
-                        assert_eq!(expected, Uint128::new(2000));
+                        assert_eq!(amount, Uint128::new(EXTRA_FEE_AMOUNT));
+                        assert_eq!(expected, Uint128::new(ONE_THOUSAND));
                     }
                     _ => {
                         panic!(
@@ -590,11 +400,14 @@ fn sends_more_funds_than_needed_3_tf_denoms() {
         .create_pool(
             &creator,
             asset_infos.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(8888, "uom"), coin(2000, "uusd"), coin(2000, "utest")],
+            vec![
+                coin(INVALID_TF_FEE_AMOUNT, DENOM_UOM),
+                coin(ONE_THOUSAND, DENOM_UUSD),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -603,37 +416,9 @@ fn sends_more_funds_than_needed_3_tf_denoms() {
                         amount,
                         expected,
                     } => {
-                        assert_eq!(denom, "utest");
-                        assert_eq!(amount, Uint128::new(2_000));
-                        assert_eq!(expected, Uint128::new(1_000));
-                    }
-                    _ => {
-                        panic!(
-                            "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
-                        )
-                    }
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_infos.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            None,
-            vec![coin(9000, "uom"), coin(2000, "uusd"), coin(1000, "utest")],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::InvalidTokenFactoryFee {
-                        denom,
-                        amount,
-                        expected,
-                    } => {
-                        assert_eq!(denom, "uom");
-                        assert_eq!(amount, Uint128::new(9000));
-                        assert_eq!(expected, Uint128::new(8888));
+                        assert_eq!(denom, DENOM_UOM);
+                        assert_eq!(amount, Uint128::new(INVALID_TF_FEE_AMOUNT));
+                        assert_eq!(expected, Uint128::new(STARGATE_MOCK_UOM_AMOUNT));
                     }
                     _ => {
                         panic!(
@@ -646,11 +431,14 @@ fn sends_more_funds_than_needed_3_tf_denoms() {
         .create_pool(
             &creator,
             asset_infos,
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             None,
-            vec![coin(8888, "uom"), coin(1000, "utest"), coin(2000, "uusd")],
+            vec![
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(ONE_THOUSAND, DENOM_UUSD),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -658,42 +446,206 @@ fn sends_more_funds_than_needed_3_tf_denoms() {
 }
 
 #[test]
-fn wrong_pool_label() {
+fn sends_less_tf_denoms_than_needed_with_funds_in_pools() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(
-                1_000_000_001u128,
-                "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A".to_string(),
-            ),
-            coin(
-                1_000_000_000u128,
-                "ibc/A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2".to_string(),
-            ),
-            coin(
-                1_000_000_001u128,
-                "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom".to_string(),
-            ),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            coin(ONE_THOUSAND, DENOM_UUSD),
+        ]),
     );
     let creator = suite.creator();
-    let _other = suite.senders[1].clone();
-    let _unauthorized = suite.senders[2].clone();
-    // Asset infos with uwhale
 
-    let asset_infos = vec![
-        "ibc/3A6F4C8D5B2E7A1F0C4D5B6E7A8F9C3D4E5B6A7F8E9C4D5B6E7A8F9C3D4E5B6A".to_string(),
-        "ibc/A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2".to_string(),
-    ];
+    let asset_infos = vec![DENOM_UOM.to_string(), DENOM_UUSD.to_string()];
+
+    // Additional constants specific to this test
+    const LIQUIDITY_AMOUNT_UOM: u128 = 1_000_000;
+    const LIQUIDITY_AMOUNT_UUSD: u128 = 6_000_000;
+    const DOUBLE_POOL_CREATION_FEE: u128 = 2000;
+    const INSUFFICIENT_TF_FEE: u128 = 8887;
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::percent(1),
+            share: Decimal::zero(),
         },
         swap_fee: Fee {
-            share: Decimal::percent(1),
+            share: Decimal::zero(),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    // First create a pool with the proper fees
+    suite.instantiate_default().add_one_epoch().create_pool(
+        &creator,
+        asset_infos.clone(),
+        vec![DECIMALS_6, DECIMALS_6],
+        pool_fees.clone(),
+        PoolType::ConstantProduct,
+        Some("uom.uusd".to_string()),
+        vec![
+            coin(DOUBLE_POOL_CREATION_FEE, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Then provide liquidity separately
+    suite.provide_liquidity(
+        &creator,
+        "o.uom.uusd".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        vec![
+            coin(LIQUIDITY_AMOUNT_UOM, DENOM_UOM),
+            coin(LIQUIDITY_AMOUNT_UUSD, DENOM_UUSD),
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+
+    // Now proceed with the test cases for validation
+    suite.create_pool(
+        &creator,
+        asset_infos.clone(),
+        vec![DECIMALS_6, DECIMALS_6],
+        pool_fees.clone(),
+        PoolType::ConstantProduct,
+        None,
+        vec![],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::InvalidPoolCreationFee { amount, expected } => {
+                    assert_eq!(amount, Uint128::zero());
+                    assert_eq!(expected, Uint128::new(DOUBLE_POOL_CREATION_FEE));
+                }
+                _ => {
+                    panic!("Wrong error type, should return ContractError::InvalidPoolCreationFee")
+                }
+            }
+        },
+    );
+
+    suite.create_pool(
+        &creator,
+        asset_infos.clone(),
+        vec![DECIMALS_6, DECIMALS_6],
+        pool_fees.clone(),
+        PoolType::ConstantProduct,
+        None,
+        vec![coin(DOUBLE_POOL_CREATION_FEE, DENOM_UUSD)],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::InvalidTokenFactoryFee {
+                    denom,
+                    amount,
+                    expected,
+                } => {
+                    assert_eq!(denom, DENOM_UOM);
+                    assert_eq!(amount, Uint128::zero());
+                    assert_eq!(expected, Uint128::new(STARGATE_MOCK_UOM_AMOUNT));
+                }
+                _ => {
+                    panic!("Wrong error type, should return ContractError::InvalidTokenFactoryFee")
+                }
+            }
+        },
+    );
+
+    suite.create_pool(
+        &creator,
+        asset_infos.clone(),
+        vec![DECIMALS_6, DECIMALS_6],
+        pool_fees.clone(),
+        PoolType::ConstantProduct,
+        None,
+        vec![
+            coin(DOUBLE_POOL_CREATION_FEE, DENOM_UUSD),
+            coin(INSUFFICIENT_TF_FEE, DENOM_UOM),
+        ],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::InvalidTokenFactoryFee {
+                    denom,
+                    amount,
+                    expected,
+                } => {
+                    assert_eq!(denom, DENOM_UOM);
+                    assert_eq!(amount, Uint128::new(INSUFFICIENT_TF_FEE));
+                    assert_eq!(expected, Uint128::new(STARGATE_MOCK_UOM_AMOUNT));
+                }
+                _ => {
+                    panic!("Wrong error type, should return ContractError::InvalidTokenFactoryFee")
+                }
+            }
+        },
+    );
+
+    suite.create_pool(
+        &creator,
+        asset_infos.clone(),
+        vec![DECIMALS_6, DECIMALS_6],
+        pool_fees.clone(),
+        PoolType::ConstantProduct,
+        None,
+        vec![
+            coin(DOUBLE_POOL_CREATION_FEE, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+        ],
+        |result| {
+            result.unwrap();
+        },
+    );
+}
+
+#[test]
+fn sends_more_funds_than_needed_3_tf_denoms() {
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UTEST),
+        ],
+        StargateMock::new(vec![
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            coin(ONE_THOUSAND, DENOM_UTEST),
+            coin(ONE_THOUSAND, DENOM_UUSD),
+        ]),
+    );
+    let creator = suite.creator();
+
+    let asset_infos = vec![DENOM_UOM.to_string(), DENOM_UUSD.to_string()];
+
+    // Additional constants specific to this test
+    const EXCESSIVE_MOCK_AMOUNT_UOM: u128 = 9000;
+    const EXCESSIVE_FEE_AMOUNT: u128 = 3000;
+    const EXCESSIVE_TF_FEE_AMOUNT: u128 = 2000;
+    const COMBINED_FEES_AMOUNT: u128 = 2000;
+
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::zero(),
+        },
+        swap_fee: Fee {
+            share: Decimal::zero(),
         },
         burn_fee: Fee {
             share: Decimal::zero(),
@@ -707,11 +659,184 @@ fn wrong_pool_label() {
         .create_pool(
             &creator,
             asset_infos.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
+            pool_fees.clone(),
+            PoolType::ConstantProduct,
+            None,
+            vec![
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(COMBINED_FEES_AMOUNT, DENOM_UUSD),
+                coin(ONE_THOUSAND, DENOM_UTEST),
+                coin(ONE_THOUSAND, DENOM_ULUNA),
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::ExtraFundsSent => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::ExtraFundsSent")
+                    }
+                }
+            },
+        )
+        .create_pool(
+            &creator,
+            asset_infos.clone(),
+            vec![DECIMALS_6, DECIMALS_6],
+            pool_fees.clone(),
+            PoolType::ConstantProduct,
+            None,
+            vec![
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(EXCESSIVE_FEE_AMOUNT, DENOM_UUSD),
+                coin(ONE_THOUSAND, DENOM_UTEST),
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::InvalidPoolCreationFee { amount, expected } => {
+                        assert_eq!(amount, Uint128::new(EXCESSIVE_FEE_AMOUNT));
+                        assert_eq!(expected, Uint128::new(COMBINED_FEES_AMOUNT));
+                    }
+                    _ => {
+                        panic!(
+                            "Wrong error type, should return ContractError::InvalidPoolCreationFee"
+                        )
+                    }
+                }
+            },
+        )
+        .create_pool(
+            &creator,
+            asset_infos.clone(),
+            vec![DECIMALS_6, DECIMALS_6],
+            pool_fees.clone(),
+            PoolType::ConstantProduct,
+            None,
+            vec![
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(COMBINED_FEES_AMOUNT, DENOM_UUSD),
+                coin(EXCESSIVE_TF_FEE_AMOUNT, DENOM_UTEST),
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::InvalidTokenFactoryFee {
+                        denom,
+                        amount,
+                        expected,
+                    } => {
+                        assert_eq!(denom, DENOM_UTEST);
+                        assert_eq!(amount, Uint128::new(EXCESSIVE_TF_FEE_AMOUNT));
+                        assert_eq!(expected, Uint128::new(ONE_THOUSAND));
+                    }
+                    _ => {
+                        panic!(
+                            "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
+                        )
+                    }
+                }
+            },
+        )
+        .create_pool(
+            &creator,
+            asset_infos.clone(),
+            vec![DECIMALS_6, DECIMALS_6],
+            pool_fees.clone(),
+            PoolType::ConstantProduct,
+            None,
+            vec![
+                coin(EXCESSIVE_MOCK_AMOUNT_UOM, DENOM_UOM),
+                coin(COMBINED_FEES_AMOUNT, DENOM_UUSD),
+                coin(ONE_THOUSAND, DENOM_UTEST),
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
+                    ContractError::InvalidTokenFactoryFee {
+                        denom,
+                        amount,
+                        expected,
+                    } => {
+                        assert_eq!(denom, DENOM_UOM);
+                        assert_eq!(amount, Uint128::new(EXCESSIVE_MOCK_AMOUNT_UOM));
+                        assert_eq!(expected, Uint128::new(STARGATE_MOCK_UOM_AMOUNT));
+                    }
+                    _ => {
+                        panic!(
+                            "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
+                        )
+                    }
+                }
+            },
+        )
+        .create_pool(
+            &creator,
+            asset_infos,
+            vec![DECIMALS_6, DECIMALS_6],
+            pool_fees,
+            PoolType::ConstantProduct,
+            None,
+            vec![
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(ONE_THOUSAND, DENOM_UTEST),
+                coin(COMBINED_FEES_AMOUNT, DENOM_UUSD),
+            ],
+            |result| {
+                result.unwrap();
+            },
+        );
+}
+
+#[test]
+fn wrong_pool_label() {
+    let mut suite = TestingSuite::default_with_balances(
+        vec![
+            coin(BALANCE_AMOUNT_LARGE, DENOM_IBC_1),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_IBC_2),
+            coin(
+                BALANCE_AMOUNT_LARGE,
+                "factory/mantra158xlpsqqkqpkmcrgnlcrc5fjyhy7j7x2vpa79r/subdenom",
+            ),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
+        ],
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
+    );
+    let creator = suite.creator();
+    let _other = suite.senders[1].clone();
+    let _unauthorized = suite.senders[2].clone();
+    // Asset infos with uwhale
+
+    let asset_infos = vec![DENOM_IBC_1.to_string(), DENOM_IBC_2.to_string()];
+
+    let pool_fees = PoolFee {
+        protocol_fee: Fee {
+            share: Decimal::percent(DEFAULT_FEE_PERCENT),
+        },
+        swap_fee: Fee {
+            share: Decimal::percent(DEFAULT_FEE_PERCENT),
+        },
+        burn_fee: Fee {
+            share: Decimal::zero(),
+        },
+        extra_fees: vec![],
+    };
+
+    suite
+        .instantiate_default()
+        .add_one_epoch()
+        .create_pool(
+            &creator,
+            asset_infos.clone(),
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some("invalid-identifier".to_string()),
-            vec![coin(1_000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -725,12 +850,15 @@ fn wrong_pool_label() {
         .create_pool(
             &creator,
             asset_infos.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             //42 chars long
             Some("this.is.a.loooooooooooooooooong.identifier".to_string()),
-            vec![coin(1_000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -747,19 +875,19 @@ fn wrong_pool_label() {
 fn cant_recreate_existing_pool() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
     // Asset infos with uwhale
 
-    let asset_infos = vec!["uwhale".to_string(), "uom".to_string()];
+    let asset_infos = vec![DENOM_UWHALE.to_string(), DENOM_UOM.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -781,11 +909,14 @@ fn cant_recreate_existing_pool() {
         .create_pool(
             &creator,
             asset_infos.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("mycoolpool".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            Some(VALID_POOL_IDENTIFIER.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -793,11 +924,14 @@ fn cant_recreate_existing_pool() {
         .create_pool(
             &creator,
             asset_infos,
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
-            Some("mycoolpool".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            Some(VALID_POOL_IDENTIFIER.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -812,19 +946,19 @@ fn cant_recreate_existing_pool() {
 fn cant_create_stableswap_with_zero_amp_factor() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
     let _unauthorized = suite.senders[2].clone();
     // Asset infos with uwhale
 
-    let asset_infos = vec!["uwhale".to_string(), "uom".to_string()];
+    let asset_infos = vec![DENOM_UWHALE.to_string(), DENOM_UOM.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -843,11 +977,14 @@ fn cant_create_stableswap_with_zero_amp_factor() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_infos.clone(),
-        vec![6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees.clone(),
         PoolType::StableSwap { amp: 0u64 },
         None,
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+        ],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
@@ -864,30 +1001,30 @@ fn cant_create_stableswap_with_zero_amp_factor() {
 fn cant_create_pool_not_paying_multiple_tf_fees() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
-            coin(1_000_000_001u128, "utest".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UTEST),
         ],
         StargateMock::new(vec![
-            coin(8888u128, "uom".to_string()),
-            coin(1000u128, "utest".to_string()),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            coin(MOCK_AMOUNT_UTEST, DENOM_UTEST),
         ]),
     );
     let creator = suite.creator();
 
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::percent(10),
+            share: Decimal::percent(PROTOCOL_FEE_PERCENT),
         },
         swap_fee: Fee {
-            share: Decimal::percent(7),
+            share: Decimal::percent(SWAP_FEE_PERCENT),
         },
         burn_fee: Fee {
-            share: Decimal::percent(3),
+            share: Decimal::percent(BURN_FEE_PERCENT),
         },
         extra_fees: vec![],
     };
@@ -899,11 +1036,14 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("whale.uluna.pool.1".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            Some(WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -912,9 +1052,9 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
                         amount,
                         expected,
                     } => {
-                        assert_eq!(denom, "utest");
+                        assert_eq!(denom, DENOM_UTEST);
                         assert_eq!(amount, Uint128::zero());
-                        assert_eq!(expected, Uint128::new(1_000));
+                        assert_eq!(expected, Uint128::new(MOCK_AMOUNT_UTEST));
                     }
                     _ => {
                         panic!(
@@ -928,11 +1068,15 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("o.whale.uluna.pool.1".to_string()),
-            vec![coin(1000, "uusd"), coin(999, "utest"), coin(8888, "uom")],
+            Some(OTHER_WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(INSUFFICIENT_TF_FEE, DENOM_UTEST),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -942,9 +1086,9 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
                         amount,
                         expected,
                     } => {
-                        assert_eq!(denom, "utest");
-                        assert_eq!(amount, Uint128::new(999));
-                        assert_eq!(expected, Uint128::new(1_000));
+                        assert_eq!(denom, DENOM_UTEST);
+                        assert_eq!(amount, Uint128::new(INSUFFICIENT_TF_FEE));
+                        assert_eq!(expected, Uint128::new(MOCK_AMOUNT_UTEST));
                     }
                     _ => panic!(
                         "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
@@ -955,11 +1099,15 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("o.whale.uluna.pool.1".to_string()),
-            vec![coin(1000, "uusd"), coin(8887, "uom"), coin(1000, "utest")],
+            Some(OTHER_WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(INSUFFICIENT_TF_FEE, DENOM_UOM),
+                coin(MOCK_AMOUNT_UTEST, DENOM_UTEST),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -969,31 +1117,9 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
                         amount,
                         expected,
                     } => {
-                        assert_eq!(denom, "uom");
-                        assert_eq!(amount, Uint128::new(8887));
-                        assert_eq!(expected, Uint128::new(8888));
-                    }
-                    _ => panic!(
-                        "Wrong error type, should return ContractError::InvalidTokenFactoryFee"
-                    ),
-                }
-            },
-        )
-        .create_pool(
-            &creator,
-            asset_denoms.clone(),
-            vec![6u8, 6u8],
-            pool_fees.clone(),
-            PoolType::ConstantProduct,
-            Some("o.whale.uluna.pool.1".to_string()),
-            vec![coin(999, "uusd"), coin(1000, "utest"), coin(8888, "uom")],
-            |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-
-                match err {
-                    ContractError::InvalidPoolCreationFee { amount, expected } => {
-                        assert_eq!(amount, Uint128::new(999));
-                        assert_eq!(expected, Uint128::new(1000));
+                        assert_eq!(denom, DENOM_UOM);
+                        assert_eq!(amount, Uint128::new(INSUFFICIENT_TF_FEE));
+                        assert_eq!(expected, Uint128::new(STARGATE_MOCK_UOM_AMOUNT));
                     }
                     _ => panic!(
                         "Wrong error type, should return ContractError::InvalidPoolCreationFee"
@@ -1004,15 +1130,41 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("o.whale.uluna.pool.1".to_string()),
+            Some(OTHER_WHALE_LUNA_POOL_IDENTIFIER.to_string()),
             vec![
-                coin(1000, "uusd"),
-                coin(8888, "uom"),
-                coin(1000, "utest"),
-                coin(1000, "uluna"),
+                coin(INSUFFICIENT_POOL_AMOUNT, DENOM_UUSD),
+                coin(MOCK_AMOUNT_UTEST, DENOM_UTEST),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+
+                match err {
+                    ContractError::InvalidPoolCreationFee { amount, expected } => {
+                        assert_eq!(amount, Uint128::new(INSUFFICIENT_POOL_AMOUNT));
+                        assert_eq!(expected, Uint128::new(ONE_THOUSAND));
+                    }
+                    _ => panic!(
+                        "Wrong error type, should return ContractError::InvalidPoolCreationFee"
+                    ),
+                }
+            },
+        )
+        .create_pool(
+            &creator,
+            asset_denoms.clone(),
+            vec![DECIMALS_6, DECIMALS_6],
+            pool_fees.clone(),
+            PoolType::ConstantProduct,
+            Some(OTHER_WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(MOCK_AMOUNT_UTEST, DENOM_UTEST),
+                coin(1000u128, DENOM_ULUNA),
             ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1026,11 +1178,15 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("o.whale.uluna.pool.1".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom"), coin(1000, "utest")],
+            Some(OTHER_WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+                coin(MOCK_AMOUNT_UTEST, DENOM_UTEST),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -1041,26 +1197,26 @@ fn cant_create_pool_not_paying_multiple_tf_fees() {
 fn cant_create_pool_without_paying_tf_fees_same_denom() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_001u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_LARGE, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(1000u128, "uusd".to_string())]),
+        StargateMock::new(vec![coin(ONE_THOUSAND, DENOM_UUSD)]),
     );
     let creator = suite.creator();
 
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::percent(10),
+            share: Decimal::percent(PROTOCOL_FEE_PERCENT),
         },
         swap_fee: Fee {
-            share: Decimal::percent(7),
+            share: Decimal::percent(SWAP_FEE_PERCENT),
         },
         burn_fee: Fee {
-            share: Decimal::percent(3),
+            share: Decimal::percent(BURN_FEE_PERCENT),
         },
         extra_fees: vec![],
     };
@@ -1072,11 +1228,11 @@ fn cant_create_pool_without_paying_tf_fees_same_denom() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("whale.uluna.pool.1".to_string()),
-            vec![coin(900, "uusd")],
+            Some(WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![coin(900u128, DENOM_UUSD)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -1091,17 +1247,17 @@ fn cant_create_pool_without_paying_tf_fees_same_denom() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("whale.uluna.pool.1".to_string()),
-            vec![coin(1999, "uusd")],
+            Some(WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![coin(INSUFFICIENT_TWICE_POOL_CREATION_FEE, DENOM_UUSD)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
                     ContractError::InvalidPoolCreationFee { amount, expected } => {
-                        assert_eq!(amount.u128(), 1999);
-                        assert_eq!(expected.u128(), 2000);
+                        assert_eq!(amount.u128(), INSUFFICIENT_TWICE_POOL_CREATION_FEE);
+                        assert_eq!(expected.u128(), TWICE_POOL_CREATION_FEE);
                     }
                     _ => panic!(
                         "Wrong error type, should return ContractError::InvalidPoolCreationFee"
@@ -1113,18 +1269,18 @@ fn cant_create_pool_without_paying_tf_fees_same_denom() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("whale.uluna.pool.1".to_string()),
-            vec![coin(3000, "uusd")],
+            Some(WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![coin(EXCESSIVE_POOL_CREATION_FEE, DENOM_UUSD)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
                 match err {
                     ContractError::InvalidPoolCreationFee { amount, expected } => {
-                        assert_eq!(amount.u128(), 3000);
-                        assert_eq!(expected.u128(), 2000);
+                        assert_eq!(amount.u128(), EXCESSIVE_POOL_CREATION_FEE);
+                        assert_eq!(expected.u128(), TWICE_POOL_CREATION_FEE);
                     }
                     _ => panic!(
                         "Wrong error type, should return ContractError::InvalidPoolCreationFee"
@@ -1136,11 +1292,11 @@ fn cant_create_pool_without_paying_tf_fees_same_denom() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("whale.uluna.pool.1".to_string()),
-            vec![coin(2000, "uusd")],
+            Some(WHALE_LUNA_POOL_IDENTIFIER.to_string()),
+            vec![coin(TWICE_POOL_CREATION_FEE, DENOM_UUSD)],
             |result| {
                 result.unwrap();
             },
@@ -1151,18 +1307,18 @@ fn cant_create_pool_without_paying_tf_fees_same_denom() {
 fn attacker_creates_farm_positions_through_pool_manager() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(10_000_000u128, "uwhale".to_string()),
-            coin(10_000_000u128, "uluna".to_string()),
-            coin(10_000u128, "uusd".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(ATTACKER_BALANCE_AMOUNT, DENOM_UWHALE),
+            coin(ATTACKER_BALANCE_AMOUNT, DENOM_ULUNA),
+            coin(SMALL_BALANCE_AMOUNT, DENOM_UUSD),
+            coin(SMALL_BALANCE_AMOUNT, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
     let attacker = suite.senders[1].clone();
     let victim = suite.senders[2].clone();
 
-    let asset_denoms = vec!["uwhale".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![DENOM_UWHALE.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -1181,11 +1337,14 @@ fn attacker_creates_farm_positions_through_pool_manager() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms,
-        vec![6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees,
         PoolType::ConstantProduct,
         Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+        ],
         |result| {
             result.unwrap();
         },
@@ -1195,7 +1354,7 @@ fn attacker_creates_farm_positions_through_pool_manager() {
     suite
         .provide_liquidity(
             &creator,
-            "o.whale.uluna".to_string(),
+            WHALE_LUNA_POOL_PREFIX.to_string(),
             None,
             None,
             None,
@@ -1203,12 +1362,12 @@ fn attacker_creates_farm_positions_through_pool_manager() {
             None,
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_UWHALE.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_ULUNA.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
             ],
             |result| {
@@ -1217,7 +1376,7 @@ fn attacker_creates_farm_positions_through_pool_manager() {
                     event.attributes.iter().any(|attr| {
                         attr.key == "added_shares"
                             && attr.value
-                                == (Uint128::from(1_000_000u128) - MINIMUM_LIQUIDITY_AMOUNT)
+                                == (Uint128::from(ONE_MILLION) - MINIMUM_LIQUIDITY_AMOUNT)
                                     .to_string()
                     })
                 }));
@@ -1225,20 +1384,20 @@ fn attacker_creates_farm_positions_through_pool_manager() {
         )
         .provide_liquidity(
             &attacker,
-            "o.whale.uluna".to_string(),
-            Some(86_400u64),
-            Some("spam_position".to_string()),
+            WHALE_LUNA_POOL_PREFIX.to_string(),
+            Some(UNLOCKING_DURATION),
+            Some(SPAM_POSITION_ID.to_string()),
             None,
             None,
             Some(victim.to_string()),
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_UWHALE.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_ULUNA.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
             ],
             |result| {
@@ -1252,15 +1411,15 @@ fn attacker_creates_farm_positions_through_pool_manager() {
         // try creating a position in the farm with a single-sided lp
         .provide_liquidity(
             &attacker,
-            "o.whale.uluna".to_string(),
-            Some(86_400u64),
-            Some("spam_position".to_string()),
+            WHALE_LUNA_POOL_PREFIX.to_string(),
+            Some(UNLOCKING_DURATION),
+            Some(SPAM_POSITION_ID.to_string()),
             None,
             Some(Decimal::percent(50)),
             Some(victim.to_string()),
             vec![Coin {
-                denom: "uwhale".to_string(),
-                amount: Uint128::from(1_000_000u128),
+                denom: DENOM_UWHALE.to_string(),
+                amount: Uint128::from(ONE_MILLION),
             }],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1273,20 +1432,20 @@ fn attacker_creates_farm_positions_through_pool_manager() {
         // user can only create positions in farm for himself
         .provide_liquidity(
             &attacker,
-            "o.whale.uluna".to_string(),
-            Some(86_400u64),
+            WHALE_LUNA_POOL_PREFIX.to_string(),
+            Some(UNLOCKING_DURATION),
             Some("legit_position".to_string()),
             None,
             None,
             Some(attacker.to_string()),
             vec![
                 Coin {
-                    denom: "uwhale".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_UWHALE.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
                 Coin {
-                    denom: "uluna".to_string(),
-                    amount: Uint128::from(1_000_000u128),
+                    denom: DENOM_ULUNA.to_string(),
+                    amount: Uint128::from(ONE_MILLION),
                 },
             ],
             |result| {
@@ -1300,8 +1459,8 @@ fn attacker_creates_farm_positions_through_pool_manager() {
         assert_eq!(positions.len(), 1);
         assert_eq!(positions[0], Position {
             identifier: "u-legit_position".to_string(),
-            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(1_000_000u128) },
-            unlocking_duration: 86_400,
+            lp_asset: Coin { denom: "factory/mantra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqlydlr9/o.whale.uluna.LP".to_string(), amount: Uint128::new(ONE_MILLION) },
+            unlocking_duration: UNLOCKING_DURATION,
             open: true,
             expiring_at: None,
             receiver: attacker.clone(),
@@ -1318,25 +1477,25 @@ fn attacker_creates_farm_positions_through_pool_manager() {
 fn cant_create_pool_with_bogus_identifier() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000u128, "uusdy".to_string()),
-            coin(1_000_000_000u128, "uusdc".to_string()),
-            coin(1_000_000_000u128, "uusdt".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-            coin(1_000_000_000u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSDY),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSDC),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UTEST),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::percent(10),
+            share: Decimal::percent(PROTOCOL_FEE_PERCENT),
         },
         swap_fee: Fee {
-            share: Decimal::percent(7),
+            share: Decimal::percent(SWAP_FEE_PERCENT),
         },
         burn_fee: Fee {
-            share: Decimal::percent(3),
+            share: Decimal::percent(BURN_FEE_PERCENT),
         },
         extra_fees: vec![],
     };
@@ -1347,29 +1506,35 @@ fn cant_create_pool_with_bogus_identifier() {
         .add_one_epoch()
         .create_pool(
             &creator,
-            vec!["uom".to_string(), "uusdt".to_string()],
-            vec![6u8, 6u8],
+            vec![DENOM_UOM.to_string(), DENOM_UTEST.to_string()],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("1".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            Some(POOL_ID_NUMERIC.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
         )
         .create_pool(
             &creator,
-            vec!["uom".to_string(), "uusdc".to_string()],
-            vec![6u8, 6u8],
+            vec![DENOM_UOM.to_string(), DENOM_UUSDC.to_string()],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
         )
-        .query_pools(Some("1".to_string()), None, None, |result| {
+        .query_pools(Some(POOL_ID_NUMERIC.to_string()), None, None, |result| {
             let err = result.unwrap_err();
             assert!(err.to_string().contains("not found"));
         })
@@ -1377,17 +1542,23 @@ fn cant_create_pool_with_bogus_identifier() {
             let response = result.unwrap();
             assert_eq!(response.pools.len(), 2);
             assert_eq!(response.pools[0].pool_info.pool_identifier, "o.1");
-            assert_eq!(response.pools[1].pool_info.pool_identifier, "p.1");
+            assert_eq!(
+                response.pools[1].pool_info.pool_identifier,
+                POOL_ID_PREFIX_P
+            );
         });
 
     suite.create_pool(
         &creator,
-        vec!["uom".to_string(), "uusdt".to_string()],
-        vec![6u8, 6u8],
+        vec![DENOM_UOM.to_string(), DENOM_UTEST.to_string()],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees.clone(),
         PoolType::ConstantProduct,
-        Some("1".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        Some(POOL_ID_NUMERIC.to_string()),
+        vec![
+            coin(ONE_THOUSAND, DENOM_UUSD),
+            coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+        ],
         |result| {
             let err = result.unwrap_err().downcast::<ContractError>().unwrap();
             match err {
@@ -1404,33 +1575,33 @@ fn cant_create_pool_with_bogus_identifier() {
 fn cant_create_pool_with_large_number_of_assets() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000u128, "uusdy".to_string()),
-            coin(1_000_000_000u128, "uusdc".to_string()),
-            coin(1_000_000_000u128, "uusdt".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-            coin(1_000_000_000u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSDY),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSDC),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSDT),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
     // Asset denoms with uwhale and uluna
     let asset_denoms = vec![
-        "uusdy".to_string(),
-        "uusdc".to_string(),
-        "uusdt".to_string(),
-        "uusd".to_string(),
+        DENOM_UUSDY.to_string(),
+        DENOM_UUSDC.to_string(),
+        DENOM_UUSDT.to_string(),
+        DENOM_UUSD.to_string(),
     ];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::percent(10),
+            share: Decimal::percent(PROTOCOL_FEE_PERCENT),
         },
         swap_fee: Fee {
-            share: Decimal::percent(7),
+            share: Decimal::percent(SWAP_FEE_PERCENT),
         },
         burn_fee: Fee {
-            share: Decimal::percent(3),
+            share: Decimal::percent(BURN_FEE_PERCENT),
         },
         extra_fees: vec![],
     };
@@ -1442,11 +1613,16 @@ fn cant_create_pool_with_large_number_of_assets() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
-            PoolType::StableSwap { amp: 80 },
-            Some("stableswap".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            PoolType::StableSwap {
+                amp: STABLESWAP_TEST_AMP_FACTOR,
+            },
+            Some(STABLESWAP_POOL_ID.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -1461,11 +1637,16 @@ fn cant_create_pool_with_large_number_of_assets() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
-            PoolType::StableSwap { amp: 80 },
-            Some("stableswap".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            PoolType::StableSwap {
+                amp: STABLESWAP_TEST_AMP_FACTOR,
+            },
+            Some(STABLESWAP_POOL_ID.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -1480,17 +1661,22 @@ fn cant_create_pool_with_large_number_of_assets() {
         .create_pool(
             &creator,
             vec![
-                "uusdy".to_string(),
-                "uusdc".to_string(),
-                "uusdt".to_string(),
-                "uusd".to_string(),
-                "uom".to_string(),
+                DENOM_UUSDY.to_string(),
+                DENOM_UUSDC.to_string(),
+                DENOM_UUSDT.to_string(),
+                DENOM_UUSD.to_string(),
+                DENOM_UOM.to_string(),
             ],
-            vec![6u8, 6u8, 6u8, 6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6, DECIMALS_6, DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
-            PoolType::StableSwap { amp: 80 },
-            Some("stableswap".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            PoolType::StableSwap {
+                amp: STABLESWAP_TEST_AMP_FACTOR,
+            },
+            Some(STABLESWAP_POOL_ID.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
 
@@ -1505,16 +1691,21 @@ fn cant_create_pool_with_large_number_of_assets() {
         .create_pool(
             &creator,
             vec![
-                "uusdy".to_string(),
-                "uusdc".to_string(),
-                "uusdt".to_string(),
-                "uusd".to_string(),
+                DENOM_UUSDY.to_string(),
+                DENOM_UUSDC.to_string(),
+                DENOM_UUSDT.to_string(),
+                DENOM_UUSD.to_string(),
             ],
-            vec![6u8, 6u8, 6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6, DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
-            PoolType::StableSwap { amp: 80 },
-            Some("stableswap".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            PoolType::StableSwap {
+                amp: STABLESWAP_TEST_AMP_FACTOR,
+            },
+            Some(STABLESWAP_POOL_ID.to_string()),
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -1525,27 +1716,27 @@ fn cant_create_pool_with_large_number_of_assets() {
 fn providing_custom_pool_id_doesnt_increment_pool_counter() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000u128, "uwhale".to_string()),
-            coin(1_000_000_000u128, "uluna".to_string()),
-            coin(1_000_000_000u128, "uosmo".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
-            coin(1_000_000_000u128, "uom".to_string()),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UWHALE),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_ULUNA),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UOSMO),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UUSD),
+            coin(BALANCE_AMOUNT_MEDIUM, DENOM_UOM),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
-    let asset_denoms = vec!["uom".to_string(), "uluna".to_string()];
+    let asset_denoms = vec![DENOM_UOM.to_string(), DENOM_ULUNA.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
-            share: Decimal::percent(10),
+            share: Decimal::percent(PROTOCOL_FEE_PERCENT),
         },
         swap_fee: Fee {
-            share: Decimal::percent(7),
+            share: Decimal::percent(SWAP_FEE_PERCENT),
         },
         burn_fee: Fee {
-            share: Decimal::percent(3),
+            share: Decimal::percent(BURN_FEE_PERCENT),
         },
         extra_fees: vec![],
     };
@@ -1557,11 +1748,14 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some("pool.1".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -1569,11 +1763,14 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some("pool.2".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -1581,11 +1778,14 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
         .create_pool(
             &creator,
             asset_denoms,
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             None,
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![
+                coin(ONE_THOUSAND, DENOM_UUSD),
+                coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -1595,7 +1795,10 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
             assert_eq!(response.pools.len(), 3);
             assert_eq!(response.pools[0].pool_info.pool_identifier, "o.pool.1");
             assert_eq!(response.pools[1].pool_info.pool_identifier, "o.pool.2");
-            assert_eq!(response.pools[2].pool_info.pool_identifier, "p.1");
+            assert_eq!(
+                response.pools[2].pool_info.pool_identifier,
+                POOL_ID_PREFIX_P
+            );
         });
 }
 
@@ -1603,14 +1806,14 @@ fn providing_custom_pool_id_doesnt_increment_pool_counter() {
 fn lock_single_pool() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000u128, "uom".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
+            coin(LOCK_POOL_BALANCE_AMOUNT, DENOM_UOM),
+            coin(LOCK_POOL_BALANCE_AMOUNT, DENOM_UUSD),
         ],
-        StargateMock::new(vec![coin(1000u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(LOCK_POOL_TF_FEE, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
-    let asset_denoms = vec!["uom".to_string(), "uusd".to_string()];
+    let asset_denoms = vec![DENOM_UOM.to_string(), DENOM_UUSD.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -1632,11 +1835,14 @@ fn lock_single_pool() {
         .create_pool(
             &creator,
             asset_denoms.clone(),
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some("uom.uusd.1".to_string()),
-            vec![coin(1000, "uusd"), coin(1000, "uom")],
+            vec![
+                coin(LOCK_POOL_TF_FEE, DENOM_UUSD),
+                coin(LOCK_POOL_TF_FEE, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -1644,11 +1850,14 @@ fn lock_single_pool() {
         .create_pool(
             &creator,
             asset_denoms,
-            vec![6u8, 6u8],
+            vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
             Some("uom.uusd.2".to_string()),
-            vec![coin(1000, "uusd"), coin(1000, "uom")],
+            vec![
+                coin(LOCK_POOL_TF_FEE, DENOM_UUSD),
+                coin(LOCK_POOL_TF_FEE, DENOM_UOM),
+            ],
             |result| {
                 result.unwrap();
             },
@@ -1656,7 +1865,7 @@ fn lock_single_pool() {
 
     suite.provide_liquidity(
         &creator,
-        "o.uom.uusd.1".to_string(),
+        LOCK_POOL_PREFIX_1.to_string(),
         None,
         None,
         None,
@@ -1664,12 +1873,12 @@ fn lock_single_pool() {
         None,
         vec![
             Coin {
-                denom: "uom".to_string(),
-                amount: Uint128::from(1_000u128),
+                denom: DENOM_UOM.to_string(),
+                amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT),
             },
             Coin {
-                denom: "uusd".to_string(),
-                amount: Uint128::from(8_000u128),
+                denom: DENOM_UUSD.to_string(),
+                amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT_2),
             },
         ],
         |result| {
@@ -1677,8 +1886,8 @@ fn lock_single_pool() {
         },
     );
 
-    let lp_denom_1 = suite.get_lp_denom("o.uom.uusd.1".to_string());
-    let lp_denom_2 = suite.get_lp_denom("o.uom.uusd.2".to_string());
+    let lp_denom_1 = suite.get_lp_denom(LOCK_POOL_PREFIX_1.to_string());
+    let lp_denom_2 = suite.get_lp_denom(LOCK_POOL_PREFIX_2.to_string());
 
     suite.update_config(
         &creator,
@@ -1686,7 +1895,7 @@ fn lock_single_pool() {
         None,
         None,
         Some(FeatureToggle {
-            pool_identifier: "o.uom.uusd.1".to_string(),
+            pool_identifier: LOCK_POOL_PREFIX_1.to_string(),
             withdrawals_enabled: Some(false),
             deposits_enabled: Some(false),
             swaps_enabled: Some(false),
@@ -1699,7 +1908,7 @@ fn lock_single_pool() {
     suite
         .provide_liquidity(
             &creator,
-            "o.uom.uusd.1".to_string(),
+            LOCK_POOL_PREFIX_1.to_string(),
             None,
             None,
             None,
@@ -1707,12 +1916,12 @@ fn lock_single_pool() {
             None,
             vec![
                 Coin {
-                    denom: "uom".to_string(),
-                    amount: Uint128::from(1_000u128),
+                    denom: DENOM_UOM.to_string(),
+                    amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: "uusd".to_string(),
-                    amount: Uint128::from(8_000u128),
+                    denom: DENOM_UUSD.to_string(),
+                    amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT_2),
                 },
             ],
             |result| {
@@ -1727,12 +1936,12 @@ fn lock_single_pool() {
         )
         .swap(
             &creator,
-            "uom".to_string(),
+            DENOM_UOM.to_string(),
             None,
             None,
             None,
-            "o.uom.uusd.1".to_string(),
-            vec![coin(1000u128, "uusd".to_string())],
+            LOCK_POOL_PREFIX_1.to_string(),
+            vec![coin(LOCK_POOL_TF_FEE, DENOM_UUSD)],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
@@ -1745,10 +1954,10 @@ fn lock_single_pool() {
         )
         .withdraw_liquidity(
             &creator,
-            "o.uom.uusd.1".to_string(),
+            LOCK_POOL_PREFIX_1.to_string(),
             vec![Coin {
                 denom: lp_denom_1.clone(),
-                amount: Uint128::from(100u128),
+                amount: Uint128::from(LOCK_POOL_SWAP_AMOUNT),
             }],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1765,7 +1974,7 @@ fn lock_single_pool() {
     suite
         .provide_liquidity(
             &creator,
-            "o.uom.uusd.2".to_string(),
+            LOCK_POOL_PREFIX_2.to_string(),
             None,
             None,
             None,
@@ -1773,12 +1982,12 @@ fn lock_single_pool() {
             None,
             vec![
                 Coin {
-                    denom: "uom".to_string(),
-                    amount: Uint128::from(1_000u128),
+                    denom: DENOM_UOM.to_string(),
+                    amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: "uusd".to_string(),
-                    amount: Uint128::from(8_000u128),
+                    denom: DENOM_UUSD.to_string(),
+                    amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT_2),
                 },
             ],
             |result| {
@@ -1787,22 +1996,22 @@ fn lock_single_pool() {
         )
         .swap(
             &creator,
-            "uom".to_string(),
+            DENOM_UOM.to_string(),
             None,
             None,
             None,
-            "o.uom.uusd.2".to_string(),
-            vec![coin(100u128, "uusd".to_string())],
+            LOCK_POOL_PREFIX_2.to_string(),
+            vec![coin(LOCK_POOL_SWAP_AMOUNT, DENOM_UUSD)],
             |result| {
                 result.unwrap();
             },
         )
         .withdraw_liquidity(
             &creator,
-            "o.uom.uusd.2".to_string(),
+            LOCK_POOL_PREFIX_2.to_string(),
             vec![Coin {
                 denom: lp_denom_2.clone(),
-                amount: Uint128::from(100u128),
+                amount: Uint128::from(LOCK_POOL_SWAP_AMOUNT),
             }],
             |result| {
                 result.unwrap();
@@ -1815,7 +2024,7 @@ fn lock_single_pool() {
         None,
         None,
         Some(FeatureToggle {
-            pool_identifier: "o.uom.uusd.1".to_string(),
+            pool_identifier: LOCK_POOL_PREFIX_1.to_string(),
             withdrawals_enabled: None,
             deposits_enabled: None,
             swaps_enabled: Some(true),
@@ -1828,7 +2037,7 @@ fn lock_single_pool() {
     suite
         .provide_liquidity(
             &creator,
-            "o.uom.uusd.1".to_string(),
+            LOCK_POOL_PREFIX_1.to_string(),
             None,
             None,
             None,
@@ -1836,12 +2045,12 @@ fn lock_single_pool() {
             None,
             vec![
                 Coin {
-                    denom: "uom".to_string(),
-                    amount: Uint128::from(1_000u128),
+                    denom: DENOM_UOM.to_string(),
+                    amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT),
                 },
                 Coin {
-                    denom: "uusd".to_string(),
-                    amount: Uint128::from(8_000u128),
+                    denom: DENOM_UUSD.to_string(),
+                    amount: Uint128::from(LOCK_POOL_LIQUIDITY_AMOUNT_2),
                 },
             ],
             |result| {
@@ -1856,12 +2065,12 @@ fn lock_single_pool() {
         )
         .swap(
             &creator,
-            "uom".to_string(),
+            DENOM_UOM.to_string(),
             None,
             None,
             None,
-            "o.uom.uusd.1".to_string(),
-            vec![coin(50u128, "uusd".to_string())],
+            LOCK_POOL_PREFIX_1.to_string(),
+            vec![coin(50u128, DENOM_UUSD)],
             |result| {
                 // should work, as it was enabled
                 result.unwrap();
@@ -1869,10 +2078,10 @@ fn lock_single_pool() {
         )
         .withdraw_liquidity(
             &creator,
-            "o.uom.uusd.1".to_string(),
+            LOCK_POOL_PREFIX_1.to_string(),
             vec![Coin {
                 denom: lp_denom_1.clone(),
-                amount: Uint128::from(100u128),
+                amount: Uint128::from(LOCK_POOL_SWAP_AMOUNT),
             }],
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
@@ -1885,18 +2094,19 @@ fn lock_single_pool() {
             },
         );
 }
+
 #[test]
 fn cant_toggle_unexisting_pool() {
     let mut suite = TestingSuite::default_with_balances(
         vec![
-            coin(1_000_000_000u128, "uom".to_string()),
-            coin(1_000_000_000u128, "uusd".to_string()),
+            coin(TOGGLE_POOL_BALANCE_AMOUNT, DENOM_UOM),
+            coin(TOGGLE_POOL_BALANCE_AMOUNT, DENOM_UUSD),
         ],
-        StargateMock::new(vec![coin(1000u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(TOGGLE_POOL_TF_FEE, DENOM_UOM)]),
     );
     let creator = suite.creator();
 
-    let asset_denoms = vec!["uom".to_string(), "uusd".to_string()];
+    let asset_denoms = vec![DENOM_UOM.to_string(), DENOM_UUSD.to_string()];
 
     let pool_fees = PoolFee {
         protocol_fee: Fee {
@@ -1914,11 +2124,14 @@ fn cant_toggle_unexisting_pool() {
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_denoms.clone(),
-        vec![6u8, 6u8],
+        vec![DECIMALS_6, DECIMALS_6],
         pool_fees.clone(),
         PoolType::ConstantProduct,
         Some("uom.uusd.1".to_string()),
-        vec![coin(1000, "uusd"), coin(1000, "uom")],
+        vec![
+            coin(TOGGLE_POOL_TF_FEE, DENOM_UUSD),
+            coin(TOGGLE_POOL_TF_FEE, DENOM_UOM),
+        ],
         |result| {
             result.unwrap();
         },

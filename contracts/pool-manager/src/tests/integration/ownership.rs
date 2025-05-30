@@ -1,13 +1,18 @@
 use cosmwasm_std::{coin, Addr, Uint128};
 use mantra_common_testing::multi_test::stargate_mock::StargateMock;
 
-use crate::{tests::suite::TestingSuite, ContractError};
+use super::super::suite::TestingSuite;
+use crate::ContractError;
+use test_utils::common_constants::{DENOM_UOM, STARGATE_MOCK_UOM_AMOUNT};
+
+// Test constants
+// Common token amounts
 
 #[test]
 fn verify_ownership() {
     let mut suite = TestingSuite::default_with_balances(
         vec![],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
     let other = suite.senders[1].clone();
@@ -66,7 +71,7 @@ fn verify_ownership() {
 fn checks_ownership_when_updating_config() {
     let mut suite = TestingSuite::default_with_balances(
         vec![],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let unauthorized = suite.senders[2].clone();
 
@@ -88,7 +93,7 @@ fn checks_ownership_when_updating_config() {
 fn updates_config_fields() {
     let mut suite = TestingSuite::default_with_balances(
         vec![],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM)]),
     );
     let creator = suite.creator();
     let other = suite.senders[1].clone();
