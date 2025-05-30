@@ -37,7 +37,11 @@ Before running this script, ensure the following are in place:
 ### 2.3. (Linux Users Only) udev Rules:
 *   Linux systems may require udev rules to allow non-root users to access USB hardware like the Ledger. Search "Ledger udev rules Linux" for setup instructions if you encounter connection issues.
 
-## 3. Configuration (Within the Script / Command Line)
+### 2.4. `just` Command Runner (Optional, for `just` recipe usage)
+*   If you intend to use the `just` recipe, ensure `just` is installed. See [just GitHub page](https://github.com/casey/just) for installation instructions.
+*   The project must have a `justfile` at its root containing the `emergency-toggle-pool-features-off` recipe.
+
+## 3. Configuration (Within the Script / Command Line / Environment Variables)
 
 The script requires the following information:
 
@@ -47,58 +51,77 @@ The script requires the following information:
     *   *Provided as a command-line argument.*
 *   **Ledger Account Index (Optional):** The derivation path index for your Ledger account (e.g., `0` for `m/44'/118'/0'/0/0`, `1` for `m/44'/118'/0'/0/1`).
     *   *Provided as an optional command-line argument. Defaults to `0`.*
-*   **Gas Price & Denomination (Hardcoded in script):**
-    *   The script has a `GAS_PRICE_STRING` constant (e.g., `"0.025uom"`).
+*   **Gas Price & Denomination (Hardcoded in Node.js script):**
+    *   The Node.js script (`toggle_pool_features.js`) has a `GAS_PRICE_STRING` constant (e.g., `"0.025uom"`).
     *   `uom` (or similar like `uphoton`, `aconst`) is the fee denomination for your chain.
     *   `0.025` is the price per unit of gas in that denomination.
-    *   **Verify and adjust this value within the script (`toggle_pool_features.js`) if necessary to match your target chain's fee requirements.**
+    *   **Verify and adjust this value within the Node.js script if necessary to match your target chain's fee requirements.**
 
 ## 4. How to Run the Script
 
-1.  **Navigate to Project Root:** Open your terminal and change to the root directory of your project (e.g., `/path/to/your/project/`).
-2.  **Execute the Command:**
+There are two primary ways to run this script:
 
+### Method 1: Using the `just` Recipe (Recommended for safety and ease)
+
+This method uses a `just` command defined in the project's `justfile`. It typically wraps the execution in a shell script (`scripts/emergency/run_toggle_pool_features.sh`) that provides additional safety checks, input prompts, and confirmations.
+
+1.  **Navigate to Project Root:** Open your terminal and change to the root directory of your project (e.g., `/path/to/your/project/`).
+2.  **Ensure Ledger is Ready:** Connect Ledger, unlock, open Cosmos (or chain-specific) app. Close Ledger Live.
+3.  **Execute the `just` Command:**
+    *   **Interactive mode (prompts for inputs if not set as environment variables):**
+        ```bash
+        just emergency-toggle-pool-features-off
+        ```
+        The script will prompt for "RPC Endpoint URL" and "Pool Manager Contract Address" if they are not already set as environment variables.
+    *   **With environment variables (to skip prompts):**
+        ```bash
+        RPC_ENDPOINT="https://rpc.mantra.finance" \
+        POOL_MANAGER_CONTRACT_ADDRESS="mantra1eadexmanagercontractaddressxxxx" \
+        just emergency-toggle-pool-features-off
+        ```
+        You can also set `LEDGER_ACCOUNT_INDEX` (e.g., `LEDGER_ACCOUNT_INDEX=1`) if you don't want to use the default (0).
+4.  **Follow Prompts:** The script will display the parameters and ask for a final confirmation (typing "PROCEED") before executing the underlying Node.js script.
+
+### Method 2: Direct Node.js Script Execution
+
+This method involves calling the Node.js script directly. The `just` recipe and its wrapper shell script add safety layers, so direct execution should be done with even greater care.
+
+1.  **Navigate to Project Root:** Open your terminal and change to the root directory of your project.
+2.  **Ensure Ledger is Ready:** Connect Ledger, unlock, open Cosmos (or chain-specific) app. Close Ledger Live.
+3.  **Execute the Command:**
     ```bash
     node scripts/emergency/toggle_pool_features.js "<YOUR_RPC_ENDPOINT>" "<YOUR_POOL_MANAGER_CONTRACT_ADDRESS>" [ACCOUNT_INDEX]
     ```
-
     **Replace placeholders:**
-    *   `<YOUR_RPC_ENDPOINT>`: e.g., `"http://localhost:26657"`, `"https://rpc.mantrachain.io:443"`
+    *   `<YOUR_RPC_ENDPOINT>`: e.g., `"http://localhost:26657"`, `"https://rpc.mainnet.yourchain.io"`
     *   `<YOUR_POOL_MANAGER_CONTRACT_ADDRESS>`: e.g., `"mantra1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"`
     *   `[ACCOUNT_INDEX]`: (Optional) e.g., `0`, `1`, `2`. Defaults to `0`.
 
     **Example (using default account index 0):**
     ```bash
-    node scripts/emergency/toggle_pool_features.js "http://localhost:26657" "mantra1eadexmanagercontractaddressxxxx"
+    node scripts/emergency/toggle_pool_features.js "https://rpc.mantra.finance" "mantra1eadexmanagercontractaddressxxxx"
     ```
-
-    **Example (using account index 1):**
-    ```bash
-    node scripts/emergency/toggle_pool_features.js "http://localhost:26657" "mantra1eadexmanagercontractaddressxxxx" 1
-    ```
-
+    
     **Example FOR MAINNET:**
     ```bash
     node scripts/emergency/toggle_pool_features.js "https://rpc.mantrachain.io:443" "mantra1466nf3zuxpya8q9emxukd7vftaf6h4psr0a07srl5zw74zh84yjqagspfm"
     ```
 
-## 5. Execution Flow & User Interaction
+## 5. Execution Flow & User Interaction (Applies to both methods)
 
-1.  **Ledger Connection:** The script will attempt to connect to your Ledger device. Ensure it's unlocked and the correct app is open.
+1.  **Ledger Connection:** The script (Node.js or via shell wrapper) will attempt to connect to your Ledger.
 2.  **RPC Connection:** Connects to the specified blockchain RPC endpoint.
-3.  **Querying Pools:** Fetches all pool identifiers from the Pool Manager contract. This may take time if there are many pools.
+3.  **Querying Pools:** Fetches all pool identifiers from the Pool Manager contract.
 4.  **Message Generation:** Creates `update_config` messages for each pool.
 5.  **JSON Preview File:**
-    *   A JSON file (e.g., `emergency_toggle_off_features_tx_preview_xxxxxxxxxxxxx.json`) will be saved in the directory where you ran the script.
-    *   **CRITICAL STEP:** Open and **carefully review this file**. Ensure the `senderAddress`, `poolManagerAddress`, and the structure of `generatedMessages` are correct before proceeding.
+    *   A JSON file (e.g., `emergency_toggle_off_features_tx_preview_xxxxxxxxxxxxx.json`) will be saved.
+    *   **CRITICAL STEP:** Open and **carefully review this file**.
 6.  **Terminal Confirmation:**
-    *   The script will print a summary and ask for explicit confirmation (`yes/no`) in the terminal before signing and broadcasting.
+    *   The script (or wrapper) will ask for explicit confirmation before signing and broadcasting.
 7.  **Ledger Device Approval:**
-    *   If you confirm, the script will send the transaction data to your Ledger.
-    *   You **MUST approve the transaction(s) on your Ledger device**. Follow the prompts on its screen carefully. The Ledger will display details of the transaction(s) for your review.
+    *   You **MUST approve the transaction(s) on your Ledger device**.
 8.  **Transaction Broadcast & Output:**
-    *   After Ledger approval, the signed transaction is broadcast.
-    *   The script will output the transaction hash if successful, or error details if it fails.
+    *   The script will output the transaction hash or errors.
 
 ## 6. Troubleshooting Common Issues
 

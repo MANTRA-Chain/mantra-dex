@@ -24,8 +24,6 @@ if [ ! -f "${NODE_SCRIPT_PATH}" ]; then
 fi
 
 echo "ℹ️  Checking for npm dependencies installation..."
-# Simple check: Assumes node_modules exists at project root if dependencies are installed.
-# A more robust check might involve `npm list <package_name>`.
 if [ ! -d "${PROJECT_ROOT_GUESS}node_modules/@cosmjs" ]; then
     echo "🤔 Warning: '@cosmjs' dependencies might not be installed in '${PROJECT_ROOT_GUESS}node_modules'."
     echo "   If the script fails, try running 'npm install' in the project root: ${PROJECT_ROOT_GUESS}"
@@ -66,7 +64,7 @@ if [[ -n "${LEDGER_ACCOUNT_INDEX:-}" ]]; then
 fi
 
 
-# --- Display Parameters & Final Confirmation ---
+# ---  Final Confirmation ---
 echo ""
 echo "🚨 ========================================================= 🚨"
 echo "🚨               EMERGENCY POOL FEATURE TOGGLE               🚨"
@@ -93,8 +91,6 @@ echo ""
 echo "🚀 Executing Node.js script..."
 echo ""
 
-# --- Execute the Node.js Script ---
-# Pass the collected variables as arguments to the Node.js script
 node "${NODE_SCRIPT_PATH}" \
     "${RPC_ENDPOINT_VAL}" \
     "${POOL_MANAGER_CONTRACT_ADDRESS_VAL}" \

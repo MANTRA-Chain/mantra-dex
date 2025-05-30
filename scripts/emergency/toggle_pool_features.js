@@ -8,7 +8,6 @@ const fs = require('fs');
 
 const GAS_PRICE_STRING = "0.025uom"; 
 
-// Main function
 async function main() {
     const rpcEndpoint = process.argv[2];
     const poolManagerAddress = process.argv[3];
@@ -72,7 +71,7 @@ async function main() {
         console.log("Starting to query all pool identifiers from the pool manager contract...");
         do {
             const queryMsg = {
-                pools: { // Corrected query message name
+                pools: {
                     limit: limit,
                     ...(startAfter && { start_after: startAfter })
                 }
@@ -92,7 +91,6 @@ async function main() {
                      console.log("Reached end of pool list.");
                      break;
                 }
-
 
                 for (const pool of pools) {
                     if (pool.pool_info.pool_identifier) { 
@@ -131,10 +129,9 @@ async function main() {
         }
 
         const messages = allPoolIdentifiers.map(poolId => {
-            // Corrected execute message structure for UpdateConfig and FeatureToggle
             const executeMsg = {
-                update_config: { // Top-level message
-                    feature_toggle: { // The specific part of the config to update
+                update_config: {
+                    feature_toggle: {
                         pool_identifier: poolId,
                         withdrawals_enabled: false,
                         deposits_enabled: false,
@@ -163,7 +160,7 @@ async function main() {
             accountIndexUsed: accountIndex,
             hdPathUsed: `m/44'/118'/0'/0/${accountIndex}`,
             messagesCount: messages.length,
-            generatedMessages: messages // Changed key for clarity
+            generatedMessages: messages
         }, null, 2));
         console.log(`Transaction messages preview saved to: ${outputFileName}`);
         console.log("CRITICAL: Review this JSON file carefully before proceeding to sign and broadcast.");
@@ -190,25 +187,19 @@ async function main() {
         
         const gasPerMessage = 250000; 
         const totalGas = BigInt(messages.length * gasPerMessage);
-
-        // Parse the gas price string to get amount and denom for fee calculation
         const feeGasPrice = GasPrice.fromString(GAS_PRICE_STRING);
-        
-        // Calculate the fee amount: totalGas * price_per_gas.
-        // feeGasPrice.amount is a Decimal. parseFloat converts it to a number.
-        // Math.ceil ensures you pay at least the calculated amount, rounded up to the nearest whole unit of the denom.
         const calculatedFeeAmount = Math.ceil(Number(totalGas) * parseFloat(feeGasPrice.amount.toString())).toString();
 
         const fee = {
             amount: [{
-                denom: feeGasPrice.denom, // e.g., "uom"
-                amount: calculatedFeeAmount, // The calculated amount as a string
+                denom: feeGasPrice.denom,
+                amount: calculatedFeeAmount,
             }],
-            gas: totalGas.toString(), // Total gas limit for the transaction
+            gas: totalGas.toString(),
         };
         const memo = "Emergency: Toggle OFF all pool features (disable deposits/withdrawals/swaps)";
 
-        console.log(`Calculated fee: ${calculatedFeeAmount}${feeGasPrice.denom} for ${totalGas.toString()} gas.`); // Log the calculated fee
+        console.log(`Calculated fee: ${calculatedFeeAmount}${feeGasPrice.denom} for ${totalGas.toString()} gas.`);
 
         try {
             const result = await client.signAndBroadcast(senderAddress, messages, fee, memo);
@@ -252,11 +243,8 @@ async function main() {
 }
 
 main().catch(error => {
-    // This catch is for truly unhandled promise rejections in main's top level
     console.error("Critical script failure:", error.message);
     if (error.stack) {
         console.error(error.stack);
     }
-    // Attempt to ensure transport is closed even on catastrophic failure
-    // This assumes 'transport' might not be in scope or defined if
 });
