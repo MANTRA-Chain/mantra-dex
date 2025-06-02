@@ -99,10 +99,10 @@ async function main() {
 
             if (farms.length === limit) {
                 const lastFarm = farms[farms.length - 1];
-                if (lastFarm && lastFarm.farm_identifier) {
-                    startAfter = lastFarm.farm_identifier;
+                if (lastFarm?.identifier) {
+                    startAfter = lastFarm.identifier;
                 } else {
-                    console.warn("Last farm in page did not have farm_identifier, cannot paginate further this way.");
+                    console.warn("Last farm in page did not have identifier, cannot paginate further this way.");
                     startAfter = null; 
                 }
             } else {

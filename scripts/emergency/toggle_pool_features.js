@@ -104,8 +104,8 @@ async function main() {
                 if (pools.length === limit) {
                     // Get the pool_identifier of the last fetched pool for pagination
                     const lastPool = pools[pools.length - 1];
-                    if (lastPool && lastPool.pool_identifier) {
-                        startAfter = lastPool.pool_identifier;
+                   if (lastPool?.pool_info?.pool_identifier) {
+                        startAfter = lastPool.pool_info.pool_identifier;
                     } else {
                         console.warn("Last pool in page did not have pool_identifier, cannot paginate further this way.");
                         startAfter = null; // Stop pagination
