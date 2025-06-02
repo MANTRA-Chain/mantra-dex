@@ -78,10 +78,10 @@ async function main() {
             };
             
             console.log(`Querying with: ${JSON.stringify(queryMsg)}`);
-            const queryResponse = await client.queryContractSmart(poolManagerAddress, queryMsg);
+            const poolsResponse = await client.queryContractSmart(poolManagerAddress, queryMsg);
 
-            if (queryResponse && Array.isArray(queryResponse.pools)) {
-                const pools = queryResponse.pools;
+            if (poolsResponse && Array.isArray(poolsResponse.pools)) {
+                const pools = poolsResponse.pools;
                 
                 if (pools.length === 0 && startAfter === null) {
                     console.log("No pools found in the contract.");
@@ -114,7 +114,7 @@ async function main() {
                     startAfter = null; // Last page fetched
                 }
             } else {
-                console.error("Unexpected response structure from 'all_pools_info' query:", queryResponse);
+                console.error("Unexpected response structure from 'all_pools_info' query:", poolsResponse);
                 throw new Error("Failed to parse pool data. Expected a response with a 'pools' array.");
             }
             
@@ -185,7 +185,7 @@ async function main() {
         console.log("Proceeding with signing and broadcasting...");
         console.log("Please confirm each message (or the transaction bundle) on your Ledger device.");
         
-        const gasPerMessage = 250000; 
+        const gasPerMessage = 300000; // Estimate, adjust based on tx complexity and chain fees. The more pools to toggle, the more gas is needed.
         const totalGas = BigInt(messages.length * gasPerMessage);
         const feeGasPrice = GasPrice.fromString(GAS_PRICE_STRING);
         const calculatedFeeAmount = Math.ceil(Number(totalGas) * parseFloat(feeGasPrice.amount.toString())).toString();
