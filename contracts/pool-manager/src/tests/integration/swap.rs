@@ -207,6 +207,7 @@ fn basic_swapping_test() {
     };
 
     // Create a pool
+    println!("(creator - create_pool)");
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_infos,
@@ -223,20 +224,13 @@ fn basic_swapping_test() {
         },
     );
 
-    // Query pool info to ensure the query is working fine
-    suite.query_pools(
-        Some(WHALE_ULUNA_POOL_ID.to_string()),
-        None,
-        None,
-        |result| {
-            assert_eq!(
-                result.unwrap().pools[0].pool_info.asset_decimals,
-                vec![DECIMALS_6, DECIMALS_6]
-            );
-        },
-    );
+    // Snapshot balances before providing liquidity
+    suite
+        .debug_balance("BEFORE_LIQ", &creator, DENOM_UWHALE)
+        .debug_balance("BEFORE_LIQ", &creator, DENOM_ULUNA);
 
     // Let's try to add liquidity
+    println!("(creator - provide_liquidity)");
     suite
         .provide_liquidity(
             &creator,
@@ -258,30 +252,43 @@ fn basic_swapping_test() {
             ],
             |result| {
                 // Ensure we got 999_000 in the response which is 1mil less the initial liquidity amount
-                assert!(result.unwrap().events.iter().any(|event| {
+                assert!(result.as_ref().unwrap().events.iter().any(|event| {
                     event.attributes.iter().any(|attr| {
                         attr.key == "added_shares"
                             && attr.value
                                 == (ONE_MILLION_U128 - MINIMUM_LIQUIDITY_AMOUNT).to_string()
                     })
                 }));
+                for event in result.unwrap().events {
+                    println!("EVENT {:?}", event);
+                }
             },
         )
-        .query_pools(
-            Some(WHALE_ULUNA_POOL_ID.to_string()),
-            None,
-            None,
-            |result| {
-                let response = result.unwrap();
-                assert_eq!(
-                    response.pools[0].total_share,
-                    Coin {
-                        denom: response.pools[0].pool_info.lp_denom.clone(),
-                        amount: ONE_MILLION_U128,
-                    }
-                );
-            },
-        );
+    // Snapshot balances after liquidity
+    .debug_balance("AFTER_LIQ", &creator, DENOM_UWHALE)
+    .debug_balance("AFTER_LIQ", &creator, DENOM_ULUNA)
+    // Snapshot pool reserves (query_pools prints inside closure).
+    .query_pools(
+        Some(WHALE_ULUNA_POOL_ID.to_string()),
+        None,
+        None,
+        |result| {
+            let res = result.unwrap();
+            println!("[POOL_RESERVES] Pool assets:");
+            for (i, asset) in res.pools[0].pool_info.assets.iter().enumerate() {
+                println!("  {} - {}", asset.denom, asset.amount);
+            }
+            println!("  Total LP shares: {}", res.pools[0].total_share.amount);
+            assert_eq!(res.pools[0].pool_info.asset_decimals, vec![DECIMALS_6, DECIMALS_6]);
+            assert_eq!(
+                res.pools[0].total_share,
+                Coin {
+                    denom: res.pools[0].pool_info.lp_denom.clone(),
+                    amount: ONE_MILLION_U128,
+                }
+            );
+        },
+    );
 
     let simulated_return_amount = RefCell::new(Uint128::zero());
     suite.query_simulation(
@@ -302,6 +309,9 @@ fn basic_swapping_test() {
     );
 
     // Now Let's try a swap
+    println!("(creator - swap: {} {} → {}, expecting ~{} {})", 
+             ONE_THOUSAND_U128, DENOM_UWHALE, DENOM_ULUNA, 
+             simulated_return_amount.borrow(), DENOM_ULUNA);
     suite.swap(
         &creator,
         DENOM_ULUNA.to_string(),
@@ -327,6 +337,9 @@ fn basic_swapping_test() {
                     }
                 }
             }
+            
+            println!("  SWAP RESULT: Offered {} {}, Received {} {}", 
+                     offer_amount, DENOM_UWHALE, return_amount, DENOM_ULUNA);
             // Because the Pool was created and 1_000_000 of each token has been provided as liquidity
             // Assuming no fees we should expect a small swap of 1000 to result in not too much slippage
             // Expect 1000 give or take 0.002 difference
@@ -341,6 +354,19 @@ fn basic_swapping_test() {
                 return_amount.parse::<u128>().unwrap(),
                 BASIC_SWAP_ASSERT_APPROX_TOLERANCE_A
             );
+        },
+    )
+    // Check pool reserves after first swap
+    .query_pools(
+        Some(WHALE_ULUNA_POOL_ID.to_string()),
+        None,
+        None,
+        |result| {
+            let res = result.unwrap();
+            println!("[POOL_RESERVES] After first swap:");
+            for asset in res.pools[0].pool_info.assets.iter() {
+                println!("  {} - {}", asset.denom, asset.amount);
+            }
         },
     );
 
@@ -358,6 +384,9 @@ fn basic_swapping_test() {
     );
     // Another swap but this time the other way around
     // Now Let's try a swap
+    println!("(creator - reverse_swap: {} {} → {}, expecting {} {})", 
+             simulated_offer_amount.borrow(), DENOM_ULUNA, DENOM_UWHALE,
+             ONE_THOUSAND_U128, DENOM_UWHALE);
     suite.swap(
         &creator,
         DENOM_UWHALE.to_string(),
@@ -386,6 +415,9 @@ fn basic_swapping_test() {
                     }
                 }
             }
+            
+            println!("  SWAP RESULT: Offered {} {}, Received {} {}", 
+                     offer_amount, DENOM_ULUNA, return_amount, DENOM_UWHALE);
             assert_approx_eq!(
                 simulated_offer_amount.borrow().u128(),
                 offer_amount.parse::<u128>().unwrap(),
@@ -397,6 +429,19 @@ fn basic_swapping_test() {
                 return_amount.parse::<u128>().unwrap(),
                 BASIC_SWAP_ASSERT_APPROX_TOLERANCE_B
             );
+        },
+    )
+    // Check pool reserves after reverse swap
+    .query_pools(
+        Some(WHALE_ULUNA_POOL_ID.to_string()),
+        None,
+        None,
+        |result| {
+            let res = result.unwrap();
+            println!("[POOL_RESERVES] After reverse swap:");
+            for asset in res.pools[0].pool_info.assets.iter() {
+                println!("  {} - {}", asset.denom, asset.amount);
+            }
         },
     );
 }
@@ -915,6 +960,7 @@ fn swap_with_fees() {
     };
 
     // Create a pool
+    println!("(creator - create_pool)");
     suite.instantiate_default().add_one_epoch().create_pool(
         &creator,
         asset_infos,
@@ -932,6 +978,7 @@ fn swap_with_fees() {
     );
 
     // Let's try to add liquidity, 1000 of each token.
+    println!("(creator - provide_liquidity)");
     suite.provide_liquidity(
         &creator,
         WHALE_ULUNA_POOL_ID.to_string(),
@@ -971,6 +1018,7 @@ fn swap_with_fees() {
     // Protocol Fee Amount: 99 uLUNA.
     // Burn Fee Amount: 0 uLUNA (as expected since burn fee is set to 0%).
     // Total -> 9,900,693 (Returned Amount) + 99,010 (Spread)(0.009x%) + 198 (Swap Fee) + 99 (Protocol Fee) = 10,000,000 uLUNA
+    println!("(creator - swap)");
     suite.swap(
         &creator,
         DENOM_ULUNA.to_string(),

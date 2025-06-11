@@ -765,4 +765,16 @@ impl TestingSuite {
 
         self
     }
+
+    /// Utility to print balance for debugging snapshots
+    pub(crate) fn debug_balance(&mut self, label: &str, address: &Addr, denom: &str) -> &mut Self {
+        let addr_clone = address.clone();
+        let lbl = label.to_string();
+        let denom_string = denom.to_string();
+        self.query_balance(&addr_clone.clone().into_string(), denom_string.clone(), move |res| {
+            let bal = res.unwrap();
+            println!("[{}] {} {}: {}", lbl, addr_clone, denom_string, bal.amount);
+        });
+        self
+    }
 }

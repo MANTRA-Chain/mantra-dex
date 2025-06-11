@@ -491,6 +491,7 @@ fn create_farms() {
         );
 
     // create a farm properly
+    println!("(other - create_farm)");
     suite
         .manage_farm(
             &other,
@@ -514,8 +515,10 @@ fn create_farms() {
             |result| {
                 result.unwrap();
             },
-        )
-        .manage_farm(
+        );
+        
+    println!("(other - create_farm)");
+    suite.manage_farm(
             &other,
             FarmAction::Fill {
                 params: FarmParams {

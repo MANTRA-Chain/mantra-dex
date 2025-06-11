@@ -604,6 +604,16 @@ impl TestingSuite {
 
         self
     }
+
+    /// Prints the balance of a given address/denom with a label and returns &mut Self for chaining.
+    pub(crate) fn debug_balance(&mut self, label: &str, address: &Addr, denom: &str) -> &mut Self {
+        let addr_clone = address.clone();
+        let label_string = label.to_string();
+        self.query_balance(denom.to_string(), address, move |bal| {
+            println!("[{}] {} {}: {}", label_string, addr_clone, denom, bal);
+        });
+        self
+    }
 }
 
 /// Epoch manager actions

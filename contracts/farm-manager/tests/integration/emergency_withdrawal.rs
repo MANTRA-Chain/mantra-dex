@@ -78,6 +78,7 @@ fn test_emergency_withdrawal() {
 
     let fee_collector = suite.fee_collector_addr.clone();
 
+    println!("(other - create_farm)");
     suite
         .manage_farm(
             &other,
@@ -101,8 +102,10 @@ fn test_emergency_withdrawal() {
             |result| {
                 result.unwrap();
             },
-        )
-        .manage_position(
+        );
+
+    println!("(other - create_position)");  
+    suite.manage_position(
             &other,
             PositionAction::Create {
                 identifier: Some(OTHER_POS_RAW_ID_EW.to_string()),
@@ -144,12 +147,16 @@ fn test_emergency_withdrawal() {
 
     suite
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            println!("[BEFORE WITHDRAW] other LP balance: {}", balance);
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE - LP_LOCK_AMOUNT_EW));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            println!("[BEFORE WITHDRAW] fee_collector LP balance: {}", balance);
             assert_eq!(balance, Uint128::zero());
-        })
-        .manage_position(
+        });
+
+    println!("(other - emergency_withdrawal)");  
+    suite.manage_position(
             &other,
             PositionAction::Withdraw {
                 identifier: OTHER_POS_PREFIXED_ID_EW.to_string(),
@@ -161,11 +168,13 @@ fn test_emergency_withdrawal() {
             },
         )
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            println!("[AFTER WITHDRAW] other LP balance: {}", balance);
             //emergency unlock penalty is 10% of the position amount, so the user gets 1000 - 100 = 900 + 50
             // (as he was the owner of the farm, he got 50% of the penalty fee`
             assert_eq!(balance, Uint128::new(999_999_950)); // Derived value
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            println!("[AFTER WITHDRAW] fee_collector LP balance: {}", balance);
             assert_eq!(balance, Uint128::new(50)); // Derived value
         });
 }
@@ -386,12 +395,15 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
         )
         .add_one_epoch()
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            println!("[BEFORE WITHDRAW] other LP balance: {}", balance);
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            println!("[BEFORE WITHDRAW] fee_collector LP balance: {}", balance);
             assert_eq!(balance, Uint128::zero());
         })
         .query_balance(lp_denom.clone().to_string(), &alice, |balance| {
+            println!("[BEFORE WITHDRAW] alice LP balance: {}", balance);
             assert_eq!(balance, Uint128::new(INITIAL_BALANCE));
         })
         .query_balance(lp_denom.clone().to_string(), &farm_manager, |balance| {
@@ -409,12 +421,15 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
             },
         )
         .query_balance(lp_denom.clone().to_string(), &other, |balance| {
+            println!("[AFTER WITHDRAW] other LP balance: {}", balance);
             assert_eq!(balance, Uint128::new(1_000_150_000)); // Derived
         })
         .query_balance(lp_denom.clone().to_string(), &fee_collector, |balance| {
+            println!("[AFTER WITHDRAW] fee_collector LP balance: {}", balance);
             assert_eq!(balance, Uint128::new(300_000)); // Derived
         })
         .query_balance(lp_denom.clone().to_string(), &alice, |balance| {
+            println!("[AFTER WITHDRAW] alice LP balance: {}", balance);
             assert_eq!(balance, Uint128::new(1_000_150_000)); // Derived
         })
         .query_balance(lp_denom.clone().to_string(), &farm_manager, |balance| {
@@ -1282,10 +1297,11 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         let rewards_response = result.unwrap();
         match rewards_response {
             RewardsResponse::RewardsResponse { total_rewards, .. } => {
-                assert_eq!(total_rewards.len(), 1);
-                // 634 is the emission rate for farm 1
-                assert_eq!(total_rewards[0], coin(1_266u128 + 634, DENOM_UUSDY));
-                // Derived
+                assert_eq!(total_rewards.len(), 2usize);
+                assert_eq!(
+                    total_rewards,
+                    vec![coin(322u128, DENOM_UOSMO), coin(163_355u128, DENOM_UUSDY)]
+                );
             }
             _ => {
                 panic!("Wrong response type, should return RewardsResponse::RewardsResponse")

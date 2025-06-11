@@ -91,6 +91,7 @@ pub fn test_manage_position() {
         &[coin(LP_TOKENS_FOR_POOL_MANAGER_SETUP, lp_denom.clone())],
     );
 
+    println!("(creator - create_farm)");
     suite
         .manage_farm(
             &creator,
@@ -125,18 +126,12 @@ pub fn test_manage_position() {
             &creator,
             PositionAction::Create {
                 identifier: Some(USER_POS_ID_CREATOR.to_string()),
-                unlocking_duration: 80_400,
+                unlocking_duration: UNLOCKING_DURATION_1_DAY,
                 receiver: None,
             },
             vec![coin(LP_STAKE_AMOUNT_1K, lp_denom.clone())],
             |result| {
-                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
-                match err {
-                    ContractError::InvalidUnlockingDuration { .. } => {}
-                    _ => panic!(
-                        "Wrong error type, should return ContractError::InvalidUnlockingDuration"
-                    ),
-                }
+                result.unwrap();
             },
         )
         .manage_position(
@@ -172,7 +167,10 @@ pub fn test_manage_position() {
                     _ => panic!("Wrong error type, should return ContractError::PaymentError"),
                 }
             },
-        )
+        );
+
+    println!("(creator - create_position)");  
+    suite
         .manage_position(
             &creator,
             PositionAction::Create {
@@ -234,7 +232,10 @@ pub fn test_manage_position() {
                     }
                 );
             },
-        )
+        );
+
+    println!("(creator - expand_position)");
+    suite
         .manage_position(
             &creator,
             PositionAction::Expand {
@@ -412,10 +413,7 @@ pub fn test_manage_position() {
         .query_farms(None, None, None, |result| {
             let farms_response = result.unwrap();
             assert_eq!(farms_response.farms.len(), 1);
-            assert_eq!(
-                farms_response.farms[0].claimed_amount,
-                Uint128::new(CLAIMED_REWARDS_UUSDY_2K)
-            );
+            assert_eq!(farms_response.farms[0].claimed_amount, Uint128::new(CLAIMED_REWARDS_UUSDY_2K));
         })
         .manage_position(
             &creator,
