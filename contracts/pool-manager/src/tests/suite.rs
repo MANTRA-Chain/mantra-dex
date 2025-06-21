@@ -348,6 +348,7 @@ impl TestingSuite {
             unlocking_duration,
             lock_position_identifier,
         };
+        println!("msg from test suite: {:?}", msg);
 
         result(self.app.execute_contract(
             sender.clone(),
