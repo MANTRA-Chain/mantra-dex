@@ -124,7 +124,7 @@ fn assert_slippage_tolerance_correct_xyk() {
         None,
         None,
         Some(Decimal::percent(60)),
-        Some(Decimal::percent(10)),
+        None,
         None,
         vec![
             Coin {

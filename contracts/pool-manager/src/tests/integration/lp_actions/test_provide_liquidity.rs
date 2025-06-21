@@ -23,10 +23,6 @@ const UUSDY_DENOM: &str = "factory/mantra1x5nk33zpglp4ge6q9a8xx3zceqf4g8nvaggjmc
 const POOL_ID: &str = "o.uom.usdy.pool";
 const POOL_LABEL: &str = "uom.usdy.pool";
 
-// Initial liquidity amounts - larger amounts for initial liquidity
-const INITIAL_OM_LIQUIDITY: u128 = 1_000_000u128; // 1 OM with 6 decimals
-const INITIAL_USDY_LIQUIDITY: u128 = 4_000_000u128; // 4 USDY with 6 decimals
-
 // Test liquidity amounts - 1 OM + 4 USDY as described
 const OM_LIQUIDITY_AMOUNT: u128 = 1_000_000u128; // 1 OM with 6 decimals
 const USDY_LIQUIDITY_AMOUNT: u128 = 4_000_000u128; // 4 USDY with 6 decimals
@@ -119,11 +115,11 @@ fn test_provide_liquidity() {
     let initial_assets = vec![
         Coin {
             denom: DENOM_UOM.to_string(),
-            amount: Uint128::from(INITIAL_OM_LIQUIDITY),
+            amount: Uint128::from(OM_LIQUIDITY_AMOUNT),
         },
         Coin {
             denom: UUSDY_DENOM.to_string(),
-            amount: Uint128::from(INITIAL_USDY_LIQUIDITY),
+            amount: Uint128::from(USDY_LIQUIDITY_AMOUNT),
         },
     ];
 
@@ -163,27 +159,6 @@ fn test_provide_liquidity() {
             amount: Uint128::from(USDY_LIQUIDITY_AMOUNT),
         },
     ];
-
-    // Print the provide liquidity execute message (simulating client logging)
-    println!("=== PROVIDE_LIQUIDITY EXECUTE MESSAGE ===");
-    println!("Message: ProvideLiquidity {{");
-    println!("    pool_identifier: \"{}\",", POOL_ID);
-    println!("    liquidity_max_slippage: Some(Decimal(\"0.01\")),");
-    println!("    swap_max_slippage: Some(Decimal(\"0.01\")),");
-    println!("    receiver: None,");
-    println!("    unlocking_duration: None,");
-    println!("    lock_position_identifier: None");
-    println!("}}");
-    println!("Assets: [");
-    for asset in &assets {
-        println!(
-            "    Coin {{ denom: \"{}\", amount: Uint128({}) }},",
-            asset.denom, asset.amount
-        );
-    }
-    println!("]");
-    println!("Pool Manager Address: {}", suite.pool_manager_addr);
-    println!("==========================================");
 
     // Execute provide liquidity with slippage tolerance
     suite.provide_liquidity(
