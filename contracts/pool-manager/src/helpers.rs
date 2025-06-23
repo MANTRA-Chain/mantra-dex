@@ -778,6 +778,14 @@ pub fn assert_slippage_tolerance(
     pool_assets: &mut [Coin],
     pool_type: PoolType,
 ) -> Result<(), ContractError> {
+    // if the pool assets are zero, there is nothing to check for slippage
+    if pool_assets
+        .iter()
+        .any(|asset| asset.amount == Uint128::zero())
+    {
+        return Ok(());
+    }
+
     if let Some(slippage_tolerance) = *slippage_tolerance {
         let slippage_tolerance: Decimal256 = slippage_tolerance.into();
         if slippage_tolerance > Decimal256::one() {
