@@ -1,0 +1,267 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "description": "The query messages",
+  "oneOf": [
+    {
+      "description": "Retrieves the configuration of the manager.",
+      "type": "object",
+      "required": [
+        "config"
+      ],
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Retrieves farms in the contract. It is possible to filter by [FarmsBy] and to paginate the results.",
+      "type": "object",
+      "required": [
+        "farms"
+      ],
+      "properties": {
+        "farms": {
+          "type": "object",
+          "properties": {
+            "filter_by": {
+              "description": "An optional parameter specifying what to filter farms by. Can be either the farm identifier, lp denom or the farm asset.",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/FarmsBy"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "limit": {
+              "description": "The amount of farms to return. If unspecified, will default to a value specified by the contract.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "description": "An optional parameter specifying what farm (identifier) to start searching after.",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Retrieves the positions for an address.",
+      "type": "object",
+      "required": [
+        "positions"
+      ],
+      "properties": {
+        "positions": {
+          "type": "object",
+          "properties": {
+            "filter_by": {
+              "description": "An optional parameter specifying what to filter positions by.",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/PositionsBy"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "limit": {
+              "description": "The amount of positions to return. If unspecified, will default to a value specified by the contract.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "open_state": {
+              "description": "An optional parameter specifying to return only positions that match the given open state. if true, it will return open positions. If false, it will return closed positions.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "start_after": {
+              "description": "An optional parameter specifying what position (identifier) to start searching after.",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Retrieves the rewards for an address.",
+      "type": "object",
+      "required": [
+        "rewards"
+      ],
+      "properties": {
+        "rewards": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "description": "The address to get all the farm rewards for.",
+              "type": "string"
+            },
+            "until_epoch": {
+              "description": "The epoch until which the rewards should be queried. If none is provided, it will query until the current epoch.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Retrieves the total LP weight in the contract for a given denom on a given epoch.",
+      "type": "object",
+      "required": [
+        "lp_weight"
+      ],
+      "properties": {
+        "lp_weight": {
+          "type": "object",
+          "required": [
+            "address",
+            "denom",
+            "epoch_id"
+          ],
+          "properties": {
+            "address": {
+              "description": "The address to get the LP weight for.",
+              "type": "string"
+            },
+            "denom": {
+              "description": "The denom to get the total LP weight for.",
+              "type": "string"
+            },
+            "epoch_id": {
+              "description": "The epoch id to get the LP weight for.",
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Query the contract's ownership information",
+      "type": "object",
+      "required": [
+        "ownership"
+      ],
+      "properties": {
+        "ownership": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "FarmsBy": {
+      "description": "Enum to filter farms by identifier, lp denom or the farm asset. Used in the farms query.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "identifier"
+          ],
+          "properties": {
+            "identifier": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "lp_denom"
+          ],
+          "properties": {
+            "lp_denom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "farm_asset"
+          ],
+          "properties": {
+            "farm_asset": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "PositionsBy": {
+      "description": "Enum to filter positions by identifier or receiver. Used in the positions query.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "identifier"
+          ],
+          "properties": {
+            "identifier": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "receiver"
+          ],
+          "properties": {
+            "receiver": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
