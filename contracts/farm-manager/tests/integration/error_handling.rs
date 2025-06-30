@@ -43,7 +43,7 @@ fn test_farm_and_position_id_validation() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH),
@@ -69,7 +69,7 @@ fn test_farm_and_position_id_validation() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH),
@@ -95,7 +95,7 @@ fn test_farm_and_position_id_validation() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH),
@@ -121,7 +121,7 @@ fn test_farm_and_position_id_validation() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH),
@@ -147,7 +147,7 @@ fn test_farm_and_position_id_validation() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH),

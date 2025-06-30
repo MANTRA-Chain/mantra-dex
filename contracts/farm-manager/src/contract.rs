@@ -124,7 +124,12 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::ManageFarm { action } => match action {
-            FarmAction::Fill { params } => manager::commands::fill_farm(deps, env, info, params),
+            FarmAction::Create { params } => {
+                manager::commands::create_farm(deps, env, info, params)
+            }
+            FarmAction::Expand { params } => {
+                manager::commands::expand_farm(deps, env, info, params)
+            }
             FarmAction::Close { farm_identifier } => {
                 manager::commands::close_farm(deps, info, farm_identifier)
             }

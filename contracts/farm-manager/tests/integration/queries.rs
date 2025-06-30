@@ -57,7 +57,7 @@ fn test_rewards_query_overlapping_farms() {
         })
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(FARM_START_EPOCH),
@@ -80,7 +80,7 @@ fn test_rewards_query_overlapping_farms() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(FARM_START_EPOCH),
@@ -103,7 +103,7 @@ fn test_rewards_query_overlapping_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(FARM_START_EPOCH),
@@ -123,7 +123,7 @@ fn test_rewards_query_overlapping_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(FARM_START_EPOCH),
@@ -333,7 +333,7 @@ fn test_query_rewards_divide_by_zero() {
 
     suite.manage_farm(
         &creator,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom_1.clone(),
                 start_epoch: None,
@@ -562,7 +562,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
     suite
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: None,
@@ -585,7 +585,7 @@ fn test_query_rewards_divide_by_zero_mitigated() {
         )
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,

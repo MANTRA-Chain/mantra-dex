@@ -67,7 +67,7 @@ fn test_close_expired_farms() {
 
     suite.manage_farm(
         &creator,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: Some(START_EPOCH_12),
@@ -110,7 +110,7 @@ fn test_close_expired_farms() {
         })
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -172,7 +172,7 @@ fn expand_expired_farm() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -228,7 +228,7 @@ fn expand_expired_farm() {
         })
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -281,7 +281,7 @@ fn test_farm_expired() {
         })
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH_12),
@@ -304,7 +304,7 @@ fn test_farm_expired() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH_12),
@@ -327,7 +327,7 @@ fn test_farm_expired() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(START_EPOCH_12),
@@ -382,7 +382,7 @@ fn test_farm_expired() {
     // same lp denom
     suite.manage_farm(
         &creator,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: Some(START_EPOCH_12),
@@ -442,7 +442,7 @@ fn test_farm_expired() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(50),
