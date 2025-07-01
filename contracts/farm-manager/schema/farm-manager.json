@@ -437,20 +437,47 @@
       "FarmAction": {
         "oneOf": [
           {
-            "description": "Fills a farm. If the farm doesn't exist, it creates a new one. If it exists already, it expands it given the sender created the original farm and the params are correct.",
+            "description": "Creates a new farm with the given parameters.",
             "type": "object",
             "required": [
-              "fill"
+              "create"
             ],
             "properties": {
-              "fill": {
+              "create": {
                 "type": "object",
                 "required": [
                   "params"
                 ],
                 "properties": {
                   "params": {
-                    "description": "The parameters for the farm to fill.",
+                    "description": "The parameters for the farm to create.",
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/FarmParams"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Expands an existing farm. The farm must already exist and the sender must be the farm owner. The farm_identifier must be provided in the params.",
+            "type": "object",
+            "required": [
+              "expand"
+            ],
+            "properties": {
+              "expand": {
+                "type": "object",
+                "required": [
+                  "params"
+                ],
+                "properties": {
+                  "params": {
+                    "description": "The parameters for the farm to expand.",
                     "allOf": [
                       {
                         "$ref": "#/definitions/FarmParams"
