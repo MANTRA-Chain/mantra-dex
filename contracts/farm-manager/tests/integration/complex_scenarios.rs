@@ -96,7 +96,7 @@ fn test_multiple_farms_and_positions() {
         })
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(FARM_1_START_EPOCH),
@@ -119,7 +119,7 @@ fn test_multiple_farms_and_positions() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(FARM_2_START_EPOCH),
@@ -142,7 +142,7 @@ fn test_multiple_farms_and_positions() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(FARM_3_START_EPOCH),
@@ -165,7 +165,7 @@ fn test_multiple_farms_and_positions() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(FARM_4_START_EPOCH),

@@ -94,7 +94,7 @@ pub fn test_manage_position() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(2),
@@ -1078,7 +1078,7 @@ pub fn test_withdrawing_open_positions_updates_weight() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(2),
@@ -1921,7 +1921,7 @@ fn position_fill_attack_is_not_possible() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(12),
@@ -2222,7 +2222,7 @@ fn test_positions_limits() {
     for i in 1..MAX_POSITIONS_LIMIT * 2 {
         suite.manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: format!("factory/{MOCK_CONTRACT_ADDR_1}/{i}.{LP_SYMBOL}"),
                     start_epoch: Some(1),
@@ -2530,7 +2530,7 @@ fn test_overwriting_position_is_not_possible() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(12),

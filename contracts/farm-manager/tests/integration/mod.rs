@@ -2,6 +2,7 @@ pub mod complex_scenarios;
 pub mod emergency_withdrawal;
 pub mod error_handling;
 pub mod expiration;
+pub mod farm_creation;
 pub mod farm_management;
 pub mod instantiation;
 pub mod ownership_and_config;

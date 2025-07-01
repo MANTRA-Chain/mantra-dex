@@ -81,7 +81,7 @@ fn test_emergency_withdrawal() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -188,7 +188,7 @@ fn test_emergency_withdrawal_with_pending_rewards_are_lost() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -303,7 +303,7 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -326,7 +326,7 @@ fn emergency_withdrawal_shares_penalty_with_active_farm_owners() {
         )
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -445,7 +445,7 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -468,7 +468,7 @@ fn test_emergency_withdrawal_with_proportional_penalty() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
@@ -625,7 +625,7 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
     suite
         .manage_farm(
             &creator_1,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: None,
@@ -648,7 +648,7 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
         )
         .manage_farm(
             &creator_2,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(EPOCH_ID_35),
@@ -671,7 +671,7 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
         )
         .manage_farm(
             &creator_1,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
@@ -694,7 +694,7 @@ fn test_emergency_withdrawal_penalty_only_to_active_farms() {
         )
         .manage_farm(
             &creator_2,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(EPOCH_ID_35),
@@ -905,7 +905,7 @@ pub fn can_emergency_withdraw_an_lp_without_farm() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(EPOCH_ID_2),
@@ -981,7 +981,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
     suite
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: None,
@@ -1004,7 +1004,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         )
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(10),
@@ -1156,7 +1156,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
     suite
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(EPOCH_ID_15_MPCEW),
@@ -1179,7 +1179,7 @@ fn test_managing_positions_close_and_emergency_withdraw() {
         )
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(22),

@@ -39,7 +39,7 @@ fn claim_expired_farm_returns_nothing() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(12),
@@ -185,7 +185,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(12),
@@ -441,7 +441,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(15),
@@ -461,7 +461,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(14),
@@ -481,7 +481,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(16),
@@ -720,7 +720,7 @@ fn user_can_claim_expired_epochs() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(10),
@@ -784,7 +784,7 @@ fn user_can_claim_expired_epochs() {
         // the farm expired, can't be refilled
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -892,7 +892,7 @@ fn farm_owners_get_penalty_fees() {
     suite
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: None,
@@ -912,7 +912,7 @@ fn farm_owners_get_penalty_fees() {
         )
         .manage_farm(
             &bob,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: None,
@@ -932,7 +932,7 @@ fn farm_owners_get_penalty_fees() {
         )
         .manage_farm(
             &carol,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
@@ -1341,7 +1341,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
     suite
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: None,
@@ -1361,7 +1361,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
         )
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
@@ -1509,7 +1509,7 @@ fn test_claim_until_epoch() {
     suite
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: Some(4),
@@ -1529,7 +1529,7 @@ fn test_claim_until_epoch() {
         )
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: Some(10),
@@ -1784,7 +1784,7 @@ fn test_claim_until_epoch_closing_positions() {
     suite
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_1.clone(),
                     start_epoch: None,
@@ -1804,7 +1804,7 @@ fn test_claim_until_epoch_closing_positions() {
         )
         .manage_farm(
             &alice,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
@@ -2043,7 +2043,7 @@ fn test_claiming_while_expanding_farm() {
     // create overlapping farms
     suite.manage_farm(
         &alice,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom_1.clone(),
                 start_epoch: Some(1),
@@ -2079,7 +2079,7 @@ fn test_claiming_while_expanding_farm() {
 
     suite.manage_farm(
         &alice,
-        FarmAction::Fill {
+        FarmAction::Expand {
             params: FarmParams {
                 lp_denom: lp_denom_1.clone(),
                 start_epoch: None,

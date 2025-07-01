@@ -16,30 +16,8 @@ use crate::helpers::{
 use crate::state::{get_farm_by_identifier, get_farms_by_lp_denom, CONFIG, FARMS, FARM_COUNTER};
 use crate::ContractError;
 
-pub(crate) fn fill_farm(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    params: FarmParams,
-) -> Result<Response, ContractError> {
-    // if a farm_identifier was passed in the params, check if a farm with such identifier
-    // exists and if the sender is allowed to refill it, otherwise create a new farm
-    if let Some(farm_identifier) = params.clone().farm_identifier {
-        let farm_result = get_farm_by_identifier(deps.storage, &farm_identifier);
-
-        if let Ok(farm) = farm_result {
-            // the farm exists, try to expand it
-            return expand_farm(deps, env, info, farm, params);
-        }
-        // the farm does not exist, try to create it
-    }
-
-    // if no identifier was passed in the params or if the farm does not exist, try to create the farm
-    create_farm(deps, env, info, params)
-}
-
 /// Creates a farm with the given params
-fn create_farm(
+pub(crate) fn create_farm(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -121,9 +99,7 @@ fn create_farm(
 
     validate_identifier(&farm_identifier)?;
 
-    // sanity check. Make sure another farm with the same identifier doesn't exist. Theoretically this should
-    // never happen, since the fill_farm function would try to expand the farm if a user tries
-    // filling a farm with an identifier that already exists
+    // Make sure another farm with the same identifier doesn't exist
     ensure!(
         get_farm_by_identifier(deps.storage, &farm_identifier).is_err(),
         ContractError::FarmAlreadyExists
@@ -171,68 +147,22 @@ fn create_farm(
         ]))
 }
 
-/// Closes a farm. Only the farm creator or the owner of the contract can close a farm, except if
-/// the farm has expired, in which case anyone can close it while creating a new farm.
-pub(crate) fn close_farm(
-    deps: DepsMut,
-    info: MessageInfo,
-    farm_identifier: String,
-) -> Result<Response, ContractError> {
-    cw_utils::nonpayable(&info)?;
-
-    // validate that user is allowed to close the farm. Only the farm creator or the owner
-    // of the contract can close a farm
-    let farm = get_farm_by_identifier(deps.storage, &farm_identifier)?;
-
-    ensure!(
-        farm.owner == info.sender || cw_ownable::is_owner(deps.storage, &info.sender)?,
-        ContractError::Unauthorized
-    );
-
-    Ok(Response::default()
-        .add_submessages(close_farms(deps.storage, vec![farm])?)
-        .add_attributes(vec![
-            ("action", "close_farm".to_string()),
-            ("farm_identifier", farm_identifier),
-        ]))
-}
-
-/// Closes a list of farms. Does not validate the sender, do so before calling this function.
-/// Execute the BankMsg using a SubMsg with reply on error, in case a malicious TF token tries
-/// to block token transfers via hooks.
-fn close_farms(storage: &mut dyn Storage, farms: Vec<Farm>) -> Result<Vec<SubMsg>, ContractError> {
-    let mut messages: Vec<SubMsg> = vec![];
-
-    for mut farm in farms {
-        // remove the farm from the storage
-        FARMS.remove(storage, &farm.identifier)?;
-
-        // return the available asset, i.e. the amount that hasn't been claimed
-        farm.farm_asset.amount = farm.farm_asset.amount.saturating_sub(farm.claimed_amount);
-
-        if farm.farm_asset.amount > Uint128::zero() {
-            messages.push(SubMsg::reply_on_error(
-                CosmosMsg::Bank(BankMsg::Send {
-                    to_address: farm.owner.into_string(),
-                    amount: vec![farm.farm_asset],
-                }),
-                CLOSE_FARMS_ERR_REPLY_CODE,
-            ));
-        }
-    }
-
-    Ok(messages)
-}
-
-/// Expands a farm with the given params
-fn expand_farm(
+/// Expands an existing farm with the given params. The farm_identifier must be provided.
+pub(crate) fn expand_farm(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    mut farm: Farm,
     params: FarmParams,
 ) -> Result<Response, ContractError> {
-    // only the farm owner can expand it
+    // A farm_identifier must be passed to expand an existing farm
+    let farm_identifier = params
+        .clone()
+        .farm_identifier
+        .ok_or(ContractError::NonExistentFarm)?;
+
+    let mut farm = get_farm_by_identifier(deps.storage, &farm_identifier)?;
+
+    // the farm exists, try to expand it
     ensure!(farm.owner == info.sender, ContractError::Unauthorized);
 
     let config = CONFIG.load(deps.storage)?;
@@ -298,6 +228,59 @@ fn expand_farm(
         ("expanded_by", params.farm_asset.to_string()),
         ("total_farm", farm.farm_asset.to_string()),
     ]))
+}
+
+/// Closes a farm. Only the farm creator or the owner of the contract can close a farm, except if
+/// the farm has expired, in which case anyone can close it while creating a new farm.
+pub(crate) fn close_farm(
+    deps: DepsMut,
+    info: MessageInfo,
+    farm_identifier: String,
+) -> Result<Response, ContractError> {
+    cw_utils::nonpayable(&info)?;
+
+    // validate that user is allowed to close the farm. Only the farm creator or the owner
+    // of the contract can close a farm
+    let farm = get_farm_by_identifier(deps.storage, &farm_identifier)?;
+
+    ensure!(
+        farm.owner == info.sender || cw_ownable::is_owner(deps.storage, &info.sender)?,
+        ContractError::Unauthorized
+    );
+
+    Ok(Response::default()
+        .add_submessages(close_farms(deps.storage, vec![farm])?)
+        .add_attributes(vec![
+            ("action", "close_farm".to_string()),
+            ("farm_identifier", farm_identifier),
+        ]))
+}
+
+/// Closes a list of farms. Does not validate the sender, do so before calling this function.
+/// Execute the BankMsg using a SubMsg with reply on error, in case a malicious TF token tries
+/// to block token transfers via hooks.
+fn close_farms(storage: &mut dyn Storage, farms: Vec<Farm>) -> Result<Vec<SubMsg>, ContractError> {
+    let mut messages: Vec<SubMsg> = vec![];
+
+    for mut farm in farms {
+        // remove the farm from the storage
+        FARMS.remove(storage, &farm.identifier)?;
+
+        // return the available asset, i.e. the amount that hasn't been claimed
+        farm.farm_asset.amount = farm.farm_asset.amount.saturating_sub(farm.claimed_amount);
+
+        if farm.farm_asset.amount > Uint128::zero() {
+            messages.push(SubMsg::reply_on_error(
+                CosmosMsg::Bank(BankMsg::Send {
+                    to_address: farm.owner.into_string(),
+                    amount: vec![farm.farm_asset],
+                }),
+                CLOSE_FARMS_ERR_REPLY_CODE,
+            ));
+        }
+    }
+
+    Ok(messages)
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -65,7 +65,7 @@ fn create_farms() {
         })
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     // current epoch is 0
@@ -103,7 +103,7 @@ fn create_farms() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_25,
@@ -128,7 +128,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_25,
@@ -145,6 +145,32 @@ fn create_farms() {
             |result| {
                 let err = result.unwrap_err().downcast::<ContractError>().unwrap();
                 match err {
+                    ContractError::NonExistentFarm => {}
+                    _ => {
+                        panic!("Wrong error type, should return ContractError::NonExistentFarm")
+                    }
+                }
+            },
+        )
+        .manage_farm(
+            &other,
+            FarmAction::Create {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: START_EPOCH_25,
+                    preliminary_end_epoch: None,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: DENOM_UUSDY.to_string(),
+                        amount: Uint128::new(FARM_AMOUNT_2K),
+                    },
+                    farm_identifier: Some("test_farm".to_string()),
+                },
+            },
+            vec![coin(FARM_AMOUNT_2K, DENOM_UUSDY)],
+            |result| {
+                let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+                match err {
                     ContractError::FarmFeeMissing => {}
                     _ => {
                         panic!("Wrong error type, should return ContractError::FarmFeeMissing")
@@ -154,7 +180,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_25,
@@ -164,7 +190,7 @@ fn create_farms() {
                         denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_5K),
                     },
-                    farm_identifier: None,
+                    farm_identifier: Some("test_farm_2".to_string()),
                 },
             },
             vec![coin(FARM_AMOUNT_8K, DENOM_UOM)],
@@ -178,7 +204,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_25,
@@ -188,7 +214,7 @@ fn create_farms() {
                         denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_2K),
                     },
-                    farm_identifier: None,
+                    farm_identifier: Some("test_farm_3".to_string()),
                 },
             },
             vec![coin(ONE_THOUSAND, DENOM_UOM)],
@@ -202,7 +228,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_25,
@@ -212,7 +238,7 @@ fn create_farms() {
                         denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_2K),
                     },
-                    farm_identifier: None,
+                    farm_identifier: Some("test_farm_4".to_string()),
                 },
             },
             vec![
@@ -229,7 +255,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_25,
@@ -239,7 +265,7 @@ fn create_farms() {
                         denom: DENOM_UUSDY.to_string(),
                         amount: Uint128::new(FARM_AMOUNT_5K),
                     },
-                    farm_identifier: None,
+                    farm_identifier: Some("test_farm_5".to_string()),
                 },
             },
             vec![
@@ -256,7 +282,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_25,
@@ -284,7 +310,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -314,7 +340,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -344,7 +370,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     // current epoch is 10
@@ -374,7 +400,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     // current epoch is 10
@@ -404,7 +430,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -434,7 +460,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: Some(30),
@@ -462,7 +488,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: invalid_lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -494,7 +520,7 @@ fn create_farms() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -517,7 +543,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -540,7 +566,7 @@ fn create_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -651,7 +677,7 @@ fn expand_farms() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -674,7 +700,7 @@ fn expand_farms() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -699,7 +725,7 @@ fn expand_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -723,7 +749,7 @@ fn expand_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -750,7 +776,7 @@ fn expand_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -777,7 +803,7 @@ fn expand_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -802,7 +828,7 @@ fn expand_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -845,7 +871,7 @@ fn expand_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_20,
@@ -901,7 +927,7 @@ fn cant_expand_farm_too_late() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_1,
@@ -924,7 +950,7 @@ fn cant_expand_farm_too_late() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_1,
@@ -954,7 +980,7 @@ fn cant_expand_farm_too_late() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -981,7 +1007,7 @@ fn cant_expand_farm_too_late() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Expand {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1007,7 +1033,7 @@ fn cant_expand_farm_too_late() {
 
     suite.manage_farm(
         &creator,
-        FarmAction::Fill {
+        FarmAction::Expand {
             params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: None,
@@ -1058,7 +1084,7 @@ fn close_farms() {
 
     suite.manage_farm(
         &other,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: START_EPOCH_20,
@@ -1161,7 +1187,7 @@ fn close_farms() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: START_EPOCH_12,
@@ -1260,7 +1286,7 @@ fn close_farms_wont_fail_with_malicious_tf_token() {
     suite
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1283,7 +1309,7 @@ fn close_farms_wont_fail_with_malicious_tf_token() {
         )
         .manage_farm(
             &other,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom_2.clone(),
                     start_epoch: None,
@@ -1381,7 +1407,7 @@ fn test_farm_helper() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1416,7 +1442,7 @@ fn test_farm_helper() {
         })
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1450,7 +1476,7 @@ fn test_farm_helper() {
 
     suite.manage_farm(
         &other,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: None,
@@ -1493,7 +1519,7 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1523,7 +1549,7 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1552,7 +1578,7 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_12,
@@ -1575,7 +1601,7 @@ fn fails_to_create_farm_if_more_tokens_than_needed_were_sent() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_12,
@@ -1611,7 +1637,7 @@ fn fails_to_create_farm_if_start_epoch_is_zero() {
 
     suite.manage_farm(
         &creator,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: START_EPOCH_0,
@@ -1659,7 +1685,7 @@ fn overriding_farm_with_bogus_id_not_possible() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1682,7 +1708,7 @@ fn overriding_farm_with_bogus_id_not_possible() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: None,
@@ -1731,7 +1757,7 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
     suite
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_12,
@@ -1751,7 +1777,7 @@ fn providing_custom_farm_id_doesnt_increment_farm_counter() {
         )
         .manage_farm(
             &creator,
-            FarmAction::Fill {
+            FarmAction::Create {
                 params: FarmParams {
                     lp_denom: lp_denom.clone(),
                     start_epoch: START_EPOCH_12,
@@ -1801,7 +1827,7 @@ fn farm_cant_be_created_in_the_past() {
     // We cannot create a farm in a past epoch
     suite.manage_farm(
         &other,
-        FarmAction::Fill {
+        FarmAction::Create {
             params: FarmParams {
                 lp_denom: lp_denom.clone(),
                 start_epoch: START_EPOCH_1, // start epoch in the past
@@ -1826,6 +1852,155 @@ fn farm_cant_be_created_in_the_past() {
                     assert_eq!(which, "start")
                 }
                 _ => panic!("Wrong error type, should return ContractError::InvalidEpoch"),
+            }
+        },
+    );
+}
+
+#[test]
+fn test_create_vs_expand_actions() {
+    let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
+
+    let mut suite = TestingSuite::default_with_balances(vec![
+        coin(INITIAL_BALANCE, DENOM_UOM.to_string()),
+        coin(INITIAL_BALANCE, DENOM_UUSDY.to_string()),
+        coin(INITIAL_BALANCE, lp_denom.clone()),
+    ]);
+
+    let creator = suite.creator();
+
+    suite.instantiate_default();
+
+    for _ in 0..10 {
+        suite.add_one_epoch();
+    }
+
+    // Test Create action - creates a new farm
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Create {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: START_EPOCH_20,
+                    preliminary_end_epoch: END_EPOCH_28,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: DENOM_UUSDY.to_string(),
+                        amount: Uint128::new(FARM_AMOUNT_4K),
+                    },
+                    farm_identifier: Some(FARM_ID_1.to_string()),
+                },
+            },
+            vec![
+                coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+                coin(ONE_THOUSAND, DENOM_UOM),
+            ],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(
+            Some(FarmsBy::Identifier(M_FARM_ID_1.to_string())),
+            None,
+            None,
+            |result| {
+                let farms_response = result.unwrap();
+                assert_eq!(farms_response.farms.len(), 1);
+                assert_eq!(
+                    farms_response.farms[0].farm_asset.amount,
+                    Uint128::new(FARM_AMOUNT_4K)
+                );
+            },
+        );
+
+    // Test Expand action - expands the existing farm
+    suite
+        .manage_farm(
+            &creator,
+            FarmAction::Expand {
+                params: FarmParams {
+                    lp_denom: lp_denom.clone(),
+                    start_epoch: START_EPOCH_20,
+                    preliminary_end_epoch: END_EPOCH_28,
+                    curve: None,
+                    farm_asset: Coin {
+                        denom: DENOM_UUSDY.to_string(),
+                        amount: Uint128::new(FARM_AMOUNT_2K),
+                    },
+                    farm_identifier: Some(M_FARM_ID_1.to_string()),
+                },
+            },
+            vec![coin(FARM_AMOUNT_2K, DENOM_UUSDY)],
+            |result| {
+                result.unwrap();
+            },
+        )
+        .query_farms(
+            Some(FarmsBy::Identifier(M_FARM_ID_1.to_string())),
+            None,
+            None,
+            |result| {
+                let farms_response = result.unwrap();
+                assert_eq!(farms_response.farms.len(), 1);
+                assert_eq!(
+                    farms_response.farms[0].farm_asset.amount,
+                    Uint128::new(FARM_AMOUNT_4K + FARM_AMOUNT_2K) // Expanded
+                );
+            },
+        );
+
+    // Test Expand action without identifier - should fail
+    suite.manage_farm(
+        &creator,
+        FarmAction::Expand {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: START_EPOCH_20,
+                preliminary_end_epoch: END_EPOCH_28,
+                curve: None,
+                farm_asset: Coin {
+                    denom: DENOM_UUSDY.to_string(),
+                    amount: Uint128::new(FARM_AMOUNT_2K),
+                },
+                farm_identifier: None, // No identifier
+            },
+        },
+        vec![coin(FARM_AMOUNT_2K, DENOM_UUSDY)],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::NonExistentFarm => {}
+                _ => panic!("Wrong error type, should return ContractError::NonExistentFarm"),
+            }
+        },
+    );
+
+    // Test Create action with duplicate identifier - should fail
+    suite.manage_farm(
+        &creator,
+        FarmAction::Create {
+            params: FarmParams {
+                lp_denom: lp_denom.clone(),
+                start_epoch: START_EPOCH_20,
+                preliminary_end_epoch: END_EPOCH_28,
+                curve: None,
+                farm_asset: Coin {
+                    denom: DENOM_UUSDY.to_string(),
+                    amount: Uint128::new(FARM_AMOUNT_4K),
+                },
+                farm_identifier: Some(FARM_ID_1.to_string()),
+            },
+        },
+        vec![
+            coin(FARM_AMOUNT_4K, DENOM_UUSDY),
+            coin(ONE_THOUSAND, DENOM_UOM),
+        ],
+        |result| {
+            let err = result.unwrap_err().downcast::<ContractError>().unwrap();
+            match err {
+                ContractError::FarmAlreadyExists => {}
+                _ => panic!("Wrong error type, should return ContractError::FarmAlreadyExists"),
             }
         },
     );
