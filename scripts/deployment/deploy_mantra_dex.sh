@@ -95,8 +95,8 @@ function init_pool_manager() {
               "fee_collector_addr": "'$fee_collector_addr'",
               "farm_manager_addr": "'$farm_manager_addr'",
               "pool_creation_fee": {
-                "denom": "uom",
-                "amount": "10000000"
+                "denom": "amantra",
+                "amount": "10000000000000000000"
               }
             }'
 	init_artifact 'pool_manager.wasm' "$init_msg" "MANTRA Pool Manager"
@@ -118,8 +118,8 @@ function init_farm_manager() {
               "fee_collector_addr": "'$fee_collector_addr'",
               "pool_manager_addr": "",
               "create_farm_fee": {
-                "denom": "uom",
-                "amount": "10000000"
+                "denom": "amantra",
+                "amount": "10000000000000000000"
               },
               "max_concurrent_farms": 7,
               "max_farm_epoch_buffer": 14,

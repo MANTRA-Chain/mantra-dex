@@ -68,8 +68,8 @@ const LOCK_POOL_LIQUIDITY_AMOUNT: u128 = 1_000u128;
 const LOCK_POOL_LIQUIDITY_AMOUNT_2: u128 = 8_000u128;
 const LOCK_POOL_SWAP_AMOUNT: u128 = 100u128;
 
-const LOCK_POOL_PREFIX_1: &str = "o.uom.uusd.1";
-const LOCK_POOL_PREFIX_2: &str = "o.uom.uusd.2";
+const LOCK_POOL_PREFIX_1: &str = "o.amantra.uusd.1";
+const LOCK_POOL_PREFIX_2: &str = "o.amantra.uusd.2";
 
 // Toggle pool test constants
 const TOGGLE_POOL_BALANCE_AMOUNT: u128 = ONE_BILLION;
@@ -489,7 +489,7 @@ fn sends_less_tf_denoms_than_needed_with_funds_in_pools() {
         vec![DECIMALS_6, DECIMALS_6],
         pool_fees.clone(),
         PoolType::ConstantProduct,
-        Some("uom.uusd".to_string()),
+        Some("amantra.uusd".to_string()),
         vec![
             coin(DOUBLE_POOL_CREATION_FEE, DENOM_UUSD),
             coin(STARGATE_MOCK_UOM_AMOUNT, DENOM_UOM),
@@ -502,7 +502,7 @@ fn sends_less_tf_denoms_than_needed_with_funds_in_pools() {
     // Then provide liquidity separately
     suite.provide_liquidity(
         &creator,
-        "o.uom.uusd".to_string(),
+        "o.amantra.uusd".to_string(),
         None,
         None,
         None,
@@ -1838,7 +1838,7 @@ fn lock_single_pool() {
             vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("uom.uusd.1".to_string()),
+            Some("amantra.uusd.1".to_string()),
             vec![
                 coin(LOCK_POOL_TF_FEE, DENOM_UUSD),
                 coin(LOCK_POOL_TF_FEE, DENOM_UOM),
@@ -1853,7 +1853,7 @@ fn lock_single_pool() {
             vec![DECIMALS_6, DECIMALS_6],
             pool_fees,
             PoolType::ConstantProduct,
-            Some("uom.uusd.2".to_string()),
+            Some("amantra.uusd.2".to_string()),
             vec![
                 coin(LOCK_POOL_TF_FEE, DENOM_UUSD),
                 coin(LOCK_POOL_TF_FEE, DENOM_UOM),
@@ -2127,7 +2127,7 @@ fn cant_toggle_unexisting_pool() {
         vec![DECIMALS_6, DECIMALS_6],
         pool_fees.clone(),
         PoolType::ConstantProduct,
-        Some("uom.uusd.1".to_string()),
+        Some("amantra.uusd.1".to_string()),
         vec![
             coin(TOGGLE_POOL_TF_FEE, DENOM_UUSD),
             coin(TOGGLE_POOL_TF_FEE, DENOM_UOM),

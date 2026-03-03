@@ -22,7 +22,7 @@ const AUSDY_DENOM: &str = "ausdy"; // Different from DENOM_UUSDY, keep separate
 const WHALE_ULUNA_POOL_RAW: &str = "whale.uluna";
 const WHALE_ULUNA_POOL_ID: &str = "o.whale.uluna";
 
-const UOM_UUSD_POOL_ID: &str = "o.uom.uusd";
+const UOM_UUSD_POOL_ID: &str = "o.amantra.uusd";
 const ULUNA_UUSD_POOL_RAW: &str = "uluna.uusd";
 const ULUNA_UUSD_POOL_ID: &str = "o.uluna.uusd";
 const P1_POOL_ID: &str = "p.1";
@@ -442,7 +442,7 @@ fn basic_swapping_pool_reserves_event_test() {
             vec![DECIMALS_6, DECIMALS_6],
             pool_fees.clone(),
             PoolType::ConstantProduct,
-            Some("uom.uusd".to_string()),
+            Some("amantra.uusd".to_string()),
             vec![
                 coin(ONE_THOUSAND_U128.u128(), DENOM_UUSD.to_string()),
                 coin(EIGHT_EIGHT_EIGHT_EIGHT_U128.u128(), DENOM_UOM.to_string()),
@@ -3003,9 +3003,9 @@ fn setup_4pool_different_decimals(
             coin(balances[1].u128(), "uusdx".to_string()),
             coin(balances[2].u128(), "uusdc".to_string()),
             coin(balances[3].u128(), "uusdt".to_string()),
-            coin(1_000_000_000_000u128, "uom".to_string()),
+            coin(1_000_000_000_000u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -3032,7 +3032,7 @@ fn setup_4pool_different_decimals(
         pool_fees,
         PoolType::StableSwap { amp },
         None,
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },

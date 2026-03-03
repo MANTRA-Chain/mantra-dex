@@ -766,9 +766,9 @@ fn checks_minimum_receive() {
             coin(ONE_BILLION, "uwhale".to_string()),
             coin(ONE_BILLION, "uluna".to_string()),
             coin(ONE_BILLION, "uusd".to_string()),
-            coin(ONE_BILLION, "uom".to_string()),
+            coin(ONE_BILLION, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
@@ -802,7 +802,7 @@ fn checks_minimum_receive() {
             pool_fees.clone(),
             PoolType::ConstantProduct,
             Some("whale.uluna".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -814,7 +814,7 @@ fn checks_minimum_receive() {
             pool_fees,
             PoolType::ConstantProduct,
             Some("uluna.uusd".to_string()),
-            vec![coin(1000, "uusd"), coin(8888, "uom")],
+            vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },

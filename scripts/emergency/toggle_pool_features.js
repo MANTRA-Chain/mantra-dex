@@ -6,7 +6,7 @@ const { GasPrice } = require('@cosmjs/stargate');
 const { toUtf8 } = require("@cosmjs/encoding");
 const fs = require('fs');
 
-const GAS_PRICE_STRING = "0.025uom"; 
+const GAS_PRICE_STRING = "25000000000amantra"; 
 
 async function main() {
     const rpcEndpoint = process.argv[2];

@@ -20,8 +20,8 @@ const UOM_POOL_CREATION_FEE: u128 = UOM_BALANCE;
 const UUSDY_DENOM: &str = "factory/mantra1x5nk33zpglp4ge6q9a8xx3zceqf4g8nvaggjmc/aUSDY";
 
 // Pool configuration
-const POOL_ID: &str = "o.uom.usdy.pool";
-const POOL_LABEL: &str = "uom.usdy.pool";
+const POOL_ID: &str = "o.amantra.usdy.pool";
+const POOL_LABEL: &str = "amantra.usdy.pool";
 
 // Test liquidity amounts - 1 OM + 4 USDY as described
 const OM_LIQUIDITY_AMOUNT: u128 = 1_000_000u128; // 1 OM with 6 decimals

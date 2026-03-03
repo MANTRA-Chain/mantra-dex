@@ -733,9 +733,9 @@ fn provide_liquidity_stable_swap_edge_case() {
             coin(1_000_000_001u128, "uwhale".to_string()),
             coin(ONE_BILLION, "uluna".to_string()),
             coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(1_000_000_001u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let _other = suite.senders[1].clone();
@@ -770,7 +770,7 @@ fn provide_liquidity_stable_swap_edge_case() {
         pool_fees,
         PoolType::StableSwap { amp: 100 },
         Some("whale.uluna.uusd".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -918,9 +918,9 @@ fn provide_incomplete_liquidity_fails_on_stableswaps() {
             coin(1_000_000_001u128, "uwhale".to_string()),
             coin(ONE_BILLION, "uluna".to_string()),
             coin(1_000_000_001u128, "uusd".to_string()),
-            coin(1_000_000_001u128, "uom".to_string()),
+            coin(1_000_000_001u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
 
@@ -952,7 +952,7 @@ fn provide_incomplete_liquidity_fails_on_stableswaps() {
         pool_fees,
         PoolType::StableSwap { amp: 100 },
         Some("whale.uluna.uusd".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -1036,7 +1036,7 @@ fn provide_incomplete_liquidity_fails_on_stableswaps() {
                     amount: Uint128::from(1_000_000u128),
                 },
                 Coin {
-                    denom: "uom".to_string(),
+                    denom: DENOM_UOM.to_string(),
                     amount: Uint128::from(1_000_000u128),
                 },
             ],
@@ -1066,9 +1066,9 @@ fn provide_liquidity_stable_invalid_slippage_check() {
                 200_000_000_000_000_000_000_000_000_000_000_u128,
                 "ausdy".to_string(),
             ),
-            coin(150_000_000_000_000_000_000_u128, "uom".to_string()),
+            coin(150_000_000_000_000_000_000_u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
     let creator = suite.creator();
     let bob = suite.senders[1].clone();
@@ -1097,7 +1097,7 @@ fn provide_liquidity_stable_invalid_slippage_check() {
         pool_fees,
         PoolType::StableSwap { amp: 10 },
         Some("whale.uluna".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -1171,9 +1171,9 @@ fn setup_stable_swap() -> (TestingSuite, Addr, Addr, String) {
             coin(uluna_amount, "uluna".to_string()), // 2T
             coin(uusd_amount, "uusd".to_string()),   // 2T
             coin(uweth_amount, "uweth".to_string()), // 2T
-            coin(10_000u128, "uom".to_string()),
+            coin(10_000u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -1197,7 +1197,7 @@ fn setup_stable_swap() -> (TestingSuite, Addr, Addr, String) {
         },
         PoolType::StableSwap { amp: 85 },
         Some("uluna.uusd.uweth".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -1259,9 +1259,9 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
             coin(uluna_amount, "uluna".to_string()),
             coin(uusd_amount, "uusd".to_string()),
             coin(uweth_amount, "uweth".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(10_000u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -1290,7 +1290,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
         },
         PoolType::StableSwap { amp: 85 }, // Same amplification as Python
         Some("uluna.uusd.uweth".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -1393,9 +1393,9 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
             coin(uluna_amount, "uluna".to_string()),
             coin(uusd_amount, "uusd".to_string()),
             coin(uweth_amount, "uweth".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(10_000u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -1425,7 +1425,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit() {
         },
         PoolType::StableSwap { amp: 85 },
         Some("uluna.uusd.uweth".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -1562,9 +1562,9 @@ fn equal_handling_of_decimals_on_stableswap_deposit_large_amounts() {
             coin(uluna_amount, "uluna".to_string()),
             coin(uusd_amount, "uusd".to_string()),
             coin(uweth_amount, "uweth".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(10_000u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -1593,7 +1593,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit_large_amounts() {
         },
         PoolType::StableSwap { amp: 85 }, // Same amplification as Python
         Some("uluna.uusd.uweth".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -1697,9 +1697,9 @@ fn equal_handling_of_decimals_on_stableswap_deposit_large_amounts() {
             coin(uluna_amount, "uluna".to_string()),
             coin(uusd_amount, "uusd".to_string()),
             coin(uweth_amount, "uweth".to_string()),
-            coin(10_000u128, "uom".to_string()),
+            coin(10_000u128, DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -1729,7 +1729,7 @@ fn equal_handling_of_decimals_on_stableswap_deposit_large_amounts() {
         },
         PoolType::StableSwap { amp: 85 },
         Some("uluna.uusd.uweth".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -2064,9 +2064,9 @@ fn python_simulation_comparison() {
             coin(trilly * 10u128.pow(6), "uluna".to_string()),
             coin(trilly * 10u128.pow(6), "uusd".to_string()),
             coin(trilly * 10u128.pow(18), "uweth".to_string()),
-            coin(trilly * 10u128.pow(6), "uom".to_string()),
+            coin(trilly * 10u128.pow(6), DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -2091,7 +2091,7 @@ fn python_simulation_comparison() {
         },
         PoolType::StableSwap { amp: 85 },
         Some("uluna.uusd.uweth".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
@@ -2209,9 +2209,9 @@ fn python_simulation_comparison() {
             coin(trilly * 10u128.pow(6), "uluna".to_string()),
             coin(trilly * 10u128.pow(6), "uusd".to_string()),
             coin(trilly * 10u128.pow(18), "uweth".to_string()),
-            coin(trilly * 10u128.pow(6), "uom".to_string()),
+            coin(trilly * 10u128.pow(6), DENOM_UOM.to_string()),
         ],
-        StargateMock::new(vec![coin(8888u128, "uom".to_string())]),
+        StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]),
     );
 
     let creator = suite.creator();
@@ -2236,7 +2236,7 @@ fn python_simulation_comparison() {
         },
         PoolType::StableSwap { amp: 85 },
         Some("uluna.uusd.uweth".to_string()),
-        vec![coin(1000, "uusd"), coin(8888, "uom")],
+        vec![coin(1000, "uusd"), coin(8888, DENOM_UOM)],
         |result| {
             result.unwrap();
         },
