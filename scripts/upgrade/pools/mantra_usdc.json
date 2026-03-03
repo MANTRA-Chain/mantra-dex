@@ -1,0 +1,17 @@
+{
+  "protocol_fee": "0.001",
+  "swap_fee": "0.002",
+  "burn_fee": "0",
+  "pool_type": "constant_product",
+  "pool_identifier": "mantra.usdc",
+  "assets": [
+    {
+      "denom": "amantra",
+      "decimals": 18
+    },
+    {
+      "denom": "ibc/REPLACE_WITH_ACTUAL_USDC_IBC_DENOM",
+      "decimals": 6
+    }
+  ]
+}
