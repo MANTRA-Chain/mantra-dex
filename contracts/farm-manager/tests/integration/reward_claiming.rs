@@ -11,14 +11,14 @@ use mantra_dex_std::farm_manager::{
 use crate::common::suite::TestingSuite;
 use crate::common::MOCK_CONTRACT_ADDR_1;
 
-use test_utils::common_constants::ONE_BILLION;
+use test_utils::common_constants::{DENOM_UOM, ONE_BILLION};
 
 #[test]
 fn claim_expired_farm_returns_nothing() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, DENOM_UOM),
         coin(ONE_BILLION, "DENOM_UUSDY"),
         coin(ONE_BILLION, "uosmo"),
         coin(ONE_BILLION, lp_denom.clone()),
@@ -52,7 +52,7 @@ fn claim_expired_farm_returns_nothing() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -163,7 +163,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(ONE_BILLION, "uom"),
+        coin(ONE_BILLION, DENOM_UOM),
         coin(ONE_BILLION, "DENOM_UUSDY"),
         coin(ONE_BILLION, "uosmo"),
         coin(ONE_BILLION, lp_denom.clone()),
@@ -198,7 +198,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(12_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(12_000u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -448,13 +448,13 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                     preliminary_end_epoch: Some(16),
                     curve: None,
                     farm_asset: Coin {
-                        denom: "uom".to_string(),
+                        denom: DENOM_UOM.to_string(),
                         amount: Uint128::new(10_000u128),
                     },
                     farm_identifier: None,
                 },
             },
-            vec![coin(11_000u128, "uom")],
+            vec![coin(11_000u128, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -474,7 +474,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(8_000u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -494,7 +494,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "uosmo"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "uosmo"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -524,7 +524,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                         owner: creator.clone(),
                         lp_denom: lp_denom.clone(),
                         farm_asset: Coin {
-                            denom: "uom".to_string(),
+                            denom: DENOM_UOM.to_string(),
                             amount: Uint128::new(10_000u128),
                         },
                         claimed_amount: Uint128::zero(),
@@ -635,7 +635,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .query_balance("DENOM_UUSDY".to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
-        .query_balance("uom".to_string(), &other, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .query_balance("uosmo".to_string(), &other, |balance| {
@@ -652,7 +652,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                                                                                           //     .unwrap()
             );
         })
-        .query_balance("uom".to_string(), &other, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &other, |balance| {
             assert_eq!(balance, Uint128::new(ONE_BILLION) + Uint128::new(5_000));
         })
         .query_balance("uosmo".to_string(), &other, |balance| {
@@ -670,7 +670,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
         .query_balance("DENOM_UUSDY".to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(1_000_004_000u128));
         })
-        .query_balance("uom".to_string(), &another, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(ONE_BILLION));
         })
         .query_balance("uosmo".to_string(), &another, |balance| {
@@ -687,7 +687,7 @@ fn claiming_rewards_with_multiple_positions_arent_inflated() {
                                                                                           //     .unwrap()
             );
         })
-        .query_balance("uom".to_string(), &another, |balance| {
+        .query_balance(DENOM_UOM.to_string(), &another, |balance| {
             assert_eq!(balance, Uint128::new(ONE_BILLION) + Uint128::new(5_000));
         })
         .query_balance("uosmo".to_string(), &another, |balance| {
@@ -706,7 +706,7 @@ fn user_can_claim_expired_epochs() {
     let lp_denom = format!("factory/{MOCK_CONTRACT_ADDR_1}/{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(2_000_000_000u128, "uom".to_string()),
+        coin(2_000_000_000u128, DENOM_UOM.to_string()),
         coin(2_000_000_000u128, "DENOM_UUSDY".to_string()),
         coin(2_000_000_000u128, "uosmo".to_string()),
         coin(2_000_000_000u128, lp_denom.clone()),
@@ -733,7 +733,7 @@ fn user_can_claim_expired_epochs() {
                     farm_identifier: Some("farm".to_string()),
                 },
             },
-            vec![coin(4_000, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(4_000, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -872,7 +872,7 @@ fn farm_owners_get_penalty_fees() {
     let lp_denom_3 = format!("factory/{MOCK_CONTRACT_ADDR_1}/3.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, DENOM_UOM.to_string()),
         coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
         coin(ONE_BILLION, "uosmo".to_string()),
         coin(ONE_BILLION, lp_denom_1.clone()),
@@ -905,7 +905,7 @@ fn farm_owners_get_penalty_fees() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(4_000, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(4_000, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -925,7 +925,7 @@ fn farm_owners_get_penalty_fees() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -945,7 +945,7 @@ fn farm_owners_get_penalty_fees() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(8_000, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1325,7 +1325,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, DENOM_UOM.to_string()),
         coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
         coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
@@ -1354,7 +1354,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(8_888u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(8_888u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1374,7 +1374,7 @@ fn test_claim_rewards_divide_by_zero_mitigated() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(666_666u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(666_666u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1490,7 +1490,7 @@ fn test_claim_until_epoch() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, DENOM_UOM.to_string()),
         coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
         coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
@@ -1522,7 +1522,7 @@ fn test_claim_until_epoch() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1542,7 +1542,7 @@ fn test_claim_until_epoch() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1768,7 +1768,7 @@ fn test_claim_until_epoch_closing_positions() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, DENOM_UOM.to_string()),
         coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
         coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
@@ -1797,7 +1797,7 @@ fn test_claim_until_epoch_closing_positions() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -1817,7 +1817,7 @@ fn test_claim_until_epoch_closing_positions() {
                     farm_identifier: None,
                 },
             },
-            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+            vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
             |result| {
                 result.unwrap();
             },
@@ -2028,7 +2028,7 @@ fn test_claiming_while_expanding_farm() {
     let lp_denom_2 = format!("factory/{MOCK_CONTRACT_ADDR_1}/2.{LP_SYMBOL}").to_string();
 
     let mut suite = TestingSuite::default_with_balances(vec![
-        coin(ONE_BILLION, "uom".to_string()),
+        coin(ONE_BILLION, DENOM_UOM.to_string()),
         coin(ONE_BILLION, "DENOM_UUSDY".to_string()),
         coin(ONE_BILLION, "uosmo".to_string()),
         coin(1_000_000_000_000, lp_denom_1.clone()),
@@ -2056,7 +2056,7 @@ fn test_claiming_while_expanding_farm() {
                 farm_identifier: Some("farm-1".to_string()),
             },
         },
-        vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, "uom")],
+        vec![coin(10_000u128, "DENOM_UUSDY"), coin(1_000, DENOM_UOM)],
         |result| {
             result.unwrap();
         },

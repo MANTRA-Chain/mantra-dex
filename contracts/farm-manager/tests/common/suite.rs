@@ -7,6 +7,7 @@ use cw_multi_test::{
     GovFailingModule, IbcFailingModule, MockApiBech32, StakeKeeper, WasmKeeper,
 };
 use mantra_dex_std::constants::MONTH_IN_SECONDS;
+use test_utils::common_constants::DENOM_UOM;
 
 use crate::common::suite_contracts::{
     epoch_manager_contract, farm_manager_contract, fee_collector_contract,
@@ -122,7 +123,7 @@ impl TestingSuite {
             .with_api(MockApiBech32::new("mantra"))
             .with_wasm(WasmKeeper::default())
             .with_bank(bank)
-            .with_stargate(StargateMock::new(vec![coin(8888u128, "uom".to_string())]))
+            .with_stargate(StargateMock::new(vec![coin(8888u128, DENOM_UOM.to_string())]))
             .build(|router, _api, storage| {
                 balances.into_iter().for_each(|(account, amount)| {
                     router.bank.init_balance(storage, &account, amount).unwrap()
@@ -154,7 +155,7 @@ impl TestingSuite {
             self.epoch_manager_addr.to_string(),
             self.pool_manager_addr.to_string(),
             Coin {
-                denom: "uom".to_string(),
+                denom: DENOM_UOM.to_string(),
                 amount: Uint128::new(1_000u128),
             },
             2,
@@ -183,7 +184,7 @@ impl TestingSuite {
             self.epoch_manager_addr.to_string(),
             self.pool_manager_addr.to_string(),
             Coin {
-                denom: "uom".to_string(),
+                denom: DENOM_UOM.to_string(),
                 amount: Uint128::new(1_000u128),
             },
             2,

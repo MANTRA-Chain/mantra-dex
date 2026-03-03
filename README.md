@@ -13,6 +13,16 @@ different ways to contribute to the project.
 1. [Website](https://mantra.zone/)
 2. [Docs](https://docs.mantrachain.io/mantra-smart-contracts/mantra_dex)
 
+## Upgrade Guide
+
+If you have already deployed contracts and need to update them for the aMANTRA (10^18 decimals) migration:
+
+- **[QUICKSTART.md](./QUICKSTART.md)** - Quick reference for common upgrade tasks
+- **[UPGRADE.md](./UPGRADE.md)** - Complete upgrade instructions for deployed contracts
+- **[docs/MIGRATION_UOM_TO_AMANTRA.md](./docs/MIGRATION_UOM_TO_AMANTRA.md)** - Technical migration details
+
+For new deployments, use the deployment scripts with the updated configurations in `scripts/deployment/deploy_env/`.
+
 ## Architecture
 
 The following is the architecture of MANTRA DEX, and a general description of each contract:

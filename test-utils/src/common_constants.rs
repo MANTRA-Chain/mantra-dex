@@ -1,5 +1,5 @@
 // Common Token Denominations
-pub const DENOM_UOM: &str = "uom";
+pub const DENOM_UOM: &str = "amantra";
 pub const DENOM_UUSDY: &str = "uusdy";
 pub const DENOM_UOSMO: &str = "uosmo";
 pub const DENOM_UWHALE: &str = "uwhale";

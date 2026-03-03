@@ -40,9 +40,9 @@ const SIMULATION_TOLERANCE: &str = "0.1";
 const RETURN_AMOUNT_TOLERANCE: &str = "0.00000001";
 
 // Additional constants for simulate_swap_operations_query_verification test
-const POOL_ID_OM_USDT: &str = "uom.uusdt";
+const POOL_ID_OM_USDT: &str = "amantra.uusdt";
 const POOL_ID_USDT_USDC: &str = "uusdt.uusdc";
-const POOL_IDENTIFIER_OM_USDT: &str = "o.uom.uusdt";
+const POOL_IDENTIFIER_OM_USDT: &str = "o.amantra.uusdt";
 const POOL_IDENTIFIER_USDT_USDC: &str = "o.uusdt.uusdc";
 const OM_LIQUIDITY_AMOUNT: u128 = 1_000_000_000;
 const USDT_OM_POOL_LIQUIDITY: u128 = 4_000_000_000;

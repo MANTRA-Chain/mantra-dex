@@ -26,8 +26,8 @@ function display_usage() {
 #  "pool_identifier": "pool_identifier",
 #  "assets": [
 #    {
-#      "denom": "uom",
-#      "decimals": 6
+#      "denom": "amantra",
+#      "decimals": 18
 #    },
 #    {
 #      "denom": "uusdc",
